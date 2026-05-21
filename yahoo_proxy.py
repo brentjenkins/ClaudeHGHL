@@ -233,6 +233,27 @@ def league():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/teamlogos")
+def teamlogos():
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        data = yahoo_get(f"/league/{LEAGUE_KEY}/teams", token)
+        teams_raw = data["fantasy_content"]["league"][1]["teams"]
+        logos = {}
+        for idx in (k for k in teams_raw.keys() if k != "count"):
+            team_meta = teams_raw[idx]["team"][0]
+            name = next((m["name"] for m in team_meta if isinstance(m, dict) and "name" in m), None)
+            logo_entry = next((m for m in team_meta if isinstance(m, dict) and "team_logos" in m), None)
+            if name and logo_entry:
+                logos[name] = logo_entry["team_logos"][0]["team_logo"]["url"]
+        return jsonify({"ok": True, "logos": logos})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/rosters")
 def rosters():
     token = get_valid_token()
