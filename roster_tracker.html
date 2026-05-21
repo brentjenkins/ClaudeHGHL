@@ -179,7 +179,8 @@ const LS_TX      = 'nhl_transactions_v2';
 
 let players = [], transactions = [], editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false;
 
-const posGroup = p => ['C','LW','RW','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : 'G';
+const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
@@ -307,7 +308,7 @@ function renderTransactions(){
     `<div class="tx-row"><div class="tx-date">${tx.date}</div><div style="flex:1;line-height:1.6">${
       tx.players.map(p=>{
         const tag=p.type==='add'?'<span class="tag tag-add">add</span>':p.type==='drop'?'<span class="tag tag-drop">drop</span>':'<span class="tag tag-trade">trade</span>';
-        return tag+p.name;
+        return tag+esc(p.name);
       }).join(' &nbsp;')
     }</div></div>`
   ).join('');
@@ -322,7 +323,7 @@ function populateFantasyFilter() {
   const teams = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
   document.getElementById('filterFantasy').innerHTML =
     '<option value="">All fantasy teams</option>' +
-    teams.map(t => `<option value="${t}">${t}</option>`).join('');
+    teams.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
 }
 
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
@@ -363,12 +364,12 @@ function render(){
     const src=p.source||'manual';
     return `<tr>
       <td style="display:flex;align-items:center;gap:5px;height:38px">
-        <span class="source-dot dot-${src}" title="${src}"></span>
-        <span style="overflow:hidden;text-overflow:ellipsis">${p.name}</span>
+        <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
       </td>
-      <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':p.pos}</span></td>
-      <td>${p.team||'—'}</td>
-      <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">${p.fantasyTeam||'—'}</td>
+      <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
+      <td>${esc(p.team||'—')}</td>
+      <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">${esc(p.fantasyTeam||'—')}</td>
       <td>${p.cap>0?'$'+p.cap.toFixed(2)+'M':'—'}</td>
       <td>${pg==='G'?'—':(p.pts>0?p.pts:'—')}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr">NR</span>':''}</td>

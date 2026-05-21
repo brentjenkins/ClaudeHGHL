@@ -8,7 +8,8 @@ Then click "Sync Yahoo" in the roster tracker.
 Requires: pip install requests flask flask-cors
 """
 
-import json, os, time, threading, webbrowser, ssl, subprocess, sys
+import json, os, time, threading, webbrowser, ssl, subprocess, sys, traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, urlencode
 import requests
@@ -37,7 +38,7 @@ if not CLIENT_ID or not CLIENT_SECRET:
         "        YAHOO_CLIENT_SECRET=your_client_secret\n\n"
         "    Or export them as environment variables before running."
     )
-LEAGUE_KEY = "465.l.97882"
+LEAGUE_KEY = os.environ.get("YAHOO_LEAGUE_KEY", "465.l.97882")
 REDIRECT_URI = "https://localhost:8100/callback"
 TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".yahoo_tokens.json")
 CERT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".localhost_cert.pem")
@@ -99,13 +100,17 @@ def refresh_access_token(tokens):
     return tokens
 
 
+_token_lock = threading.Lock()
+
+
 def get_valid_token():
-    tokens = load_tokens()
-    if not tokens:
-        return None
-    if token_expired(tokens):
-        tokens = refresh_access_token(tokens)
-    return tokens["access_token"]
+    with _token_lock:
+        tokens = load_tokens()
+        if not tokens:
+            return None
+        if token_expired(tokens):
+            tokens = refresh_access_token(tokens)
+        return tokens["access_token"]
 
 
 # ── OAuth callback server ─────────────────────────────────────────────────────
@@ -276,8 +281,8 @@ def rosters():
 
         return jsonify({"ok": True, "players": result})
     except Exception as e:
-        import traceback
-        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/transactions")
@@ -316,8 +321,8 @@ def transactions():
         result.sort(key=lambda x: x["ts"], reverse=True)
         return jsonify({"ok": True, "transactions": result})
     except Exception as e:
-        import traceback
-        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/")
@@ -338,28 +343,13 @@ NHL_TEAMS = [
     "VGK", "WSH", "WPG"
 ]
 
-TEAM_SLUG = {
-    "ANA": "ANA", "ARI": "UTA", "BOS": "BOS", "BUF": "BUF", "CAR": "CAR",
-    "CBJ": "CBJ", "CGY": "CGY", "CHI": "CHI", "COL": "COL", "DAL": "DAL",
-    "DET": "DET", "EDM": "EDM", "FLA": "FLA", "LAK": "LAK", "MIN": "MIN",
-    "MTL": "MTL", "NJD": "NJD", "NSH": "NSH", "NYI": "NYI", "NYR": "NYR",
-    "OTT": "OTT", "PHI": "PHI", "PIT": "PIT", "SEA": "SEA", "SJS": "SJS",
-    "STL": "STL", "TBL": "TBL", "TOR": "TOR", "UTA": "UTA", "VAN": "VAN",
-    "VGK": "VGK", "WSH": "WSH", "WPG": "WPG"
-}
-
 
 def scrape_team_caps(team_code):
     import re
     url = f"https://depth-charts.puckpedia.com/?hideHeader=true&hideFooter=true&team={team_code}"
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
     resp.raise_for_status()
-    try:
-        from bs4 import BeautifulSoup
-    except ImportError:
-        import subprocess, sys
-        subprocess.run([sys.executable, "-m", "pip", "install", "beautifulsoup4", "--quiet"], check=True)
-        from bs4 import BeautifulSoup
+    from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(resp.text, "html.parser")
     players = {}
@@ -396,31 +386,29 @@ def scrape_team_caps(team_code):
 def caphits():
     all_players = {}
     errors = []
-    for team in NHL_TEAMS:
-        try:
-            team_data = scrape_team_caps(team)
-            all_players.update(team_data)
-            print(f"  ✓ {team}: {len(team_data)} players")
-        except Exception as e:
-            errors.append(f"{team}: {str(e)}")
-            print(f"  ✗ {team}: {e}")
-        time.sleep(0.4)  # be polite
+
+    def fetch_team(team):
+        time.sleep(0.2)  # stagger requests per worker to be polite
+        return team, scrape_team_caps(team), None
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {pool.submit(fetch_team, team): team for team in NHL_TEAMS}
+        for future in as_completed(futures):
+            team = futures[future]
+            try:
+                _, data, _ = future.result()
+                all_players.update(data)
+                print(f"  ✓ {team}: {len(data)} players")
+            except Exception as e:
+                errors.append(f"{team}: {str(e)}")
+                print(f"  ✗ {team}: {e}")
+
     print(f"Cap hits done: {len(all_players)} players, {len(errors)} errors")
     return jsonify({"ok": True, "players": all_players, "errors": errors, "count": len(all_players)})
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Install deps if needed
-    try:
-        import flask, flask_cors
-    except ImportError:
-        print("📦  Installing dependencies…")
-        subprocess.run([sys.executable, "-m", "pip", "install", "requests", "flask", "flask-cors", "--quiet"],
-                       check=True)
-        import flask, flask_cors
-        from flask_cors import CORS
-
     print("=" * 55)
     print("  NHL Roster Tracker — Yahoo Fantasy Proxy")
     print("=" * 55)
