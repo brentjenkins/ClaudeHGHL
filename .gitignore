@@ -1,3 +1,6 @@
 *.pem
 .yahoo_tokens.json
 .env
+.idea/
+.venv/
+__pycache__/
