@@ -295,6 +295,12 @@ async function checkProxy(){
     txt.textContent = d.authenticated
       ? '✓ Proxy running & authenticated — ready to sync'
       : 'Proxy running but not authenticated. Restart yahoo_proxy.py to re-authorize.';
+    if(d.authenticated && Object.keys(teamLogos).length === 0){
+      try {
+        const ld = await fetch('/teamlogos').then(r=>r.json());
+        if(ld.ok && ld.logos){ teamLogos = ld.logos; lsSet(LS_LOGOS, teamLogos); render(); }
+      } catch(_){}
+    }
   } catch(e) {
     proxyOk = false;
     dot.className = 'proxy-dot red';
