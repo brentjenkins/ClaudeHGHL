@@ -5,3 +5,8 @@ Features:
 * pull the latest Yahoo Fantasy Hockey team rosters, stats and transactions on demand
 * pull the latest point projections (pre-season) or point totals (during the season)
 * make draft suggestions based on assembling the highest fantasy point total team given a salary cap constraint
+
+How to use:
+1. clone the repo.
+2. run `python3 yahoo_proxy.py`
+3. follow the instructions
