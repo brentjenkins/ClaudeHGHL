@@ -222,11 +222,10 @@ async function syncCapHits() {
 
     let matched = 0, unmatched = 0;
     for (const p of players) {
-      const lastName = p.name.split(' ').pop().toLowerCase();
-      if (d.players[lastName]) {
-        p.cap = d.players[lastName].cap;
-        // update NHL team from PuckPedia if blank
-        if (!p.team || p.team === '—') p.team = d.players[lastName].team;
+      const key = `${p.name.split(' ').pop().toLowerCase()}_${posGroup(p.pos)}`;
+      if (d.players[key]) {
+        p.cap = d.players[key].cap;
+        if (!p.team || p.team === '—') p.team = d.players[key].team;
         matched++;
       } else {
         unmatched++;
@@ -253,7 +252,7 @@ async function syncAllNHL(){
     if(nr.error) throw new Error(nr.error);
     let added=0, updated=0;
     for(const [key, p] of Object.entries(nr.active)){
-      const ex = players.find(x=>x.name.toLowerCase()===key);
+      const ex = players.find(x=>`${x.name.toLowerCase()}_${posGroup(x.pos)}`===key);
       if(ex){
         ex.status = 'roster';
         if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
@@ -310,7 +309,7 @@ async function doSync(){
 
     let added=0, updated=0;
     for(const yp of rd.players){
-      const ex = players.find(p=>p.name.toLowerCase()===yp.name.toLowerCase());
+      const ex = players.find(p=>p.name.toLowerCase()===yp.name.toLowerCase() && posGroup(p.pos)===posGroup(yp.pos));
       if(ex){
         ex.fantasyTeam = yp.fantasyTeam;
         if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
@@ -331,7 +330,8 @@ async function doSync(){
     if(!nr.error && nr.active){
       for(const p of players){
         const prev = p.status;
-        p.status = nr.active[p.name.toLowerCase()] ? 'roster' : 'non-roster';
+        const nhlKey = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
+        p.status = nr.active[nhlKey] ? 'roster' : 'non-roster';
         if(p.status !== prev) rosterUpdated++;
       }
     }

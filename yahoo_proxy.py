@@ -351,6 +351,15 @@ NHL_API_TEAMS = [t for t in NHL_TEAMS if t != "ARI"]
 _POS_MAP = {"C": "C", "L": "LW", "R": "RW", "D": "D", "G": "G"}
 
 
+def _pos_group(pos):
+    """Map any position abbreviation to F / D / G."""
+    if pos == "D":
+        return "D"
+    if pos == "G":
+        return "G"
+    return "F"
+
+
 # ── NHL roster status ─────────────────────────────────────────────────────────
 @app.route("/nhlrosters")
 def nhl_rosters():
@@ -370,7 +379,8 @@ def nhl_rosters():
                 full = f"{first} {last}".strip()
                 pos = _POS_MAP.get(p.get("positionCode", ""), "C")
                 if full:
-                    result[full.lower()] = {"name": full, "nhlTeam": team, "pos": pos}
+                    key = f"{full.lower()}_{_pos_group(pos)}"
+                    result[key] = {"name": full, "nhlTeam": team, "pos": pos}
         return result
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -410,19 +420,23 @@ def scrape_team_caps(team_code):
         cap_val = float(cap_match.group(1).replace(",", ""))
         if cap_match.group(2) == "K":
             cap_val = cap_val / 1000
-        # Extract last name — it's the word(s) before the dollar sign
-        # Remove the cap hit and surrounding text, find the name
+        # Extract last name and position from text before the cap hit figure
         name_part = re.sub(r'YR\s+\d+.*?\)', '', text)  # remove contract year info
-        name_part = re.sub(r'\$[0-9,.]+[MK].*', '', name_part)  # remove cap hit
+        name_part = re.sub(r'\$[0-9,.]+[MK].*', '', name_part)  # remove cap hit onward
         name_part = re.sub(r'\d+[⋅·]', '', name_part)  # remove age dots
-        name_part = re.sub(r'[CLRWDGF|]+\s*$', '', name_part)  # remove position
-        name_part = name_part.strip()
-        # Last token is the last name
+
+        # Position sits at end of name_part (e.g. "C", "D", "LW", "G")
+        pos_m = re.search(r'\b(C|LW|RW|L|R|D|G|F)\b\s*$', name_part.strip())
+        raw_pos = pos_m.group(1) if pos_m else ''
+        pg = _pos_group(raw_pos) if raw_pos else 'F'
+
+        name_part = re.sub(r'[CLRWDGF|]+\s*$', '', name_part).strip()
         parts = name_part.split()
         if parts:
             last_name = parts[-1]
             if len(last_name) > 2:  # skip junk
-                players[last_name.lower()] = {"lastName": last_name, "cap": round(cap_val, 4), "team": team_code}
+                key = f"{last_name.lower()}_{pg}"
+                players[key] = {"lastName": last_name, "cap": round(cap_val, 4), "team": team_code}
 
     return players
 
