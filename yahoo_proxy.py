@@ -16,19 +16,39 @@ from flask import Flask, jsonify, Response
 from flask_cors import CORS
 
 # ── Config ────────────────────────────────────────────────────────────────────
-CLIENT_ID     = "dj0yJmk9QTZoSW9zN21Ha3hRJmQ9WVdrOU16bDROSEZ1U2pnbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWM2"
-CLIENT_SECRET = "3ce3257438b852803828a7cda23590e26b0f478b"
-LEAGUE_KEY    = "465.l.97882"
-REDIRECT_URI  = "https://localhost:8100/callback"
-TOKEN_FILE    = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".yahoo_tokens.json")
-CERT_FILE     = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".localhost_cert.pem")
-KEY_FILE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".localhost_key.pem")
-PROXY_PORT    = 8099
+# Load credentials from a .env file if present, then fall back to environment variables.
+_env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_file):
+    with open(_env_file) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _, _v = _line.partition("=")
+                os.environ.setdefault(_k.strip(), _v.strip())
+
+CLIENT_ID = os.environ.get("YAHOO_CLIENT_ID", "")
+CLIENT_SECRET = os.environ.get("YAHOO_CLIENT_SECRET", "")
+
+if not CLIENT_ID or not CLIENT_SECRET:
+    sys.exit(
+        "❌  YAHOO_CLIENT_ID and YAHOO_CLIENT_SECRET must be set.\n"
+        "    Create a .env file next to yahoo_proxy.py with:\n\n"
+        "        YAHOO_CLIENT_ID=your_client_id\n"
+        "        YAHOO_CLIENT_SECRET=your_client_secret\n\n"
+        "    Or export them as environment variables before running."
+    )
+LEAGUE_KEY = "465.l.97882"
+REDIRECT_URI = "https://localhost:8100/callback"
+TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".yahoo_tokens.json")
+CERT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".localhost_cert.pem")
+KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".localhost_key.pem")
+PROXY_PORT = 8099
 CALLBACK_PORT = 8100
 
-YAHOO_AUTH_URL  = "https://api.login.yahoo.com/oauth2/request_auth"
+YAHOO_AUTH_URL = "https://api.login.yahoo.com/oauth2/request_auth"
 YAHOO_TOKEN_URL = "https://api.login.yahoo.com/oauth2/get_token"
-YAHOO_API_BASE  = "https://fantasysports.yahooapis.com/fantasy/v2"
+YAHOO_API_BASE = "https://fantasysports.yahooapis.com/fantasy/v2"
+
 
 # ── SSL cert generation ───────────────────────────────────────────────────────
 def ensure_cert():
@@ -44,6 +64,7 @@ def ensure_cert():
     ], check=True, capture_output=True)
     print("✅  Cert generated.")
 
+
 # ── Token storage ─────────────────────────────────────────────────────────────
 def load_tokens():
     if os.path.exists(TOKEN_FILE):
@@ -51,28 +72,32 @@ def load_tokens():
             return json.load(f)
     return {}
 
+
 def save_tokens(tokens):
     with open(TOKEN_FILE, "w") as f:
         json.dump(tokens, f, indent=2)
 
+
 def token_expired(tokens):
     return time.time() > tokens.get("expires_at", 0) - 60
+
 
 def refresh_access_token(tokens):
     print("🔄  Refreshing Yahoo access token…")
     resp = requests.post(YAHOO_TOKEN_URL, data={
-        "grant_type":    "refresh_token",
+        "grant_type": "refresh_token",
         "refresh_token": tokens["refresh_token"],
-        "redirect_uri":  REDIRECT_URI,
+        "redirect_uri": REDIRECT_URI,
     }, auth=(CLIENT_ID, CLIENT_SECRET))
     resp.raise_for_status()
     data = resp.json()
-    tokens["access_token"]  = data["access_token"]
+    tokens["access_token"] = data["access_token"]
     tokens["refresh_token"] = data.get("refresh_token", tokens["refresh_token"])
-    tokens["expires_at"]    = time.time() + data.get("expires_in", 3600)
+    tokens["expires_at"] = time.time() + data.get("expires_in", 3600)
     save_tokens(tokens)
     print("✅  Token refreshed.")
     return tokens
+
 
 def get_valid_token():
     tokens = load_tokens()
@@ -82,8 +107,10 @@ def get_valid_token():
         tokens = refresh_access_token(tokens)
     return tokens["access_token"]
 
+
 # ── OAuth callback server ─────────────────────────────────────────────────────
 auth_code_holder = {}
+
 
 class CallbackHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -110,28 +137,30 @@ class CallbackHandler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+
 def exchange_code(code):
     resp = requests.post(YAHOO_TOKEN_URL, data={
-        "grant_type":  "authorization_code",
-        "code":         code,
+        "grant_type": "authorization_code",
+        "code": code,
         "redirect_uri": REDIRECT_URI,
     }, auth=(CLIENT_ID, CLIENT_SECRET))
     resp.raise_for_status()
     data = resp.json()
     tokens = {
-        "access_token":  data["access_token"],
+        "access_token": data["access_token"],
         "refresh_token": data["refresh_token"],
-        "expires_at":    time.time() + data.get("expires_in", 3600),
+        "expires_at": time.time() + data.get("expires_in", 3600),
     }
     save_tokens(tokens)
     return tokens
 
+
 def do_oauth_flow():
     params = {
-        "client_id":     CLIENT_ID,
-        "redirect_uri":  REDIRECT_URI,
+        "client_id": CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
         "response_type": "code",
-        "scope":         "fspt-r",
+        "scope": "fspt-r",
     }
     auth_url = YAHOO_AUTH_URL + "?" + urlencode(params)
     print(f"\n🌐  Opening Yahoo authorization in your browser…")
@@ -158,6 +187,7 @@ def do_oauth_flow():
     exchange_code(code)
     print("✅  Tokens saved! You're all set.\n")
 
+
 # ── Yahoo API helper ──────────────────────────────────────────────────────────
 def yahoo_get(path, token):
     sep = "&" if "?" in path else "?"
@@ -166,9 +196,11 @@ def yahoo_get(path, token):
     resp.raise_for_status()
     return resp.json()
 
+
 # ── Flask proxy ───────────────────────────────────────────────────────────────
 app = Flask(__name__)
 CORS(app, origins=["*"])
+
 
 @app.route("/status")
 def status():
@@ -177,10 +209,12 @@ def status():
         return jsonify({"authenticated": False})
     return jsonify({"authenticated": True, "expired": token_expired(tokens)})
 
+
 @app.route("/auth")
 def auth():
     threading.Thread(target=do_oauth_flow, daemon=True).start()
     return jsonify({"ok": True, "message": "OAuth flow started — check your browser."})
+
 
 @app.route("/league")
 def league():
@@ -192,6 +226,7 @@ def league():
         return jsonify({"ok": True, "league": data["fantasy_content"]["league"][0]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/rosters")
 def rosters():
@@ -217,7 +252,8 @@ def rosters():
             if isinstance(roster_data, list):
                 players_raw = next(r["players"] for r in roster_data if isinstance(r, dict) and "players" in r)
             else:
-                players_raw = next(v["players"] for k, v in roster_data.items() if isinstance(v, dict) and "players" in v)
+                players_raw = next(
+                    v["players"] for k, v in roster_data.items() if isinstance(v, dict) and "players" in v)
             player_indices = [k for k in players_raw.keys() if k != "count"]
 
             for pidx in player_indices:
@@ -242,6 +278,7 @@ def rosters():
     except Exception as e:
         import traceback
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+
 
 @app.route("/transactions")
 def transactions():
@@ -269,16 +306,19 @@ def transactions():
                 name = next((m.get("full_name") or m.get("name", {}).get("full", "")
                              for m in p_meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
                 tx_data = pp[1].get("transaction_data", {})
-                ptype = tx_data[0].get("type", meta.get("type", "")) if isinstance(tx_data, list) and tx_data else meta.get("type", "")
+                ptype = tx_data[0].get("type", meta.get("type", "")) if isinstance(tx_data,
+                                                                                   list) and tx_data else meta.get(
+                    "type", "")
                 if name:
                     players_list.append({"name": name, "type": ptype})
             if players_list:
-                result.append({"date": date_str, "type": meta.get("type",""), "players": players_list, "ts": ts})
+                result.append({"date": date_str, "type": meta.get("type", ""), "players": players_list, "ts": ts})
         result.sort(key=lambda x: x["ts"], reverse=True)
         return jsonify({"ok": True, "transactions": result})
     except Exception as e:
         import traceback
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+
 
 @app.route("/")
 def index():
@@ -286,24 +326,28 @@ def index():
     if os.path.exists(html_path):
         with open(html_path) as f:
             return Response(f.read(), mimetype="text/html")
-    return Response("<h2>roster_tracker.html not found — place it in the same folder as yahoo_proxy.py</h2>", mimetype="text/html")
+    return Response("<h2>roster_tracker.html not found — place it in the same folder as yahoo_proxy.py</h2>",
+                    mimetype="text/html")
+
+
 # ── Cap hits scraper ──────────────────────────────────────────────────────────
 NHL_TEAMS = [
-    "ANA","ARI","BOS","BUF","CAR","CBJ","CGY","CHI","COL","DAL",
-    "DET","EDM","FLA","LAK","MIN","MTL","NJD","NSH","NYI","NYR",
-    "OTT","PHI","PIT","SEA","SJS","STL","TBL","TOR","UTA","VAN",
-    "VGK","WSH","WPG"
+    "ANA", "ARI", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL", "DAL",
+    "DET", "EDM", "FLA", "LAK", "MIN", "MTL", "NJD", "NSH", "NYI", "NYR",
+    "OTT", "PHI", "PIT", "SEA", "SJS", "STL", "TBL", "TOR", "UTA", "VAN",
+    "VGK", "WSH", "WPG"
 ]
 
 TEAM_SLUG = {
-    "ANA":"ANA","ARI":"UTA","BOS":"BOS","BUF":"BUF","CAR":"CAR",
-    "CBJ":"CBJ","CGY":"CGY","CHI":"CHI","COL":"COL","DAL":"DAL",
-    "DET":"DET","EDM":"EDM","FLA":"FLA","LAK":"LAK","MIN":"MIN",
-    "MTL":"MTL","NJD":"NJD","NSH":"NSH","NYI":"NYI","NYR":"NYR",
-    "OTT":"OTT","PHI":"PHI","PIT":"PIT","SEA":"SEA","SJS":"SJS",
-    "STL":"STL","TBL":"TBL","TOR":"TOR","UTA":"UTA","VAN":"VAN",
-    "VGK":"VGK","WSH":"WSH","WPG":"WPG"
+    "ANA": "ANA", "ARI": "UTA", "BOS": "BOS", "BUF": "BUF", "CAR": "CAR",
+    "CBJ": "CBJ", "CGY": "CGY", "CHI": "CHI", "COL": "COL", "DAL": "DAL",
+    "DET": "DET", "EDM": "EDM", "FLA": "FLA", "LAK": "LAK", "MIN": "MIN",
+    "MTL": "MTL", "NJD": "NJD", "NSH": "NSH", "NYI": "NYI", "NYR": "NYR",
+    "OTT": "OTT", "PHI": "PHI", "PIT": "PIT", "SEA": "SEA", "SJS": "SJS",
+    "STL": "STL", "TBL": "TBL", "TOR": "TOR", "UTA": "UTA", "VAN": "VAN",
+    "VGK": "VGK", "WSH": "WSH", "WPG": "WPG"
 }
+
 
 def scrape_team_caps(team_code):
     import re
@@ -333,9 +377,9 @@ def scrape_team_caps(team_code):
             cap_val = cap_val / 1000
         # Extract last name — it's the word(s) before the dollar sign
         # Remove the cap hit and surrounding text, find the name
-        name_part = re.sub(r'YR\s+\d+.*?\)', '', text)          # remove contract year info
+        name_part = re.sub(r'YR\s+\d+.*?\)', '', text)  # remove contract year info
         name_part = re.sub(r'\$[0-9,.]+[MK].*', '', name_part)  # remove cap hit
-        name_part = re.sub(r'\d+[⋅·]', '', name_part)           # remove age dots
+        name_part = re.sub(r'\d+[⋅·]', '', name_part)  # remove age dots
         name_part = re.sub(r'[CLRWDGF|]+\s*$', '', name_part)  # remove position
         name_part = name_part.strip()
         # Last token is the last name
@@ -346,6 +390,7 @@ def scrape_team_caps(team_code):
                 players[last_name.lower()] = {"lastName": last_name, "cap": round(cap_val, 4), "team": team_code}
 
     return players
+
 
 @app.route("/caphits")
 def caphits():
@@ -362,7 +407,8 @@ def caphits():
         time.sleep(0.4)  # be polite
     print(f"Cap hits done: {len(all_players)} players, {len(errors)} errors")
     return jsonify({"ok": True, "players": all_players, "errors": errors, "count": len(all_players)})
-    
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     # Install deps if needed
@@ -370,7 +416,8 @@ if __name__ == "__main__":
         import flask, flask_cors
     except ImportError:
         print("📦  Installing dependencies…")
-        subprocess.run([sys.executable, "-m", "pip", "install", "requests", "flask", "flask-cors", "--quiet"], check=True)
+        subprocess.run([sys.executable, "-m", "pip", "install", "requests", "flask", "flask-cors", "--quiet"],
+                       check=True)
         import flask, flask_cors
         from flask_cors import CORS
 

@@ -1,2 +1,3 @@
 *.pem
 .yahoo_tokens.json
+.env
