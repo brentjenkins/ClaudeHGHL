@@ -369,21 +369,26 @@ def nhl_rosters():
 
     def fetch_roster(team):
         url = f"https://api-web.nhle.com/v1/roster/{team}/current"
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        result = {}
-        for group in ("forwards", "defensemen", "goalies"):
-            for p in resp.json().get(group, []):
-                first = p.get("firstName", {}).get("default", "")
-                last = p.get("lastName", {}).get("default", "")
-                full = f"{first} {last}".strip()
-                pos = _POS_MAP.get(p.get("positionCode", ""), "C")
-                if full:
-                    key = f"{full.lower()}_{_pos_group(pos)}"
-                    result[key] = {"name": full, "nhlTeam": team, "pos": pos}
-        return result
+        for attempt in range(4):
+            resp = requests.get(url, timeout=10)
+            if resp.status_code == 429:
+                time.sleep(2 ** attempt)  # 1, 2, 4, 8 s
+                continue
+            resp.raise_for_status()
+            result = {}
+            for group in ("forwards", "defensemen", "goalies"):
+                for p in resp.json().get(group, []):
+                    first = p.get("firstName", {}).get("default", "")
+                    last = p.get("lastName", {}).get("default", "")
+                    full = f"{first} {last}".strip()
+                    pos = _POS_MAP.get(p.get("positionCode", ""), "C")
+                    if full:
+                        key = f"{full.lower()}_{_pos_group(pos)}"
+                        result[key] = {"name": full, "nhlTeam": team, "pos": pos}
+            return result
+        resp.raise_for_status()  # all retries exhausted
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:
         futures = {pool.submit(fetch_roster, team): team for team in NHL_API_TEAMS}
         for future in as_completed(futures):
             team = futures[future]
