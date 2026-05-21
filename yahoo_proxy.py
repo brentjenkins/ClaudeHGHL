@@ -347,6 +347,10 @@ NHL_TEAMS = [
 NHL_API_TEAMS = [t for t in NHL_TEAMS if t != "ARI"]
 
 
+# NHL positionCode → app abbreviation
+_POS_MAP = {"C": "C", "L": "LW", "R": "RW", "D": "D", "G": "G"}
+
+
 # ── NHL roster status ─────────────────────────────────────────────────────────
 @app.route("/nhlrosters")
 def nhl_rosters():
@@ -364,8 +368,9 @@ def nhl_rosters():
                 first = p.get("firstName", {}).get("default", "")
                 last = p.get("lastName", {}).get("default", "")
                 full = f"{first} {last}".strip()
+                pos = _POS_MAP.get(p.get("positionCode", ""), "C")
                 if full:
-                    result[full.lower()] = full
+                    result[full.lower()] = {"name": full, "nhlTeam": team, "pos": pos}
         return result
 
     with ThreadPoolExecutor(max_workers=8) as pool:

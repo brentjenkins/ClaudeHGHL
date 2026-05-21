@@ -39,6 +39,7 @@ tr:hover td{background:#fafaf8}
 .source-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;flex-shrink:0}
 .dot-manual{background:#9ca3af}
 .dot-yahoo{background:#6001D2}
+.dot-nhl{background:#0ea5e9}
 .edit-btn,.del-btn{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:14px;color:#9ca3af}
 .edit-btn:hover{color:#185FA5;background:#eff6ff}
 .del-btn:hover{color:#dc2626;background:#fef2f2}
@@ -81,6 +82,7 @@ tr:hover td{background:#fafaf8}
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
+    <button class="btn" id="nhlBtn" onclick="syncAllNHL()" style="border-color:#0ea5e9;color:#0ea5e9">🏒 Sync NHL</button>
     <button class="btn" id="capBtn" onclick="syncCapHits()" style="border-color:#27500A;color:#27500A">💰 Sync Cap Hits</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
   </div>
@@ -119,6 +121,7 @@ tr:hover td{background:#fafaf8}
   <select id="filterSource" onchange="render()">
     <option value="">All sources</option>
     <option value="yahoo">Yahoo</option>
+    <option value="nhl">NHL API</option>
     <option value="manual">Manual</option>
   </select></div>
 
@@ -141,6 +144,7 @@ tr:hover td{background:#fafaf8}
   <span id="rowCount"></span>
   <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
     <span class="source-dot dot-yahoo"></span>Yahoo &nbsp;
+    <span class="source-dot dot-nhl"></span>NHL &nbsp;
     <span class="source-dot dot-manual"></span>Manual
   </span>
 </div>
@@ -239,6 +243,39 @@ async function syncCapHits() {
     btn.innerHTML = '💰 Sync Cap Hits';
   }
 }
+async function syncAllNHL(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('nhlBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#0ea5e9"></span>Loading…';
+  try {
+    const nr = await fetch('/nhlrosters').then(r=>r.json());
+    if(nr.error) throw new Error(nr.error);
+    let added=0, updated=0;
+    for(const [key, p] of Object.entries(nr.active)){
+      const ex = players.find(x=>x.name.toLowerCase()===key);
+      if(ex){
+        ex.status = 'roster';
+        if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
+        updated++;
+      } else {
+        const newId = players.length>0 ? Math.max(...players.map(x=>x.id))+1 : 1;
+        players.push({id:newId, name:p.name, team:p.nhlTeam, pos:p.pos, cap:0, pts:0,
+                      status:'roster', source:'nhl', fantasyTeam:''});
+        added++;
+      }
+    }
+    lsSet(LS_PLAYERS, players);
+    populateTeamFilter(); populateFantasyFilter(); render();
+    toast(`NHL sync done! ${added} players added, ${updated} updated.`);
+  } catch(e){
+    toast('NHL sync failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='🏒 Sync NHL';
+  }
+}
+
 async function checkProxy(){
   const dot = document.getElementById('proxyDot');
   const txt = document.getElementById('proxyStatus');
@@ -297,6 +334,10 @@ async function doSync(){
         p.status = nr.active[p.name.toLowerCase()] ? 'roster' : 'non-roster';
         if(p.status !== prev) rosterUpdated++;
       }
+    }
+    // Promote source from 'nhl' to 'yahoo' for fantasy-rostered players
+    for(const p of players){
+      if(p.source === 'nhl' && p.fantasyTeam) p.source = 'yahoo';
     }
 
     lsSet(LS_PLAYERS, players);
