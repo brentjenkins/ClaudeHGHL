@@ -335,13 +335,53 @@ def index():
                     mimetype="text/html")
 
 
-# ── Cap hits scraper ──────────────────────────────────────────────────────────
+# ── Team lists ────────────────────────────────────────────────────────────────
+# Used for PuckPedia cap-hit scraping (ARI kept for legacy depth-chart pages)
 NHL_TEAMS = [
     "ANA", "ARI", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL", "DAL",
     "DET", "EDM", "FLA", "LAK", "MIN", "MTL", "NJD", "NSH", "NYI", "NYR",
     "OTT", "PHI", "PIT", "SEA", "SJS", "STL", "TBL", "TOR", "UTA", "VAN",
     "VGK", "WSH", "WPG"
 ]
+# ARI no longer exists in the NHL API (relocated → UTA)
+NHL_API_TEAMS = [t for t in NHL_TEAMS if t != "ARI"]
+
+
+# ── NHL roster status ─────────────────────────────────────────────────────────
+@app.route("/nhlrosters")
+def nhl_rosters():
+    """Returns a dict keyed by lowercased full name for all players on active NHL rosters."""
+    active = {}
+    errors = []
+
+    def fetch_roster(team):
+        url = f"https://api-web.nhle.com/v1/roster/{team}/current"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        result = {}
+        for group in ("forwards", "defensemen", "goalies"):
+            for p in resp.json().get(group, []):
+                first = p.get("firstName", {}).get("default", "")
+                last = p.get("lastName", {}).get("default", "")
+                full = f"{first} {last}".strip()
+                if full:
+                    result[full.lower()] = full
+        return result
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(fetch_roster, team): team for team in NHL_API_TEAMS}
+        for future in as_completed(futures):
+            team = futures[future]
+            try:
+                active.update(future.result())
+            except Exception as e:
+                errors.append(f"{team}: {str(e)}")
+                traceback.print_exc()
+
+    return jsonify({"ok": True, "active": active, "count": len(active), "errors": errors})
+
+
+# ── Cap hits scraper ──────────────────────────────────────────────────────────
 
 
 def scrape_team_caps(team_code):
