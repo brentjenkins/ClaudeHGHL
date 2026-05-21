@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHL Roster & Cap Tracker 2026–27</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;background:#fff;padding:1.5rem}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.title{font-size:22px;font-weight:600}
+.subtitle{font-size:13px;color:#888;margin-top:2px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.stat-card{background:#f7f7f5;border-radius:10px;padding:.875rem 1rem}
+.stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.stat-val{font-size:20px;font-weight:600}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.controls input,.controls select{height:36px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a18;padding:0 10px;font-size:13px}
+.controls input{flex:1;min-width:150px}
+.btn{height:36px;padding:0 14px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a18;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:500}
+.btn:hover{background:#f7f7f5}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0C447C}
+.btn-yahoo{background:#6001D2;color:#fff;border-color:#6001D2}
+.btn-yahoo:hover{background:#4a00a8}
+.tbl-wrap{overflow-x:auto;border:1px solid #eee;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em}
+th:hover{color:#1a1a18}
+td{padding:9px 12px;border-bottom:1px solid #f0f0ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-f{background:#dbeafe;color:#1e40af}
+.badge-d{background:#dcfce7;color:#166534}
+.badge-g{background:#fef3c7;color:#92400e}
+.badge-nr{background:#f3f4f6;color:#6b7280;font-style:italic}
+.source-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;flex-shrink:0}
+.dot-manual{background:#9ca3af}
+.dot-yahoo{background:#6001D2}
+.edit-btn,.del-btn{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:14px;color:#9ca3af}
+.edit-btn:hover{color:#185FA5;background:#eff6ff}
+.del-btn:hover{color:#dc2626;background:#fef2f2}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:999}
+.modal{background:#fff;border-radius:12px;border:1px solid #eee;padding:1.5rem;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.modal h2{font-size:18px;font-weight:600;margin-bottom:1.25rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:13px;color:#888;margin-bottom:4px}
+.field input,.field select{width:100%;height:36px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a18;padding:0 10px;font-size:14px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:1.25rem}
+.empty{text-align:center;padding:3rem;color:#9ca3af;font-size:14px}
+.tx-list{max-height:200px;overflow-y:auto;border:1px solid #eee;border-radius:8px;font-size:12px;margin-bottom:1rem}
+.tx-row{padding:7px 12px;border-bottom:1px solid #f0f0ee;display:flex;gap:8px;align-items:flex-start}
+.tx-row:last-child{border-bottom:none}
+.tx-date{color:#9ca3af;min-width:52px;font-size:11px;padding-top:1px}
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-right:3px}
+.tag-add{background:#dcfce7;color:#166534}
+.tag-drop{background:#fee2e2;color:#991b1b}
+.tag-trade{background:#dbeafe;color:#1e40af}
+.section-label{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:#eee}
+.proxy-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid #eee;background:#f7f7f5;margin-bottom:1rem;font-size:13px}
+.proxy-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db;flex-shrink:0}
+.proxy-dot.green{background:#16a34a}
+.proxy-dot.red{background:#dc2626}
+.proxy-dot.pulse{animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:.6rem 1.25rem;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="title">NHL roster &amp; cap tracker <span style="font-size:14px;font-weight:400;color:#888">2026–27</span></div>
+    <div class="subtitle" id="leagueLabel">League: 465.l.97882</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
+    <button class="btn" id="capBtn" onclick="syncCapHits()" style="border-color:#27500A;color:#27500A">💰 Sync Cap Hits</button>
+    <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
+  </div>
+</div>
+
+<div class="proxy-bar" id="proxyBar">
+  <div class="proxy-dot pulse" id="proxyDot"></div>
+  <div id="proxyStatus" style="flex:1">Checking proxy…</div>
+  <button class="btn" style="height:28px;font-size:12px;padding:0 10px" onclick="checkProxy()">↺ Refresh</button>
+</div>
+
+<div class="stats-grid" id="statCards"></div>
+
+<div id="txSection" style="display:none">
+  <div class="section-label">Recent transactions</div>
+  <div class="tx-list" id="txList"></div>
+</div>
+
+<div class="controls" style="margin-top:.5rem">
+  <input type="text" id="search" placeholder="Search name, team, fantasy team…" oninput="render()">
+  <select id="filterPos" onchange="render()">
+    <option value="">All positions</option>
+    <option value="F">Forwards</option>
+    <option value="D">Defense</option>
+    <option value="G">Goalies</option>
+  </select>
+  <select id="filterRoster" onchange="render()">
+    <option value="">All players</option>
+    <option value="roster">Roster</option>
+    <option value="non-roster">Non-roster</option>
+  </select>
+  <select id="filterTeam" onchange="render()"></select>
+  <select id="filterFantasy" onchange="render()">
+    <option value="">All fantasy teams</option>
+  </select>
+  <select id="filterSource" onchange="render()">
+    <option value="">All sources</option>
+    <option value="yahoo">Yahoo</option>
+    <option value="manual">Manual</option>
+  </select></div>
+
+<div class="tbl-wrap">
+<table>
+<thead><tr>
+  <th onclick="setSortCol('name')">Player <span id="sort-name"></span></th>
+  <th onclick="setSortCol('pos')">Pos <span id="sort-pos"></span></th>
+  <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
+  <th onclick="setSortCol('fantasyTeam')">Fantasy team <span id="sort-fantasyTeam"></span></th>
+  <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
+  <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
+  <th></th>
+</tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+<div style="font-size:12px;color:#9ca3af;margin-top:.6rem;display:flex;align-items:center;gap:10px">
+  <span id="rowCount"></span>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <span class="source-dot dot-yahoo"></span>Yahoo &nbsp;
+    <span class="source-dot dot-manual"></span>Manual
+  </span>
+</div>
+
+<!-- Edit/Add modal -->
+<div class="modal-bg" id="modal" style="display:none">
+<div class="modal">
+  <h2 id="modalTitle">Add player</h2>
+  <div class="field"><label>Name</label><input id="fName" placeholder="e.g. Connor McDavid"></div>
+  <div class="field"><label>NHL team</label><input id="fTeam" placeholder="e.g. EDM"></div>
+  <div class="field"><label>Position</label>
+    <select id="fPos">
+      <option value="C">Center (C)</option><option value="LW">Left Wing (LW)</option>
+      <option value="RW">Right Wing (RW)</option><option value="D">Defense (D)</option>
+      <option value="G">Goalie (G)</option>
+    </select>
+  </div>
+  <div class="field"><label>Cap hit ($ millions)</label><input id="fCap" type="number" step="0.01" placeholder="e.g. 12.50"></div>
+  <div class="field"><label>Projected points (2026–27)</label><input id="fPts" type="number" step="1" placeholder="e.g. 95"></div>
+  <div class="field"><label>Roster status</label>
+    <select id="fStatus"><option value="roster">Roster</option><option value="non-roster">Non-roster</option></select>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="savePlayer()">Save</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROXY = '';  // same origin — served by the proxy itself
+const LS_PLAYERS = 'nhl_players_v3';
+const LS_TX      = 'nhl_transactions_v2';
+
+let players = [], transactions = [], editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false;
+
+const posGroup = p => ['C','LW','RW','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : 'G';
+
+function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+function load(){
+  players     = lsGet(LS_PLAYERS) || defaultPlayers();
+  transactions = lsGet(LS_TX)     || [];
+  populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
+  checkProxy();
+}
+
+function defaultPlayers(){
+  return [
+    {id:1,name:'Connor McDavid',team:'EDM',pos:'C',cap:12.5,pts:107,status:'roster',source:'manual',fantasyTeam:''},
+    {id:2,name:'Nathan MacKinnon',team:'COL',pos:'C',cap:12.6,pts:102,status:'roster',source:'manual',fantasyTeam:''},
+    {id:3,name:'Auston Matthews',team:'TOR',pos:'C',cap:13.25,pts:96,status:'roster',source:'manual',fantasyTeam:''},
+    {id:4,name:'Leon Draisaitl',team:'EDM',pos:'C',cap:14.0,pts:98,status:'roster',source:'manual',fantasyTeam:''},
+    {id:5,name:'Nikita Kucherov',team:'TBL',pos:'RW',cap:9.5,pts:94,status:'roster',source:'manual',fantasyTeam:''},
+    {id:6,name:'Cale Makar',team:'COL',pos:'D',cap:9.0,pts:82,status:'roster',source:'manual',fantasyTeam:''},
+    {id:7,name:'Roman Josi',team:'NSH',pos:'D',cap:9.06,pts:71,status:'roster',source:'manual',fantasyTeam:''},
+    {id:8,name:'David Pastrnak',team:'BOS',pos:'RW',cap:11.25,pts:88,status:'roster',source:'manual',fantasyTeam:''},
+    {id:9,name:'Igor Shesterkin',team:'NYR',pos:'G',cap:11.5,pts:0,status:'roster',source:'manual',fantasyTeam:''},
+    {id:10,name:'Sidney Crosby',team:'PIT',pos:'C',cap:8.7,pts:78,status:'roster',source:'manual',fantasyTeam:''},
+  ];
+}
+async function syncCapHits() {
+  if (!proxyOk) { toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('capBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#27500A"></span>Scraping 32 teams…';
+  try {
+    toast('Fetching cap hits from PuckPedia — this takes ~30 seconds…');
+    const d = await fetch('/caphits').then(r => r.json());
+    if (d.error) throw new Error(d.error);
+
+    let matched = 0, unmatched = 0;
+    for (const p of players) {
+      const lastName = p.name.split(' ').pop().toLowerCase();
+      if (d.players[lastName]) {
+        p.cap = d.players[lastName].cap;
+        // update NHL team from PuckPedia if blank
+        if (!p.team || p.team === '—') p.team = d.players[lastName].team;
+        matched++;
+      } else {
+        unmatched++;
+      }
+    }
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`Cap hits updated! ${matched} matched, ${unmatched} unmatched (check manually).`);
+    if (d.errors.length) console.warn('Team scrape errors:', d.errors);
+  } catch(e) {
+    toast('Cap hit sync failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💰 Sync Cap Hits';
+  }
+}
+async function checkProxy(){
+  const dot = document.getElementById('proxyDot');
+  const txt = document.getElementById('proxyStatus');
+  dot.className = 'proxy-dot pulse';
+  try {
+    const r = await fetch('/status', {signal: AbortSignal.timeout(3000)});
+    const d = await r.json();
+    proxyOk = true;
+    dot.className = 'proxy-dot green';
+    txt.textContent = d.authenticated
+      ? '✓ Proxy running & authenticated — ready to sync'
+      : 'Proxy running but not authenticated. Restart yahoo_proxy.py to re-authorize.';
+  } catch(e) {
+    proxyOk = false;
+    dot.className = 'proxy-dot red';
+    txt.innerHTML = 'Proxy not detected. Run <code style="background:#eee;padding:1px 5px;border-radius:3px">python3 yahoo_proxy.py</code> then refresh.';
+  }
+}
+
+async function doSync(){
+  if(!proxyOk){ toast('Start the proxy first: python3 yahoo_proxy.py'); return; }
+  const btn = document.getElementById('syncBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Syncing…';
+  try {
+    const lg = await fetch('/league').then(r=>r.json());
+    if(lg.error) throw new Error(lg.error);
+    document.getElementById('leagueLabel').textContent = `League: ${lg.league.name} (465.l.97882)`;
+
+    const rd = await fetch('/rosters').then(r=>r.json());
+    if(rd.error) throw new Error(rd.error);
+
+    let added=0, updated=0;
+    for(const yp of rd.players){
+      const ex = players.find(p=>p.name.toLowerCase()===yp.name.toLowerCase());
+      if(ex){
+        ex.fantasyTeam = yp.fantasyTeam;
+        if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
+        ex.source = 'yahoo'; updated++;
+      } else {
+        const newId = players.length>0 ? Math.max(...players.map(p=>p.id))+1 : 1;
+        players.push({id:newId,name:yp.name,team:yp.nhlTeam,pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',fantasyTeam:yp.fantasyTeam});
+        added++;
+      }
+    }
+
+    const td = await fetch('/transactions').then(r=>r.json());
+    if(!td.error && td.transactions){ transactions=td.transactions; lsSet(LS_TX,transactions); }
+
+    lsSet(LS_PLAYERS, players);
+    populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
+    toast(`Synced! ${added} added, ${updated} updated, ${transactions.length} transactions.`);
+  } catch(e){
+    toast('Sync failed: '+e.message);
+    console.error(e);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='⬇ Sync Yahoo';
+  }
+}
+
+function renderTransactions(){
+  const sec=document.getElementById('txSection');
+  if(!transactions.length){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  document.getElementById('txList').innerHTML = transactions.map(tx=>
+    `<div class="tx-row"><div class="tx-date">${tx.date}</div><div style="flex:1;line-height:1.6">${
+      tx.players.map(p=>{
+        const tag=p.type==='add'?'<span class="tag tag-add">add</span>':p.type==='drop'?'<span class="tag tag-drop">drop</span>':'<span class="tag tag-trade">trade</span>';
+        return tag+p.name;
+      }).join(' &nbsp;')
+    }</div></div>`
+  ).join('');
+}
+
+function populateTeamFilter(){
+  const teams=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
+  document.getElementById('filterTeam').innerHTML='<option value="">All teams</option>'+teams.map(t=>`<option>${t}</option>`).join('');
+}
+
+function populateFantasyFilter() {
+  const teams = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
+  document.getElementById('filterFantasy').innerHTML =
+    '<option value="">All fantasy teams</option>' +
+    teams.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
+
+function render(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const fp=document.getElementById('filterPos').value;
+  const fr=document.getElementById('filterRoster').value;
+  const ft=document.getElementById('filterTeam').value;
+  const fs=document.getElementById('filterSource').value;
+  const ff=document.getElementById('filterFantasy').value;
+
+  let rows=players.filter(p=>{
+    if(q&&![p.name,p.team,p.fantasyTeam||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(fp&&posGroup(p.pos)!==fp) return false;
+    if(fr&&p.status!==fr) return false;
+    if(ft&&p.team!==ft) return false;
+    if(fs&&(p.source||'manual')!==fs) return false;
+    if(ff && (p.fantasyTeam||'')!== ff) return false;
+    return true;
+  });
+
+  rows.sort((a,b)=>{
+    let av=a[sortCol]??'',bv=b[sortCol]??'';
+    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+
+  ['name','pos','team','fantasyTeam','cap','pts','status'].forEach(c=>{
+    const el=document.getElementById('sort-'+c);
+    if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
+  });
+
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML=rows.length?rows.map(p=>{
+    const pg=posGroup(p.pos);
+    const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
+    const src=p.source||'manual';
+    return `<tr>
+      <td style="display:flex;align-items:center;gap:5px;height:38px">
+        <span class="source-dot dot-${src}" title="${src}"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis">${p.name}</span>
+      </td>
+      <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':p.pos}</span></td>
+      <td>${p.team||'—'}</td>
+      <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">${p.fantasyTeam||'—'}</td>
+      <td>${p.cap>0?'$'+p.cap.toFixed(2)+'M':'—'}</td>
+      <td>${pg==='G'?'—':(p.pts>0?p.pts:'—')}</td>
+      <td>${p.status==='non-roster'?'<span class="badge badge-nr">NR</span>':''}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
+        <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
+      </td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="8" class="empty">No players found</td></tr>`;
+
+  const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
+  document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
+  updateStats();
+}
+
+function updateStats(){
+  const roster=players.filter(p=>p.status==='roster');
+  const cap=roster.reduce((s,p)=>s+(p.cap||0),0);
+  const top=[...players].sort((a,b)=>b.pts-a.pts)[0];
+  const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
+  const ftN=[...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))].length;
+  document.getElementById('statCards').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Roster players</div><div class="stat-val">${roster.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Cap committed</div><div class="stat-val" style="font-size:16px">$${cap.toFixed(1)}M</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:3px">${Math.round(cap/88*100)}% of $88M</div></div>
+    <div class="stat-card"><div class="stat-label">Cap remaining</div><div class="stat-val" style="font-size:16px">$${(88-cap).toFixed(1)}M</div></div>
+    <div class="stat-card"><div class="stat-label">From Yahoo</div><div class="stat-val">${yahooN}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:3px">${ftN} fantasy teams</div></div>
+    <div class="stat-card"><div class="stat-label">Top proj. scorer</div>
+      <div class="stat-val" style="font-size:13px;line-height:1.3;margin-top:2px">${top?.name||'—'}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:2px">${top?.pts||0} pts</div></div>
+  `;
+}
+
+function openAdd(){
+  editId=null;
+  document.getElementById('modalTitle').textContent='Add player';
+  ['fName','fTeam','fCap','fPts'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fPos').value='C';
+  document.getElementById('fStatus').value='roster';
+  document.getElementById('modal').style.display='flex';
+}
+function openEdit(id){
+  const p=players.find(x=>x.id===id); if(!p) return;
+  editId=id;
+  document.getElementById('modalTitle').textContent='Edit player';
+  document.getElementById('fName').value=p.name;
+  document.getElementById('fTeam').value=p.team;
+  document.getElementById('fPos').value=p.pos;
+  document.getElementById('fCap').value=p.cap;
+  document.getElementById('fPts').value=p.pts;
+  document.getElementById('fStatus').value=p.status;
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+function savePlayer(){
+  const name=document.getElementById('fName').value.trim();
+  if(!name){alert('Enter a player name.');return;}
+  const team=document.getElementById('fTeam').value.trim().toUpperCase()||'—';
+  const pos=document.getElementById('fPos').value;
+  const cap=parseFloat(document.getElementById('fCap').value)||0;
+  const pts=parseInt(document.getElementById('fPts').value)||0;
+  const status=document.getElementById('fStatus').value;
+  if(editId!==null){
+    const idx=players.findIndex(p=>p.id===editId);
+    if(idx>-1) players[idx]={...players[idx],name,team,pos,cap,pts,status};
+  } else {
+    const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
+    players.push({id:newId,name,team,pos,cap,pts,status,source:'manual',fantasyTeam:''});
+  }
+  lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render(); closeModal();
+  toast(editId!==null?'Player updated.':'Player added.');
+}
+function deletePlayer(id){
+  const p=players.find(x=>x.id===id);
+  if(!p||!confirm(`Remove ${p.name}?`)) return;
+  players=players.filter(x=>x.id!==id);
+  lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
+  toast('Player removed.');
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3500);
+}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+load();
+</script>
+</body>
+</html>
