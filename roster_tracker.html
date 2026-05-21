@@ -24,6 +24,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-primary:hover{background:#0C447C}
 .btn-yahoo{background:#6001D2;color:#fff;border-color:#6001D2}
 .btn-yahoo:hover{background:#4a00a8}
+.btn-nhl{background:#F47F20;color:#fff;border-color:#F47F20}
+.btn-nhl:hover{background:#1a1a18;border-color:#1a1a18}
 .tbl-wrap{overflow-x:auto;border:1px solid #eee;border-radius:10px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em}
@@ -39,7 +41,7 @@ tr:hover td{background:#fafaf8}
 .source-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;flex-shrink:0}
 .dot-manual{background:#9ca3af}
 .dot-yahoo{background:#6001D2}
-.dot-nhl{background:#0ea5e9}
+.dot-nhl{background:#F47F20}
 .edit-btn,.del-btn{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:14px;color:#9ca3af}
 .edit-btn:hover{color:#185FA5;background:#eff6ff}
 .del-btn:hover{color:#dc2626;background:#fef2f2}
@@ -82,7 +84,7 @@ tr:hover td{background:#fafaf8}
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
-    <button class="btn" id="nhlBtn" onclick="syncAllNHL()" style="border-color:#0ea5e9;color:#0ea5e9">🏒 Sync NHL</button>
+    <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
     <button class="btn" id="capBtn" onclick="syncCapHits()" style="border-color:#27500A;color:#27500A">💰 Sync Cap Hits</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
   </div>
@@ -246,7 +248,7 @@ async function syncAllNHL(){
   if(!proxyOk){ toast('Start the proxy first.'); return; }
   const btn = document.getElementById('nhlBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="border-top-color:#0ea5e9"></span>Loading…';
+  btn.innerHTML = '<span class="spinner"></span>Loading…';
   try {
     const nr = await fetch('/nhlrosters').then(r=>r.json());
     if(nr.error) throw new Error(nr.error);
