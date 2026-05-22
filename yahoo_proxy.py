@@ -466,11 +466,14 @@ def signings():
             cap = round(float(p["cap_hit"]) / 1_000_000, 4)
             # First occurrence wins (pages sorted sign_date DESC = most recent first)
             if key not in all_players:
+                exp_year = int(p["exp"].split("-")[0]) if p.get("exp") else 0
                 all_players[key] = {
                     "name": full,
                     "cap": cap,
                     "team": p.get("sign_team_code", ""),
                     "nhl_id": p.get("p_nhl_id", ""),
+                    "term": int(p.get("len") or 0),
+                    "exp_year": exp_year,
                 }
 
     process_page(first["p"])
