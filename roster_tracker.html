@@ -957,9 +957,9 @@ function loadDraft(){ draftState = lsGet(LS_DRAFT) || {picks: []}; }
 function saveDraft(){ lsSet(LS_DRAFT, draftState); }
 function resetDraft(){ if(confirm('Reset the entire draft?')){ draftState={picks:[]}; saveDraft(); renderDraftView(); } }
 
-function makeDraftPick(player, pos, nhlTeam, cap, pts2526){
+function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   const team = DRAFT_TEAMS[draftState.picks.length % 9];
-  draftState.picks.push({team, player, pos, nhlTeam, cap, pts2526: pts2526||0});
+  draftState.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   saveDraft();
   document.getElementById('draftSearch').value = '';
   document.getElementById('draftResults').style.display = 'none';
@@ -1037,23 +1037,26 @@ function renderDraftView(){
       <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
       <div class="draft-row-pos"><span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span></div>
       <div class="draft-row-player">${showPlayer
-        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.pts2526?` &bull; <strong>${pick.pts2526}pts</strong>`:''}`
+        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}`
         : ''}</div>
     </div>`;
   }
 
   document.getElementById('draftColumn').innerHTML = html;
 
-  // Standings panel: rank teams by total pts2526 across all picks
+  // Standings panel: rank teams by total proj pts (p.pts) across their 26-27 roster
   const ptsByTeam = {};
   for(const t of DRAFT_TEAMS) ptsByTeam[t] = 0;
-  for(const pick of picks) ptsByTeam[pick.team] = (ptsByTeam[pick.team]||0) + (pick.pts2526||0);
+  for(const p of players){
+    if(p.fantasyTeam && ptsByTeam.hasOwnProperty(p.fantasyTeam))
+      ptsByTeam[p.fantasyTeam] += (p.pts||0);
+  }
   const ranked = [...DRAFT_TEAMS].sort((a,b) => ptsByTeam[b] - ptsByTeam[a]);
   const standingsHtml = `
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.5rem">25-26 Pts Standings</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.5rem">Proj Pts Standings</div>
     ${ranked.map((t,i) => {
       const logo = teamLogos[t];
-      const pts  = ptsByTeam[t];
+      const pts  = ptsByTeam[t] || 0;
       const isLeading = i === 0 && pts > 0;
       return `<div style="display:flex;align-items:center;gap:7px;padding:5px 4px;border-radius:6px;${isLeading?'background:#fff;':''}">
         <span style="font-size:11px;font-weight:700;color:#9ca3af;width:14px;text-align:right">${i+1}</span>
@@ -1081,7 +1084,7 @@ function renderDraftSearch(){
   if(!fa.length){ res.style.display='none'; return; }
   res.style.display = '';
   res.innerHTML = fa.map(p =>
-    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team||'—')}',${p.cap||0},${p.pts2526||0})">
+    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team||'—')}',${p.cap||0},${p.pts||0})">
       <span>${esc(p.name)}</span>
       <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
     </div>`
