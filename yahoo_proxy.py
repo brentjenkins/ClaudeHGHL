@@ -481,6 +481,87 @@ def caphits():
     return jsonify({"ok": True, "players": all_players, "errors": errors, "count": len(all_players)})
 
 
+# ── PuckPedia signings scraper ────────────────────────────────────────────────
+
+_POS_GROUP_MAP = {"G": "G", "D": "D"}  # anything else → "F"
+
+
+@app.route("/signings")
+def signings():
+    try:
+        import cloudscraper, urllib.parse
+    except ImportError:
+        return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
+
+    scraper = cloudscraper.create_scraper()
+    all_players = {}
+    errors = []
+
+    # Fetch all signings from 2019-07-01 onward; filter to contracts active in 2026-27
+    SEASON_CUTOFF = "2026-2027"
+    DATE_FROM = "2019-07-01"
+    DATE_TO = "2027-12-31"
+
+    q_base = {
+        "pageSize": 100,
+        "sortBy": "sign_date",
+        "sortDirection": "DESC",
+        "sign_date": [DATE_FROM, DATE_TO],
+    }
+
+    # First request to get total page count
+    q_base["curPage"] = 1
+    resp = scraper.get(
+        "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+        timeout=20,
+    )
+    resp.raise_for_status()
+    first = resp.json()["data"]
+    total_count = first["meta"]["count"]
+    total_pages = (total_count + 99) // 100
+    print(f"Signings: {total_count} records, {total_pages} pages")
+
+    def process_page(records):
+        for p in records:
+            if p.get("exp", "") < SEASON_CUTOFF:
+                continue
+            pos = p.get("pos", "C")
+            pg = _POS_GROUP_MAP.get(pos, "F")
+            full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
+            if not full:
+                continue
+            key = f"{full.lower()}_{pg}"
+            cap = round(float(p["cap_hit"]) / 1_000_000, 4)
+            # First occurrence wins (pages sorted sign_date DESC = most recent first)
+            if key not in all_players:
+                all_players[key] = {
+                    "name": full,
+                    "cap": cap,
+                    "team": p.get("sign_team_code", ""),
+                    "nhl_id": p.get("p_nhl_id", ""),
+                }
+
+    process_page(first["p"])
+
+    for page in range(2, total_pages + 1):
+        try:
+            q_base["curPage"] = page
+            r = scraper.get(
+                "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+                timeout=20,
+            )
+            r.raise_for_status()
+            process_page(r.json()["data"]["p"])
+            print(f"  page {page}/{total_pages} ({len(all_players)} active so far)")
+            time.sleep(0.15)
+        except Exception as e:
+            errors.append(f"page {page}: {str(e)}")
+            print(f"  ✗ page {page}: {e}")
+
+    print(f"Signings done: {len(all_players)} active contracts, {len(errors)} errors")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 55)
