@@ -136,6 +136,18 @@ tr:hover td{background:#fafaf8}
     <option value="manual">Manual</option>
   </select></div>
 
+<div class="controls" style="margin-top:0;margin-bottom:.75rem">
+  <span style="font-size:12px;color:#888;white-space:nowrap">ABP pts source:</span>
+  <select id="abpPtsSrc" onchange="abpPtsSrc=this.value;render()" style="flex:0">
+    <option value="pts2526">25-26 Pts/G</option>
+    <option value="pts">Proj Pts/G</option>
+  </select>
+  <span style="font-size:12px;color:#888;white-space:nowrap">min GP</span>
+  <input type="number" id="abpMinGP" value="5" min="1" max="82" style="flex:0;width:58px" oninput="abpMinGP=+this.value||1;render()">
+  <span style="font-size:12px;color:#888;white-space:nowrap">cap wiggle $M</span>
+  <input type="number" id="abpWiggle" value="0.1" min="0" max="5" step="0.05" style="flex:0;width:68px" oninput="abpWiggle=+this.value;render()">
+</div>
+
 <div class="tbl-wrap">
 <table>
 <thead><tr>
@@ -150,6 +162,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('ptsperm')">Pts/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
   <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
+  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better pts/game">ABP <span id="sort-abp"></span></th>
   <th onclick="setSortCol('suggestedMove')">Suggested Move <span id="sort-suggestedMove"></span></th>
   <th></th>
 </tr></thead>
@@ -569,15 +582,16 @@ function render(){
   });
 
   const dropIds = computeDrops(players);
+  const abpMap  = computeABP(players);
   const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : sortCol==='age' ? (calcAge(a)??-1) : (a[sortCol]??'');
-    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : sortCol==='age' ? (calcAge(b)??-1) : (b[sortCol]??'');
+    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : sortCol==='age' ? (calcAge(a)??-1) : sortCol==='abp' ? (abpMap.get(a.id)??-1) : (a[sortCol]??'');
+    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : sortCol==='age' ? (calcAge(b)??-1) : sortCol==='abp' ? (abpMap.get(b.id)??-1) : (b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','suggestedMove'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','abp','suggestedMove'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -610,13 +624,14 @@ function render(){
       <td>${p.pts2526>0&&p.gp2526>0&&p.cap>0?((p.pts2526/p.gp2526*82)/p.cap).toFixed(1):'—'}</td>
       <td>${pg==='G'?'—':(p.pts>0?p.pts:'—')}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}</td>
+      <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
       <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="13" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="14" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -625,6 +640,38 @@ function render(){
 
 const CAP_LIMIT = 104;
 const NHL_SEASON_YEAR = 2026; // first calendar year of the current season (2026-27)
+
+// ABP config — updated live by the controls row
+let abpPtsSrc = 'pts2526';
+let abpMinGP  = 5;
+let abpWiggle = 0.1;   // $M
+
+function getPPG(p){
+  if(abpPtsSrc === 'pts2526'){
+    if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
+    return p.pts2526 / p.gp2526;
+  } else {
+    if(!(p.pts > 0)) return null;
+    return p.pts / 82;
+  }
+}
+
+function computeABP(allPlayers){
+  // Free agents with a cap hit and enough data to evaluate
+  const fas = allPlayers.filter(p => !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null);
+  const abpMap = new Map();
+  for(const p of allPlayers){
+    if(!p.fantasyTeam){ abpMap.set(p.id, null); continue; }
+    const ppg = getPPG(p);
+    if(ppg === null || p.cap <= 0){ abpMap.set(p.id, null); continue; }
+    const pg  = posGroup(p.pos);
+    const cap = p.cap + abpWiggle;
+    abpMap.set(p.id, fas.filter(fa =>
+      posGroup(fa.pos) === pg && fa.cap <= cap && getPPG(fa) > ppg
+    ).length);
+  }
+  return abpMap;
+}
 
 const calcAge = p => {
   if(!p.birthDate) return null;
