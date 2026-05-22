@@ -633,19 +633,26 @@ function renderTransactions(){
 }
 
 function populateTeamFilter(){
+  const el = document.getElementById('filterTeam');
+  const prev = el.value;
   const teams=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
-  document.getElementById('filterTeam').innerHTML='<option value="">All teams</option>'+teams.map(t=>`<option>${t}</option>`).join('');
+  el.innerHTML='<option value="">All teams</option>'+teams.map(t=>`<option>${t}</option>`).join('');
+  if(prev) el.value = prev;
 }
 
 function populateFantasyFilter() {
+  const el2526 = document.getElementById('filterFantasy2526');
+  const el2627 = document.getElementById('filterFantasy');
+  const prev2526 = el2526.value;
+  const prev2627 = el2627.value;
   const teams2526 = [...new Set(players.map(p => p.fantasyTeam2526).filter(Boolean))].sort();
   const teams2627 = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
-  document.getElementById('filterFantasy2526').innerHTML =
-    '<option value="">All 25-26 teams</option>' +
+  el2526.innerHTML = '<option value="">All 25-26 teams</option>' +
     teams2526.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
-  document.getElementById('filterFantasy').innerHTML =
-    '<option value="">All 26-27 teams</option>' +
+  el2627.innerHTML = '<option value="">All 26-27 teams</option>' +
     teams2627.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if(prev2526) el2526.value = prev2526;
+  if(prev2627) el2627.value = prev2627;
 }
 
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
