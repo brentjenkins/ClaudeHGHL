@@ -75,6 +75,8 @@ tr:hover td{background:#fafaf8}
 .edit-btn:hover{color:#185FA5;background:#eff6ff}
 .drop-btn{color:#6b7280;border:1px solid #d1d5db;font-weight:600;font-size:12px;padding:2px 7px}
 .drop-btn:hover{color:#dc2626;border-color:#dc2626;background:#fef2f2}
+.add-btn{color:#16a34a;border:1px solid #86efac;font-weight:600;font-size:12px;padding:2px 7px;background:none;border-radius:4px;cursor:pointer}
+.add-btn:hover{background:#f0fdf4;border-color:#16a34a}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:999}
 .modal{background:#fff;border-radius:12px;border:1px solid #eee;padding:1.5rem;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.12)}
 .modal h2{font-size:18px;font-weight:600;margin-bottom:1.25rem}
@@ -290,6 +292,21 @@ tr:hover td{background:#fafaf8}
   <div class="modal-actions">
     <button class="btn" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="savePlayer()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- Assign-team modal -->
+<div class="modal-bg" id="assignModal" style="display:none">
+<div class="modal" style="width:320px">
+  <h2>Add to 26-27 roster</h2>
+  <div style="font-size:14px;color:#555;margin-bottom:1rem" id="assignPlayerName"></div>
+  <div class="field"><label>Fantasy team</label>
+    <select id="assignTeamSelect"></select>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeAssignModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="confirmAssign()">Add</button>
   </div>
 </div>
 </div>
@@ -768,7 +785,9 @@ function render(){
       <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
-        ${p.fantasyTeam?`<button class="drop-btn" onclick="dropPlayer(${p.id})" title="Drop from roster">Drop</button>`:''}
+        ${p.fantasyTeam
+          ? `<button class="drop-btn" onclick="dropPlayer(${p.id})" title="Drop from roster">Drop</button>`
+          : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
   }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
@@ -1222,6 +1241,26 @@ function dropPlayer(id){
   p.fantasyTeam='';
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
   toast(`${p.name} dropped.`);
+}
+let _assignId = null;
+function openAssignTeam(id){
+  const p=players.find(x=>x.id===id); if(!p) return;
+  _assignId = id;
+  document.getElementById('assignPlayerName').textContent = p.name;
+  const teams = [...new Set(players.map(p=>p.fantasyTeam2526).filter(Boolean))].sort();
+  document.getElementById('assignTeamSelect').innerHTML =
+    '<option value="">— Free agent —</option>' +
+    teams.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  document.getElementById('assignModal').style.display='flex';
+}
+function closeAssignModal(){ document.getElementById('assignModal').style.display='none'; _assignId=null; }
+function confirmAssign(){
+  const p=players.find(x=>x.id===_assignId); if(!p) return;
+  const team=document.getElementById('assignTeamSelect').value;
+  p.fantasyTeam=team;
+  lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
+  toast(team ? `${p.name} added to ${team}.` : `${p.name} set as free agent.`);
+  closeAssignModal();
 }
 function toast(msg){
   const el=document.getElementById('toast');
