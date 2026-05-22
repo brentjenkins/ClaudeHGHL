@@ -71,9 +71,10 @@ tr:hover td{background:#fafaf8}
 .dot-manual{background:#9ca3af}
 .dot-yahoo{background:#6001D2}
 .dot-nhl{background:#F47F20}
-.edit-btn,.del-btn{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:14px;color:#9ca3af}
+.edit-btn,.drop-btn{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:13px;color:#9ca3af}
 .edit-btn:hover{color:#185FA5;background:#eff6ff}
-.del-btn:hover{color:#dc2626;background:#fef2f2}
+.drop-btn{color:#6b7280;border:1px solid #d1d5db;font-weight:600;font-size:12px;padding:2px 7px}
+.drop-btn:hover{color:#dc2626;border-color:#dc2626;background:#fef2f2}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:999}
 .modal{background:#fff;border-radius:12px;border:1px solid #eee;padding:1.5rem;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.12)}
 .modal h2{font-size:18px;font-weight:600;margin-bottom:1.25rem}
@@ -200,8 +201,11 @@ tr:hover td{background:#fafaf8}
     <option value="non-roster">Non-roster (minors/LTIR)</option>
   </select>
   <select id="filterTeam" onchange="render()"></select>
+  <select id="filterFantasy2526" onchange="render()">
+    <option value="">All 25-26 teams</option>
+  </select>
   <select id="filterFantasy" onchange="render()">
-    <option value="">All fantasy teams</option>
+    <option value="">All 26-27 teams</option>
   </select>
   <select id="filterSource" onchange="render()">
     <option value="">All sources</option>
@@ -231,7 +235,8 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('pos')">Pos <span id="sort-pos"></span></th>
   <th onclick="setSortCol('age')">Age <span id="sort-age"></span></th>
   <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
-  <th onclick="setSortCol('fantasyTeam')">Fantasy team <span id="sort-fantasyTeam"></span></th>
+  <th onclick="setSortCol('fantasyTeam2526')">25-26 Team <span id="sort-fantasyTeam2526"></span></th>
+  <th onclick="setSortCol('fantasyTeam')">26-27 Team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('pts2526')">25-26 <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('gp2526')">GP <span id="sort-gp2526"></span></th>
@@ -239,7 +244,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
   <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better pts/game">ABP <span id="sort-abp"></span></th>
-  <th onclick="setSortCol('suggestedMove')">Suggested Move <span id="sort-suggestedMove"></span></th>
+  <th onclick="setSortCol('prediction')">Prediction <span id="sort-prediction"></span></th>
   <th></th>
 </tr></thead>
 <tbody id="tbody"></tbody>
@@ -273,6 +278,9 @@ tr:hover td{background:#fafaf8}
   <div class="field"><label>Projected points (2026–27)</label><input id="fPts" type="number" step="1" placeholder="e.g. 95"></div>
   <div class="field"><label>NHL roster status</label>
     <select id="fStatus"><option value="roster">NHL roster</option><option value="non-roster">Non-roster (minors/LTIR)</option></select>
+  </div>
+  <div class="field"><label>26-27 Fantasy team</label>
+    <select id="fFantasy2627"></select>
   </div>
   <div class="modal-actions">
     <button class="btn" onclick="closeModal()">Cancel</button>
@@ -363,6 +371,15 @@ function load(){
   players      = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions = lsGet(LS_TX)      || [];
   teamLogos    = lsGet(LS_LOGOS)   || {};
+  // migrate: stamp fantasyTeam2526 from fantasyTeam if not yet set
+  let migrated = false;
+  for(const p of players){
+    if(p.fantasyTeam2526 === undefined){
+      p.fantasyTeam2526 = p.fantasyTeam || '';
+      migrated = true;
+    }
+  }
+  if(migrated) lsSet(LS_PLAYERS, players);
   dedup(); loadDraft();
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
   checkProxy();
@@ -532,11 +549,12 @@ async function doSync(){
       const ex = players.find(p=>normName(p.name).toLowerCase()===normName(yp.name).toLowerCase() && posGroup(p.pos)===posGroup(yp.pos));
       if(ex){
         ex.fantasyTeam = yp.fantasyTeam;
+        ex.fantasyTeam2526 = yp.fantasyTeam;
         if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
         ex.source = 'yahoo'; updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(p=>p.id))+1 : 1;
-        players.push({id:newId,name:yp.name,team:yp.nhlTeam,pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',fantasyTeam:yp.fantasyTeam});
+        players.push({id:newId,name:yp.name,team:yp.nhlTeam,pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',fantasyTeam:yp.fantasyTeam,fantasyTeam2526:yp.fantasyTeam});
         added++;
       }
     }
@@ -598,10 +616,14 @@ function populateTeamFilter(){
 }
 
 function populateFantasyFilter() {
-  const teams = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
+  const teams2526 = [...new Set(players.map(p => p.fantasyTeam2526).filter(Boolean))].sort();
+  const teams2627 = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
+  document.getElementById('filterFantasy2526').innerHTML =
+    '<option value="">All 25-26 teams</option>' +
+    teams2526.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   document.getElementById('filterFantasy').innerHTML =
-    '<option value="">All fantasy teams</option>' +
-    teams.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    '<option value="">All 26-27 teams</option>' +
+    teams2627.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
 }
 
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
@@ -675,14 +697,16 @@ function render(){
   const ft=document.getElementById('filterTeam').value;
   const fs=document.getElementById('filterSource').value;
   const ff=document.getElementById('filterFantasy').value;
+  const ff2526=document.getElementById('filterFantasy2526').value;
 
   let rows=players.filter(p=>{
-    if(q&&![p.name,p.team,p.fantasyTeam||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team,p.fantasyTeam||'',p.fantasyTeam2526||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(fp&&posGroup(p.pos)!==fp) return false;
     if(fr&&p.status!==fr) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
-    if(ff && (p.fantasyTeam||'')!== ff) return false;
+    if(ff && (p.fantasyTeam||'')!==ff) return false;
+    if(ff2526 && (p.fantasyTeam2526||'')!==ff2526) return false;
     return true;
   });
 
@@ -690,13 +714,13 @@ function render(){
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : sortCol==='age' ? (calcAge(a)??-1) : sortCol==='abp' ? (abpMap.get(a.id)??-1) : (a[sortCol]??'');
-    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : sortCol==='age' ? (calcAge(b)??-1) : sortCol==='abp' ? (abpMap.get(b.id)??-1) : (b[sortCol]??'');
+    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='prediction' ? (dropIds.has(a.id)?0:1) : sortCol==='age' ? (calcAge(a)??-1) : sortCol==='abp' ? (abpMap.get(a.id)??-1) : (a[sortCol]??'');
+    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='prediction' ? (dropIds.has(b.id)?0:1) : sortCol==='age' ? (calcAge(b)??-1) : sortCol==='abp' ? (abpMap.get(b.id)??-1) : (b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','abp','suggestedMove'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','abp','prediction'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -717,6 +741,12 @@ function render(){
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge(p)??'—'}</td>
       <td><div style="display:flex;align-items:center;gap:5px">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy">`:''}${esc(p.team||'—')}</div></td>
+      <td style="color:${p.fantasyTeam2526?'#1a1a18':'#9ca3af'}">
+        <div style="display:flex;align-items:center;gap:5px">
+          ${p.fantasyTeam2526&&teamLogos[p.fantasyTeam2526]?`<img src="${teamLogos[p.fantasyTeam2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
+          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.fantasyTeam2526||'—')}</span>
+        </div>
+      </td>
       <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">
         <div style="display:flex;align-items:center;gap:5px">
           ${p.fantasyTeam&&teamLogos[p.fantasyTeam]?`<img src="${teamLogos[p.fantasyTeam]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
@@ -733,10 +763,10 @@ function render(){
       <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
-        <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
+        ${p.fantasyTeam?`<button class="drop-btn" onclick="dropPlayer(${p.id})" title="Drop from roster">Drop</button>`:''}
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="14" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -1109,12 +1139,19 @@ function updateStats(){
   }).join('');
 }
 
+function populateFantasyTeamModal(selected){
+  const teams = [...new Set(players.map(p=>p.fantasyTeam2526).filter(Boolean))].sort();
+  const sel = document.getElementById('fFantasy2627');
+  sel.innerHTML = '<option value="">— Free agent —</option>' +
+    teams.map(t=>`<option value="${esc(t)}"${t===selected?' selected':''}>${esc(t)}</option>`).join('');
+}
 function openAdd(){
   editId=null;
   document.getElementById('modalTitle').textContent='Add player';
   ['fName','fTeam','fCap','fPts'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fPos').value='C';
   document.getElementById('fStatus').value='roster';
+  populateFantasyTeamModal('');
   document.getElementById('modal').style.display='flex';
 }
 function openEdit(id){
@@ -1127,6 +1164,7 @@ function openEdit(id){
   document.getElementById('fCap').value=p.cap;
   document.getElementById('fPts').value=p.pts;
   document.getElementById('fStatus').value=p.status;
+  populateFantasyTeamModal(p.fantasyTeam||'');
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
@@ -1138,22 +1176,23 @@ function savePlayer(){
   const cap=parseFloat(document.getElementById('fCap').value)||0;
   const pts=parseInt(document.getElementById('fPts').value)||0;
   const status=document.getElementById('fStatus').value;
+  const ft2627=document.getElementById('fFantasy2627').value;
   if(editId!==null){
     const idx=players.findIndex(p=>p.id===editId);
-    if(idx>-1) players[idx]={...players[idx],name,team,pos,cap,pts,status};
+    if(idx>-1) players[idx]={...players[idx],name,team,pos,cap,pts,status,fantasyTeam:ft2627};
   } else {
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
-    players.push({id:newId,name,team,pos,cap,pts,status,source:'manual',fantasyTeam:''});
+    players.push({id:newId,name,team,pos,cap,pts,status,source:'manual',fantasyTeam:ft2627,fantasyTeam2526:''});
   }
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render(); closeModal();
   toast(editId!==null?'Player updated.':'Player added.');
 }
-function deletePlayer(id){
+function dropPlayer(id){
   const p=players.find(x=>x.id===id);
-  if(!p||!confirm(`Remove ${p.name}?`)) return;
-  players=players.filter(x=>x.id!==id);
+  if(!p) return;
+  p.fantasyTeam='';
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
-  toast('Player removed.');
+  toast(`${p.name} dropped.`);
 }
 function toast(msg){
   const el=document.getElementById('toast');
