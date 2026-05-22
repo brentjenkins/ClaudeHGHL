@@ -140,22 +140,27 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <div id="view-draft" style="display:none">
-  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:1100px;margin-bottom:.75rem">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:1380px;margin-bottom:.75rem">
     <span id="draftRoundLabel" style="font-size:22px;font-weight:700">Round 1</span>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="undoLastPick()" style="height:28px;font-size:12px">↩ Undo</button>
       <button class="btn" onclick="resetDraft()" style="height:28px;font-size:12px;color:#dc2626;border-color:#dc2626">Reset Draft</button>
     </div>
   </div>
-  <div class="draft-col" id="draftColumn"></div>
-  <div class="draft-entry">
-    <div style="font-size:12px;color:#888;margin-bottom:.4rem" id="draftOnClock"></div>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
-             oninput="renderDraftSearch()"
-             style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
+  <div style="display:flex;gap:1.5rem;align-items:flex-start;max-width:1380px">
+    <div style="flex:1;min-width:0">
+      <div class="draft-col" id="draftColumn"></div>
+      <div class="draft-entry">
+        <div style="font-size:12px;color:#888;margin-bottom:.4rem" id="draftOnClock"></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
+                 oninput="renderDraftSearch()"
+                 style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
+        </div>
+        <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
+      </div>
     </div>
-    <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
+    <div id="draftStandings" style="width:240px;flex-shrink:0;background:#f7f7f5;border-radius:10px;padding:.75rem;border:1px solid #e5e7eb"></div>
   </div>
 </div>
 
@@ -952,9 +957,9 @@ function loadDraft(){ draftState = lsGet(LS_DRAFT) || {picks: []}; }
 function saveDraft(){ lsSet(LS_DRAFT, draftState); }
 function resetDraft(){ if(confirm('Reset the entire draft?')){ draftState={picks:[]}; saveDraft(); renderDraftView(); } }
 
-function makeDraftPick(player, pos, nhlTeam, cap){
+function makeDraftPick(player, pos, nhlTeam, cap, pts2526){
   const team = DRAFT_TEAMS[draftState.picks.length % 9];
-  draftState.picks.push({team, player, pos, nhlTeam, cap});
+  draftState.picks.push({team, player, pos, nhlTeam, cap, pts2526: pts2526||0});
   saveDraft();
   document.getElementById('draftSearch').value = '';
   document.getElementById('draftResults').style.display = 'none';
@@ -1032,12 +1037,33 @@ function renderDraftView(){
       <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
       <div class="draft-row-pos"><span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span></div>
       <div class="draft-row-player">${showPlayer
-        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}`
+        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.pts2526?` &bull; <strong>${pick.pts2526}pts</strong>`:''}`
         : ''}</div>
     </div>`;
   }
 
   document.getElementById('draftColumn').innerHTML = html;
+
+  // Standings panel: rank teams by total pts2526 across all picks
+  const ptsByTeam = {};
+  for(const t of DRAFT_TEAMS) ptsByTeam[t] = 0;
+  for(const pick of picks) ptsByTeam[pick.team] = (ptsByTeam[pick.team]||0) + (pick.pts2526||0);
+  const ranked = [...DRAFT_TEAMS].sort((a,b) => ptsByTeam[b] - ptsByTeam[a]);
+  const standingsHtml = `
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.5rem">25-26 Pts Standings</div>
+    ${ranked.map((t,i) => {
+      const logo = teamLogos[t];
+      const pts  = ptsByTeam[t];
+      const isLeading = i === 0 && pts > 0;
+      return `<div style="display:flex;align-items:center;gap:7px;padding:5px 4px;border-radius:6px;${isLeading?'background:#fff;':''}">
+        <span style="font-size:11px;font-weight:700;color:#9ca3af;width:14px;text-align:right">${i+1}</span>
+        ${logo?`<img src="${esc(logo)}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:'<div style="width:20px;height:20px;border-radius:3px;background:#e5e7eb;flex-shrink:0"></div>'}
+        <span style="flex:1;font-size:12px;font-weight:${isLeading?'700':'400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t)}</span>
+        <span style="font-size:12px;font-weight:600;color:${isLeading?'#185FA5':'#1a1a18'}">${pts||'—'}</span>
+      </div>`;
+    }).join('')}`;
+  document.getElementById('draftStandings').innerHTML = standingsHtml;
+
   renderDraftSearch();
 }
 
@@ -1055,7 +1081,7 @@ function renderDraftSearch(){
   if(!fa.length){ res.style.display='none'; return; }
   res.style.display = '';
   res.innerHTML = fa.map(p =>
-    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team||'—')}',${p.cap||0})">
+    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team||'—')}',${p.cap||0},${p.pts2526||0})">
       <span>${esc(p.name)}</span>
       <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
     </div>`
