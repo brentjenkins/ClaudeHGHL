@@ -356,6 +356,13 @@ def index():
                     mimetype="text/html")
 
 
+@app.route("/muller.webp")
+def muller_image():
+    from flask import send_file as _sf
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "muller.webp")
+    return _sf(path, mimetype="image/webp")
+
+
 # ── Team lists ────────────────────────────────────────────────────────────────
 # Used for PuckPedia cap-hit scraping (ARI kept for legacy depth-chart pages)
 NHL_TEAMS = [

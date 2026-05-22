@@ -104,6 +104,27 @@ tr:hover td{background:#fafaf8}
 .toast.show{opacity:1}
 /* ── Killer Whales watermark canvas ──────────────────────────────── */
 #whaleCanvas{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;display:none}
+/* ── Muller Time! watermark ──────────────────────────────────────── */
+#mullerOverlay{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none;
+  overflow:hidden;background:rgba(0,0,0,.35)}
+#mullerOverlay img{position:absolute;bottom:-110%;left:-10%;
+  height:85vh;max-width:70vw;object-fit:contain;border-radius:12px;
+  filter:drop-shadow(0 0 40px rgba(255,215,0,.8));
+  animation:mullerRise 1.1s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes mullerRise{
+  0%  {bottom:-110%;left:-10%;opacity:0;transform:rotate(-4deg) scale(.9)}
+  55% {opacity:1}
+  100%{bottom:2vh;left:18%;opacity:1;transform:rotate(3deg) scale(1)}
+}
+#mullerOverlay .muller-label{position:absolute;top:24px;left:50%;
+  transform:translateX(-50%);font-size:56px;font-weight:900;
+  color:#fff;text-shadow:0 0 32px rgba(255,215,0,1),0 4px 10px rgba(0,0,0,.85);
+  white-space:nowrap;letter-spacing:.04em;opacity:0;
+  animation:mullerPulse 1.5s ease-in-out infinite 1.1s}
+@keyframes mullerPulse{
+  0%,100%{opacity:1;transform:translateX(-50%) scale(1)}
+  50%    {opacity:.85;transform:translateX(-50%) scale(1.04)}
+}
 </style>
 </head>
 <body>
@@ -257,6 +278,11 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <canvas id="whaleCanvas"></canvas>
+
+<div id="mullerOverlay">
+  <div class="muller-label">MULLER TIME! 🏒</div>
+  <img src="/muller.webp" alt="Kirk Muller raising the Cup">
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -834,6 +860,25 @@ function _whaleFrame(){
   _whaleRAF = requestAnimationFrame(_whaleFrame);
 }
 
+function showMullerOverlay(show){
+  const el = document.getElementById('mullerOverlay');
+  if(!el) return;
+  if(show){
+    el.style.display = 'block';
+    // Re-trigger animation by replacing the img
+    const img = el.querySelector('img');
+    img.style.animation = 'none';
+    img.offsetHeight; // reflow
+    img.style.animation = '';
+    const lbl = el.querySelector('.muller-label');
+    lbl.style.animation = 'none';
+    lbl.offsetHeight;
+    lbl.style.animation = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 function loadDraft(){ draftState = lsGet(LS_DRAFT) || {picks: []}; }
 function saveDraft(){ lsSet(LS_DRAFT, draftState); }
 function resetDraft(){ if(confirm('Reset the entire draft?')){ draftState={picks:[]}; saveDraft(); renderDraftView(); } }
@@ -860,7 +905,7 @@ function setView(v){
   currentView = v;
   document.getElementById('view-roster').style.display = v==='roster' ? '' : 'none';
   document.getElementById('view-draft').style.display  = v==='draft'  ? '' : 'none';
-  if(v==='roster') stopWhaleAnimation();
+  if(v==='roster'){ stopWhaleAnimation(); showMullerOverlay(false); }
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', (i===0 && v==='roster') || (i===1 && v==='draft'));
   });
@@ -874,6 +919,7 @@ function renderDraftView(){
 
   const onClock = DRAFT_TEAMS[total % 9];
   if(onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
+  showMullerOverlay(onClock === 'Muller Time!');
   document.getElementById('draftRoundLabel').textContent = `Round ${curRound}`;
   document.getElementById('draftOnClock').textContent =
     `On the clock: ${onClock} — Pick ${total + 1} (Round ${curRound}, #${total % 9 + 1})`;
