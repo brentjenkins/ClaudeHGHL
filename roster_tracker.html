@@ -442,6 +442,19 @@ function dedup(){
   }
 }
 
+// For players signed in 26-27 without a Proj Pts value, use 25-26 total as a fallback.
+// Real projections will overwrite this when available (September).
+function applyProjPtsFallback(){
+  let changed = false;
+  for(const p of players){
+    if(!(p.pts > 0) && p.cap > 0 && p.pts2526 > 0){
+      p.pts = p.pts2526;
+      changed = true;
+    }
+  }
+  if(changed) lsSet(LS_PLAYERS, players);
+}
+
 function load(){
   players      = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions = lsGet(LS_TX)      || [];
@@ -455,6 +468,7 @@ function load(){
     }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
+  applyProjPtsFallback();
   dedup(); loadDraft();
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
   checkProxy();
@@ -478,6 +492,7 @@ async function syncStats(){
         unmatched++;
       }
     }
+    applyProjPtsFallback();
     lsSet(LS_PLAYERS, players);
     lsSet(LS_STATS, d.players);
     render();
@@ -535,6 +550,7 @@ async function syncSignings(){
         unmatched++;
       }
     }
+    applyProjPtsFallback();
     lsSet(LS_PLAYERS, players);
     render();
     const clearedMsg = cleared ? `, ${cleared} expired contracts cleared` : '';
