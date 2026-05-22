@@ -269,7 +269,8 @@ async function syncSignings(){
     const d = await fetch('/signings').then(r=>r.json());
     if(d.error) throw new Error(d.error);
 
-    let matched=0, unmatched=0;
+    const expiredSet = new Set(d.expired || []);
+    let matched=0, cleared=0, unmatched=0;
     for(const p of players){
       const key = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
       if(d.players[key]){
@@ -279,13 +280,18 @@ async function syncSignings(){
         p.contractTerm = s.term || 0;
         p.expYear      = s.exp_year || 0;
         matched++;
+      } else if(expiredSet.has(key)){
+        // Contract expired — clear stale cap data
+        p.cap = 0; p.contractTerm = 0; p.expYear = 0;
+        cleared++;
       } else {
         unmatched++;
       }
     }
     lsSet(LS_PLAYERS, players);
     render();
-    toast(`Signings sync done! ${matched} cap hits updated, ${unmatched} unmatched.`);
+    const clearedMsg = cleared ? `, ${cleared} expired contracts cleared` : '';
+    toast(`Signings sync done! ${matched} updated${clearedMsg}, ${unmatched} unmatched.`);
     if(d.errors.length) console.warn('Signings page errors:', d.errors);
   } catch(e){
     toast('Signings sync failed: '+e.message);

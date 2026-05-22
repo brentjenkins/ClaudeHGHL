@@ -534,35 +534,43 @@ def signings():
     total_pages = (total_count + 99) // 100
     print(f"Signings: {total_count} records, {total_pages} pages")
 
+    expired_keys = set()   # players whose most-recent contract is expired (no active deal)
+
     def process_page(records):
         for p in records:
-            if p.get("exp", "") < SEASON_CUTOFF:
-                continue
+            exp = p.get("exp", "")
             pos = p.get("pos", "C")
             pg = _POS_GROUP_MAP.get(pos, "F")
             full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
             if not full:
                 continue
-            key = f"{full.lower()}_{pg}"
-            cap = round(float(p["cap_hit"]) / 1_000_000, 4)
-            # Also index under nickname variant (e.g. "mitchell" → "mitch")
             first_lower = p.get("p_fn", "").lower()
             nick = _FORMAL_TO_NICK.get(first_lower)
+            key = f"{full.lower()}_{pg}"
             nick_key = f"{nick} {p.get('p_ln','').lower()}_{pg}" if nick else None
-            # First occurrence wins (pages sorted sign_date DESC = most recent first)
-            if key not in all_players:
-                exp_year = int(p["exp"].split("-")[0]) if p.get("exp") else 0
-                entry = {
-                    "name": full,
-                    "cap": cap,
-                    "team": p.get("sign_team_code", ""),
-                    "nhl_id": p.get("p_nhl_id", ""),
-                    "term": int(p.get("len") or 0),
-                    "exp_year": exp_year,
-                }
-                all_players[key] = entry
+
+            if exp >= SEASON_CUTOFF:
+                # Active contract — first occurrence wins (sign_date DESC = most recent first)
+                cap = round(float(p["cap_hit"]) / 1_000_000, 4)
+                if key not in all_players:
+                    exp_year = int(exp.split("-")[0]) if exp else 0
+                    entry = {
+                        "name": full,
+                        "cap": cap,
+                        "team": p.get("sign_team_code", ""),
+                        "nhl_id": p.get("p_nhl_id", ""),
+                        "term": int(p.get("len") or 0),
+                        "exp_year": exp_year,
+                    }
+                    all_players[key] = entry
+                    if nick_key and nick_key not in all_players:
+                        all_players[nick_key] = entry
+            else:
+                # Expired contract — only flag as expired if no active deal was found first
+                if key not in all_players:
+                    expired_keys.add(key)
                 if nick_key and nick_key not in all_players:
-                    all_players[nick_key] = entry
+                    expired_keys.add(nick_key)
 
     process_page(first["p"])
 
@@ -581,8 +589,11 @@ def signings():
             errors.append(f"page {page}: {str(e)}")
             print(f"  ✗ page {page}: {e}")
 
-    print(f"Signings done: {len(all_players)} active contracts, {len(errors)} errors")
-    return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+    # Remove from expired any keys that ended up with an active contract
+    expired_keys -= set(all_players.keys())
+    print(f"Signings done: {len(all_players)} active, {len(expired_keys)} expired, {len(errors)} errors")
+    return jsonify({"ok": True, "players": all_players, "expired": list(expired_keys),
+                    "count": len(all_players), "errors": errors})
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
