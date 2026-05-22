@@ -144,13 +144,19 @@ tr:hover td{background:#fafaf8}
 .summary-col h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1px solid #f0f0ee}
 .summary-col h3.departed-hdr{color:#dc2626}
 .summary-col h3.arrived-hdr{color:#16a34a}
-.summary-player{display:flex;align-items:baseline;gap:6px;padding:3px 0;font-size:13px}
-.summary-player-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary-player-pos{font-size:11px;color:#9ca3af;flex-shrink:0}
-.summary-player-pts{font-size:12px;font-weight:600;flex-shrink:0}
+.summary-player{display:grid;grid-template-columns:24px 1fr 28px 36px;align-items:baseline;gap:4px;padding:3px 0;font-size:13px}
+.summary-player-pos{font-size:11px;font-weight:600;color:#9ca3af}
+.summary-player-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-player-age{font-size:11px;color:#9ca3af;text-align:right}
+.summary-player-pts{font-size:12px;font-weight:600;text-align:right}
 .summary-player.departed .summary-player-name{color:#9ca3af;text-decoration:line-through}
 .summary-player.departed .summary-player-pts{color:#dc2626}
 .summary-player.arrived .summary-player-pts{color:#16a34a}
+.summary-col-total{display:flex;justify-content:flex-end;font-size:12px;font-weight:700;padding:5px 0 0;border-top:1px solid #e5e7eb;margin-top:4px}
+.summary-stats-bar{display:flex;gap:1.5rem;font-size:12px;padding:.6rem .75rem;background:#f7f7f5;border-radius:8px;flex-wrap:wrap}
+.summary-stat{display:flex;flex-direction:column;gap:2px}
+.summary-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af}
+.summary-stat-value{font-weight:700;font-size:14px}
 .summary-nav{display:flex;align-items:center;gap:10px;margin-bottom:.75rem}
 .summary-nav-team{font-size:14px;font-weight:600;flex:1;text-align:center}
 @keyframes summaryProg{from{width:100%}to{width:0%}}
@@ -1368,8 +1374,8 @@ function renderSummaryCard(teamIdx){
   const projRanking = buildProjRanking();
   const projRank    = projRanking.indexOf(team) + 1;
 
-  const roster2627  = players.filter(p => p.fantasyTeam  === team);
-  const projPtsTotal = roster2627.reduce((s,p) => s+(p.pts||0), 0);
+  const roster2526 = players.filter(p => p.fantasyTeam2526 === team);
+  const roster2627 = players.filter(p => p.fantasyTeam  === team);
 
   const departed = players
     .filter(p => p.fantasyTeam2526 === team && p.fantasyTeam !== team)
@@ -1378,12 +1384,49 @@ function renderSummaryCard(teamIdx){
     .filter(p => p.fantasyTeam === team && p.fantasyTeam2526 !== team)
     .sort((a,b) => (b.pts||0)-(a.pts||0));
 
+  // Totals
+  const deptPts  = departed.reduce((s,p) => s+(p.pts||0), 0);
+  const arrPts   = arrived.reduce((s,p)  => s+(p.pts||0), 0);
+  const projPtsTotal = roster2627.reduce((s,p) => s+(p.pts||0), 0);
+  const prevPtsTotal = roster2526.reduce((s,p) => s+(p.pts2526||0), 0);
+  const deltaPts = projPtsTotal - prevPtsTotal;
+
+  // Average age helpers
+  const avgAge = roster => {
+    const ages = roster.map(p => calcAge(p)).filter(a => a != null);
+    return ages.length ? ages.reduce((s,a) => s+a, 0) / ages.length : null;
+  };
+  const age2526 = avgAge(roster2526);
+  const age2627 = avgAge(roster2627);
+  const deltaAge = (age2526 != null && age2627 != null) ? age2627 - age2526 : null;
+
+  // Rank change
+  const deltaRank = rank2526 - projRank; // positive = improved
+
+  const fmtDelta = (val, decimals, lowerBetter) => {
+    if(val == null) return {str:'—', color:'#9ca3af'};
+    const better = lowerBetter ? val < 0 : val > 0;
+    const worse  = lowerBetter ? val > 0 : val < 0;
+    const str = (val > 0 ? '+' : '') + val.toFixed(decimals);
+    const color = better ? '#16a34a' : worse ? '#dc2626' : '#9ca3af';
+    return {str, color};
+  };
+
+  const dPts  = fmtDelta(deltaPts,  0, false);
+  const dAge  = fmtDelta(deltaAge,  1, true);
+  const dRank = fmtDelta(deltaRank, 0, false);
+
   const playerRow = (p, cls) => `
     <div class="summary-player ${cls}">
+      <span class="summary-player-pos">${posGroup(p.pos)}</span>
       <span class="summary-player-name">${esc(p.name)}</span>
-      <span class="summary-player-pos">${esc(p.pos)}</span>
+      <span class="summary-player-age">${calcAge(p)??'—'}</span>
       <span class="summary-player-pts">${p.pts||'—'}</span>
     </div>`;
+
+  const colTotal = (pts, cls) => pts > 0
+    ? `<div class="summary-col-total" style="color:${cls==='departed'?'#dc2626':'#16a34a'}">${pts} pts</div>`
+    : '';
 
   document.getElementById('summaryNavLabel').textContent =
     `${teamIdx+1} of ${DRAFT_TEAMS.length}  —  ${team}`;
@@ -1395,24 +1438,41 @@ function renderSummaryCard(teamIdx){
         : '<div class="summary-logo"></div>'}
       <div style="flex:1;min-width:0">
         <div class="summary-team-name">${esc(team)}</div>
-        <div style="font-size:12px;color:#9ca3af;margin-top:2px">25-26 Rank: #${rank2526}</div>
       </div>
       <div style="text-align:right">
-        <div class="summary-rank-badge">Proj Rank #${projRank}</div>
+        <div class="summary-rank-badge">#${rank2526} → Proj #${projRank}</div>
         <div class="summary-pts-total" style="margin-top:6px">${projPtsTotal} proj pts</div>
+      </div>
+    </div>
+    <div class="summary-stats-bar">
+      <div class="summary-stat">
+        <span class="summary-stat-label">Proj Pts change</span>
+        <span class="summary-stat-value" style="color:${dPts.color}">${dPts.str}</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-stat-label">Avg Age change</span>
+        <span class="summary-stat-value" style="color:${dAge.color}">${dAge.str}</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-stat-label">Rank change</span>
+        <span class="summary-stat-value" style="color:${dRank.color}">${dRank.str}</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-stat-label">25-26 Pts</span>
+        <span class="summary-stat-value" style="color:#555">${prevPtsTotal||'—'}</span>
       </div>
     </div>
     <div class="summary-cols">
       <div class="summary-col">
         <h3 class="departed-hdr">Departures (${departed.length})</h3>
         ${departed.length
-          ? departed.map(p => playerRow(p,'departed')).join('')
+          ? departed.map(p => playerRow(p,'departed')).join('') + colTotal(deptPts,'departed')
           : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
       <div class="summary-col">
         <h3 class="arrived-hdr">New Arrivals (${arrived.length})</h3>
         ${arrived.length
-          ? arrived.map(p => playerRow(p,'arrived')).join('')
+          ? arrived.map(p => playerRow(p,'arrived')).join('') + colTotal(arrPts,'arrived')
           : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
     </div>`;
