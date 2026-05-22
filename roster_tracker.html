@@ -551,15 +551,19 @@ function render(){
     const src=p.source||'manual';
     const isDrop = dropIds.has(p.id);
     return `<tr style="${isDrop?'background:#fff5f5':''}">
-      <td style="display:flex;align-items:center;gap:5px;height:38px">
-        <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
-        <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
+          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
+        </div>
       </td>
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'};display:flex;align-items:center;gap:5px;height:38px">
-        ${p.fantasyTeam&&teamLogos[p.fantasyTeam]?`<img src="${teamLogos[p.fantasyTeam]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
-        <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.fantasyTeam||'—')}</span>
+      <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">
+        <div style="display:flex;align-items:center;gap:5px">
+          ${p.fantasyTeam&&teamLogos[p.fantasyTeam]?`<img src="${teamLogos[p.fantasyTeam]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
+          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.fantasyTeam||'—')}</span>
+        </div>
       </td>
       <td>${p.cap>0?'$'+p.cap.toFixed(2)+'M':'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
       <td>${p.pts2526>0?p.pts2526:'—'}</td>
