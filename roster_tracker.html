@@ -141,6 +141,7 @@ tr:hover td{background:#fafaf8}
 <thead><tr>
   <th onclick="setSortCol('name')">Player <span id="sort-name"></span></th>
   <th onclick="setSortCol('pos')">Pos <span id="sort-pos"></span></th>
+  <th onclick="setSortCol('age')">Age <span id="sort-age"></span></th>
   <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
   <th onclick="setSortCol('fantasyTeam')">Fantasy team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
@@ -279,6 +280,7 @@ async function syncSignings(){
         if(!p.team || p.team==='—') p.team = s.team;
         p.contractTerm = s.term || 0;
         p.expYear      = s.exp_year || 0;
+        if(s.birthDate && !p.birthDate) p.birthDate = s.birthDate;
         matched++;
       } else if(expiredSet.has(key)){
         // Contract expired — clear stale cap data
@@ -314,11 +316,12 @@ async function syncAllNHL(){
       if(ex){
         ex.status = 'roster';
         if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
+        if(p.birthDate && !ex.birthDate) ex.birthDate = p.birthDate;
         updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(x=>x.id))+1 : 1;
         players.push({id:newId, name:p.name, team:p.nhlTeam, pos:p.pos, cap:0, pts:0,
-                      status:'roster', source:'nhl', fantasyTeam:''});
+                      status:'roster', source:'nhl', fantasyTeam:'', birthDate:p.birthDate||''});
         added++;
       }
     }
@@ -533,13 +536,13 @@ function render(){
   const dropIds = computeDrops(players);
   const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : (a[sortCol]??'');
-    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : (b[sortCol]??'');
+    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : sortCol==='age' ? (calcAge(a)??-1) : (a[sortCol]??'');
+    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : sortCol==='age' ? (calcAge(b)??-1) : (b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','team','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','suggestedMove'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','suggestedMove'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -558,6 +561,7 @@ function render(){
         </div>
       </td>
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
+      <td>${calcAge(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">
         <div style="display:flex;align-items:center;gap:5px">
@@ -577,7 +581,7 @@ function render(){
         <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="12" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="13" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -586,6 +590,15 @@ function render(){
 
 const CAP_LIMIT = 104;
 const NHL_SEASON_YEAR = 2026; // first calendar year of the current season (2026-27)
+
+const calcAge = p => {
+  if(!p.birthDate) return null;
+  const today = new Date(), dob = new Date(p.birthDate);
+  let age = today.getFullYear() - dob.getFullYear();
+  if(today.getMonth() < dob.getMonth() ||
+     (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
+  return age;
+};
 
 const contractYearStr = p => {
   if(!p.contractTerm || !p.expYear) return '';

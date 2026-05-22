@@ -401,7 +401,8 @@ def nhl_rosters():
                     pos = _POS_MAP.get(p.get("positionCode", ""), "C")
                     if full:
                         key = f"{full.lower()}_{_pos_group(pos)}"
-                        active[key] = {"name": full, "nhlTeam": team, "pos": pos}
+                        active[key] = {"name": full, "nhlTeam": team, "pos": pos,
+                                       "birthDate": p.get("birthDate", "")}
             print(f"  ✓ {team}")
         except Exception as e:
             errors.append(f"{team}: {str(e)}")
@@ -561,6 +562,7 @@ def signings():
                         "nhl_id": p.get("p_nhl_id", ""),
                         "term": int(p.get("len") or 0),
                         "exp_year": exp_year,
+                        "birthDate": p.get("birthdate", ""),
                     }
                     all_players[key] = entry
                     if nick_key and nick_key not in all_players:
