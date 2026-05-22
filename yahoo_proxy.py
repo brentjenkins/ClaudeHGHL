@@ -474,6 +474,27 @@ def season_stats():
 
 _POS_GROUP_MAP = {"G": "G", "D": "D"}  # anything else → "F"
 
+# PuckPedia uses legal/formal first names; NHL API and Yahoo use nicknames.
+# Map formal → nickname so both keys are indexed in the signings lookup.
+_FORMAL_TO_NICK = {
+    "alexander": "alex",
+    "bradley":   "brad",
+    "christopher": "chris",
+    "daniel":    "dan",
+    "david":     "dave",
+    "matthew":   "matt",
+    "michael":   "mike",
+    "mitchell":  "mitch",
+    "nicholas":  "nick",
+    "patrick":   "pat",
+    "philip":    "phil",
+    "richard":   "rick",
+    "robert":    "rob",
+    "samuel":    "sam",
+    "thomas":    "tom",
+    "timothy":   "tim",
+}
+
 
 @app.route("/signings")
 def signings():
@@ -521,10 +542,14 @@ def signings():
                 continue
             key = f"{full.lower()}_{pg}"
             cap = round(float(p["cap_hit"]) / 1_000_000, 4)
+            # Also index under nickname variant (e.g. "mitchell" → "mitch")
+            first_lower = p.get("p_fn", "").lower()
+            nick = _FORMAL_TO_NICK.get(first_lower)
+            nick_key = f"{nick} {p.get('p_ln','').lower()}_{pg}" if nick else None
             # First occurrence wins (pages sorted sign_date DESC = most recent first)
             if key not in all_players:
                 exp_year = int(p["exp"].split("-")[0]) if p.get("exp") else 0
-                all_players[key] = {
+                entry = {
                     "name": full,
                     "cap": cap,
                     "team": p.get("sign_team_code", ""),
@@ -532,6 +557,9 @@ def signings():
                     "term": int(p.get("len") or 0),
                     "exp_year": exp_year,
                 }
+                all_players[key] = entry
+                if nick_key and nick_key not in all_players:
+                    all_players[nick_key] = entry
 
     process_page(first["p"])
 
