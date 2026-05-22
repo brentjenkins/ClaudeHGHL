@@ -1037,7 +1037,7 @@ function renderDraftView(){
       <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
       <div class="draft-row-pos"><span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span></div>
       <div class="draft-row-player">${showPlayer
-        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}`
+        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <strong>${pick.projPts}pts</strong>`:''}`
         : ''}</div>
     </div>`;
   }
