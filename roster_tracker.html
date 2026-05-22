@@ -445,33 +445,63 @@ function populateFantasyFilter() {
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
 
 function computeDrops(allPlayers){
-  // Position-group average Pts/$M across all players with data
-  const pts82 = p => (p.pts2526>0 && p.gp2526>0) ? p.pts2526/p.gp2526*82 : null;
-  const buckets = {F:[], D:[], G:[]};
-  for(const p of allPlayers){
-    const v = pts82(p);
-    if(v !== null && p.cap>0) buckets[posGroup(p.pos)].push(v/p.cap);
-  }
-  const avg = {};
-  for(const [g, vals] of Object.entries(buckets)){
-    avg[g] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 1;
-  }
+  // 0/1 knapsack: for each fantasy team, find the subset of players that
+  // maximises total extrapolated pts while keeping total cap ≤ $104M and
+  // dropping at least 7 players. Players without pts/cap data are excluded
+  // from the optimisation and are not flagged.
+  const MIN_DROPS  = 7;
+  const SCALE      = 10;                       // $0.1 M units → integers
+  const CAP_UNITS  = Math.round(CAP_LIMIT * SCALE); // 1040
 
-  // Normalized score: player extrapolated ppm / position-group avg ppm
-  const normScore = p => {
-    const v = pts82(p);
-    return (v !== null && p.cap>0) ? (v/p.cap) / (avg[posGroup(p.pos)] || 1) : null;
-  };
+  const pts82 = p => (p.pts2526>0 && p.gp2526>0) ? p.pts2526/p.gp2526*82 : null;
 
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
+
   for(const ft of ftNames){
-    const ranked = allPlayers
-      .filter(p => p.fantasyTeam===ft)
-      .map(p => ({p, score: normScore(p)}))
-      .filter(x => x.score !== null)
-      .sort((a,b) => a.score - b.score);
-    ranked.slice(0, 7).forEach(({p}) => dropIds.add(p.id));
+    const roster     = allPlayers.filter(p => p.fantasyTeam === ft);
+    const evaluable  = roster.filter(p => pts82(p) !== null && p.cap > 0);
+    const m          = evaluable.length;
+    if(m === 0) continue;
+
+    const maxKeep = Math.max(roster.length - MIN_DROPS, 0);
+    const W = evaluable.map(p => Math.round(p.cap * SCALE));
+    const V = evaluable.map(p => pts82(p));
+
+    // Build 2D DP table: dp[i+1][c] = max pts using items 0..i with cap ≤ c.
+    // Prefer-include on ties so reconstruction is unambiguous.
+    const dp = Array.from({length: m+1}, () => new Float32Array(CAP_UNITS+1));
+    for(let i=0; i<m; i++){
+      const w=W[i], v=V[i];
+      for(let c=0; c<=CAP_UNITS; c++){
+        dp[i+1][c] = dp[i][c];
+        if(c >= w && dp[i][c-w]+v >= dp[i+1][c])
+          dp[i+1][c] = dp[i][c-w]+v;
+      }
+    }
+
+    // Reconstruct which items are in the optimal solution
+    const keptSet = new Set();
+    let remC = CAP_UNITS;
+    for(let i=m-1; i>=0; i--){
+      const w=W[i], v=V[i];
+      if(remC >= w && Math.abs(dp[i+1][remC] - (dp[i][remC-w]+v)) < 0.01){
+        keptSet.add(evaluable[i].id);
+        remC -= w;
+      }
+    }
+
+    // Enforce min-drops: if knapsack kept too many, drop the lowest-pts ones
+    if(keptSet.size > maxKeep){
+      evaluable
+        .filter(p => keptSet.has(p.id))
+        .sort((a,b) => pts82(a)-pts82(b))
+        .slice(0, keptSet.size-maxKeep)
+        .forEach(p => keptSet.delete(p.id));
+    }
+
+    // Flag evaluable players not selected as keep
+    evaluable.forEach(p => { if(!keptSet.has(p.id)) dropIds.add(p.id); });
   }
   return dropIds;
 }
