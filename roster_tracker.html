@@ -233,6 +233,8 @@ tr:hover td{background:#fafaf8}
   <input type="number" id="abpMinGP" value="5" min="1" max="82" style="flex:0;width:58px" oninput="abpMinGP=+this.value||1;render()">
   <span style="font-size:12px;color:#888;white-space:nowrap">cap wiggle $M</span>
   <input type="number" id="abpWiggle" value="0.1" min="0" max="5" step="0.05" style="flex:0;width:68px" oninput="abpWiggle=+this.value;render()">
+  <span style="font-size:12px;color:#888;white-space:nowrap">min pts</span>
+  <input type="number" id="abpMinPts" value="0" min="0" max="200" step="1" style="flex:0;width:58px" oninput="abpMinPts=+this.value||0;render()">
 </div>
 
 <div class="tbl-wrap">
@@ -1140,6 +1142,7 @@ function renderDraftSearch(){
 let abpPtsSrc = 'pts2526';
 let abpMinGP  = 5;
 let abpWiggle = 0.1;   // $M
+let abpMinPts = 0;
 
 function getPPG(p){
   if(abpPtsSrc === 'pts2526'){
@@ -1158,8 +1161,14 @@ function getPPG(p){
 }
 
 function computeABP(allPlayers){
-  // Free agents with a cap hit and enough data to evaluate
-  const fas = allPlayers.filter(p => !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null);
+  // Free agents with a cap hit, enough data, and meeting the pts minimum
+  const rawPts = p => abpPtsSrc.endsWith('_raw') ? getPPG(p) : (
+    abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts
+  );
+  const fas = allPlayers.filter(p =>
+    !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null &&
+    (abpMinPts <= 0 || (rawPts(p)||0) >= abpMinPts)
+  );
   const abpMap = new Map();
   for(const p of allPlayers){
     const ppg = getPPG(p);
