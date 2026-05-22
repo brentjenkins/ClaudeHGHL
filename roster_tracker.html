@@ -132,6 +132,31 @@ tr:hover td{background:#fafaf8}
   0%,100%{opacity:1;transform:translateX(-50%) scale(1)}
   50%    {opacity:.85;transform:translateX(-50%) scale(1.04)}
 }
+/* ── Draft Summary view ──────────────────────────────────────────── */
+#view-summary{max-width:860px}
+.summary-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.75rem 2rem;min-height:480px;display:flex;flex-direction:column;gap:1.25rem}
+.summary-hdr{display:flex;align-items:center;gap:14px}
+.summary-logo{width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
+.summary-team-name{font-size:26px;font-weight:800;flex:1;line-height:1.1}
+.summary-rank-badge{font-size:13px;font-weight:700;background:#185FA5;color:#fff;border-radius:20px;padding:4px 14px;white-space:nowrap}
+.summary-pts-total{font-size:13px;color:#555;white-space:nowrap}
+.summary-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1}
+.summary-col h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1px solid #f0f0ee}
+.summary-col h3.departed-hdr{color:#dc2626}
+.summary-col h3.arrived-hdr{color:#16a34a}
+.summary-player{display:flex;align-items:baseline;gap:6px;padding:3px 0;font-size:13px}
+.summary-player-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-player-pos{font-size:11px;color:#9ca3af;flex-shrink:0}
+.summary-player-pts{font-size:12px;font-weight:600;flex-shrink:0}
+.summary-player.departed .summary-player-name{color:#9ca3af;text-decoration:line-through}
+.summary-player.departed .summary-player-pts{color:#dc2626}
+.summary-player.arrived .summary-player-pts{color:#16a34a}
+.summary-nav{display:flex;align-items:center;gap:10px;margin-bottom:.75rem}
+.summary-nav-team{font-size:14px;font-weight:600;flex:1;text-align:center}
+@keyframes summaryProg{from{width:100%}to{width:0%}}
+.summary-progress{height:3px;background:#e5e7eb;border-radius:2px;margin-top:.5rem;overflow:hidden}
+.summary-progress-bar{height:100%;background:#185FA5;border-radius:2px;width:100%}
+.summary-progress-bar.running{animation:summaryProg 10s linear forwards}
 </style>
 </head>
 <body>
@@ -139,6 +164,7 @@ tr:hover td{background:#fafaf8}
 <div class="view-tabs">
   <button class="view-tab active" onclick="setView('roster')">Roster Tracker</button>
   <button class="view-tab" onclick="setView('draft')">HGHL 2026–27 Draft</button>
+  <button class="view-tab" onclick="setView('summary')">Draft Summary</button>
 </div>
 
 <div id="view-draft" style="display:none">
@@ -164,6 +190,17 @@ tr:hover td{background:#fafaf8}
     </div>
     <div id="draftStandings" style="width:240px;flex-shrink:0;background:#f7f7f5;border-radius:10px;padding:.75rem;border:1px solid #e5e7eb"></div>
   </div>
+</div>
+
+<div id="view-summary" style="display:none">
+  <div class="summary-nav">
+    <button class="btn" onclick="summaryStep(-1)" style="height:28px;font-size:12px;padding:0 10px">← Prev</button>
+    <span class="summary-nav-team" id="summaryNavLabel"></span>
+    <button class="btn" onclick="summaryStep(1)" style="height:28px;font-size:12px;padding:0 10px">Next →</button>
+    <button class="btn" id="summaryPauseBtn" onclick="summaryTogglePause()" style="height:28px;font-size:12px;padding:0 10px;margin-left:8px">⏸ Pause</button>
+  </div>
+  <div class="summary-card" id="summaryCard"></div>
+  <div class="summary-progress"><div class="summary-progress-bar" id="summaryProgressBar"></div></div>
 </div>
 
 <div id="view-roster">
@@ -1012,13 +1049,17 @@ let currentView = 'roster';
 
 function setView(v){
   currentView = v;
-  document.getElementById('view-roster').style.display = v==='roster' ? '' : 'none';
-  document.getElementById('view-draft').style.display  = v==='draft'  ? '' : 'none';
-  if(v==='roster'){ stopWhaleAnimation(); showMullerOverlay(false); }
+  document.getElementById('view-roster').style.display  = v==='roster'  ? '' : 'none';
+  document.getElementById('view-draft').style.display   = v==='draft'   ? '' : 'none';
+  document.getElementById('view-summary').style.display = v==='summary' ? '' : 'none';
+  if(v!=='draft'){ stopWhaleAnimation(); showMullerOverlay(false); }
+  if(v!=='summary') stopSummaryRotation();
+  const views = ['roster','draft','summary'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
-    t.classList.toggle('active', (i===0 && v==='roster') || (i===1 && v==='draft'));
+    t.classList.toggle('active', views[i] === v);
   });
-  if(v==='draft') renderDraftView();
+  if(v==='draft')   renderDraftView();
+  if(v==='summary') startSummaryRotation();
 }
 
 function renderDraftView(){
@@ -1304,6 +1345,128 @@ function toast(msg){
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
+
+// ── Draft Summary view ────────────────────────────────────────────
+let _summaryIdx    = 0;
+let _summaryTimer  = null;
+let _summaryPaused = false;
+const SUMMARY_DURATION = 10000; // ms per team
+
+function buildProjRanking(){
+  const totals = {};
+  for(const t of DRAFT_TEAMS) totals[t] = 0;
+  for(const p of players) if(p.fantasyTeam && totals.hasOwnProperty(p.fantasyTeam))
+    totals[p.fantasyTeam] += (p.pts||0);
+  return [...DRAFT_TEAMS].sort((a,b) => totals[b]-totals[a]);
+}
+
+function renderSummaryCard(teamIdx){
+  const team     = DRAFT_TEAMS[teamIdx];
+  const logo     = teamLogos[team];
+  const rank2526 = DRAFT_STANDINGS[team].rank;
+
+  const projRanking = buildProjRanking();
+  const projRank    = projRanking.indexOf(team) + 1;
+
+  const roster2627  = players.filter(p => p.fantasyTeam  === team);
+  const projPtsTotal = roster2627.reduce((s,p) => s+(p.pts||0), 0);
+
+  const departed = players
+    .filter(p => p.fantasyTeam2526 === team && p.fantasyTeam !== team)
+    .sort((a,b) => (b.pts||0)-(a.pts||0));
+  const arrived = players
+    .filter(p => p.fantasyTeam === team && p.fantasyTeam2526 !== team)
+    .sort((a,b) => (b.pts||0)-(a.pts||0));
+
+  const playerRow = (p, cls) => `
+    <div class="summary-player ${cls}">
+      <span class="summary-player-name">${esc(p.name)}</span>
+      <span class="summary-player-pos">${esc(p.pos)}</span>
+      <span class="summary-player-pts">${p.pts||'—'}</span>
+    </div>`;
+
+  document.getElementById('summaryNavLabel').textContent =
+    `${teamIdx+1} of ${DRAFT_TEAMS.length}  —  ${team}`;
+
+  document.getElementById('summaryCard').innerHTML = `
+    <div class="summary-hdr">
+      ${logo
+        ? `<img src="${esc(logo)}" class="summary-logo" loading="lazy">`
+        : '<div class="summary-logo"></div>'}
+      <div style="flex:1;min-width:0">
+        <div class="summary-team-name">${esc(team)}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:2px">25-26 Rank: #${rank2526}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="summary-rank-badge">Proj Rank #${projRank}</div>
+        <div class="summary-pts-total" style="margin-top:6px">${projPtsTotal} proj pts</div>
+      </div>
+    </div>
+    <div class="summary-cols">
+      <div class="summary-col">
+        <h3 class="departed-hdr">Departures (${departed.length})</h3>
+        ${departed.length
+          ? departed.map(p => playerRow(p,'departed')).join('')
+          : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
+      </div>
+      <div class="summary-col">
+        <h3 class="arrived-hdr">New Arrivals (${arrived.length})</h3>
+        ${arrived.length
+          ? arrived.map(p => playerRow(p,'arrived')).join('')
+          : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
+      </div>
+    </div>`;
+}
+
+function summaryStartProgress(){
+  const bar = document.getElementById('summaryProgressBar');
+  if(!bar) return;
+  bar.classList.remove('running');
+  bar.offsetHeight; // force reflow to restart animation
+  bar.classList.add('running');
+}
+
+function summaryShowIdx(idx){
+  _summaryIdx = ((idx % DRAFT_TEAMS.length) + DRAFT_TEAMS.length) % DRAFT_TEAMS.length;
+  renderSummaryCard(_summaryIdx);
+  if(!_summaryPaused) summaryStartProgress();
+}
+
+function summaryStep(dir){
+  summaryShowIdx(_summaryIdx + dir);
+  if(!_summaryPaused){
+    stopSummaryRotation();
+    startSummaryRotation();
+  }
+}
+
+function startSummaryRotation(){
+  _summaryPaused = false;
+  document.getElementById('summaryPauseBtn').textContent = '⏸ Pause';
+  summaryShowIdx(_summaryIdx);
+  _summaryTimer = setInterval(() => {
+    _summaryIdx = (_summaryIdx + 1) % DRAFT_TEAMS.length;
+    summaryShowIdx(_summaryIdx);
+  }, SUMMARY_DURATION);
+}
+
+function stopSummaryRotation(){
+  clearInterval(_summaryTimer); _summaryTimer = null;
+  const bar = document.getElementById('summaryProgressBar');
+  if(bar){ bar.classList.remove('running'); }
+}
+
+function summaryTogglePause(){
+  if(_summaryPaused){
+    _summaryPaused = false;
+    document.getElementById('summaryPauseBtn').textContent = '⏸ Pause';
+    startSummaryRotation();
+  } else {
+    stopSummaryRotation();
+    _summaryPaused = true;
+    document.getElementById('summaryPauseBtn').textContent = '▶ Resume';
+  }
+}
 </script>
 </body>
 </html>
