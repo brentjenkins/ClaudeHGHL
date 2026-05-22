@@ -1082,7 +1082,7 @@ function renderDraftView(){
         <span style="${posHi('G')}">G&thinsp;${gRem}</span>
       </div>
       <div class="draft-row-player">${showPlayer
-        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <strong>${pick.projPts}pts</strong>`:''}`
+        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <em>${pick.projPts} Proj Pts</em>`:''}`
         : ''}</div>
     </div>`;
   }
