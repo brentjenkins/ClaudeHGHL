@@ -830,6 +830,8 @@ const DRAFT_TEAMS = Object.entries(DRAFT_STANDINGS)
   .sort((a,b) => b[1].rank - a[1].rank)
   .map(([name]) => name);
 
+const DRAFT_ROSTER_MAX = {F: 12, D: 6, G: 2};  // target spots per position per team
+
 const LS_DRAFT = 'hghl_draft_2627';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 
@@ -1058,6 +1060,14 @@ function renderDraftView(){
     const fN = roster.filter(p=>posGroup(p.pos)==='F').length;
     const dN = roster.filter(p=>posGroup(p.pos)==='D').length;
     const gN = roster.filter(p=>posGroup(p.pos)==='G').length;
+    const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
+    const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
+    const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
+
+    const pickedPG = showPlayer ? posGroup(pick.pos) : null;
+    const posHi = pg => pickedPG === pg
+      ? 'background:#185FA5;color:#fff;border-radius:4px;padding:1px 6px'
+      : 'background:#fff;border-radius:4px;padding:1px 6px;color:#1a1a18';
 
     html += `<div class="draft-row${isCurrent ? ' draft-row-current' : ''}">
       <div class="draft-row-pick">${teamIdx + 1}</div>
@@ -1066,7 +1076,11 @@ function renderDraftView(){
         <span class="draft-row-name">${esc(team)}</span>
       </div>
       <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
-      <div class="draft-row-pos"><span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span></div>
+      <div class="draft-row-pos">
+        <span style="${posHi('F')}">F&thinsp;${fRem}</span>
+        <span style="${posHi('D')}">D&thinsp;${dRem}</span>
+        <span style="${posHi('G')}">G&thinsp;${gRem}</span>
+      </div>
       <div class="draft-row-player">${showPlayer
         ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <strong>${pick.projPts}pts</strong>`:''}`
         : ''}</div>
