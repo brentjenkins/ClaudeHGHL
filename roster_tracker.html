@@ -14,18 +14,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .view-tab{padding:.5rem 1.5rem;font-size:14px;font-weight:500;color:#888;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s}
 .view-tab:hover{color:#1a1a18}
 .view-tab.active{color:#1a1a18;border-bottom-color:#185FA5}
-.draft-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px;margin-bottom:1.5rem;overflow-x:auto}
-.draft-card{background:#f7f7f5;border-radius:8px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
-.draft-pick{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em}
-.draft-card-header{display:flex;align-items:center;gap:5px;min-width:0}
-.draft-card-logo{width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
-.draft-card-name{font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.draft-card-pts{font-size:12px;font-weight:600;color:#1a1a18}
-.draft-card-meta{font-size:11px;color:#888}
-.draft-card-div{height:1px;background:#e5e7eb;margin:.1rem 0}
-.draft-card-cap{font-size:11px;color:#555}
-.draft-card-pos{display:flex;gap:4px;font-size:11px;font-weight:500}
-.draft-card-pos span{background:#fff;border-radius:4px;padding:1px 5px;color:#1a1a18}
+.draft-col{display:flex;flex-direction:column;gap:6px;max-width:760px}
+.draft-round-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:.25rem 0 .25rem .875rem;margin-top:.25rem}
+.draft-row{display:grid;grid-template-columns:28px 1fr 1fr 1fr;align-items:center;gap:12px;padding:.5rem .875rem;border-radius:8px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
+.draft-row-current{border-color:#185FA5;background:#eff6ff}
+.draft-row-pick{font-size:12px;font-weight:700;color:#9ca3af;text-align:center}
+.draft-row-current .draft-row-pick{color:#185FA5}
+.draft-row-team{display:flex;align-items:center;gap:6px;min-width:0}
+.draft-row-logo{width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
+.draft-row-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-row-cap{font-size:12px;color:#555;white-space:nowrap}
+.draft-row-player{font-size:12px;color:#1a1a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-entry{margin-top:1rem;max-width:760px}
+.draft-results-row{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0ee;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.draft-results-row:hover{background:#f7f7f5}
+.draft-results-row:last-child{border-bottom:none}
 .stats-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px;margin-bottom:1.25rem;overflow-x:auto}
 .team-card{background:#f7f7f5;border-radius:8px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:5px;min-width:0}
 .team-card-header{display:flex;align-items:center;gap:5px;min-width:0}
@@ -107,7 +110,23 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <div id="view-draft" style="display:none">
-  <div class="draft-grid" id="draftCards"></div>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:760px;margin-bottom:.75rem">
+    <span id="draftRoundLabel" style="font-size:22px;font-weight:700">Round 1</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="undoLastPick()" style="height:28px;font-size:12px">↩ Undo</button>
+      <button class="btn" onclick="resetDraft()" style="height:28px;font-size:12px;color:#dc2626;border-color:#dc2626">Reset Draft</button>
+    </div>
+  </div>
+  <div class="draft-col" id="draftColumn"></div>
+  <div class="draft-entry">
+    <div style="font-size:12px;color:#888;margin-bottom:.4rem" id="draftOnClock"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
+             oninput="renderDraftSearch()"
+             style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
+    </div>
+    <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
+  </div>
 </div>
 
 <div id="view-roster">
@@ -306,7 +325,7 @@ function load(){
   players      = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions = lsGet(LS_TX)      || [];
   teamLogos    = lsGet(LS_LOGOS)   || {};
-  dedup();
+  dedup(); loadDraft();
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
   checkProxy();
 }
@@ -702,6 +721,34 @@ const DRAFT_STANDINGS = {
   'Killer Whales':       {rank:9, pts:909,  ptsChange:+12, ptsBack:248, moves:10},
 };
 
+// Draft order array: rank 9 first (worst team picks first)
+const DRAFT_TEAMS = Object.entries(DRAFT_STANDINGS)
+  .sort((a,b) => b[1].rank - a[1].rank)
+  .map(([name]) => name);
+
+const LS_DRAFT = 'hghl_draft_2627';
+let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
+
+function loadDraft(){ draftState = lsGet(LS_DRAFT) || {picks: []}; }
+function saveDraft(){ lsSet(LS_DRAFT, draftState); }
+function resetDraft(){ if(confirm('Reset the entire draft?')){ draftState={picks:[]}; saveDraft(); renderDraftView(); } }
+
+function makeDraftPick(player, pos, nhlTeam){
+  const team = DRAFT_TEAMS[draftState.picks.length % 9];
+  draftState.picks.push({team, player, pos, nhlTeam});
+  saveDraft();
+  document.getElementById('draftSearch').value = '';
+  document.getElementById('draftResults').style.display = 'none';
+  renderDraftView();
+}
+
+function undoLastPick(){
+  if(!draftState.picks.length) return;
+  draftState.picks.pop();
+  saveDraft();
+  renderDraftView();
+}
+
 let currentView = 'roster';
 
 function setView(v){
@@ -711,42 +758,83 @@ function setView(v){
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', (i===0 && v==='roster') || (i===1 && v==='draft'));
   });
-  if(v==='draft') renderDraftCards();
+  if(v==='draft') renderDraftView();
 }
 
-function renderDraftCards(){
-  // Draft order: worst team picks first (rank 9 → pick 1, rank 1 → pick 9)
-  const pickOrder = Object.entries(DRAFT_STANDINGS)
-    .sort((a,b) => b[1].rank - a[1].rank);  // rank 9 first
+function renderDraftView(){
+  const picks   = draftState.picks;
+  const total   = picks.length;
+  const curIdx  = total % 9;          // 0-8 index into DRAFT_TEAMS
+  const curRound = Math.floor(total / 9) + 1;
 
-  document.getElementById('draftCards').innerHTML = pickOrder.map(([team, s], idx) => {
-    const pick   = idx + 1;
-    const logo   = teamLogos[team];
+  // Most-recent pick per team (for display)
+  const lastPick = {};
+  picks.forEach((p, i) => { lastPick[p.team] = {...p, globalIdx: i}; });
+
+  // Only show player info for the 4 most recent picks
+  const showThreshold = total - 4;
+
+  document.getElementById('draftRoundLabel').textContent = `Round ${curRound}`;
+  document.getElementById('draftOnClock').textContent =
+    `On the clock: ${DRAFT_TEAMS[curIdx]} — Pick ${total + 1} (Round ${curRound}, #${curIdx + 1})`;
+
+  // Build round-separator + row list
+  let html = '';
+  let lastRenderedRound = null;
+
+  DRAFT_TEAMS.forEach((team, idx) => {
+    // Determine which round this slot is in given current state
+    // Show a "Round X" label when the round changes across the column
+    const slotRound = curRound; // all slots show current round
+    if(slotRound !== lastRenderedRound){
+      html += `<div class="draft-round-hdr">Round ${slotRound}</div>`;
+      lastRenderedRound = slotRound;
+    }
+
+    const isCurrent = idx === curIdx;
+    const logo = teamLogos[team];
     const roster = players.filter(p => p.fantasyTeam === team);
-    const cap    = roster.reduce((sum,p) => sum+(p.cap||0), 0);
-    const rem    = CAP_LIMIT - cap;
+    const cap = roster.reduce((s,p) => s+(p.cap||0), 0);
+    const rem = CAP_LIMIT - cap;
     const remColor = rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
-    const fN = roster.filter(p=>posGroup(p.pos)==='F').length;
-    const dN = roster.filter(p=>posGroup(p.pos)==='D').length;
-    const gN = roster.filter(p=>posGroup(p.pos)==='G').length;
-    const chg = s.ptsChange > 0 ? `+${s.ptsChange}` : `${s.ptsChange}`;
+    const lp = lastPick[team];
+    const showPlayer = lp && lp.globalIdx >= showThreshold;
 
-    return `<div class="draft-card">
-      <div class="draft-pick">Pick ${pick}</div>
-      <div class="draft-card-header">
-        ${logo ? `<img src="${esc(logo)}" class="draft-card-logo" loading="lazy">` : '<div class="draft-card-logo"></div>'}
-        <span class="draft-card-name" title="${esc(team)}">${esc(team)}</span>
+    html += `<div class="draft-row${isCurrent ? ' draft-row-current' : ''}">
+      <div class="draft-row-pick">${idx + 1}</div>
+      <div class="draft-row-team">
+        ${logo ? `<img src="${esc(logo)}" class="draft-row-logo" loading="lazy">` : '<div class="draft-row-logo"></div>'}
+        <span class="draft-row-name">${esc(team)}</span>
       </div>
-      <div class="draft-card-pts">${s.pts} pts</div>
-      <div class="draft-card-meta">${s.ptsBack > 0 ? `${s.ptsBack} back` : '1st place'} &bull; ${chg} &bull; ${s.moves} moves</div>
-      <div class="draft-card-div"></div>
-      <div class="draft-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
-      <div class="draft-card-pos">
-        <span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span>
-      </div>
+      <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
+      <div class="draft-row-player">${showPlayer ? `${esc(lp.player)} &bull; ${esc(lp.pos)} &bull; ${esc(lp.nhlTeam||'—')}` : ''}</div>
     </div>`;
-  }).join('');
-} // first calendar year of the current season (2026-27)
+  });
+
+  document.getElementById('draftColumn').innerHTML = html;
+  renderDraftSearch();
+}
+
+function renderDraftSearch(){
+  const q = (document.getElementById('draftSearch')?.value || '').toLowerCase().trim();
+  const res = document.getElementById('draftResults');
+  if(!q){ res.style.display='none'; return; }
+
+  const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
+  const fa = players
+    .filter(p => !p.fantasyTeam && normName(p.name).toLowerCase().includes(q) && !drafted.has(normName(p.name).toLowerCase()))
+    .sort((a,b) => (b.pts2526||0)-(a.pts2526||0))
+    .slice(0, 12);
+
+  if(!fa.length){ res.style.display='none'; return; }
+  res.style.display = '';
+  res.innerHTML = fa.map(p =>
+    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team||'—')}')">
+      <span>${esc(p.name)}</span>
+      <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
+    </div>`
+  ).join('');
+}
 
 // ABP config — updated live by the controls row
 let abpPtsSrc = 'pts2526';
