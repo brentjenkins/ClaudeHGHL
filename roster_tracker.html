@@ -44,6 +44,8 @@ tr:hover td{background:#fafaf8}
 .badge-d{background:#dcfce7;color:#166534}
 .badge-g{background:#fef3c7;color:#92400e}
 .badge-nr{background:#f3f4f6;color:#6b7280;font-style:italic}
+.badge-drop{background:#fee2e2;color:#991b1b}
+.badge-watch{background:#fef3c7;color:#92400e}
 .source-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;flex-shrink:0}
 .dot-manual{background:#9ca3af}
 .dot-yahoo{background:#6001D2}
@@ -146,6 +148,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('ptsperm')">Pts/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
   <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
+  <th onclick="setSortCol('suggestedMove')">Suggested Move <span id="sort-suggestedMove"></span></th>
   <th></th>
 </tr></thead>
 <tbody id="tbody"></tbody>
@@ -439,6 +442,35 @@ function populateFantasyFilter() {
 
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
 
+function computeDrops(allPlayers){
+  // Position-group average Pts/$M across all players with data
+  const buckets = {F:[], D:[], G:[]};
+  for(const p of allPlayers){
+    if(p.pts2526>0 && p.cap>0) buckets[posGroup(p.pos)].push(p.pts2526/p.cap);
+  }
+  const avg = {};
+  for(const [g, vals] of Object.entries(buckets)){
+    avg[g] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 1;
+  }
+
+  // Normalized score: player ppm / position-group avg ppm
+  const normScore = p => (p.pts2526>0 && p.cap>0)
+    ? (p.pts2526/p.cap) / (avg[posGroup(p.pos)] || 1)
+    : null;
+
+  const dropIds = new Set();
+  const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
+  for(const ft of ftNames){
+    const ranked = allPlayers
+      .filter(p => p.fantasyTeam===ft)
+      .map(p => ({p, score: normScore(p)}))
+      .filter(x => x.score !== null)
+      .sort((a,b) => a.score - b.score);
+    ranked.slice(0, 7).forEach(({p}) => dropIds.add(p.id));
+  }
+  return dropIds;
+}
+
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
   const fp=document.getElementById('filterPos').value;
@@ -457,15 +489,16 @@ function render(){
     return true;
   });
 
+  const dropIds = computeDrops(players);
   const ppm = p => (p.pts2526>0&&p.cap>0) ? p.pts2526/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm' ? ppm(a) : (a[sortCol]??'');
-    let bv = sortCol==='ptsperm' ? ppm(b) : (b[sortCol]??'');
+    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : (a[sortCol]??'');
+    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : (b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','team','fantasyTeam','cap','pts2526','ptsperm','pts','status'].forEach(c=>{
+  ['name','pos','team','fantasyTeam','cap','pts2526','ptsperm','pts','status','suggestedMove'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -475,7 +508,8 @@ function render(){
     const pg=posGroup(p.pos);
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const src=p.source||'manual';
-    return `<tr>
+    const isDrop = dropIds.has(p.id);
+    return `<tr style="${isDrop?'background:#fff5f5':''}">
       <td style="display:flex;align-items:center;gap:5px;height:38px">
         <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
         <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
@@ -491,12 +525,13 @@ function render(){
       <td>${p.pts2526>0&&p.cap>0?(p.pts2526/p.cap).toFixed(1):'—'}</td>
       <td>${pg==='G'?'—':(p.pts>0?p.pts:'—')}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}</td>
+      <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="10" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="11" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
