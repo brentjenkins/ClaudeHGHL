@@ -140,7 +140,9 @@ tr:hover td{background:#fafaf8}
   <span style="font-size:12px;color:#888;white-space:nowrap">ABP pts source:</span>
   <select id="abpPtsSrc" onchange="abpPtsSrc=this.value;render()" style="flex:0">
     <option value="pts2526">25-26 Pts/G</option>
+    <option value="pts2526_raw">25-26 Pts</option>
     <option value="pts">Proj Pts/G</option>
+    <option value="pts_raw">Proj Pts</option>
   </select>
   <span style="font-size:12px;color:#888;white-space:nowrap">min GP</span>
   <input type="number" id="abpMinGP" value="5" min="1" max="82" style="flex:0;width:58px" oninput="abpMinGP=+this.value||1;render()">
@@ -650,6 +652,12 @@ function getPPG(p){
   if(abpPtsSrc === 'pts2526'){
     if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
     return p.pts2526 / p.gp2526;
+  } else if(abpPtsSrc === 'pts2526_raw'){
+    if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
+    return p.pts2526;
+  } else if(abpPtsSrc === 'pts_raw'){
+    if(!(p.pts > 0)) return null;
+    return p.pts;
   } else {
     if(!(p.pts > 0)) return null;
     return p.pts / 82;
