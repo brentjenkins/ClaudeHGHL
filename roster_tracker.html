@@ -102,35 +102,8 @@ tr:hover td{background:#fafaf8}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:.6rem 1.25rem;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
-/* ── Killer Whales watermark ─────────────────────────────────────── */
-#whaleWatermark{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;display:none}
-.whale-body{position:absolute;font-size:160px;line-height:1;
-  animation:whaleDive 5s ease-in-out infinite}
-.whale-splash{position:absolute;font-size:90px;opacity:0;
-  animation:whaleSplash 5s ease-out infinite}
-.whale-tank{position:absolute;bottom:0;left:0;right:0;height:100px;
-  background:linear-gradient(to top,rgba(56,189,248,.2) 0%,transparent 100%);
-  animation:tankPulse 2.5s ease-in-out infinite}
-@keyframes whaleDive{
-  0%   {top:-180px;left:2%;transform:scaleX(-1) rotate(-10deg);opacity:0}
-  7%   {top:-60px; left:5%; transform:scaleX(-1) rotate(-10deg);opacity:.38}
-  35%  {top:22vh;  left:28%;transform:scaleX(-1) rotate(-28deg);opacity:.38}
-  62%  {top:52vh;  left:54%;transform:scaleX(-1) rotate(-62deg);opacity:.30}
-  80%  {top:74vh;  left:68%;transform:scaleX(-1) rotate(-85deg);opacity:.15}
-  88%  {top:85vh;  left:72%;transform:scaleX(-1) rotate(-90deg);opacity:0}
-  89%  {top:-180px;left:2%; transform:scaleX(-1) rotate(-10deg);opacity:0}
-  100% {top:-180px;left:2%; transform:scaleX(-1) rotate(-10deg);opacity:0}
-}
-@keyframes whaleSplash{
-  0%,83%{top:auto;bottom:70px;left:66%;opacity:0;transform:scale(.5)}
-  87%  {opacity:.55;transform:scale(1.1) translateY(-20px)}
-  94%  {opacity:0; transform:scale(1.4) translateY(-50px)}
-  100% {opacity:0}
-}
-@keyframes tankPulse{
-  0%,100%{transform:scaleY(1);opacity:.7}
-  50%    {transform:scaleY(1.3);opacity:1}
-}
+/* ── Killer Whales watermark canvas ──────────────────────────────── */
+#whaleCanvas{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;display:none}
 </style>
 </head>
 <body>
@@ -283,11 +256,7 @@ tr:hover td{background:#fafaf8}
 </div>
 </div>
 
-<div id="whaleWatermark">
-  <div class="whale-body">🐋</div>
-  <div class="whale-splash">💦</div>
-  <div class="whale-tank"></div>
-</div>
+<canvas id="whaleCanvas"></canvas>
 
 <div class="toast" id="toast"></div>
 
@@ -766,6 +735,105 @@ const DRAFT_TEAMS = Object.entries(DRAFT_STANDINGS)
 const LS_DRAFT = 'hghl_draft_2627';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 
+// ── Whale canvas animation ────────────────────────────────────────
+let _whaleRAF = null;
+
+function startWhaleAnimation(){
+  const c = document.getElementById('whaleCanvas');
+  c.width  = window.innerWidth;
+  c.height = window.innerHeight;
+  c.style.display = 'block';
+  if(!_whaleRAF) _whaleRAF = requestAnimationFrame(_whaleFrame);
+}
+
+function stopWhaleAnimation(){
+  const c = document.getElementById('whaleCanvas');
+  if(c){ c.style.display='none'; c.getContext('2d').clearRect(0,0,c.width,c.height); }
+  if(_whaleRAF){ cancelAnimationFrame(_whaleRAF); _whaleRAF=null; }
+}
+
+function _whaleFrame(){
+  const c = document.getElementById('whaleCanvas');
+  if(!c || c.style.display==='none'){ _whaleRAF=null; return; }
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+
+  // ── Tank (bottom-right) ──────────────────────────────────────────
+  const TW=220, TH=165, TX=W-TW-30, TY=H-TH-30;
+  const waterTop = TY + TH*0.38;
+  const now = Date.now();
+
+  // glass walls
+  ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=5;
+  ctx.strokeRect(TX, TY, TW, TH);
+  // water fill
+  ctx.fillStyle='rgba(56,189,248,0.30)';
+  ctx.fillRect(TX+2, waterTop+4, TW-4, TH-(waterTop-TY)-4);
+  // animated wave on water surface
+  ctx.fillStyle='rgba(56,189,248,0.55)';
+  ctx.beginPath();
+  ctx.moveTo(TX+2, waterTop);
+  for(let x=0;x<=TW-4;x+=4){
+    ctx.lineTo(TX+2+x, waterTop + Math.sin(now/400 + x*0.12)*4);
+  }
+  ctx.lineTo(TX+TW-2, waterTop+8);
+  ctx.lineTo(TX+TW-2, TY+TH-2);
+  ctx.lineTo(TX+2,    TY+TH-2);
+  ctx.closePath(); ctx.fill();
+  // bubbles
+  for(const [bx,phase,speed] of [[TX+40,0,900],[TX+110,1.5,700],[TX+170,0.7,1100]]){
+    const by = waterTop + TH*0.3 + (TH*0.55)*((now/speed + phase)%1);
+    ctx.beginPath();
+    ctx.arc(bx, by, 5, 0, Math.PI*2);
+    ctx.strokeStyle='rgba(56,189,248,0.7)'; ctx.lineWidth=1.5;
+    ctx.stroke();
+  }
+
+  // ── Whale arc (top-left → tank) ──────────────────────────────────
+  const PERIOD = 5200;
+  const t = (now % PERIOD) / PERIOD;           // 0→1 per cycle
+  const DIVE_END = 0.82, SPLASH_END = 0.93;
+
+  if(t < DIVE_END){
+    const p = t / DIVE_END;                    // dive progress 0→1
+
+    // Cubic bezier: (startX,startY) → (cp1) → (cp2) → (tankCX,waterTop-50)
+    const sx=40, sy=-150, cp1x=W*0.18, cp1y=H*0.05, cp2x=W*0.65, cp2y=H*0.55;
+    const ex=TX+TW*0.5, ey=waterTop-60;
+    const mt=1-p;
+    const wx = mt*mt*mt*sx + 3*mt*mt*p*cp1x + 3*mt*p*p*cp2x + p*p*p*ex;
+    const wy = mt*mt*mt*sy + 3*mt*mt*p*cp1y + 3*mt*p*p*cp2y + p*p*p*ey;
+
+    // Tangent angle for rotation
+    const dp=0.01, p2=Math.min(p+dp,1), mt2=1-p2;
+    const wx2=mt2*mt2*mt2*sx+3*mt2*mt2*p2*cp1x+3*mt2*p2*p2*cp2x+p2*p2*p2*ex;
+    const wy2=mt2*mt2*mt2*sy+3*mt2*mt2*p2*cp1y+3*mt2*p2*p2*cp2y+p2*p2*p2*ey;
+    const angle = Math.atan2(wy2-wy, wx2-wx);
+
+    const opacity = p<0.06 ? (p/0.06)*0.38 : p>0.88 ? ((1-p)/0.12)*0.38 : 0.38;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.translate(wx, wy);
+    ctx.rotate(angle);
+    ctx.scale(-1, 1);                          // flip to face right
+    ctx.font='110px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🐋', 0, 0);
+    ctx.restore();
+
+  } else if(t < SPLASH_END){
+    // Splash
+    const sp = (t - DIVE_END) / (SPLASH_END - DIVE_END);
+    ctx.globalAlpha = Math.max(0, 0.7 - sp*0.7);
+    ctx.font=`${70+sp*40}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText('💦', TX+TW*0.5, waterTop - sp*55);
+    ctx.globalAlpha=1;
+  }
+
+  _whaleRAF = requestAnimationFrame(_whaleFrame);
+}
+
 function loadDraft(){ draftState = lsGet(LS_DRAFT) || {picks: []}; }
 function saveDraft(){ lsSet(LS_DRAFT, draftState); }
 function resetDraft(){ if(confirm('Reset the entire draft?')){ draftState={picks:[]}; saveDraft(); renderDraftView(); } }
@@ -792,7 +860,7 @@ function setView(v){
   currentView = v;
   document.getElementById('view-roster').style.display = v==='roster' ? '' : 'none';
   document.getElementById('view-draft').style.display  = v==='draft'  ? '' : 'none';
-  if(v==='roster') document.getElementById('whaleWatermark').style.display = 'none';
+  if(v==='roster') stopWhaleAnimation();
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', (i===0 && v==='roster') || (i===1 && v==='draft'));
   });
@@ -805,7 +873,7 @@ function renderDraftView(){
   const curRound = Math.floor(total / 9) + 1;
 
   const onClock = DRAFT_TEAMS[total % 9];
-  document.getElementById('whaleWatermark').style.display = onClock === 'Killer Whales' ? '' : 'none';
+  if(onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
   document.getElementById('draftRoundLabel').textContent = `Round ${curRound}`;
   document.getElementById('draftOnClock').textContent =
     `On the clock: ${onClock} — Pick ${total + 1} (Round ${curRound}, #${total % 9 + 1})`;
