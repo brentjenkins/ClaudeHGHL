@@ -661,13 +661,12 @@ function computeABP(allPlayers){
   const fas = allPlayers.filter(p => !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null);
   const abpMap = new Map();
   for(const p of allPlayers){
-    if(!p.fantasyTeam){ abpMap.set(p.id, null); continue; }
     const ppg = getPPG(p);
     if(ppg === null || p.cap <= 0){ abpMap.set(p.id, null); continue; }
     const pg  = posGroup(p.pos);
     const cap = p.cap + abpWiggle;
     abpMap.set(p.id, fas.filter(fa =>
-      posGroup(fa.pos) === pg && fa.cap <= cap && getPPG(fa) > ppg
+      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && getPPG(fa) > ppg
     ).length);
   }
   return abpMap;
