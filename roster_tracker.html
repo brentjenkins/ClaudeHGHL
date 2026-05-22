@@ -860,23 +860,26 @@ function _whaleFrame(){
   _whaleRAF = requestAnimationFrame(_whaleFrame);
 }
 
+let _mullerInterval = null, _mullerHideTimeout = null;
+
 function showMullerOverlay(show){
   const el = document.getElementById('mullerOverlay');
   if(!el) return;
-  if(show){
+  clearInterval(_mullerInterval);  _mullerInterval = null;
+  clearTimeout(_mullerHideTimeout); _mullerHideTimeout = null;
+  if(!show){ el.style.display = 'none'; return; }
+
+  function playOnce(){
     el.style.display = 'block';
-    // Re-trigger animation by replacing the img
-    const img = el.querySelector('img');
-    img.style.animation = 'none';
-    img.offsetHeight; // reflow
-    img.style.animation = '';
-    const lbl = el.querySelector('.muller-label');
-    lbl.style.animation = 'none';
-    lbl.offsetHeight;
-    lbl.style.animation = '';
-  } else {
-    el.style.display = 'none';
+    // Re-trigger CSS animations
+    [el.querySelector('img'), el.querySelector('.muller-label')].forEach(e => {
+      e.style.animation = 'none'; e.offsetHeight; e.style.animation = '';
+    });
+    _mullerHideTimeout = setTimeout(() => { el.style.display = 'none'; }, 5000);
   }
+
+  playOnce();
+  _mullerInterval = setInterval(playOnce, 60000);
 }
 
 function loadDraft(){ draftState = lsGet(LS_DRAFT) || {picks: []}; }
