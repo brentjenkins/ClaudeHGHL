@@ -1395,6 +1395,9 @@ function renderSummaryCard(teamIdx){
   const arrPts     = arrived.reduce((s,p)    => s+(p.pts||0), 0);
   const retPts     = returning.reduce((s,p)  => s+(p.pts||0), 0);
   const projPtsTotal = roster2627.reduce((s,p) => s+(p.pts||0), 0);
+  const capUsed      = roster2627.reduce((s,p) => s+(p.cap||0), 0);
+  const capRem       = CAP_LIMIT - capUsed;
+  const capRemColor  = capRem < 5 ? '#dc2626' : capRem < 15 ? '#d97706' : '#16a34a';
   const prevPtsTotal = roster2526.reduce((s,p) => s+(p.pts2526||0), 0);
   const deltaPts = projPtsTotal - prevPtsTotal;
 
@@ -1479,6 +1482,10 @@ function renderSummaryCard(teamIdx){
       <div class="summary-stat">
         <span class="summary-stat-label">Avg Age <span style="font-weight:400">(${dAge.str})</span></span>
         <span class="summary-stat-value" style="color:${dAge.color}">${age2627!=null?age2627.toFixed(1):'—'}</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-stat-label">Cap remaining</span>
+        <span class="summary-stat-value" style="color:${capRemColor}">$${capRem.toFixed(1)}M</span>
       </div>
       ${dPts.color==='#16a34a' && dRank.color==='#16a34a' && dAge.color==='#16a34a'
         ? '<div class="summary-stat" style="font-size:28px;align-self:center">🍆💦</div>' : ''}
