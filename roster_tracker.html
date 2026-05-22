@@ -145,6 +145,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('fantasyTeam')">Fantasy team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('pts2526')">25-26 <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('gp2526')">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('ptsperm')">Pts/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
   <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
@@ -225,6 +226,7 @@ async function syncStats(){
       const key = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
       if(d.players[key]){
         p.pts2526 = d.players[key].fpts;
+        p.gp2526  = d.players[key].gp;
         matched++;
       } else {
         unmatched++;
@@ -444,19 +446,22 @@ function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDi
 
 function computeDrops(allPlayers){
   // Position-group average Pts/$M across all players with data
+  const pts82 = p => (p.pts2526>0 && p.gp2526>0) ? p.pts2526/p.gp2526*82 : null;
   const buckets = {F:[], D:[], G:[]};
   for(const p of allPlayers){
-    if(p.pts2526>0 && p.cap>0) buckets[posGroup(p.pos)].push(p.pts2526/p.cap);
+    const v = pts82(p);
+    if(v !== null && p.cap>0) buckets[posGroup(p.pos)].push(v/p.cap);
   }
   const avg = {};
   for(const [g, vals] of Object.entries(buckets)){
     avg[g] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 1;
   }
 
-  // Normalized score: player ppm / position-group avg ppm
-  const normScore = p => (p.pts2526>0 && p.cap>0)
-    ? (p.pts2526/p.cap) / (avg[posGroup(p.pos)] || 1)
-    : null;
+  // Normalized score: player extrapolated ppm / position-group avg ppm
+  const normScore = p => {
+    const v = pts82(p);
+    return (v !== null && p.cap>0) ? (v/p.cap) / (avg[posGroup(p.pos)] || 1) : null;
+  };
 
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
@@ -490,7 +495,7 @@ function render(){
   });
 
   const dropIds = computeDrops(players);
-  const ppm = p => (p.pts2526>0&&p.cap>0) ? p.pts2526/p.cap : 0;
+  const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
     let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='suggestedMove' ? (dropIds.has(a.id)?0:1) : (a[sortCol]??'');
     let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='suggestedMove' ? (dropIds.has(b.id)?0:1) : (b[sortCol]??'');
@@ -498,7 +503,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','team','fantasyTeam','cap','pts2526','ptsperm','pts','status','suggestedMove'].forEach(c=>{
+  ['name','pos','team','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','suggestedMove'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -522,7 +527,8 @@ function render(){
       </td>
       <td>${p.cap>0?'$'+p.cap.toFixed(2)+'M':'—'}${contractYearStr(p)?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)}</div>`:''}</td>
       <td>${p.pts2526>0?p.pts2526:'—'}</td>
-      <td>${p.pts2526>0&&p.cap>0?(p.pts2526/p.cap).toFixed(1):'—'}</td>
+      <td>${p.gp2526>0?p.gp2526:'—'}</td>
+      <td>${p.pts2526>0&&p.gp2526>0&&p.cap>0?((p.pts2526/p.gp2526*82)/p.cap).toFixed(1):'—'}</td>
       <td>${pg==='G'?'—':(p.pts>0?p.pts:'—')}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}</td>
       <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
@@ -531,7 +537,7 @@ function render(){
         <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="11" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="12" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
