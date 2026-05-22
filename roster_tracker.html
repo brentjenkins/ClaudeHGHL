@@ -140,10 +140,13 @@ tr:hover td{background:#fafaf8}
 .summary-team-name{font-size:26px;font-weight:800;flex:1;line-height:1.1}
 .summary-rank-badge{font-size:13px;font-weight:700;background:#185FA5;color:#fff;border-radius:20px;padding:4px 14px;white-space:nowrap}
 .summary-pts-total{font-size:13px;color:#555;white-space:nowrap}
-.summary-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1}
-.summary-col h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1px solid #f0f0ee}
+.summary-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;flex:1}
+.summary-col h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:.35rem;padding-bottom:.35rem;border-bottom:1px solid #f0f0ee}
 .summary-col h3.departed-hdr{color:#dc2626}
 .summary-col h3.arrived-hdr{color:#16a34a}
+.summary-col h3.returning-hdr{color:#185FA5}
+.summary-col-colhdrs{display:grid;grid-template-columns:24px 1fr 28px 36px;gap:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding:0 0 3px;border-bottom:1px solid #f0f0ee;margin-bottom:2px}
+.summary-col-colhdrs span:nth-child(3),.summary-col-colhdrs span:nth-child(4){text-align:right}
 .summary-player{display:grid;grid-template-columns:24px 1fr 28px 36px;align-items:baseline;gap:4px;padding:3px 0;font-size:13px}
 .summary-player-pos{font-size:11px;font-weight:600;color:#9ca3af}
 .summary-player-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1383,10 +1386,14 @@ function renderSummaryCard(teamIdx){
   const arrived = players
     .filter(p => p.fantasyTeam === team && p.fantasyTeam2526 !== team)
     .sort((a,b) => (b.pts||0)-(a.pts||0));
+  const returning = players
+    .filter(p => p.fantasyTeam2526 === team && p.fantasyTeam === team)
+    .sort((a,b) => (b.pts||0)-(a.pts||0));
 
   // Totals
-  const deptPts  = departed.reduce((s,p) => s+(p.pts||0), 0);
-  const arrPts   = arrived.reduce((s,p)  => s+(p.pts||0), 0);
+  const deptPts    = departed.reduce((s,p)   => s+(p.pts||0), 0);
+  const arrPts     = arrived.reduce((s,p)    => s+(p.pts||0), 0);
+  const retPts     = returning.reduce((s,p)  => s+(p.pts||0), 0);
   const projPtsTotal = roster2627.reduce((s,p) => s+(p.pts||0), 0);
   const prevPtsTotal = roster2526.reduce((s,p) => s+(p.pts2526||0), 0);
   const deltaPts = projPtsTotal - prevPtsTotal;
@@ -1424,9 +1431,13 @@ function renderSummaryCard(teamIdx){
       <span class="summary-player-pts">${p.pts||'—'}</span>
     </div>`;
 
-  const colTotal = (pts, cls) => pts > 0
-    ? `<div class="summary-col-total" style="color:${cls==='departed'?'#dc2626':'#16a34a'}">${pts} pts</div>`
-    : '';
+  const colHdrs = `<div class="summary-col-colhdrs">
+    <span>Pos</span><span>Player</span><span>Age</span><span>Proj Pts</span>
+  </div>`;
+  const colTotal = (pts, cls) => {
+    const color = cls==='departed'?'#dc2626':cls==='arrived'?'#16a34a':'#185FA5';
+    return pts > 0 ? `<div class="summary-col-total" style="color:${color}">${pts} pts</div>` : '';
+  };
 
   document.getElementById('summaryNavLabel').textContent =
     `${teamIdx+1} of ${DRAFT_TEAMS.length}  —  ${team}`;
@@ -1464,13 +1475,22 @@ function renderSummaryCard(teamIdx){
     </div>
     <div class="summary-cols">
       <div class="summary-col">
+        <h3 class="returning-hdr">Returning (${returning.length})</h3>
+        ${colHdrs}
+        ${returning.length
+          ? returning.map(p => playerRow(p,'returning')).join('') + colTotal(retPts,'returning')
+          : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
+      </div>
+      <div class="summary-col">
         <h3 class="departed-hdr">Departures (${departed.length})</h3>
+        ${colHdrs}
         ${departed.length
           ? departed.map(p => playerRow(p,'departed')).join('') + colTotal(deptPts,'departed')
           : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
       <div class="summary-col">
         <h3 class="arrived-hdr">New Arrivals (${arrived.length})</h3>
+        ${colHdrs}
         ${arrived.length
           ? arrived.map(p => playerRow(p,'arrived')).join('') + colTotal(arrPts,'arrived')
           : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
