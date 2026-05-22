@@ -10,6 +10,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
 .title{font-size:22px;font-weight:600}
 .subtitle{font-size:13px;color:#888;margin-top:2px}
+.view-tabs{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid #eee}
+.view-tab{padding:.5rem 1.5rem;font-size:14px;font-weight:500;color:#888;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s}
+.view-tab:hover{color:#1a1a18}
+.view-tab.active{color:#1a1a18;border-bottom-color:#185FA5}
+.draft-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px;margin-bottom:1.5rem;overflow-x:auto}
+.draft-card{background:#f7f7f5;border-radius:8px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
+.draft-pick{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em}
+.draft-card-header{display:flex;align-items:center;gap:5px;min-width:0}
+.draft-card-logo{width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
+.draft-card-name{font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.draft-card-pts{font-size:12px;font-weight:600;color:#1a1a18}
+.draft-card-meta{font-size:11px;color:#888}
+.draft-card-div{height:1px;background:#e5e7eb;margin:.1rem 0}
+.draft-card-cap{font-size:11px;color:#555}
+.draft-card-pos{display:flex;gap:4px;font-size:11px;font-weight:500}
+.draft-card-pos span{background:#fff;border-radius:4px;padding:1px 5px;color:#1a1a18}
 .stats-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px;margin-bottom:1.25rem;overflow-x:auto}
 .team-card{background:#f7f7f5;border-radius:8px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:5px;min-width:0}
 .team-card-header{display:flex;align-items:center;gap:5px;min-width:0}
@@ -85,6 +101,16 @@ tr:hover td{background:#fafaf8}
 </head>
 <body>
 
+<div class="view-tabs">
+  <button class="view-tab active" onclick="setView('roster')">Roster Tracker</button>
+  <button class="view-tab" onclick="setView('draft')">HGHL 2026–27 Draft</button>
+</div>
+
+<div id="view-draft" style="display:none">
+  <div class="draft-grid" id="draftCards"></div>
+</div>
+
+<div id="view-roster">
 <div class="header">
   <div>
     <div class="title">NHL roster &amp; cap tracker <span style="font-size:14px;font-weight:400;color:#888">2026–27</span></div>
@@ -179,6 +205,8 @@ tr:hover td{background:#fafaf8}
     <span class="source-dot dot-manual"></span>Manual
   </span>
 </div>
+
+</div><!-- /view-roster -->
 
 <!-- Edit/Add modal -->
 <div class="modal-bg" id="modal" style="display:none">
@@ -659,7 +687,66 @@ function render(){
 }
 
 const CAP_LIMIT = 104;
-const NHL_SEASON_YEAR = 2026; // first calendar year of the current season (2026-27)
+const NHL_SEASON_YEAR = 2026;
+
+// 2025-26 final standings — determines draft order (rank 9 picks first)
+const DRAFT_STANDINGS = {
+  'Bossy Posse':         {rank:1, pts:1157, ptsChange:+5,  ptsBack:0,   moves:14},
+  'Pernicious Puckers':  {rank:2, pts:1136, ptsChange: 0,  ptsBack:21,  moves:8},
+  'Motor City Wings':    {rank:3, pts:1134, ptsChange:+7,  ptsBack:23,  moves:9},
+  'Silence of the Lamb': {rank:4, pts:1105, ptsChange:+12, ptsBack:52,  moves:9},
+  'Damage Inc.':         {rank:5, pts:1091, ptsChange:+8,  ptsBack:66,  moves:9},
+  'Blue Line Bangers':   {rank:6, pts:1058, ptsChange:+9,  ptsBack:99,  moves:16},
+  'Muller Time!':        {rank:7, pts:1055, ptsChange:+4,  ptsBack:102, moves:8},
+  'Dumb and Goalie To':  {rank:8, pts:1040, ptsChange:+2,  ptsBack:117, moves:10},
+  'Killer Whales':       {rank:9, pts:909,  ptsChange:+12, ptsBack:248, moves:10},
+};
+
+let currentView = 'roster';
+
+function setView(v){
+  currentView = v;
+  document.getElementById('view-roster').style.display = v==='roster' ? '' : 'none';
+  document.getElementById('view-draft').style.display  = v==='draft'  ? '' : 'none';
+  document.querySelectorAll('.view-tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && v==='roster') || (i===1 && v==='draft'));
+  });
+  if(v==='draft') renderDraftCards();
+}
+
+function renderDraftCards(){
+  // Draft order: worst team picks first (rank 9 → pick 1, rank 1 → pick 9)
+  const pickOrder = Object.entries(DRAFT_STANDINGS)
+    .sort((a,b) => b[1].rank - a[1].rank);  // rank 9 first
+
+  document.getElementById('draftCards').innerHTML = pickOrder.map(([team, s], idx) => {
+    const pick   = idx + 1;
+    const logo   = teamLogos[team];
+    const roster = players.filter(p => p.fantasyTeam === team);
+    const cap    = roster.reduce((sum,p) => sum+(p.cap||0), 0);
+    const rem    = CAP_LIMIT - cap;
+    const remColor = rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
+    const fN = roster.filter(p=>posGroup(p.pos)==='F').length;
+    const dN = roster.filter(p=>posGroup(p.pos)==='D').length;
+    const gN = roster.filter(p=>posGroup(p.pos)==='G').length;
+    const chg = s.ptsChange > 0 ? `+${s.ptsChange}` : `${s.ptsChange}`;
+
+    return `<div class="draft-card">
+      <div class="draft-pick">Pick ${pick}</div>
+      <div class="draft-card-header">
+        ${logo ? `<img src="${esc(logo)}" class="draft-card-logo" loading="lazy">` : '<div class="draft-card-logo"></div>'}
+        <span class="draft-card-name" title="${esc(team)}">${esc(team)}</span>
+      </div>
+      <div class="draft-card-pts">${s.pts} pts</div>
+      <div class="draft-card-meta">${s.ptsBack > 0 ? `${s.ptsBack} back` : '1st place'} &bull; ${chg} &bull; ${s.moves} moves</div>
+      <div class="draft-card-div"></div>
+      <div class="draft-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
+      <div class="draft-card-pos">
+        <span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span>
+      </div>
+    </div>`;
+  }).join('');
+} // first calendar year of the current season (2026-27)
 
 // ABP config — updated live by the controls row
 let abpPtsSrc = 'pts2526';
