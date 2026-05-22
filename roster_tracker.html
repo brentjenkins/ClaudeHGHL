@@ -111,6 +111,10 @@ tr:hover td{background:#fafaf8}
   height:85vh;max-width:70vw;object-fit:contain;border-radius:12px;
   filter:drop-shadow(0 0 40px rgba(255,215,0,.8));
   animation:mullerRise 1.1s cubic-bezier(.22,1,.36,1) forwards}
+#mullerVideo{position:absolute;bottom:-110%;left:-10%;
+  width:66vw;height:75vh;border-radius:12px;border:none;
+  box-shadow:0 0 40px rgba(255,215,0,.8);
+  animation:mullerRise 1.1s cubic-bezier(.22,1,.36,1) forwards}
 @keyframes mullerRise{
   0%  {bottom:-110%;left:-10%;opacity:0;transform:rotate(-4deg) scale(.9)}
   55% {opacity:1}
@@ -281,7 +285,9 @@ tr:hover td{background:#fafaf8}
 
 <div id="mullerOverlay">
   <div class="muller-label">MULLER TIME! 🏒</div>
-  <img src="/muller.webp" alt="Kirk Muller raising the Cup">
+  <img id="mullerPhoto" src="/muller.webp" alt="Kirk Muller raising the Cup">
+  <iframe id="mullerVideo" style="display:none" frameborder="0"
+    allow="autoplay; encrypted-media" allowfullscreen></iframe>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -860,22 +866,52 @@ function _whaleFrame(){
   _whaleRAF = requestAnimationFrame(_whaleFrame);
 }
 
-let _mullerInterval = null, _mullerHideTimeout = null;
+let _mullerInterval = null, _mullerHideTimeout = null, _mullerPhase = 0;
 
 function showMullerOverlay(show){
   const el = document.getElementById('mullerOverlay');
   if(!el) return;
   clearInterval(_mullerInterval);  _mullerInterval = null;
   clearTimeout(_mullerHideTimeout); _mullerHideTimeout = null;
-  if(!show){ el.style.display = 'none'; return; }
+  if(!show){
+    el.style.display = 'none';
+    const vid = document.getElementById('mullerVideo');
+    if(vid) vid.src = '';
+    return;
+  }
+
+  const PHOTO_DURATION = 5000;
+  const VIDEO_DURATION = 12000;
 
   function playOnce(){
+    const photo = document.getElementById('mullerPhoto');
+    const vid   = document.getElementById('mullerVideo');
+    const label = el.querySelector('.muller-label');
+    const isVideo = (_mullerPhase % 2 === 1);
+    _mullerPhase++;
+
+    if(isVideo){
+      photo.style.display = 'none';
+      vid.style.display = 'block';
+      vid.src = 'about:blank';
+      // small delay so display:block is painted before src triggers load
+      setTimeout(() => { vid.src = 'https://www.youtube.com/embed/I6Mlib8UbkU?autoplay=1'; }, 50);
+      vid.style.animation = 'none'; vid.offsetHeight; vid.style.animation = '';
+    } else {
+      vid.style.display = 'none';
+      vid.src = '';
+      photo.style.display = 'block';
+      photo.style.animation = 'none'; photo.offsetHeight; photo.style.animation = '';
+    }
+
     el.style.display = 'block';
-    // Re-trigger CSS animations
-    [el.querySelector('img'), el.querySelector('.muller-label')].forEach(e => {
-      e.style.animation = 'none'; e.offsetHeight; e.style.animation = '';
-    });
-    _mullerHideTimeout = setTimeout(() => { el.style.display = 'none'; }, 5000);
+    label.style.animation = 'none'; label.offsetHeight; label.style.animation = '';
+
+    const duration = isVideo ? VIDEO_DURATION : PHOTO_DURATION;
+    _mullerHideTimeout = setTimeout(() => {
+      el.style.display = 'none';
+      if(isVideo){ const v = document.getElementById('mullerVideo'); if(v) v.src = ''; }
+    }, duration);
   }
 
   playOnce();
