@@ -813,8 +813,7 @@ function renderDraftView(){
   // Sliding window: start 4 picks back, show through end of current round,
   // then preview first 3 picks of the next round.
   const startN      = Math.max(0, total - 4);
-  const endOfRound  = curRound * 9 - 1;   // last global pick index of current round
-  const endN        = endOfRound + 1;      // peek at first pick of next round only
+  const endN = startN + 8;   // always show exactly 9 rows; wraps into next round naturally
 
   let html = '';
   let lastRound = null;
