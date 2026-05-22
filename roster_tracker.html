@@ -92,6 +92,7 @@ tr:hover td{background:#fafaf8}
     <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
     <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
     <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
+    <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
   </div>
 </div>
@@ -141,6 +142,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
   <th onclick="setSortCol('fantasyTeam')">Fantasy team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
+  <th onclick="setSortCol('pts2526')">25-26 <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
   <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
   <th></th>
@@ -189,6 +191,7 @@ const PROXY = '';  // same origin — served by the proxy itself
 const LS_PLAYERS = 'nhl_players_v3';
 const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
+const LS_STATS   = 'hghl_stats_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false;
 
@@ -204,6 +207,36 @@ function load(){
   teamLogos    = lsGet(LS_LOGOS)   || {};
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
   checkProxy();
+}
+
+async function syncStats(){
+  const btn = document.getElementById('statsBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Syncing 32 teams…';
+  try {
+    const d = await fetch('/stats').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched=0, unmatched=0;
+    for(const p of players){
+      const key = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
+      if(d.players[key]){
+        p.pts2526 = d.players[key].fpts;
+        matched++;
+      } else {
+        unmatched++;
+      }
+    }
+    lsSet(LS_PLAYERS, players);
+    lsSet(LS_STATS, d.players);
+    render();
+    toast(`Stats synced! ${matched} players updated, ${unmatched} unmatched.`);
+    if(d.errors.length) console.warn('Stats errors:', d.errors);
+  } catch(e){
+    toast('Stats sync failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='📊 Sync Stats';
+  }
 }
 
 function defaultPlayers(){
@@ -429,7 +462,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','team','fantasyTeam','cap','pts','status'].forEach(c=>{
+  ['name','pos','team','fantasyTeam','cap','pts2526','pts','status'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -451,6 +484,7 @@ function render(){
         <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.fantasyTeam||'—')}</span>
       </td>
       <td>${p.cap>0?'$'+p.cap.toFixed(2)+'M':'—'}${contractYearStr(p)?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)}</div>`:''}</td>
+      <td>${p.pts2526>0?p.pts2526:'—'}</td>
       <td>${pg==='G'?'—':(p.pts>0?p.pts:'—')}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}</td>
       <td style="text-align:right;white-space:nowrap">
@@ -458,7 +492,7 @@ function render(){
         <button class="del-btn" onclick="deletePlayer(${p.id})" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="8" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="9" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;

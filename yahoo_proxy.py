@@ -411,6 +411,63 @@ def nhl_rosters():
     return jsonify({"ok": True, "active": active, "count": len(active), "errors": errors})
 
 
+# ── 2025-26 season stats ──────────────────────────────────────────────────────
+
+@app.route("/stats")
+def season_stats():
+    """
+    Returns 2025-26 regular-season fantasy points for all NHL players.
+    Scoring: Goal=1, Assist=1, Goalie Win=2, Goalie Shutout=3 (bonus on top of win).
+    """
+    stats = {}
+    errors = []
+
+    for team in NHL_API_TEAMS:
+        try:
+            url = f"https://api-web.nhle.com/v1/club-stats/{team}/20252026/2"
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+
+            for s in data.get("skaters", []):
+                first = s.get("firstName", {}).get("default", "")
+                last  = s.get("lastName",  {}).get("default", "")
+                full  = f"{first} {last}".strip()
+                pos   = _POS_MAP.get(s.get("positionCode", ""), "C")
+                if not full:
+                    continue
+                key  = f"{full.lower()}_{_pos_group(pos)}"
+                fpts = s.get("goals", 0) + s.get("assists", 0)
+                stats[key] = {
+                    "name": full, "fpts": fpts,
+                    "goals": s.get("goals", 0), "assists": s.get("assists", 0),
+                    "gp": s.get("gamesPlayed", 0),
+                }
+
+            for g in data.get("goalies", []):
+                first = g.get("firstName", {}).get("default", "")
+                last  = g.get("lastName",  {}).get("default", "")
+                full  = f"{first} {last}".strip()
+                if not full:
+                    continue
+                key  = f"{full.lower()}_G"
+                wins = g.get("wins", 0)
+                sos  = g.get("shutouts", 0)
+                fpts = wins * 2 + sos * 3
+                stats[key] = {
+                    "name": full, "fpts": fpts,
+                    "wins": wins, "shutouts": sos,
+                    "gp": g.get("gamesPlayed", 0),
+                }
+
+            print(f"  ✓ {team}")
+        except Exception as e:
+            errors.append(f"{team}: {str(e)}")
+            print(f"  ✗ {team}: {e}")
+        time.sleep(0.3)
+
+    print(f"Stats done: {len(stats)} players, {len(errors)} errors")
+    return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
 
 
 # ── PuckPedia signings scraper ────────────────────────────────────────────────
