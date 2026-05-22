@@ -14,9 +14,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .view-tab{padding:.5rem 1.5rem;font-size:14px;font-weight:500;color:#888;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s}
 .view-tab:hover{color:#1a1a18}
 .view-tab.active{color:#1a1a18;border-bottom-color:#185FA5}
-.draft-col{display:flex;flex-direction:column;gap:6px;max-width:760px}
+.draft-col{display:flex;flex-direction:column;gap:6px;max-width:1100px}
 .draft-round-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:.25rem 0 .25rem .875rem;margin-top:.25rem}
-.draft-row{display:grid;grid-template-columns:28px 1fr auto auto 1fr;align-items:center;gap:12px;padding:.5rem .875rem;border-radius:8px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
+.draft-row{display:grid;grid-template-columns:28px 1.2fr auto auto 1.8fr;align-items:center;gap:12px;padding:.5rem .875rem;border-radius:8px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
 .draft-row-pos{display:flex;gap:4px;font-size:11px;font-weight:500;white-space:nowrap}
 .draft-row-pos span{background:#fff;border-radius:4px;padding:1px 6px;color:#1a1a18}
 .draft-row-current{border-color:#185FA5;background:#eff6ff}
@@ -27,7 +27,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .draft-row-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .draft-row-cap{font-size:12px;color:#555;white-space:nowrap}
 .draft-row-player{font-size:12px;color:#1a1a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.draft-entry{margin-top:1rem;max-width:760px}
+.draft-entry{margin-top:1rem;max-width:1100px}
 .draft-results-row{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0ee;font-size:13px;display:flex;justify-content:space-between;align-items:center}
 .draft-results-row:hover{background:#f7f7f5}
 .draft-results-row:last-child{border-bottom:none}
@@ -114,7 +114,7 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <div id="view-draft" style="display:none">
-  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:760px;margin-bottom:.75rem">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:1100px;margin-bottom:.75rem">
     <span id="draftRoundLabel" style="font-size:22px;font-weight:700">Round 1</span>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="undoLastPick()" style="height:28px;font-size:12px">↩ Undo</button>
