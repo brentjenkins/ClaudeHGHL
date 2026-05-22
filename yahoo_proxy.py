@@ -482,6 +482,7 @@ _FORMAL_TO_NICK = {
     "christopher": "chris",
     "daniel":    "dan",
     "david":     "dave",
+    "joshua":    "josh",
     "matthew":   "matt",
     "michael":   "mike",
     "mitchell":  "mitch",
