@@ -102,6 +102,35 @@ tr:hover td{background:#fafaf8}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:.6rem 1.25rem;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
+/* ── Killer Whales watermark ─────────────────────────────────────── */
+#whaleWatermark{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden;display:none}
+.whale-body{position:absolute;font-size:160px;line-height:1;right:12%;top:-180px;
+  animation:whaleDive 5s cubic-bezier(.4,0,.6,1) infinite;transform-origin:center center}
+.whale-splash{position:absolute;font-size:90px;right:22%;bottom:30px;opacity:0;
+  animation:whaleSplash 5s ease-out infinite}
+.whale-tank{position:absolute;bottom:0;left:0;right:0;height:90px;
+  background:linear-gradient(to top,rgba(56,189,248,.18) 0%,transparent 100%);
+  animation:tankPulse 2.5s ease-in-out infinite}
+@keyframes whaleDive{
+  0%   {top:-180px;right:12%;transform:rotate(8deg);opacity:0}
+  6%   {opacity:.28}
+  35%  {top:28vh;right:20%;transform:rotate(-20deg);opacity:.28}
+  65%  {top:62vh;right:30%;transform:rotate(-65deg);opacity:.22}
+  82%  {top:82vh;right:36%;transform:rotate(-88deg);opacity:.1}
+  88%  {top:92vh;right:38%;transform:rotate(-90deg);opacity:0}
+  89%  {top:-180px;right:12%;transform:rotate(8deg);opacity:0}
+  100% {top:-180px;right:12%;transform:rotate(8deg);opacity:0}
+}
+@keyframes whaleSplash{
+  0%,83%{opacity:0;transform:scale(.6) translateY(0)}
+  87%  {opacity:.55;transform:scale(1.1) translateY(-20px)}
+  94%  {opacity:0;transform:scale(1.4) translateY(-40px)}
+  100% {opacity:0}
+}
+@keyframes tankPulse{
+  0%,100%{transform:scaleY(1)}
+  50%{transform:scaleY(1.25)}
+}
 </style>
 </head>
 <body>
@@ -252,6 +281,12 @@ tr:hover td{background:#fafaf8}
     <button class="btn btn-primary" onclick="savePlayer()">Save</button>
   </div>
 </div>
+</div>
+
+<div id="whaleWatermark">
+  <div class="whale-body">🐋</div>
+  <div class="whale-splash">💦</div>
+  <div class="whale-tank"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -757,6 +792,7 @@ function setView(v){
   currentView = v;
   document.getElementById('view-roster').style.display = v==='roster' ? '' : 'none';
   document.getElementById('view-draft').style.display  = v==='draft'  ? '' : 'none';
+  if(v==='roster') document.getElementById('whaleWatermark').style.display = 'none';
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', (i===0 && v==='roster') || (i===1 && v==='draft'));
   });
@@ -768,9 +804,11 @@ function renderDraftView(){
   const total    = picks.length;
   const curRound = Math.floor(total / 9) + 1;
 
+  const onClock = DRAFT_TEAMS[total % 9];
+  document.getElementById('whaleWatermark').style.display = onClock === 'Killer Whales' ? '' : 'none';
   document.getElementById('draftRoundLabel').textContent = `Round ${curRound}`;
   document.getElementById('draftOnClock').textContent =
-    `On the clock: ${DRAFT_TEAMS[total % 9]} — Pick ${total + 1} (Round ${curRound}, #${total % 9 + 1})`;
+    `On the clock: ${onClock} — Pick ${total + 1} (Round ${curRound}, #${total % 9 + 1})`;
 
   // Sliding window: start 4 picks back, show through end of current round,
   // then preview first 3 picks of the next round.
