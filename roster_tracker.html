@@ -762,54 +762,54 @@ function setView(v){
 }
 
 function renderDraftView(){
-  const picks   = draftState.picks;
-  const total   = picks.length;
-  const curIdx  = total % 9;          // 0-8 index into DRAFT_TEAMS
+  const picks    = draftState.picks;
+  const total    = picks.length;
   const curRound = Math.floor(total / 9) + 1;
-
-  // Most-recent pick per team (for display)
-  const lastPick = {};
-  picks.forEach((p, i) => { lastPick[p.team] = {...p, globalIdx: i}; });
-
-  // Only show player info for the 4 most recent picks
-  const showThreshold = total - 4;
 
   document.getElementById('draftRoundLabel').textContent = `Round ${curRound}`;
   document.getElementById('draftOnClock').textContent =
-    `On the clock: ${DRAFT_TEAMS[curIdx]} — Pick ${total + 1} (Round ${curRound}, #${curIdx + 1})`;
+    `On the clock: ${DRAFT_TEAMS[total % 9]} — Pick ${total + 1} (Round ${curRound}, #${total % 9 + 1})`;
 
-  // Build round-separator + row list
+  // Sliding window: start 4 picks back, show through end of current round,
+  // then preview first 3 picks of the next round.
+  const startN      = Math.max(0, total - 4);
+  const endOfRound  = curRound * 9 - 1;   // last global pick index of current round
+  const endN        = endOfRound + 3;      // 3 picks into next round
+
   let html = '';
-  let lastRenderedRound = null;
+  let lastRound = null;
 
-  DRAFT_TEAMS.forEach((team, idx) => {
-    // Determine which round this slot is in given current state
-    // Show a "Round X" label when the round changes across the column
-    const slotRound = curRound; // all slots show current round
-    if(slotRound !== lastRenderedRound){
-      html += `<div class="draft-round-hdr">Round ${slotRound}</div>`;
-      lastRenderedRound = slotRound;
+  for(let n = startN; n <= endN; n++){
+    const round   = Math.floor(n / 9) + 1;
+    const teamIdx = n % 9;
+    const team    = DRAFT_TEAMS[teamIdx];
+    const pick    = picks[n];              // defined only if already picked
+    const isCurrent  = n === total;
+    const showPlayer = pick && n >= total - 4;
+
+    if(round !== lastRound){
+      html += `<div class="draft-round-hdr">Round ${round}</div>`;
+      lastRound = round;
     }
 
-    const isCurrent = idx === curIdx;
-    const logo = teamLogos[team];
+    const logo   = teamLogos[team];
     const roster = players.filter(p => p.fantasyTeam === team);
-    const cap = roster.reduce((s,p) => s+(p.cap||0), 0);
-    const rem = CAP_LIMIT - cap;
+    const cap    = roster.reduce((s,p) => s+(p.cap||0), 0);
+    const rem    = CAP_LIMIT - cap;
     const remColor = rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
-    const lp = lastPick[team];
-    const showPlayer = lp && lp.globalIdx >= showThreshold;
 
     html += `<div class="draft-row${isCurrent ? ' draft-row-current' : ''}">
-      <div class="draft-row-pick">${idx + 1}</div>
+      <div class="draft-row-pick">${teamIdx + 1}</div>
       <div class="draft-row-team">
         ${logo ? `<img src="${esc(logo)}" class="draft-row-logo" loading="lazy">` : '<div class="draft-row-logo"></div>'}
         <span class="draft-row-name">${esc(team)}</span>
       </div>
       <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
-      <div class="draft-row-player">${showPlayer ? `${esc(lp.player)} &bull; ${esc(lp.pos)} &bull; ${esc(lp.nhlTeam||'—')}${lp.cap>0?` &bull; $${lp.cap.toFixed(2)}M`:''}` : ''}</div>
+      <div class="draft-row-player">${showPlayer
+        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}`
+        : ''}</div>
     </div>`;
-  });
+  }
 
   document.getElementById('draftColumn').innerHTML = html;
   renderDraftSearch();
