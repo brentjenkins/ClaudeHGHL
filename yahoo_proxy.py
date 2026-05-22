@@ -8,7 +8,7 @@ Then click "Sync Yahoo" in the roster tracker.
 Requires: pip install requests flask flask-cors
 """
 
-import json, os, time, threading, webbrowser, ssl, subprocess, sys, traceback
+import json, os, time, threading, webbrowser, ssl, subprocess, sys, traceback, unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, urlencode
@@ -372,6 +372,13 @@ NHL_API_TEAMS = [t for t in NHL_TEAMS if t != "ARI"]
 _POS_MAP = {"C": "C", "L": "LW", "R": "RW", "D": "D", "G": "G"}
 
 
+def normalize_name(name: str) -> str:
+    """Fold accented chars to ASCII and strip hyphens/periods for key matching."""
+    nfd = unicodedata.normalize("NFD", name)
+    ascii_only = nfd.encode("ascii", "ignore").decode("ascii")
+    return ascii_only.replace("-", "").replace(".", "")
+
+
 def _pos_group(pos):
     """Map any position abbreviation to F / D / G."""
     if pos == "D":
@@ -400,7 +407,7 @@ def nhl_rosters():
                     full = f"{first} {last}".strip()
                     pos = _POS_MAP.get(p.get("positionCode", ""), "C")
                     if full:
-                        key = f"{full.lower()}_{_pos_group(pos)}"
+                        key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
                         active[key] = {"name": full, "nhlTeam": team, "pos": pos,
                                        "birthDate": p.get("birthDate", "")}
             print(f"  ✓ {team}")
@@ -437,7 +444,7 @@ def season_stats():
                 pos   = _POS_MAP.get(s.get("positionCode", ""), "C")
                 if not full:
                     continue
-                key  = f"{full.lower()}_{_pos_group(pos)}"
+                key  = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
                 fpts = s.get("goals", 0) + s.get("assists", 0)
                 stats[key] = {
                     "name": full, "fpts": fpts,
@@ -451,7 +458,7 @@ def season_stats():
                 full  = f"{first} {last}".strip()
                 if not full:
                     continue
-                key  = f"{full.lower()}_G"
+                key  = f"{normalize_name(full).lower()}_G"
                 wins = g.get("wins", 0)
                 sos  = g.get("shutouts", 0)
                 fpts = wins * 2 + sos * 3
@@ -547,8 +554,8 @@ def signings():
                 continue
             first_lower = p.get("p_fn", "").lower()
             nick = _FORMAL_TO_NICK.get(first_lower)
-            key = f"{full.lower()}_{pg}"
-            nick_key = f"{nick} {p.get('p_ln','').lower()}_{pg}" if nick else None
+            key = f"{normalize_name(full).lower()}_{pg}"
+            nick_key = f"{normalize_name(nick + ' ' + p.get('p_ln','')).lower()}_{pg}" if nick else None
 
             if exp >= SEASON_CUTOFF:
                 # Active contract — first occurrence wins (sign_date DESC = most recent first)

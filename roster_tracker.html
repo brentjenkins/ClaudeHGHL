@@ -253,14 +253,32 @@ let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'c
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'');
 
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+function dedup(){
+  const srcRank = {yahoo:3, manual:2, nhl:1};
+  const seen = new Map();
+  for(const p of players){
+    const k = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+    if(!seen.has(k) || (srcRank[p.source]||0) > (srcRank[seen.get(k).source]||0))
+      seen.set(k, p);
+  }
+  const before = players.length;
+  players = [...seen.values()];
+  if(players.length < before){
+    console.log(`Deduped ${before - players.length} duplicate player(s)`);
+    lsSet(LS_PLAYERS, players);
+  }
+}
 
 function load(){
   players      = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions = lsGet(LS_TX)      || [];
   teamLogos    = lsGet(LS_LOGOS)   || {};
+  dedup();
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
   checkProxy();
 }
@@ -274,7 +292,7 @@ async function syncStats(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
+      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
       if(d.players[key]){
         p.pts2526 = d.players[key].fpts;
         p.gp2526  = d.players[key].gp;
@@ -323,7 +341,7 @@ async function syncSignings(){
     const expiredSet = new Set(d.expired || []);
     let matched=0, cleared=0, unmatched=0;
     for(const p of players){
-      const key = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
+      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
       if(d.players[key]){
         const s = d.players[key];
         p.cap = s.cap;
@@ -362,7 +380,7 @@ async function syncAllNHL(){
     if(nr.error) throw new Error(nr.error);
     let added=0, updated=0;
     for(const [key, p] of Object.entries(nr.active)){
-      const ex = players.find(x=>`${x.name.toLowerCase()}_${posGroup(x.pos)}`===key);
+      const ex = players.find(x=>`${normName(x.name).toLowerCase()}_${posGroup(x.pos)}`===key);
       if(ex){
         ex.status = 'roster';
         if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
@@ -426,7 +444,7 @@ async function doSync(){
 
     let added=0, updated=0;
     for(const yp of rd.players){
-      const ex = players.find(p=>p.name.toLowerCase()===yp.name.toLowerCase() && posGroup(p.pos)===posGroup(yp.pos));
+      const ex = players.find(p=>normName(p.name).toLowerCase()===normName(yp.name).toLowerCase() && posGroup(p.pos)===posGroup(yp.pos));
       if(ex){
         ex.fantasyTeam = yp.fantasyTeam;
         if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
@@ -453,7 +471,7 @@ async function doSync(){
     if(!nr.error && nr.active){
       for(const p of players){
         const prev = p.status;
-        const nhlKey = `${p.name.toLowerCase()}_${posGroup(p.pos)}`;
+        const nhlKey = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
         p.status = nr.active[nhlKey] ? 'roster' : 'non-roster';
         if(p.status !== prev) rosterUpdated++;
       }
