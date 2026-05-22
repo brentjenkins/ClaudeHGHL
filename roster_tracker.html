@@ -703,6 +703,7 @@ function populateFantasyFilter() {
   el2526.innerHTML = '<option value="">All 25-26 teams</option>' +
     teams2526.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   el2627.innerHTML = '<option value="">All 26-27 teams</option>' +
+    '<option value="__none__">None (Free Agents)</option>' +
     teams2627.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   if(prev2526) el2526.value = prev2526;
   if(prev2627) el2627.value = prev2627;
@@ -787,7 +788,8 @@ function render(){
     if(fr&&p.status!==fr) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
-    if(ff && (p.fantasyTeam||'')!==ff) return false;
+    if(ff === '__none__' && p.fantasyTeam) return false;
+    else if(ff && ff !== '__none__' && (p.fantasyTeam||'')!==ff) return false;
     if(ff2526 && (p.fantasyTeam2526||'')!==ff2526) return false;
     return true;
   });
