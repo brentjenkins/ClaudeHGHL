@@ -507,9 +507,11 @@ def signings():
     all_players = {}
     errors = []
 
-    # Fetch all signings from 2019-07-01 onward; filter to contracts active in 2026-27
+    # Fetch signings back to 2017-01-01: an 8-year deal signed mid-season 2018-19
+    # (e.g. Stone Feb 2019, Seguin Sep 2018) starts 2019-20 and expires 2026-27.
+    # SEASON_CUTOFF filters to only contracts still active this season.
     SEASON_CUTOFF = "2026-2027"
-    DATE_FROM = "2019-07-01"
+    DATE_FROM = "2017-01-01"
     DATE_TO = "2027-12-31"
 
     q_base = {
