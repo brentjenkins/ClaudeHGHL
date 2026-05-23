@@ -1609,14 +1609,14 @@ function renderSummaryCard(teamIdx){
           : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
       <div class="summary-col">
-        <h3 class="departed-hdr">Departures (${departed.length})</h3>
+        <h3 class="departed-hdr">Outgoing (${departed.length})</h3>
         ${colHdrs}
         ${departed.length
           ? departed.map(p => playerRow(p,'departed')).join('') + colTotal(deptPts,'departed')
           : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
       <div class="summary-col">
-        <h3 class="arrived-hdr">New Arrivals (${arrived.length})</h3>
+        <h3 class="arrived-hdr">Incoming (${arrived.length})</h3>
         ${colHdrs}
         ${arrived.length
           ? arrived.map(p => playerRow(p,'arrived')).join('') + colTotal(arrPts,'arrived')
