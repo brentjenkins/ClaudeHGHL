@@ -378,6 +378,10 @@ tr:hover td{background:#fafaf8}
         <span style="flex:1;color:#555">Yrs remaining ×</span>
         <input type="number" id="rankWtYrs" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="flex:1;color:#555">Youth bonus (35−age) ×</span>
+        <input type="number" id="rankWtAge" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
     </div>
   </div>
   <div class="modal-actions">
@@ -532,7 +536,7 @@ function applyProjPtsFallback(){
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
-const RANK_DEFAULTS = { multF: 1.0, multD: 1.4, multG: 1.0, wtPPTSM: 1, wtYrs: 2 };
+const RANK_DEFAULTS = { multF: 1.0, multD: 1.4, multG: 1.0, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
 
 function openRankModal(){
   document.getElementById('rankMultF').value   = RANK_DEFAULTS.multF;
@@ -540,6 +544,7 @@ function openRankModal(){
   document.getElementById('rankMultG').value   = RANK_DEFAULTS.multG;
   document.getElementById('rankWtPPTSM').value = RANK_DEFAULTS.wtPPTSM;
   document.getElementById('rankWtYrs').value   = RANK_DEFAULTS.wtYrs;
+  document.getElementById('rankWtAge').value   = RANK_DEFAULTS.wtAge;
   document.getElementById('rankModal').style.display = 'flex';
 }
 
@@ -568,9 +573,11 @@ function rankPlayers(){
   const multG   = parseFloat(document.getElementById('rankMultG').value)   ?? RANK_DEFAULTS.multG;
   const wtPPTSM = parseFloat(document.getElementById('rankWtPPTSM').value) ?? RANK_DEFAULTS.wtPPTSM;
   const wtYrs   = parseFloat(document.getElementById('rankWtYrs').value)   ?? RANK_DEFAULTS.wtYrs;
+  const wtAge   = parseFloat(document.getElementById('rankWtAge').value)   ?? RANK_DEFAULTS.wtAge;
 
   const multByGroup = { F: multF, D: multD, G: multG };
-  const yrsLeft = p => (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0);
+  const yrsLeft  = p => (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0);
+  const youthBonus = p => Math.max(0, 35 - (calcAge(p) ?? 35));
 
   for(const p of players) delete p.rank;
 
@@ -581,7 +588,8 @@ function rankPlayers(){
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = p.pts > 0 ? (p.pts / p.cap) * wtPPTSM : 0;
       const scoreC = yrsLeft(p) * wtYrs;
-      return { p, score: scoreA + scoreB + scoreC };
+      const scoreD = youthBonus(p) * wtAge;
+      return { p, score: scoreA + scoreB + scoreC + scoreD };
     })
     .sort((a, b) => b.score - a.score)
     .forEach(({ p }, i) => { p.rank = i + 1; });
