@@ -16,7 +16,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .view-tab.active{color:#1a1a18;border-bottom-color:#185FA5}
 .draft-col{display:flex;flex-direction:column;gap:3px;max-width:1100px}
 .draft-round-hdr{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:.1rem 0 .1rem .875rem;margin-top:.1rem}
-.draft-row{display:grid;grid-template-columns:28px 1.2fr auto auto 1.8fr;align-items:center;gap:12px;padding:.2rem .875rem;border-radius:6px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
+.draft-row{display:grid;grid-template-columns:28px 1fr auto auto 2fr;align-items:center;gap:12px;padding:.2rem .875rem;border-radius:6px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
 .draft-row-pos{display:flex;gap:4px;font-size:16px;font-weight:500;white-space:nowrap}
 .draft-row-pos span{background:#fff;border-radius:4px;padding:1px 6px;color:#1a1a18}
 .draft-row-current{border-color:#185FA5;background:#eff6ff}
@@ -181,17 +181,14 @@ tr:hover td{background:#fafaf8}
 <body>
 
 <div class="view-tabs">
-  <button class="view-tab active" onclick="setView('roster')">Roster Tracker</button>
+  <button class="view-tab active" onclick="setView('roster')">HGHL 2026-27 Players</button>
   <button class="view-tab" onclick="setView('draft')">HGHL 2026–27 Draft</button>
   <button class="view-tab" onclick="setView('summary')">Draft Summary</button>
 </div>
 
 <div id="view-draft" style="display:none">
-  <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:1380px;margin-bottom:.75rem">
+  <div style="margin-bottom:.75rem">
     <span id="draftRoundLabel" style="font-size:22px;font-weight:700">HGHL 2026-27 Draft</span>
-    <div style="display:flex;gap:8px">
-      <button class="btn" onclick="undoLastPick()" style="height:28px;font-size:12px">↩ Undo</button>
-    </div>
   </div>
   <div class="draft-col" id="draftColumn"></div>
   <div class="draft-entry">
@@ -217,20 +214,24 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <div id="view-roster">
+<div id="leagueLabel" style="display:none"></div>
 <div class="header">
-  <div>
-    <div class="title">NHL roster &amp; cap tracker <span style="font-size:14px;font-weight:400;color:#888">2026–27</span></div>
-    <div class="subtitle" id="leagueLabel">League: 465.l.97882</div>
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
-    <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
-    <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
-    <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
+  <div class="title">HGHL 2026-27 Players</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Third Party Data</span>
+      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
+      <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
+      <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
+      <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
+      <button class="btn" onclick="openRankModal()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
+      <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
+      <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
+    </div>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
-    <button class="btn" onclick="openRankModal()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
-    <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
-    <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
     <div class="proxy-bar" id="proxyBar">
       <div class="proxy-dot pulse" id="proxyDot"></div>
       <span id="proxyStatus">Checking…</span>
@@ -305,8 +306,8 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('pts')">PPTS <span id="sort-pts"></span></th>
   <th onclick="setSortCol('ptsperm')">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('app')" title="Adjusted Projected Points: D × 1.25, F/G × 1.0">APPTS <span id="sort-app"></span></th>
-  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
   <th onclick="setSortCol('rank')">Rank <span id="sort-rank"></span></th>
+  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
   <th></th>
 </tr></thead>
 <tbody id="tbody"></tbody>
@@ -470,7 +471,7 @@ const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 
-let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false, dropsSimulated = false;
+let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -944,7 +945,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsperm','app','abp','rank'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsperm','app','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -983,9 +984,9 @@ function render(){
       <td>${p.gp2526>0?p.gp2526:'—'}</td>
       <td>${p.pts>0?p.pts:'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
-      <td>${p.pts2526>0?Math.round(calcAPP(p)):'—'}</td>
-      <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
+      <td>${p.pts>0?Math.round(calcAPP(p)):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
+      <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
@@ -1263,7 +1264,8 @@ function renderDraftView(){
     const team    = DRAFT_TEAMS[teamIdx];
     const pick    = picks[n];              // defined only if already picked
     const isCurrent  = n === total;
-    const showPlayer = pick && n >= total - 4;
+    const showPlayer  = pick && n >= total - 4;
+    const isLastPick  = n === total - 1 && total > 0;
 
     if(round !== lastRound){
       html += `<div class="draft-round-hdr">Round ${round}</div>`;
@@ -1299,9 +1301,12 @@ function renderDraftView(){
         <span style="${posHi('D')}">D&thinsp;${dRem}</span>
         <span style="${posHi('G')}">G&thinsp;${gRem}</span>
       </div>
-      <div class="draft-row-player">${showPlayer
-        ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <em>${pick.projPts} Proj Pts</em>`:''}`
-        : ''}</div>
+      <div class="draft-row-player" style="display:flex;align-items:center;gap:10px">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${showPlayer
+          ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <em>${pick.projPts} Proj Pts</em>`:''}`
+          : ''}</span>
+        ${isLastPick ? `<button onclick="undoLastPick()" style="flex-shrink:0;height:26px;font-size:12px;padding:0 10px;background:none;border:1px solid #d1d5db;border-radius:6px;color:#555;cursor:pointer;white-space:nowrap">↩ Undo</button>` : ''}
+      </div>
     </div>`;
   }
 
@@ -1370,7 +1375,7 @@ let abpWiggle = 0.1;   // $M
 let abpMinPts = 20;
 
 const appMult = p => posGroup(p.pos) === 'D' ? 1.25 : 1.0;
-const calcAPP = p => (p.pts2526||0) * appMult(p);
+const calcAPP = p => (p.pts||0) * appMult(p);
 
 function getPPG(p){
   if(abpPtsSrc === 'app'){
