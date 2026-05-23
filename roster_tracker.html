@@ -1592,6 +1592,10 @@ function renderSummaryCard(teamIdx){
         <span class="summary-stat-value" style="color:${dAge.color}">${age2627!=null?age2627.toFixed(1):'—'}</span>
       </div>
       <div class="summary-stat">
+        <span class="summary-stat-label">PPTS / $M</span>
+        <span class="summary-stat-value">${capUsed > 0 ? (projPtsTotal / capUsed).toFixed(1) : '—'}</span>
+      </div>
+      <div class="summary-stat">
         <span class="summary-stat-label">Cap remaining</span>
         <span class="summary-stat-value" style="color:${capRemColor}">$${capRem.toFixed(1)}M</span>
       </div>
