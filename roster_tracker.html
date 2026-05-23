@@ -231,6 +231,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
+      <button class="btn" id="espnBtn" onclick="syncESPN()" style="background:#CC0000;color:#fff;border-color:#CC0000">📈 Sync ESPN</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
@@ -284,7 +285,7 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th colspan="7"></th>
   <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26</th>
-  <th colspan="4" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
+  <th colspan="5" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
   <th colspan="1"></th>
 </tr>
 <tr>
@@ -298,6 +299,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN projected HGHL fantasy points (G+A for skaters; W×2+SO×3 for goalies)">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('rank')" style="color:#185FA5">Rank <span id="sort-rank"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
@@ -498,6 +500,7 @@ const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 const LS_DROPS   = 'hghl_drops_simulated';
+const LS_ESPN    = 'hghl_espn_proj';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false;
 
@@ -524,16 +527,24 @@ function dedup(){
   }
 }
 
-// For players signed in 26-27 without a Proj Pts value, use 25-26 total as a fallback.
-// Real projections will overwrite this when available (September).
-function applyProjPtsFallback(){
-  let changed = false;
-  for(const p of players){
-    if(!(p.pts > 0) && p.cap > 0 && p.pts2526 > 0){
-      p.pts = p.pts2526;
-      changed = true;
-    }
+// Recompute p.pts from all available projection sources.
+// Priority: manual override > blend of external sources > 25-26 actuals fallback.
+// New sources (NHL.com, Daily Faceoff, etc.) are added to the sources array below.
+function reblendPts(p){
+  if(p.ptsManual) return;  // manual entry wins — don't touch p.pts
+  const sources = [];
+  if(p.ptsESPN > 0) sources.push(p.ptsESPN);
+  // future: if(p.ptsNHL > 0) sources.push(p.ptsNHL);
+  if(sources.length > 0){
+    p.pts = Math.round(sources.reduce((s,v) => s+v, 0) / sources.length);
+  } else if(p.pts2526 > 0){
+    p.pts = p.pts2526;
   }
+}
+
+function applyBlendedPts(){
+  let changed = false;
+  for(const p of players){ const old = p.pts; reblendPts(p); if(p.pts !== old) changed = true; }
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
@@ -687,9 +698,11 @@ function load(){
     }
     // Clear Yahoo bench/utility slot labels that aren't real positions
     if(['Util','BN'].includes(p.pos)){ p.pos = ''; migrated = true; }
+    // Backfill ptsESPN
+    if(p.ptsESPN === undefined){ p.ptsESPN = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
-  applyProjPtsFallback();
+  applyBlendedPts();
   dedup(); loadDraft();
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
   checkProxy();
@@ -708,14 +721,13 @@ async function syncStats(){
       if(d.players[key]){
         p.pts2526   = d.players[key].fpts;
         p.gp2526    = d.players[key].gp;
-        p.pts       = d.players[key].fpts;
         p.ptsManual = false;
         matched++;
       } else {
         unmatched++;
       }
     }
-    applyProjPtsFallback();
+    applyBlendedPts();
     lsSet(LS_PLAYERS, players);
     lsSet(LS_STATS, d.players);
     render();
@@ -726,6 +738,40 @@ async function syncStats(){
   } finally {
     btn.disabled=false;
     btn.innerHTML='📊 Sync Stats';
+  }
+}
+
+async function syncESPN(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('espnBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching (~30s)…';
+  try {
+    toast('Fetching ESPN 2026-27 projections — skaters + goalies, this takes ~30s…');
+    const d = await fetch('/espn-projections').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched=0, unmatched=0;
+    for(const p of players){
+      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+      if(d.players[key]){
+        p.ptsESPN = d.players[key].hghl_pts;
+        matched++;
+      } else {
+        p.ptsESPN = null;
+        unmatched++;
+      }
+    }
+    applyBlendedPts();
+    lsSet(LS_ESPN, d.players);
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`ESPN synced! ${matched} matched, ${unmatched} unmatched. ${d.errors.length?d.errors.length+' errors.':''}`);
+    if(d.errors.length) console.warn('ESPN errors:', d.errors);
+  } catch(e){
+    toast('ESPN sync failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='📈 Sync ESPN';
   }
 }
 
@@ -795,7 +841,7 @@ async function syncSignings(){
       added++;
     }
 
-    applyProjPtsFallback();
+    applyBlendedPts();
     lsSet(LS_PLAYERS, players);
     populateTeamFilter(); populateFantasyFilter(); render();
     const clearedMsg = cleared ? `, ${cleared} expired cleared` : '';
@@ -1080,7 +1126,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsperm','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsESPN','ptsperm','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -1118,6 +1164,7 @@ function render(){
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
       <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
+      <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
@@ -1128,7 +1175,7 @@ function render(){
           : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="14" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;

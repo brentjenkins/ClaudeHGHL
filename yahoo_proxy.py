@@ -487,6 +487,98 @@ def season_stats():
     return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
 
 
+# ── ESPN Fantasy Hockey projections ──────────────────────────────────────────
+
+_ESPN_API  = ("https://lm-api-reads.fantasy.espn.com/apis/v3/games/fhl"
+              "/seasons/2026/segments/0/leaguedefaults/2?view=kona_player_info")
+_ESPN_HDRS = {
+    "Accept":  "application/json",
+    "Referer": "https://fantasy.espn.com/hockey/players/projections?leagueFormatId=2",
+}
+_ESPN_POS  = {1: "F", 2: "F", 3: "F", 4: "D", 5: "G"}   # defaultPositionId → group
+
+
+def _espn_fetch_group(slot_ids: list) -> list:
+    """Page through ESPN API for the given slot IDs, return all raw player dicts."""
+    results = []
+    offset  = 0
+    total   = None
+    while total is None or offset < total:
+        ff = json.dumps({
+            "players": {
+                "limit": 50,
+                "offset": offset,
+                "sortPercOwned": {"sortPriority": 1, "sortAsc": False},
+                "filterSlotIds": {"value": slot_ids},
+            }
+        })
+        r = requests.get(_ESPN_API, headers={**_ESPN_HDRS, "X-Fantasy-Filter": ff}, timeout=15)
+        r.raise_for_status()
+        if total is None:
+            total = int(r.headers.get("X-Fantasy-Filter-Player-Count", 0))
+        results.extend(r.json()["players"])
+        offset += 50
+        if offset < total:
+            time.sleep(0.15)
+    return results
+
+
+@app.route("/espn-projections")
+def espn_projections():
+    """
+    Fetch ESPN 2026-27 HGHL fantasy-point projections for all skaters and goalies.
+    Skaters:  HGHL pts = Goals + Assists  (stat IDs 13 + 14)
+    Goalies:  HGHL pts = Wins×2 + Shutouts×3  (stat IDs 1×2 + 7×3)
+    Only the seasonId=2026 projection entry is used (the upcoming-season forecast).
+    """
+    all_players = {}
+    errors      = []
+
+    groups = [
+        ([0, 1, 2, 3, 4, 6], False, "skaters"),
+        ([5],                 True,  "goalies"),
+    ]
+    for slot_ids, is_goalie, label in groups:
+        try:
+            raw = _espn_fetch_group(slot_ids)
+            for entry in raw:
+                pl   = entry["player"]
+                name = pl.get("fullName", "")
+                if not name:
+                    continue
+                pg = _ESPN_POS.get(pl.get("defaultPositionId"), "F")
+
+                # Find the 2026-27 full-season projection
+                proj = next(
+                    (s for s in pl.get("stats", [])
+                     if s.get("statSourceId") == 1
+                     and s.get("statSplitTypeId") == 0
+                     and s.get("seasonId") == 2026
+                     and s.get("stats")),
+                    None,
+                )
+                if not proj:
+                    continue
+
+                st = proj["stats"]
+                if is_goalie:
+                    hghl_pts = round(st.get("1", 0) * 2 + st.get("7", 0) * 3)
+                else:
+                    # stat 16 is G+A total; fall back to 13+14 if absent
+                    hghl_pts = round(st.get("16") or (st.get("13", 0) + st.get("14", 0)))
+
+                key = f"{normalize_name(name).lower()}_{pg}"
+                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+
+            print(f"  ESPN {label}: {len(raw)} fetched")
+        except Exception as e:
+            errors.append(f"{label}: {str(e)}")
+            print(f"  ✗ ESPN {label}: {e}")
+
+    return jsonify({"ok": True, "players": all_players,
+                    "count": len(all_players), "errors": errors})
+
+
 # ── PuckPedia signings scraper ────────────────────────────────────────────────
 
 _POS_GROUP_MAP = {"G": "G", "D": "D"}  # anything else → "F"
