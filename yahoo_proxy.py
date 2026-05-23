@@ -382,10 +382,11 @@ _POS_MAP = {"C": "C", "L": "LW", "R": "RW", "D": "D", "G": "G"}
 
 
 def normalize_name(name: str) -> str:
-    """Fold accented chars to ASCII and strip hyphens/periods for key matching."""
+    """Fold accented chars to ASCII and strip hyphens/periods/apostrophes for key matching.
+    Must stay in sync with JS normName: s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'')"""
     nfd = unicodedata.normalize("NFD", name)
     ascii_only = nfd.encode("ascii", "ignore").decode("ascii")
-    return ascii_only.replace("-", "").replace(".", "")
+    return ascii_only.replace("-", "").replace(".", "").replace("'", "")
 
 
 def _pos_group(pos):
