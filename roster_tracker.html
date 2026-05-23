@@ -597,7 +597,7 @@ function simulateDrops(){
     const keptIds = new Set();
     if(m > 0){
       const W = evaluable.map(p => Math.round(p.cap * SCALE));
-      const posMult = { F:1.0, D:1.25, G:1.0 };
+      const posMult = { F:1.0, D:1.4, G:1.0 };
       const V = evaluable.map(p => p.pts * (posMult[posGroup(p.pos)] ?? 1.0));
       const dp = Array.from({length:m+1}, ()=>new Float32Array(CAP_CEIL+1));
       for(let i=0;i<m;i++){
@@ -617,7 +617,7 @@ function simulateDrops(){
     }
 
     // Sort by drop priority: knapsack-not-kept first, then kept; within each group, lowest adjusted PPTS first
-    const posMult = { F:1.0, D:1.25, G:1.0 };
+    const posMult = { F:1.0, D:1.4, G:1.0 };
     const adjPts  = p => (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0);
     const byDropPriority = [...roster].sort((a,b) => {
       const aKept = keptIds.has(a.id), bKept = keptIds.has(b.id);
