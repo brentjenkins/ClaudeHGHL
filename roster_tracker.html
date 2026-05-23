@@ -308,7 +308,6 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('app')" title="Adjusted Projected Points: D × 1.25, F/G × 1.0">APPTS <span id="sort-app"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
   <th onclick="setSortCol('rank')">Rank <span id="sort-rank"></span></th>
-  <th onclick="setSortCol('prediction')">Prediction <span id="sort-prediction"></span></th>
   <th></th>
 </tr></thead>
 <tbody id="tbody"></tbody>
@@ -855,13 +854,13 @@ function render(){
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm'?ppm(a):sortCol==='prediction'?(dropIds.has(a.id)?0:1):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='app'?calcAPP(a):sortCol==='rank'?(a.rank??99999):(a[sortCol]??'');
-    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='prediction'?(dropIds.has(b.id)?0:1):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='app'?calcAPP(b):sortCol==='rank'?(b.rank??99999):(b[sortCol]??'');
+    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='app'?calcAPP(a):sortCol==='rank'?(a.rank??99999):(a[sortCol]??'');
+    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='app'?calcAPP(b):sortCol==='rank'?(b.rank??99999):(b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','app','abp','rank','prediction'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','app','abp','rank'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -903,7 +902,6 @@ function render(){
       <td>${p.pts2526>0?Math.round(calcAPP(p)):'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
-      <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
@@ -911,7 +909,7 @@ function render(){
           : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="16" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
