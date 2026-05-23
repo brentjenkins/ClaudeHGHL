@@ -145,12 +145,12 @@ tr:hover td{background:#fafaf8}
 .summary-col h3.departed-hdr{color:#dc2626}
 .summary-col h3.arrived-hdr{color:#16a34a}
 .summary-col h3.returning-hdr{color:#185FA5}
-.summary-col-colhdrs{display:grid;grid-template-columns:24px 1fr 28px 36px;gap:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding:0 0 3px;border-bottom:1px solid #f0f0ee;margin-bottom:2px}
-.summary-col-colhdrs span:nth-child(3),.summary-col-colhdrs span:nth-child(4){text-align:right}
-.summary-player{display:grid;grid-template-columns:24px 1fr 28px 36px;align-items:baseline;gap:4px;padding:3px 0;font-size:13px}
+.summary-col-colhdrs{display:grid;grid-template-columns:1fr 28px 58px 36px;gap:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding:0 0 3px;border-bottom:1px solid #f0f0ee;margin-bottom:2px}
+.summary-col-colhdrs span:nth-child(4){text-align:right}
+.summary-player{display:grid;grid-template-columns:1fr 28px 58px 36px;align-items:center;gap:4px;padding:3px 0;font-size:13px}
 .summary-player-pos{font-size:11px;font-weight:600;color:#9ca3af}
 .summary-player-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary-player-age{font-size:11px;color:#9ca3af;text-align:right}
+.summary-player-team{display:flex;align-items:center;gap:3px;font-size:11px;color:#555;white-space:nowrap}
 .summary-player-pts{font-size:12px;font-weight:600;text-align:right}
 .summary-player.departed .summary-player-name{color:#9ca3af;text-decoration:line-through}
 .summary-player.departed .summary-player-pts{color:#dc2626}
@@ -1536,14 +1536,14 @@ function renderSummaryCard(teamIdx){
 
   const playerRow = (p, cls) => `
     <div class="summary-player ${cls}">
-      <span class="summary-player-pos">${posGroup(p.pos)}</span>
       <span class="summary-player-name">${esc(p.name)}</span>
-      <span class="summary-player-age">${calcAge(p)??'—'}</span>
+      <span class="summary-player-pos">${posGroup(p.pos)}</span>
+      <span class="summary-player-team">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:14px;height:14px;object-fit:contain" loading="lazy">`:''}${esc(p.team||'—')}</span>
       <span class="summary-player-pts">${p.pts||'—'}</span>
     </div>`;
 
   const colHdrs = `<div class="summary-col-colhdrs">
-    <span>Pos</span><span>Player</span><span>Age</span><span>Proj Pts</span>
+    <span>Player</span><span>Pos</span><span>NHL Team</span><span>PPTS</span>
   </div>`;
   const colTotal = (pts, cls) => {
     const color = cls==='departed'?'#dc2626':cls==='arrived'?'#16a34a':'#185FA5';
