@@ -95,7 +95,7 @@ tr:hover td{background:#fafaf8}
 .tag-trade{background:#dbeafe;color:#1e40af}
 .section-label{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:flex;align-items:center;gap:8px}
 .section-label::after{content:'';flex:1;height:1px;background:#eee}
-.proxy-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid #eee;background:#f7f7f5;margin-bottom:1rem;font-size:13px}
+.proxy-bar{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;background:#f0f0ef;font-size:12px;color:#666;cursor:default;user-select:none}
 .proxy-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db;flex-shrink:0}
 .proxy-dot.green{background:#16a34a}
 .proxy-dot.red{background:#dc2626}
@@ -191,7 +191,6 @@ tr:hover td{background:#fafaf8}
     <span id="draftRoundLabel" style="font-size:22px;font-weight:700">HGHL 2026-27 Draft</span>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="undoLastPick()" style="height:28px;font-size:12px">↩ Undo</button>
-      <button class="btn" onclick="resetDraft()" style="height:28px;font-size:12px;color:#dc2626;border-color:#dc2626">Reset Draft</button>
     </div>
   </div>
   <div class="draft-col" id="draftColumn"></div>
@@ -223,21 +222,21 @@ tr:hover td{background:#fafaf8}
     <div class="title">NHL roster &amp; cap tracker <span style="font-size:14px;font-weight:400;color:#888">2026–27</span></div>
     <div class="subtitle" id="leagueLabel">League: 465.l.97882</div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
     <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
     <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
     <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
-    <button class="btn" onclick="rankPlayers()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
+    <button class="btn" onclick="openRankModal()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
     <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
+    <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
+    <div class="proxy-bar" id="proxyBar">
+      <div class="proxy-dot pulse" id="proxyDot"></div>
+      <span id="proxyStatus">Checking…</span>
+      <button style="background:none;border:none;padding:0 0 0 4px;font-size:12px;color:#999;cursor:pointer;line-height:1" onclick="checkProxy()" title="Recheck proxy">↺</button>
+    </div>
   </div>
-</div>
-
-<div class="proxy-bar" id="proxyBar">
-  <div class="proxy-dot pulse" id="proxyDot"></div>
-  <div id="proxyStatus" style="flex:1">Checking proxy…</div>
-  <button class="btn" style="height:28px;font-size:12px;padding:0 10px" onclick="checkProxy()">↺ Refresh</button>
 </div>
 
 <div class="stats-grid" id="statCards"></div>
@@ -303,8 +302,8 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('pts2526')">Pts <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('gp2526')">GP <span id="sort-gp2526"></span></th>
-  <th onclick="setSortCol('ptsperm')">Pts/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('pts')">PPTS <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('ptsperm')">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('app')" title="Adjusted Projected Points: D × 1.25, F/G × 1.0">APPTS <span id="sort-app"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
   <th onclick="setSortCol('rank')">Rank <span id="sort-rank"></span></th>
@@ -348,6 +347,51 @@ tr:hover td{background:#fafaf8}
   <div class="modal-actions">
     <button class="btn" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="savePlayer()">Save</button>
+  </div>
+</div>
+</div>
+
+<!-- Rank Players config modal -->
+<div class="modal-bg" id="rankModal" style="display:none">
+<div class="modal" style="width:380px">
+  <h2>★ Rank Players</h2>
+  <div class="field">
+    <label>Min APPTS to qualify</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:3px">Forward</div>
+        <input type="number" id="rankMinF" min="0" step="1" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:3px">Defense</div>
+        <input type="number" id="rankMinD" min="0" step="1" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:3px">Goalie</div>
+        <input type="number" id="rankMinG" min="0" step="1" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+  <div class="field">
+    <label>Scoring weights</label>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="flex:1;color:#555">APPTS ×</span>
+        <input type="number" id="rankWtAPPTS" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="flex:1;color:#555">PPTS/$M ×</span>
+        <input type="number" id="rankWtPPTSM" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="flex:1;color:#555">Yrs remaining ×</span>
+        <input type="number" id="rankWtYrs" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeRankModal()">Cancel</button>
+    <button class="btn" style="background:#6366f1;color:#fff;border-color:#6366f1" onclick="rankPlayers()">★ Rank</button>
   </div>
 </div>
 </div>
@@ -426,7 +470,7 @@ const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 
-let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false;
+let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false, dropsSimulated = false;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -464,27 +508,49 @@ function applyProjPtsFallback(){
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
-function rankPlayers(){
-  for(const p of players) delete p.rank;
+const RANK_DEFAULTS = { minF: 0, minD: 0, minG: 0, wtAPPTS: 2, wtPPTSM: 1, wtYrs: 2 };
 
-  const MIN_APP = { F: 40, D: 20, G: 40 };
+function openRankModal(){
+  document.getElementById('rankMinF').value   = RANK_DEFAULTS.minF;
+  document.getElementById('rankMinD').value   = RANK_DEFAULTS.minD;
+  document.getElementById('rankMinG').value   = RANK_DEFAULTS.minG;
+  document.getElementById('rankWtAPPTS').value = RANK_DEFAULTS.wtAPPTS;
+  document.getElementById('rankWtPPTSM').value = RANK_DEFAULTS.wtPPTSM;
+  document.getElementById('rankWtYrs').value  = RANK_DEFAULTS.wtYrs;
+  document.getElementById('rankModal').style.display = 'flex';
+}
+
+function closeRankModal(){ document.getElementById('rankModal').style.display = 'none'; }
+
+function rankPlayers(){
+  const minF    = parseFloat(document.getElementById('rankMinF').value)    ?? RANK_DEFAULTS.minF;
+  const minD    = parseFloat(document.getElementById('rankMinD').value)    ?? RANK_DEFAULTS.minD;
+  const minG    = parseFloat(document.getElementById('rankMinG').value)    ?? RANK_DEFAULTS.minG;
+  const wtAPPTS = parseFloat(document.getElementById('rankWtAPPTS').value) ?? RANK_DEFAULTS.wtAPPTS;
+  const wtPPTSM = parseFloat(document.getElementById('rankWtPPTSM').value) ?? RANK_DEFAULTS.wtPPTSM;
+  const wtYrs   = parseFloat(document.getElementById('rankWtYrs').value)   ?? RANK_DEFAULTS.wtYrs;
+
+  const minByGroup = { F: minF, D: minD, G: minG };
   const yrsLeft = p => (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0);
 
+  for(const p of players) delete p.rank;
+
   const eligible = players.filter(p =>
-    p.cap > 0 && calcAPP(p) >= (MIN_APP[posGroup(p.pos)] ?? 0)
+    p.cap > 0 && calcAPP(p) >= (minByGroup[posGroup(p.pos)] ?? 0)
   );
 
   eligible
     .map(p => {
-      const scoreA = calcAPP(p) * 2;                              // APPTS × 2
-      const scoreB = p.pts > 0 ? p.pts / p.cap : 0;              // PPTS/$M
-      const scoreC = 4 * yrsLeft(p);                             // 4 × yrs remaining
+      const scoreA = calcAPP(p) * wtAPPTS;
+      const scoreB = p.pts > 0 ? (p.pts / p.cap) * wtPPTSM : 0;
+      const scoreC = yrsLeft(p) * wtYrs;
       return { p, score: scoreA + scoreB + scoreC };
     })
     .sort((a, b) => b.score - a.score)
     .forEach(({ p }, i) => { p.rank = i + 1; });
 
   lsSet(LS_PLAYERS, players);
+  closeRankModal();
   render();
   toast(`Ranked ${eligible.length} players.`);
 }
@@ -502,6 +568,7 @@ function simulateDrops(){
     });
     roster.slice(0,7).forEach(p=>{ p.fantasyTeam=''; dropped++; });
   }
+  dropsSimulated = true;
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
   toast(`Simulate drops complete — ${dropped} players dropped (7 per team).`);
 }
@@ -538,6 +605,7 @@ async function syncStats(){
       if(d.players[key]){
         p.pts2526 = d.players[key].fpts;
         p.gp2526  = d.players[key].gp;
+        p.pts     = d.players[key].fpts;
         matched++;
       } else {
         unmatched++;
@@ -657,9 +725,13 @@ async function checkProxy(){
     const d = await r.json();
     proxyOk = true;
     dot.className = 'proxy-dot green';
-    txt.textContent = d.authenticated
-      ? '✓ Proxy running & authenticated — ready to sync'
-      : 'Proxy running but not authenticated. Restart yahoo_proxy.py to re-authorize.';
+    if(d.authenticated){
+      txt.textContent = 'Proxy OK';
+      document.getElementById('proxyBar').title = 'Proxy running & authenticated — ready to sync';
+    } else {
+      txt.textContent = 'Not authenticated';
+      document.getElementById('proxyBar').title = 'Proxy running but not authenticated. Restart yahoo_proxy.py to re-authorize.';
+    }
     if(d.authenticated && Object.keys(teamLogos).length === 0){
       try {
         const ld = await fetch('/teamlogos').then(r=>r.json());
@@ -669,7 +741,8 @@ async function checkProxy(){
   } catch(e) {
     proxyOk = false;
     dot.className = 'proxy-dot red';
-    txt.innerHTML = 'Proxy not detected. Run <code style="background:#eee;padding:1px 5px;border-radius:3px">python3 yahoo_proxy.py</code> then refresh.';
+    txt.textContent = 'Proxy offline';
+    document.getElementById('proxyBar').title = 'Proxy not detected. Run: python3 yahoo_proxy.py';
   }
 }
 
@@ -861,9 +934,9 @@ function render(){
     return true;
   });
 
-  const dropIds = computeDrops(players);
+  const dropIds = dropsSimulated ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
-  const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
+  const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
   rows.sort((a,b)=>{
     let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='app'?calcAPP(a):sortCol==='rank'?(a.rank??99999):(a[sortCol]??'');
     let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='app'?calcAPP(b):sortCol==='rank'?(b.rank??99999):(b[sortCol]??'');
@@ -871,7 +944,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','app','abp','rank'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsperm','app','abp','rank'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -908,8 +981,8 @@ function render(){
       <td>${p.cap>0?'$'+p.cap.toFixed(2)+'M':'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
       <td>${p.pts2526>0?p.pts2526:'—'}</td>
       <td>${p.gp2526>0?p.gp2526:'—'}</td>
-      <td>${p.pts2526>0&&p.gp2526>0&&p.cap>0?((p.pts2526/p.gp2526*82)/p.cap).toFixed(1):'—'}</td>
-      <td>${p.pts2526>0?p.pts2526:'—'}</td>
+      <td>${p.pts>0?p.pts:'—'}</td>
+      <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.pts2526>0?Math.round(calcAPP(p)):'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
@@ -1461,6 +1534,7 @@ function toast(msg){
   setTimeout(()=>el.classList.remove('show'),3500);
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+document.getElementById('rankModal').addEventListener('click',e=>{if(e.target===document.getElementById('rankModal'))closeRankModal();});
 load();
 
 // ── Draft Summary view ────────────────────────────────────────────
