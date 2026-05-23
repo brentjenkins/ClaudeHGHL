@@ -571,6 +571,7 @@ def signings():
                     exp_year = int(exp.split("-")[0]) if exp else 0
                     entry = {
                         "name": full,
+                        "pos":  pos,
                         "cap": cap,
                         "team": p.get("sign_team_code", ""),
                         "nhl_id": p.get("p_nhl_id", ""),

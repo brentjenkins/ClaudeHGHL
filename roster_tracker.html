@@ -740,31 +740,53 @@ async function syncSignings(){
     if(d.error) throw new Error(d.error);
 
     const expiredSet = new Set(d.expired || []);
-    let matched=0, cleared=0, unmatched=0;
+    let matched=0, cleared=0, added=0;
+
+    // Track which PuckPedia keys already exist in our player list
+    const matchedKeys = new Set();
     for(const p of players){
       const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
       if(d.players[key]){
         const s = d.players[key];
-        p.cap       = s.cap;
-        p.capManual = false;
+        p.cap          = s.cap;
+        p.capManual    = false;
         if(!p.team || p.team==='—') p.team = s.team;
         p.contractTerm = s.term || 0;
         p.expYear      = s.exp_year || 0;
         if(s.birthDate && !p.birthDate) p.birthDate = s.birthDate;
+        matchedKeys.add(key);
         matched++;
       } else if(expiredSet.has(key)){
-        // Contract expired — clear stale cap data
         p.cap = 0; p.contractTerm = 0; p.expYear = 0;
         cleared++;
-      } else {
-        unmatched++;
       }
     }
+
+    // Add players from PuckPedia that don't exist in our list yet
+    let nextId = Math.max(0, ...players.map(p => p.id ?? 0)) + 1;
+    const seenIds = new Set(); // deduplicate by nhl_id (key may appear twice: formal + nick)
+    for(const [key, s] of Object.entries(d.players)){
+      if(matchedKeys.has(key)) continue;
+      const uid = s.nhl_id || s.name;
+      if(seenIds.has(uid)) continue;
+      seenIds.add(uid);
+      players.push({
+        id: nextId++, name: s.name, team: s.team||'', pos: s.pos||'C',
+        cap: s.cap||0, contractTerm: s.term||0, expYear: s.exp_year||0,
+        birthDate: s.birthDate||'', source: 'puckpedia', status: 'roster',
+        fantasyTeam: '', fantasyTeam2526: '',
+        pts: 0, pts2526: 0, gp2526: 0,
+        capManual: false, ptsManual: false, rank: null,
+      });
+      added++;
+    }
+
     applyProjPtsFallback();
     lsSet(LS_PLAYERS, players);
-    render();
-    const clearedMsg = cleared ? `, ${cleared} expired contracts cleared` : '';
-    toast(`Signings sync done! ${matched} updated${clearedMsg}, ${unmatched} unmatched.`);
+    populateTeamFilter(); populateFantasyFilter(); render();
+    const clearedMsg = cleared ? `, ${cleared} expired cleared` : '';
+    const addedMsg   = added   ? `, ${added} new players added` : '';
+    toast(`Signings sync done! ${matched} updated${clearedMsg}${addedMsg}.`);
     if(d.errors.length) console.warn('Signings page errors:', d.errors);
   } catch(e){
     toast('Signings sync failed: '+e.message);
