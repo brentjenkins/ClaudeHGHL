@@ -1355,7 +1355,8 @@ function renderDraftView(){
     const roster = players.filter(p => p.fantasyTeam === team);
     const cap    = roster.reduce((s,p) => s+(p.cap||0), 0);
     const rem    = CAP_LIMIT - cap;
-    const remColor = rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
+    const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
+    const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
     const fN = roster.filter(p=>posGroup(p.pos)==='F').length;
     const dN = roster.filter(p=>posGroup(p.pos)==='D').length;
     const gN = roster.filter(p=>posGroup(p.pos)==='G').length;
@@ -1374,7 +1375,7 @@ function renderDraftView(){
         ${logo ? `<img src="${esc(logo)}" class="draft-row-logo" loading="lazy">` : '<div class="draft-row-logo"></div>'}
         <span class="draft-row-name">${esc(team)}</span>
       </div>
-      <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
+      <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
       <div class="draft-row-pos">
         <span style="${posHi('F')}">F&thinsp;${fRem}</span>
         <span style="${posHi('D')}">D&thinsp;${dRem}</span>
@@ -1516,13 +1517,14 @@ function updateStats(){
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
     const gN = tp.filter(p=>posGroup(p.pos)==='G').length;
     const logo = teamLogos[t];
-    const remColor = rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
+    const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
+    const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
     return `<div class="team-card">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
       </div>
-      <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">$${rem.toFixed(1)}M left</span></div>
+      <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
       <div class="team-card-pos">
         <span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span>
       </div>
