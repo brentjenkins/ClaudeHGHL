@@ -588,6 +588,13 @@ function simulateDrops(){
   const teams    = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
   let dropped    = 0;
 
+  const abpMap = computeABP(players);
+  // Scarcity bonus: 0 ABP = 1.3x, 1-2 = 1.15x, 3-5 = 1.05x, 6+ = 1.0x
+  const scarcityMult = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
+  const posMult = { F:1.0, D:1.4, G:1.0 };
+  const adjVal  = p => (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0)
+                     * scarcityMult(abpMap.get(p.id) ?? 99);
+
   for(const team of teams){
     const roster    = players.filter(p => p.fantasyTeam === team);
     const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0);
@@ -597,8 +604,7 @@ function simulateDrops(){
     const keptIds = new Set();
     if(m > 0){
       const W = evaluable.map(p => Math.round(p.cap * SCALE));
-      const posMult = { F:1.0, D:1.4, G:1.0 };
-      const V = evaluable.map(p => p.pts * (posMult[posGroup(p.pos)] ?? 1.0));
+      const V = evaluable.map(p => adjVal(p));
       const dp = Array.from({length:m+1}, ()=>new Float32Array(CAP_CEIL+1));
       for(let i=0;i<m;i++){
         const w=W[i],v=V[i];
@@ -616,13 +622,11 @@ function simulateDrops(){
       }
     }
 
-    // Sort by drop priority: knapsack-not-kept first, then kept; within each group, lowest adjusted PPTS first
-    const posMult = { F:1.0, D:1.4, G:1.0 };
-    const adjPts  = p => (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0);
+    // Sort by drop priority: knapsack-not-kept first, then kept; within each group, lowest adjVal first
     const byDropPriority = [...roster].sort((a,b) => {
       const aKept = keptIds.has(a.id), bKept = keptIds.has(b.id);
       if(aKept !== bKept) return aKept ? 1 : -1;
-      return adjPts(a) - adjPts(b);
+      return adjVal(a) - adjVal(b);
     });
 
     // Always drop exactly 7
