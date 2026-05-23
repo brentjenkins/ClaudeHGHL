@@ -1159,7 +1159,7 @@ function _tickerFrame(ts){
   if(_tickerLastTs !== null){
     const half = track.scrollWidth / 2;
     if(half > 0){
-      _tickerX += 300 * (ts - _tickerLastTs) / 1000; // 300 px/s
+      _tickerX += 150 * (ts - _tickerLastTs) / 1000; // 150 px/s
       if(_tickerX >= half) _tickerX -= half;
       track.style.transform = `translateX(-${_tickerX.toFixed(1)}px)`;
     }
