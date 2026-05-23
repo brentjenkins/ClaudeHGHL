@@ -582,11 +582,50 @@ function rankPlayers(){
 }
 
 function simulateDrops(){
-  const dropIds = computeDrops(players);
-  let dropped = 0;
-  for(const p of players){
-    if(dropIds.has(p.id)){ p.fantasyTeam=''; dropped++; }
+  const DROPS    = 7;
+  const SCALE    = 10;
+  const CAP_CEIL = Math.round((CAP_LIMIT - DROPS) * SCALE); // $97M in $0.1M units
+  const teams    = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
+  let dropped    = 0;
+
+  for(const team of teams){
+    const roster    = players.filter(p => p.fantasyTeam === team);
+    const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0);
+    const m = evaluable.length;
+
+    // Knapsack: find best evaluable players to keep within CAP_CEIL
+    const keptIds = new Set();
+    if(m > 0){
+      const W = evaluable.map(p => Math.round(p.cap * SCALE));
+      const V = evaluable.map(p => p.pts);
+      const dp = Array.from({length:m+1}, ()=>new Float32Array(CAP_CEIL+1));
+      for(let i=0;i<m;i++){
+        const w=W[i],v=V[i];
+        for(let c=0;c<=CAP_CEIL;c++){
+          dp[i+1][c]=dp[i][c];
+          if(c>=w && dp[i][c-w]+v>=dp[i+1][c]) dp[i+1][c]=dp[i][c-w]+v;
+        }
+      }
+      let remC=CAP_CEIL;
+      for(let i=m-1;i>=0;i--){
+        const w=W[i],v=V[i];
+        if(remC>=w && Math.abs(dp[i+1][remC]-(dp[i][remC-w]+v))<0.01){
+          keptIds.add(evaluable[i].id); remC-=w;
+        }
+      }
+    }
+
+    // Sort by drop priority: knapsack-not-kept first, then kept; within each group, lowest PPTS first
+    const byDropPriority = [...roster].sort((a,b) => {
+      const aKept = keptIds.has(a.id), bKept = keptIds.has(b.id);
+      if(aKept !== bKept) return aKept ? 1 : -1;
+      return (a.pts||0) - (b.pts||0);
+    });
+
+    // Always drop exactly 7
+    byDropPriority.slice(0, DROPS).forEach(p => { p.fantasyTeam=''; dropped++; });
   }
+
   dropsSimulated = true;
   lsSet(LS_DROPS, true);
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
@@ -1258,7 +1297,7 @@ function setView(v){
   document.getElementById('view-roster').style.display  = v==='roster'  ? '' : 'none';
   document.getElementById('view-draft').style.display   = v==='draft'   ? '' : 'none';
   document.getElementById('view-summary').style.display = v==='summary' ? '' : 'none';
-  if(v!=='draft'){ stopWhaleAnimation(); showMullerOverlay(false); }
+  if(v==='roster'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft') document.getElementById('draftTicker').style.display = 'none';
   const views = ['roster','draft','summary'];
@@ -1266,7 +1305,13 @@ function setView(v){
     t.classList.toggle('active', views[i] === v);
   });
   if(v==='draft')   renderDraftView();
-  if(v==='summary') startSummaryRotation();
+  if(v==='summary'){
+    startSummaryRotation();
+    const onClock = DRAFT_TEAMS[draftState.picks.length % 9];
+    const pastRound1 = draftState.picks.length >= 9;
+    if(pastRound1 && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
+    showMullerOverlay(pastRound1 && onClock === 'Muller Time!');
+  }
 }
 
 function renderDraftView(){
@@ -1275,8 +1320,9 @@ function renderDraftView(){
   const curRound = Math.floor(total / 9) + 1;
 
   const onClock = DRAFT_TEAMS[total % 9];
-  if(onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
-  showMullerOverlay(onClock === 'Muller Time!');
+  const pastRound1 = total >= 9;
+  if(pastRound1 && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
+  showMullerOverlay(pastRound1 && onClock === 'Muller Time!');
   document.getElementById('draftOnClock').textContent =
     `Round ${curRound} — On the clock: ${onClock} — Pick ${total + 1} (#${total % 9 + 1})`;
 
