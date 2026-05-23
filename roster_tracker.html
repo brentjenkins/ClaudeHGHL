@@ -1521,6 +1521,18 @@ const contractYearStr = p => {
   return (yr >= 1 && yr <= p.contractTerm) ? `Yr ${yr} / ${p.contractTerm}` : '';
 };
 
+function filterToTeam(team, pos){
+  document.getElementById('filterFantasy').value = team;
+  document.getElementById('filterPos').value = pos || '';
+  render();
+}
+
+function filterToTeam(team, pos){
+  document.getElementById('filterFantasy').value = team;
+  document.getElementById('filterPos').value = pos || '';
+  render();
+}
+
 function updateStats(){
   const teams = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))].sort();
   if(!teams.length){ document.getElementById('statCards').innerHTML=''; return; }
@@ -1534,14 +1546,15 @@ function updateStats(){
     const logo = teamLogos[t];
     const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
     const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
-    return `<div class="team-card">
+    const te = t.replace(/'/g,"&apos;");
+    return `<div class="team-card" onclick="filterToTeam('${te}')" style="cursor:pointer" title="Filter to ${esc(t)}">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
       </div>
       <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
       <div class="team-card-pos">
-        <span>F&thinsp;${fN}</span><span>D&thinsp;${dN}</span><span>G&thinsp;${gN}</span>
+        <span onclick="filterToTeam('${te}','F');event.stopPropagation()" style="cursor:pointer" title="Filter to ${esc(t)} forwards">F&thinsp;${fN}</span><span onclick="filterToTeam('${te}','D');event.stopPropagation()" style="cursor:pointer" title="Filter to ${esc(t)} defence">D&thinsp;${dN}</span><span onclick="filterToTeam('${te}','G');event.stopPropagation()" style="cursor:pointer" title="Filter to ${esc(t)} goalies">G&thinsp;${gN}</span>
       </div>
     </div>`;
   }).join('');
