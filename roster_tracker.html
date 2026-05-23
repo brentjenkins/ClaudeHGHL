@@ -275,6 +275,7 @@ tr:hover td{background:#fafaf8}
     <option value="manual">Manual</option>
   </select>
   <button class="btn" onclick="openAbpModal()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px">ABP</button>
+  <button class="btn" onclick="clearFilters()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
 <div class="tbl-wrap">
@@ -1520,6 +1521,17 @@ const contractYearStr = p => {
   const yr = NHL_SEASON_YEAR - p.expYear + p.contractTerm;
   return (yr >= 1 && yr <= p.contractTerm) ? `Yr ${yr} / ${p.contractTerm}` : '';
 };
+
+function clearFilters(){
+  document.getElementById('search').value = '';
+  document.getElementById('filterPos').value = '';
+  document.getElementById('filterRoster').value = '';
+  document.getElementById('filterTeam').value = '';
+  document.getElementById('filterFantasy2526').value = '';
+  document.getElementById('filterFantasy').value = '';
+  document.getElementById('filterSource').value = '';
+  render();
+}
 
 function filterToTeam(team, pos){
   const curTeam = document.getElementById('filterFantasy').value;
