@@ -1347,9 +1347,7 @@ function resetDraft(){
   dropsSimulated = false;
   lsSet(LS_DROPS, false);
   lsSet(LS_PLAYERS, players);
-  populateTeamFilter(); populateFantasyFilter();
-  renderDraftView();
-  toast('Draft reset — 26-27 rosters restored to 25-26.');
+  location.reload();
 }
 
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
