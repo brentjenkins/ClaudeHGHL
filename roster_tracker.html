@@ -13,7 +13,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .view-tabs{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid #eee}
 .view-tab{padding:.5rem 1.5rem;font-size:14px;font-weight:500;color:#888;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s}
 .view-tab:hover{color:#1a1a18}
-.view-tab.active{color:#1a1a18;border-bottom-color:#185FA5}
+.view-tab.active{color:#1a1a18;border-bottom-color:#185FA5;font-weight:700;font-size:16px}
 .draft-col{display:flex;flex-direction:column;gap:3px;max-width:1100px}
 .draft-round-hdr{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:.1rem 0 .1rem .875rem;margin-top:.1rem}
 .draft-row{display:grid;grid-template-columns:28px 1fr auto auto 2fr;align-items:center;gap:12px;padding:.2rem .875rem;border-radius:6px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
@@ -156,7 +156,7 @@ tr:hover td{background:#fafaf8}
 .summary-player.departed .summary-player-pts{color:#dc2626}
 .summary-player.arrived .summary-player-pts{color:#16a34a}
 .summary-col-total{display:flex;justify-content:flex-end;font-size:12px;font-weight:700;padding:5px 0 0;border-top:1px solid #e5e7eb;margin-top:4px}
-.summary-stats-bar{display:flex;gap:1.5rem;font-size:12px;padding:.6rem .75rem;background:#f7f7f5;border-radius:8px;flex-wrap:wrap}
+.summary-stats-bar{display:flex;gap:1.5rem;font-size:12px;padding:.6rem .75rem;background:#f7f7f5;border-radius:8px;width:max-content}
 .summary-stat{display:flex;flex-direction:column;gap:2px}
 .summary-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af}
 .summary-stat-value{font-weight:700;font-size:14px}
@@ -187,9 +187,6 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <div id="view-draft" style="display:none">
-  <div style="margin-bottom:.75rem">
-    <span id="draftRoundLabel" style="font-size:22px;font-weight:700">HGHL 2026-27 Draft</span>
-  </div>
   <div class="draft-col" id="draftColumn"></div>
   <div class="draft-entry">
     <div style="font-size:12px;color:#888;margin-bottom:.4rem" id="draftOnClock"></div>
@@ -216,7 +213,6 @@ tr:hover td{background:#fafaf8}
 <div id="view-roster">
 <div id="leagueLabel" style="display:none"></div>
 <div class="header">
-  <div class="title">HGHL 2026-27 Players</div>
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Third Party Data</span>
@@ -277,11 +273,10 @@ tr:hover td{background:#fafaf8}
 <div class="controls" style="margin-top:0;margin-bottom:.75rem">
   <span style="font-size:12px;color:#888;white-space:nowrap">ABP pts source:</span>
   <select id="abpPtsSrc" onchange="abpPtsSrc=this.value;render()" style="flex:0">
-    <option value="app" selected>APP</option>
+    <option value="pts" selected>Proj Pts/G</option>
+    <option value="pts_raw">Proj Pts</option>
     <option value="pts2526">25-26 Pts/G</option>
     <option value="pts2526_raw">25-26 Pts</option>
-    <option value="pts">Proj Pts/G</option>
-    <option value="pts_raw">Proj Pts</option>
   </select>
   <span style="font-size:12px;color:#888;white-space:nowrap">min GP</span>
   <input type="number" id="abpMinGP" value="5" min="1" max="82" style="flex:0;width:58px" oninput="abpMinGP=+this.value||1;render()">
@@ -305,7 +300,6 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('gp2526')">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts')">PPTS <span id="sort-pts"></span></th>
   <th onclick="setSortCol('ptsperm')">PPTS/$M <span id="sort-ptsperm"></span></th>
-  <th onclick="setSortCol('app')" title="Adjusted Projected Points: D × 1.25, F/G × 1.0">APPTS <span id="sort-app"></span></th>
   <th onclick="setSortCol('rank')">Rank <span id="sort-rank"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
   <th></th>
@@ -357,29 +351,25 @@ tr:hover td{background:#fafaf8}
 <div class="modal" style="width:380px">
   <h2>★ Rank Players</h2>
   <div class="field">
-    <label>Min APPTS to qualify</label>
+    <label>PPTS position multiplier</label>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
       <div>
         <div style="font-size:11px;color:#aaa;margin-bottom:3px">Forward</div>
-        <input type="number" id="rankMinF" min="0" step="1" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="rankMultF" min="0" step="0.05" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div>
         <div style="font-size:11px;color:#aaa;margin-bottom:3px">Defense</div>
-        <input type="number" id="rankMinD" min="0" step="1" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="rankMultD" min="0" step="0.05" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div>
         <div style="font-size:11px;color:#aaa;margin-bottom:3px">Goalie</div>
-        <input type="number" id="rankMinG" min="0" step="1" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="rankMultG" min="0" step="0.05" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
   <div class="field">
     <label>Scoring weights</label>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-        <span style="flex:1;color:#555">APPTS ×</span>
-        <input type="number" id="rankWtAPPTS" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
       <div style="display:flex;align-items:center;gap:10px;font-size:13px">
         <span style="flex:1;color:#555">PPTS/$M ×</span>
         <input type="number" id="rankWtPPTSM" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -470,6 +460,7 @@ const LS_PLAYERS = 'nhl_players_v3';
 const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
+const LS_DROPS   = 'hghl_drops_simulated';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false;
 
@@ -509,40 +500,36 @@ function applyProjPtsFallback(){
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
-const RANK_DEFAULTS = { minF: 0, minD: 0, minG: 0, wtAPPTS: 2, wtPPTSM: 1, wtYrs: 2 };
+const RANK_DEFAULTS = { multF: 1.0, multD: 1.25, multG: 1.0, wtPPTSM: 1, wtYrs: 2 };
 
 function openRankModal(){
-  document.getElementById('rankMinF').value   = RANK_DEFAULTS.minF;
-  document.getElementById('rankMinD').value   = RANK_DEFAULTS.minD;
-  document.getElementById('rankMinG').value   = RANK_DEFAULTS.minG;
-  document.getElementById('rankWtAPPTS').value = RANK_DEFAULTS.wtAPPTS;
+  document.getElementById('rankMultF').value   = RANK_DEFAULTS.multF;
+  document.getElementById('rankMultD').value   = RANK_DEFAULTS.multD;
+  document.getElementById('rankMultG').value   = RANK_DEFAULTS.multG;
   document.getElementById('rankWtPPTSM').value = RANK_DEFAULTS.wtPPTSM;
-  document.getElementById('rankWtYrs').value  = RANK_DEFAULTS.wtYrs;
+  document.getElementById('rankWtYrs').value   = RANK_DEFAULTS.wtYrs;
   document.getElementById('rankModal').style.display = 'flex';
 }
 
 function closeRankModal(){ document.getElementById('rankModal').style.display = 'none'; }
 
 function rankPlayers(){
-  const minF    = parseFloat(document.getElementById('rankMinF').value)    ?? RANK_DEFAULTS.minF;
-  const minD    = parseFloat(document.getElementById('rankMinD').value)    ?? RANK_DEFAULTS.minD;
-  const minG    = parseFloat(document.getElementById('rankMinG').value)    ?? RANK_DEFAULTS.minG;
-  const wtAPPTS = parseFloat(document.getElementById('rankWtAPPTS').value) ?? RANK_DEFAULTS.wtAPPTS;
+  const multF   = parseFloat(document.getElementById('rankMultF').value)   ?? RANK_DEFAULTS.multF;
+  const multD   = parseFloat(document.getElementById('rankMultD').value)   ?? RANK_DEFAULTS.multD;
+  const multG   = parseFloat(document.getElementById('rankMultG').value)   ?? RANK_DEFAULTS.multG;
   const wtPPTSM = parseFloat(document.getElementById('rankWtPPTSM').value) ?? RANK_DEFAULTS.wtPPTSM;
   const wtYrs   = parseFloat(document.getElementById('rankWtYrs').value)   ?? RANK_DEFAULTS.wtYrs;
 
-  const minByGroup = { F: minF, D: minD, G: minG };
+  const multByGroup = { F: multF, D: multD, G: multG };
   const yrsLeft = p => (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0);
 
   for(const p of players) delete p.rank;
 
-  const eligible = players.filter(p =>
-    p.cap > 0 && calcAPP(p) >= (minByGroup[posGroup(p.pos)] ?? 0)
-  );
+  const eligible = players.filter(p => p.cap > 0 && p.pts > 0);
 
   eligible
     .map(p => {
-      const scoreA = calcAPP(p) * wtAPPTS;
+      const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = p.pts > 0 ? (p.pts / p.cap) * wtPPTSM : 0;
       const scoreC = yrsLeft(p) * wtYrs;
       return { p, score: scoreA + scoreB + scoreC };
@@ -570,14 +557,16 @@ function simulateDrops(){
     roster.slice(0,7).forEach(p=>{ p.fantasyTeam=''; dropped++; });
   }
   dropsSimulated = true;
+  lsSet(LS_DROPS, true);
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
   toast(`Simulate drops complete — ${dropped} players dropped (7 per team).`);
 }
 
 function load(){
-  players      = lsGet(LS_PLAYERS) || defaultPlayers();
-  transactions = lsGet(LS_TX)      || [];
-  teamLogos    = lsGet(LS_LOGOS)   || {};
+  players        = lsGet(LS_PLAYERS) || defaultPlayers();
+  transactions   = lsGet(LS_TX)      || [];
+  teamLogos      = lsGet(LS_LOGOS)   || {};
+  dropsSimulated = lsGet(LS_DROPS)   || false;
   // migrate: stamp fantasyTeam2526 from fantasyTeam if not yet set
   let migrated = false;
   for(const p of players){
@@ -939,13 +928,13 @@ function render(){
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='app'?calcAPP(a):sortCol==='rank'?(a.rank??99999):(a[sortCol]??'');
-    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='app'?calcAPP(b):sortCol==='rank'?(b.rank??99999):(b[sortCol]??'');
+    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='rank'?(a.rank??99999):(a[sortCol]??'');
+    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='rank'?(b.rank??99999):(b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsperm','app','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsperm','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -984,7 +973,6 @@ function render(){
       <td>${p.gp2526>0?p.gp2526:'—'}</td>
       <td>${p.pts>0?p.pts:'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
-      <td>${p.pts>0?Math.round(calcAPP(p)):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
       <td style="text-align:right;white-space:nowrap">
@@ -994,7 +982,7 @@ function render(){
           : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="14" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -1198,6 +1186,8 @@ function resetDraft(){
   draftState = {picks:[]};
   saveDraft();
   for(const p of players) p.fantasyTeam = p.fantasyTeam2526 || '';
+  dropsSimulated = false;
+  lsSet(LS_DROPS, false);
   lsSet(LS_PLAYERS, players);
   populateTeamFilter(); populateFantasyFilter();
   renderDraftView();
@@ -1246,7 +1236,6 @@ function renderDraftView(){
   const onClock = DRAFT_TEAMS[total % 9];
   if(onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
   showMullerOverlay(onClock === 'Muller Time!');
-  document.getElementById('draftRoundLabel').textContent = 'HGHL 2026-27 Draft';
   document.getElementById('draftOnClock').textContent =
     `Round ${curRound} — On the clock: ${onClock} — Pick ${total + 1} (#${total % 9 + 1})`;
 
@@ -1369,19 +1358,13 @@ function renderDraftSearch(){
 }
 
 // ABP config — updated live by the controls row
-let abpPtsSrc = 'app';
+let abpPtsSrc = 'pts';
 let abpMinGP  = 5;
 let abpWiggle = 0.1;   // $M
 let abpMinPts = 20;
 
-const appMult = p => posGroup(p.pos) === 'D' ? 1.25 : 1.0;
-const calcAPP = p => (p.pts||0) * appMult(p);
-
 function getPPG(p){
-  if(abpPtsSrc === 'app'){
-    if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
-    return (p.pts2526 / p.gp2526) * appMult(p);
-  } else if(abpPtsSrc === 'pts2526'){
+  if(abpPtsSrc === 'pts2526'){
     if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
     return p.pts2526 / p.gp2526;
   } else if(abpPtsSrc === 'pts2526_raw'){
@@ -1398,8 +1381,7 @@ function getPPG(p){
 
 function computeABP(allPlayers){
   // Free agents with a cap hit, enough data, and meeting the pts minimum
-  const rawPts = p => abpPtsSrc === 'app' ? calcAPP(p)
-    : abpPtsSrc.endsWith('_raw') ? getPPG(p)
+  const rawPts = p => abpPtsSrc.endsWith('_raw') ? getPPG(p)
     : abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts;
   const fas = allPlayers.filter(p =>
     !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null &&
