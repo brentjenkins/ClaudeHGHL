@@ -1394,9 +1394,13 @@ function simulateBestPick(){
   }
 
   available.sort((a, b) => {
-    const score = p => (p.pts||0)
-      * (posMult[posGroup(p.pos)] ?? 1.0)
-      * scarcity(abpMap.get(p.id) ?? 99);
+    const score = p => {
+      const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcity(abpMap.get(p.id) ?? 99);
+      const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * RANK_DEFAULTS.wtPPTSM : 0;
+      const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * RANK_DEFAULTS.wtYrs;
+      const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * RANK_DEFAULTS.wtAge;
+      return adjPts + ptsPerM + yrs + youth;
+    };
     return score(b) - score(a);
   });
 
