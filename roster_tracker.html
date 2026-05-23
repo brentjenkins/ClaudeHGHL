@@ -6,7 +6,10 @@
 <title>HGHL 2026-27 Draft</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;background:#fff;padding:1.5rem}
+html{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;background:#fff;padding:1.5rem;height:100%;display:flex;flex-direction:column;overflow:hidden}
+#view-roster{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+#view-draft,#view-summary{flex:1;overflow-y:auto;min-height:0}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
 .title{font-size:22px;font-weight:600}
 .subtitle{font-size:13px;color:#888;margin-top:2px}
@@ -53,9 +56,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-nhl:hover{background:#1a1a18;border-color:#1a1a18}
 .btn-puckpedia{background:#0F2446;color:#fff;border-color:#0F2446}
 .btn-puckpedia:hover{background:#F00032;border-color:#F00032}
-.tbl-wrap{overflow-x:auto;border:1px solid #eee;border-radius:10px}
+.tbl-wrap{overflow-x:auto;overflow-y:auto;border:1px solid #eee;border-radius:10px;flex:1;min-height:0}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em}
+th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:2}
 th:hover{color:#1a1a18}
 td{padding:9px 12px;border-bottom:1px solid #f0f0ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
 tr:last-child td{border-bottom:none}
@@ -268,22 +271,8 @@ tr:hover td{background:#fafaf8}
     <option value="yahoo">Yahoo</option>
     <option value="nhl">NHL API</option>
     <option value="manual">Manual</option>
-  </select></div>
-
-<div class="controls" style="margin-top:0;margin-bottom:.75rem">
-  <span style="font-size:12px;color:#888;white-space:nowrap">ABP pts source:</span>
-  <select id="abpPtsSrc" onchange="abpPtsSrc=this.value;render()" style="flex:0">
-    <option value="pts" selected>Proj Pts/G</option>
-    <option value="pts_raw">Proj Pts</option>
-    <option value="pts2526">25-26 Pts/G</option>
-    <option value="pts2526_raw">25-26 Pts</option>
   </select>
-  <span style="font-size:12px;color:#888;white-space:nowrap">min GP</span>
-  <input type="number" id="abpMinGP" value="5" min="1" max="82" style="flex:0;width:58px" oninput="abpMinGP=+this.value||1;render()">
-  <span style="font-size:12px;color:#888;white-space:nowrap">min pts</span>
-  <input type="number" id="abpMinPts" value="20" min="0" max="200" step="1" style="flex:0;width:58px" oninput="abpMinPts=+this.value||0;render()">
-  <span style="font-size:12px;color:#888;white-space:nowrap">cap wiggle $M</span>
-  <input type="number" id="abpWiggle" value="0.1" min="0" max="5" step="0.05" style="flex:0;width:68px" oninput="abpWiggle=+this.value;render()">
+  <button class="btn" onclick="openAbpModal()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px">ABP</button>
 </div>
 
 <div class="tbl-wrap">
@@ -388,6 +377,38 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <!-- Assign-team modal -->
+<!-- ABP config modal -->
+<div class="modal-bg" id="abpModal" style="display:none">
+<div class="modal" style="width:320px">
+  <h2>ABP Settings</h2>
+  <div class="field">
+    <label>Pts source</label>
+    <select id="abpModalSrc" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
+      <option value="pts">Proj Pts/G</option>
+      <option value="pts_raw">Proj Pts</option>
+      <option value="pts2526">25-26 Pts/G</option>
+      <option value="pts2526_raw">25-26 Pts</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Min GP</label>
+    <input type="number" id="abpModalMinGP" min="1" max="82" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
+  </div>
+  <div class="field">
+    <label>Min pts</label>
+    <input type="number" id="abpModalMinPts" min="0" max="200" step="1" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
+  </div>
+  <div class="field">
+    <label>Cap wiggle ($M)</label>
+    <input type="number" id="abpModalWiggle" min="0" max="5" step="0.05" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeAbpModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="applyAbpModal()">Apply</button>
+  </div>
+</div>
+</div>
+
 <div class="modal-bg" id="assignModal" style="display:none">
 <div class="modal" style="width:320px">
   <h2>Add to 26-27 roster</h2>
@@ -513,6 +534,23 @@ function openRankModal(){
 
 function closeRankModal(){ document.getElementById('rankModal').style.display = 'none'; }
 
+function openAbpModal(){
+  document.getElementById('abpModalSrc').value    = abpPtsSrc;
+  document.getElementById('abpModalMinGP').value  = abpMinGP;
+  document.getElementById('abpModalMinPts').value = abpMinPts;
+  document.getElementById('abpModalWiggle').value = abpWiggle;
+  document.getElementById('abpModal').style.display = 'flex';
+}
+function closeAbpModal(){ document.getElementById('abpModal').style.display = 'none'; }
+function applyAbpModal(){
+  abpPtsSrc = document.getElementById('abpModalSrc').value;
+  abpMinGP  = +document.getElementById('abpModalMinGP').value  || 1;
+  abpMinPts = +document.getElementById('abpModalMinPts').value || 0;
+  abpWiggle = +document.getElementById('abpModalWiggle').value || 0;
+  closeAbpModal();
+  render();
+}
+
 function rankPlayers(){
   const multF   = parseFloat(document.getElementById('rankMultF').value)   ?? RANK_DEFAULTS.multF;
   const multD   = parseFloat(document.getElementById('rankMultD').value)   ?? RANK_DEFAULTS.multD;
@@ -544,22 +582,15 @@ function rankPlayers(){
 }
 
 function simulateDrops(){
-  const teams = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
+  const dropIds = computeDrops(players);
   let dropped = 0;
-  for(const team of teams){
-    const roster = players.filter(p=>p.fantasyTeam===team);
-    // Sort: unranked first (rank=Infinity), then by rank descending (worst ranked = most likely dropped)
-    roster.sort((a,b)=>{
-      const ra = a.rank ?? Infinity;
-      const rb = b.rank ?? Infinity;
-      return rb - ra;
-    });
-    roster.slice(0,7).forEach(p=>{ p.fantasyTeam=''; dropped++; });
+  for(const p of players){
+    if(dropIds.has(p.id)){ p.fantasyTeam=''; dropped++; }
   }
   dropsSimulated = true;
   lsSet(LS_DROPS, true);
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
-  toast(`Simulate drops complete — ${dropped} players dropped (7 per team).`);
+  toast(`Simulate drops complete — ${dropped} players dropped.`);
 }
 
 function load(){
@@ -855,12 +886,12 @@ function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDi
 
 function computeDrops(allPlayers){
   // 0/1 knapsack: for each fantasy team, find the subset of players that
-  // maximises total PPTS while keeping total cap ≤ $104M and
-  // dropping at least 7 players. Players without pts/cap data are excluded
-  // from the optimisation and are not flagged.
+  // maximises total PPTS while keeping total cap ≤ (CAP_LIMIT - MIN_DROPS×$1M)
+  // so the team has room to sign MIN_DROPS replacement players at ~$1M each.
+  // Players without pts/cap data are excluded from the optimisation and not flagged.
   const MIN_DROPS  = 7;
-  const SCALE      = 10;                       // $0.1 M units → integers
-  const CAP_UNITS  = Math.round(CAP_LIMIT * SCALE); // 1040
+  const SCALE      = 10;                                          // $0.1 M units → integers
+  const CAP_UNITS  = Math.round((CAP_LIMIT - MIN_DROPS) * SCALE); // e.g. 970 for $97M
 
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
@@ -1537,6 +1568,7 @@ function toast(msg){
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 document.getElementById('rankModal').addEventListener('click',e=>{if(e.target===document.getElementById('rankModal'))closeRankModal();});
+document.getElementById('abpModal').addEventListener('click',e=>{if(e.target===document.getElementById('abpModal'))closeAbpModal();});
 load();
 
 // ── Draft Summary view ────────────────────────────────────────────
