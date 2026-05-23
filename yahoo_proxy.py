@@ -295,7 +295,9 @@ def rosters():
 
                 positions = next((m.get("eligible_positions", [])
                                   for m in meta if isinstance(m, dict) and "eligible_positions" in m), [])
-                pos = positions[0].get("position", "C") if positions else "C"
+                pos_list = [ep.get("position", "") for ep in positions if isinstance(ep, dict)]
+                specific = next((p for p in pos_list if p in ("C","LW","RW","D","G","F")), None)
+                pos = specific or ""
 
                 if full_name:
                     result.append({"name": full_name, "nhlTeam": nhl_team, "pos": pos, "fantasyTeam": team_name})

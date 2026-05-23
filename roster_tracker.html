@@ -673,6 +673,8 @@ function load(){
       p.ptsManual = p.pts > 0 && p.pts2526 > 0 && p.pts !== p.pts2526;
       migrated = true;
     }
+    // Clear Yahoo bench/utility slot labels that aren't real positions
+    if(['Util','BN'].includes(p.pos)){ p.pos = ''; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
   applyProjPtsFallback();
