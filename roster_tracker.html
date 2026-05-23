@@ -465,17 +465,44 @@ function applyProjPtsFallback(){
 }
 
 function rankPlayers(){
-  const abpMap = computeABP(players);
-  // Clear existing ranks
   for(const p of players) delete p.rank;
-  // Sort all players by APP desc, assign rank only to those with ABP = 0
-  const eligible = [...players]
-    .filter(p => (abpMap.get(p.id) ?? -1) === 0 && calcAPP(p) > 0)
-    .sort((a,b) => calcAPP(b) - calcAPP(a));
-  eligible.forEach((p,i) => { p.rank = i + 1; });
+
+  const rawPts = p => abpPtsSrc === 'app' ? calcAPP(p)
+    : abpPtsSrc.endsWith('_raw') ? getPPG(p)
+    : abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts;
+
+  // Eligible = anyone with valid PPG, a cap hit, and meeting the min-pts threshold
+  const eligible = players.filter(p =>
+    p.cap > 0 && getPPG(p) !== null &&
+    (abpMinPts <= 0 || (rawPts(p) || 0) >= abpMinPts)
+  );
+
+  const unranked = new Set(eligible.map(p => p.id));
+  let rankCounter = 1;
+
+  while(unranked.size > 0){
+    const pool = eligible.filter(p => unranked.has(p.id));
+    // Find players where no other unranked player at the same pos,
+    // equal-or-lower cap, has better PPG (i.e. ABP = 0 within remaining pool)
+    const toRank = pool
+      .filter(p => {
+        const pg  = posGroup(p.pos);
+        const ppg = getPPG(p);
+        const cap = p.cap + abpWiggle;
+        return !pool.some(fa =>
+          fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && getPPG(fa) > ppg
+        );
+      })
+      .sort((a,b) => (calcAPP(b)/b.cap) - (calcAPP(a)/a.cap));
+
+    if(!toRank.length) break; // circular tie — shouldn't happen with continuous values
+    toRank.forEach(p => { p.rank = rankCounter++; });
+    toRank.forEach(p => unranked.delete(p.id));
+  }
+
   lsSet(LS_PLAYERS, players);
   render();
-  toast(`Ranked ${eligible.length} players with ABP = 0.`);
+  toast(`Ranked ${rankCounter - 1} players.`);
 }
 
 function simulateDrops(){
