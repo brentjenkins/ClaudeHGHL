@@ -1547,7 +1547,7 @@ function renderSummaryCard(teamIdx){
   </div>`;
   const colTotal = (pts, cls) => {
     const color = cls==='departed'?'#dc2626':cls==='arrived'?'#16a34a':'#185FA5';
-    return pts > 0 ? `<div class="summary-col-total" style="color:${color}">${pts} pts</div>` : '';
+    return pts > 0 ? `<div class="summary-col-total" style="color:${color}">${pts}</div>` : '';
   };
 
   document.getElementById('summaryNavLabel').textContent =
@@ -1562,8 +1562,8 @@ function renderSummaryCard(teamIdx){
         <div class="summary-team-name">${esc(team)}</div>
       </div>
       <div style="text-align:right">
-        <div class="summary-rank-badge">#${rank2526} → Proj #${projRank}</div>
-        <div class="summary-pts-total" style="margin-top:6px">${projPtsTotal} proj pts</div>
+        <div class="summary-rank-badge">#${rank2526} → PROJ #${projRank}</div>
+        <div class="summary-pts-total" style="margin-top:6px">${projPtsTotal} Proj Pts</div>
       </div>
     </div>
     <div class="summary-stats-bar">
