@@ -205,6 +205,7 @@ tr:hover td{background:#fafaf8}
       <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
              oninput="renderDraftSearch()"
              style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
+      <button class="btn" onclick="simulateBestPick()" style="height:36px;white-space:nowrap;background:#6366f1;color:#fff;border-color:#6366f1">⚡ Best Pick</button>
     </div>
     <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
   </div>
@@ -1331,6 +1332,45 @@ function undoLastPick(){
   draftState.picks.pop();
   saveDraft();
   renderDraftView();
+}
+
+function simulateBestPick(){
+  const team = DRAFT_TEAMS[draftState.picks.length % 9];
+  const teamPicks = draftState.picks.filter(p => p.team === team);
+  const fN = teamPicks.filter(p => posGroup(p.pos) === 'F').length;
+  const dN = teamPicks.filter(p => posGroup(p.pos) === 'D').length;
+  const gN = teamPicks.filter(p => posGroup(p.pos) === 'G').length;
+  const need = {
+    F: Math.max(0, DRAFT_ROSTER_MAX.F - fN),
+    D: Math.max(0, DRAFT_ROSTER_MAX.D - dN),
+    G: Math.max(0, DRAFT_ROSTER_MAX.G - gN),
+  };
+
+  const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
+  const posMult = { F:1.0, D:1.4, G:1.0 };
+  const abpMap  = computeABP(players);
+  const scarcity = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
+
+  const available = players.filter(p =>
+    !p.fantasyTeam &&
+    !drafted.has(normName(p.name).toLowerCase()) &&
+    need[posGroup(p.pos)] > 0
+  );
+
+  if(!available.length){
+    toast('No available players at needed positions.');
+    return;
+  }
+
+  available.sort((a, b) => {
+    const score = p => (p.pts||0)
+      * (posMult[posGroup(p.pos)] ?? 1.0)
+      * scarcity(abpMap.get(p.id) ?? 99);
+    return score(b) - score(a);
+  });
+
+  const pick = available[0];
+  makeDraftPick(pick.name, pick.pos, pick.team||'—', pick.cap||0, pick.pts||0);
 }
 
 let currentView = 'roster';
