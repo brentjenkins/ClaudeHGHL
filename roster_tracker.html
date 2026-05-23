@@ -60,6 +60,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:2}
 th:hover{color:#1a1a18}
+thead tr:first-child th{padding:3px 12px;border-bottom:none;cursor:default;font-size:10px}
+thead tr:first-child th:hover{color:#888}
+thead tr:nth-child(2) th{top:17px}
 td{padding:9px 12px;border-bottom:1px solid #f0f0ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fafaf8}
@@ -276,22 +279,30 @@ tr:hover td{background:#fafaf8}
 
 <div class="tbl-wrap">
 <table>
-<thead><tr>
+<thead>
+<tr>
+  <th colspan="7"></th>
+  <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26</th>
+  <th colspan="4" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
+  <th colspan="1"></th>
+</tr>
+<tr>
   <th onclick="setSortCol('name')">Player <span id="sort-name"></span></th>
   <th onclick="setSortCol('pos')">Pos <span id="sort-pos"></span></th>
   <th onclick="setSortCol('age')">Age <span id="sort-age"></span></th>
   <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
-  <th onclick="setSortCol('fantasyTeam2526')">25-26 Team <span id="sort-fantasyTeam2526"></span></th>
-  <th onclick="setSortCol('fantasyTeam')">26-27 Team <span id="sort-fantasyTeam"></span></th>
+  <th onclick="setSortCol('fantasyTeam2526')" style="color:#bbb">25-26 Team <span id="sort-fantasyTeam2526"></span></th>
+  <th onclick="setSortCol('fantasyTeam')" style="color:#185FA5">26-27 Team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
-  <th onclick="setSortCol('pts2526')">Pts <span id="sort-pts2526"></span></th>
-  <th onclick="setSortCol('gp2526')">GP <span id="sort-gp2526"></span></th>
-  <th onclick="setSortCol('pts')">PPTS <span id="sort-pts"></span></th>
-  <th onclick="setSortCol('ptsperm')">PPTS/$M <span id="sort-ptsperm"></span></th>
-  <th onclick="setSortCol('rank')">Rank <span id="sort-rank"></span></th>
-  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
+  <th onclick="setSortCol('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort-gp2526"></span></th>
+  <th onclick="setSortCol('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
+  <th onclick="setSortCol('rank')" style="color:#185FA5">Rank <span id="sort-rank"></span></th>
+  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
   <th></th>
-</tr></thead>
+</tr>
+</thead>
 <tbody id="tbody"></tbody>
 </table>
 </div>
@@ -1043,7 +1054,7 @@ function render(){
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge(p)??'—'}</td>
       <td><div style="display:flex;align-items:center;gap:5px">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy">`:''}${esc(p.team||'—')}</div></td>
-      <td style="color:${p.fantasyTeam2526?'#1a1a18':'#9ca3af'}">
+      <td style="color:#9ca3af">
         <div style="display:flex;align-items:center;gap:5px">
           ${p.fantasyTeam2526&&teamLogos[p.fantasyTeam2526]?`<img src="${teamLogos[p.fantasyTeam2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
           <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.fantasyTeam2526||'—')}</span>
@@ -1056,8 +1067,8 @@ function render(){
         </div>
       </td>
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
-      <td>${p.pts2526>0?p.pts2526:'—'}</td>
-      <td>${p.gp2526>0?p.gp2526:'—'}</td>
+      <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
+      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
       <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
