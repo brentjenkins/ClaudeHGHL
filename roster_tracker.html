@@ -197,7 +197,7 @@ tr:hover td{background:#fafaf8}
   </div>
 </div>
 
-<div id="view-draft" style="display:none">
+<div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
   <div class="draft-col" id="draftColumn"></div>
   <div class="draft-entry">
     <div style="font-size:12px;color:#888;margin-bottom:.4rem" id="draftOnClock"></div>
@@ -1151,6 +1151,7 @@ const DRAFT_ROSTER_MAX = {F: 12, D: 6, G: 2};  // target spots per position per 
 
 const LS_DRAFT = 'hghl_draft_2627';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
+let animDismissed = false;
 
 // ── Whale canvas animation ────────────────────────────────────────
 let _whaleRAF = null;
@@ -1319,6 +1320,7 @@ function resetDraft(){
 }
 
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
+  animDismissed = false;
   const team = DRAFT_TEAMS[draftState.picks.length % 9];
   draftState.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   saveDraft();
@@ -1392,8 +1394,8 @@ function setView(v){
     startSummaryRotation();
     const onClock = DRAFT_TEAMS[draftState.picks.length % 9];
     const pastRound1 = draftState.picks.length >= 9;
-    if(pastRound1 && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
-    showMullerOverlay(pastRound1 && onClock === 'Muller Time!');
+    if(pastRound1 && !animDismissed && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
+    showMullerOverlay(pastRound1 && !animDismissed && onClock === 'Muller Time!');
   }
 }
 
@@ -1404,8 +1406,8 @@ function renderDraftView(){
 
   const onClock = DRAFT_TEAMS[total % 9];
   const pastRound1 = total >= 9;
-  if(pastRound1 && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
-  showMullerOverlay(pastRound1 && onClock === 'Muller Time!');
+  if(pastRound1 && !animDismissed && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
+  showMullerOverlay(pastRound1 && !animDismissed && onClock === 'Muller Time!');
   document.getElementById('draftOnClock').textContent =
     `Round ${curRound} — On the clock: ${onClock} — Pick ${total + 1} (#${total % 9 + 1})`;
 
