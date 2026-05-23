@@ -174,14 +174,12 @@ tr:hover td{background:#fafaf8}
 .summary-progress-bar.running{animation:summaryProg 10s linear forwards}
 /* ── Proj Pts ticker ─────────────────────────────────────────────── */
 #draftTicker{position:fixed;bottom:0;left:0;right:0;height:48px;background:#1a1a18;color:#fff;overflow:hidden;z-index:9000;display:none;border-top:2px solid #185FA5}
-#draftTicker .ticker-track{display:flex;white-space:nowrap;height:100%;animation:tickerScroll 30s linear infinite}
-#draftTicker .ticker-track:hover{animation-play-state:paused}
+#draftTicker .ticker-track{display:flex;white-space:nowrap;height:100%;will-change:transform}
 .ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 28px;height:48px;font-size:17px;border-right:1px solid #333}
 .ticker-item-rank{font-size:14px;font-weight:700;color:#9ca3af}
 .ticker-item-name{font-weight:600}
 .ticker-item-pts{font-size:15px;color:#60a5fa;font-weight:700}
 .ticker-sep{color:#555;padding:0 4px}
-@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 </style>
 </head>
 <body>
@@ -1153,6 +1151,29 @@ const LS_DRAFT = 'hghl_draft_2627';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let animDismissed = false;
 
+// ── Ticker RAF loop ───────────────────────────────────────────────
+let _tickerRAF = null, _tickerX = 0, _tickerLastTs = null;
+function _tickerFrame(ts){
+  const track = document.getElementById('tickerTrack');
+  if(!track){ _tickerRAF = null; return; }
+  if(_tickerLastTs !== null){
+    const half = track.scrollWidth / 2;
+    if(half > 0){
+      _tickerX += 300 * (ts - _tickerLastTs) / 1000; // 300 px/s
+      if(_tickerX >= half) _tickerX -= half;
+      track.style.transform = `translateX(-${_tickerX.toFixed(1)}px)`;
+    }
+  }
+  _tickerLastTs = ts;
+  _tickerRAF = requestAnimationFrame(_tickerFrame);
+}
+function startTicker(){
+  if(!_tickerRAF){ _tickerLastTs = null; _tickerRAF = requestAnimationFrame(_tickerFrame); }
+}
+function stopTicker(){
+  if(_tickerRAF){ cancelAnimationFrame(_tickerRAF); _tickerRAF = null; _tickerLastTs = null; }
+}
+
 // ── Whale canvas animation ────────────────────────────────────────
 let _whaleRAF = null;
 
@@ -1384,7 +1405,7 @@ function setView(v){
   document.getElementById('view-summary').style.display = v==='summary' ? '' : 'none';
   if(v==='roster'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
-  if(v!=='draft') document.getElementById('draftTicker').style.display = 'none';
+  if(v!=='draft'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   const views = ['roster','draft','summary'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
@@ -1500,10 +1521,7 @@ function renderDraftView(){
       </span>`;
     }).join('');
     track.innerHTML = tickerContent + tickerContent;
-    track.style.animation = 'none';
-    track.offsetHeight;
-    const duration = Math.max(20, track.scrollWidth / 2 / 300); // 300 px/s scroll speed
-    track.style.animation = `tickerScroll ${duration.toFixed(1)}s linear infinite`;
+    startTicker();
   }
 
   renderDraftSearch();
