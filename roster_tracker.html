@@ -855,27 +855,25 @@ function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDi
 
 function computeDrops(allPlayers){
   // 0/1 knapsack: for each fantasy team, find the subset of players that
-  // maximises total extrapolated pts while keeping total cap ≤ $104M and
+  // maximises total PPTS while keeping total cap ≤ $104M and
   // dropping at least 7 players. Players without pts/cap data are excluded
   // from the optimisation and are not flagged.
   const MIN_DROPS  = 7;
   const SCALE      = 10;                       // $0.1 M units → integers
   const CAP_UNITS  = Math.round(CAP_LIMIT * SCALE); // 1040
 
-  const pts82 = p => (p.pts2526>0 && p.gp2526>0) ? p.pts2526/p.gp2526*82 : null;
-
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
 
   for(const ft of ftNames){
     const roster     = allPlayers.filter(p => p.fantasyTeam === ft);
-    const evaluable  = roster.filter(p => pts82(p) !== null && p.cap > 0);
+    const evaluable  = roster.filter(p => p.pts > 0 && p.cap > 0);
     const m          = evaluable.length;
     if(m === 0) continue;
 
     const maxKeep = Math.max(roster.length - MIN_DROPS, 0);
     const W = evaluable.map(p => Math.round(p.cap * SCALE));
-    const V = evaluable.map(p => pts82(p));
+    const V = evaluable.map(p => p.pts);
 
     // Build 2D DP table: dp[i+1][c] = max pts using items 0..i with cap ≤ c.
     // Prefer-include on ties so reconstruction is unambiguous.
@@ -904,7 +902,7 @@ function computeDrops(allPlayers){
     if(keptSet.size > maxKeep){
       evaluable
         .filter(p => keptSet.has(p.id))
-        .sort((a,b) => pts82(a)-pts82(b))
+        .sort((a,b) => a.pts-b.pts)
         .slice(0, keptSet.size-maxKeep)
         .forEach(p => keptSet.delete(p.id));
     }
