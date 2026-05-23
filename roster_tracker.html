@@ -467,42 +467,26 @@ function applyProjPtsFallback(){
 function rankPlayers(){
   for(const p of players) delete p.rank;
 
-  const rawPts = p => abpPtsSrc === 'app' ? calcAPP(p)
-    : abpPtsSrc.endsWith('_raw') ? getPPG(p)
-    : abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts;
+  const MIN_APP = { F: 40, D: 20, G: 40 };
+  const yrsLeft = p => (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0);
 
-  // Eligible = anyone with valid PPG, a cap hit, and meeting the min-pts threshold
   const eligible = players.filter(p =>
-    p.cap > 0 && getPPG(p) !== null &&
-    (abpMinPts <= 0 || (rawPts(p) || 0) >= abpMinPts)
+    p.cap > 0 && calcAPP(p) >= (MIN_APP[posGroup(p.pos)] ?? 0)
   );
 
-  const unranked = new Set(eligible.map(p => p.id));
-  let rankCounter = 1;
-
-  while(unranked.size > 0){
-    const pool = eligible.filter(p => unranked.has(p.id));
-    // Find players where no other unranked player at the same pos,
-    // equal-or-lower cap, has better PPG (i.e. ABP = 0 within remaining pool)
-    const toRank = pool
-      .filter(p => {
-        const pg  = posGroup(p.pos);
-        const ppg = getPPG(p);
-        const cap = p.cap + abpWiggle;
-        return !pool.some(fa =>
-          fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && getPPG(fa) > ppg
-        );
-      })
-      .sort((a,b) => (calcAPP(b)/b.cap) - (calcAPP(a)/a.cap));
-
-    if(!toRank.length) break; // circular tie — shouldn't happen with continuous values
-    toRank.forEach(p => { p.rank = rankCounter++; });
-    toRank.forEach(p => unranked.delete(p.id));
-  }
+  eligible
+    .map(p => {
+      const scoreA = calcAPP(p) * 2;                              // APPTS × 2
+      const scoreB = p.pts > 0 ? p.pts / p.cap : 0;              // PPTS/$M
+      const scoreC = 4 * yrsLeft(p);                             // 4 × yrs remaining
+      return { p, score: scoreA + scoreB + scoreC };
+    })
+    .sort((a, b) => b.score - a.score)
+    .forEach(({ p }, i) => { p.rank = i + 1; });
 
   lsSet(LS_PLAYERS, players);
   render();
-  toast(`Ranked ${rankCounter - 1} players.`);
+  toast(`Ranked ${eligible.length} players.`);
 }
 
 function simulateDrops(){
