@@ -227,6 +227,8 @@ tr:hover td{background:#fafaf8}
     <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
     <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
     <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
+    <button class="btn" id="simBtn" onclick="runDraftSimulation()" style="background:#6366f1;color:#fff;border-color:#6366f1">⚡ Simulate Draft</button>
+    <button class="btn" id="simClearBtn" onclick="clearDraftSimulation()" style="display:none;color:#6366f1;border-color:#6366f1">✕ Clear Simulation</button>
     <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
   </div>
@@ -424,6 +426,7 @@ const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false;
+let draftSimRounds = null; // null = not run; {playerId: round} when simulation has been run
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -461,10 +464,75 @@ function applyProjPtsFallback(){
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
+function runDraftSimulation(){
+  const SIM_ROUNDS    = 20;
+  const POS_MAX       = {F:12, D:6, G:2};
+  const POS_WEIGHT    = {F:1.0, D:1.2, G:0.85};
+  const CAP_FLOOR     = 0.5;  // $M reserved per remaining pick
+
+  // Best team (rank 1) picks first each round — straight draft
+  const simOrder = [...DRAFT_TEAMS].reverse();
+
+  // Seed abpMap for scarcity scoring from current state
+  const abpMap = computeABP(players);
+
+  // Pool: signed players with projected pts
+  const pool = players.filter(p => (p.cap||0) > 0 && (p.pts||0) > 0);
+  const drafted  = new Set();
+  const simRounds = {};
+
+  const teamState = {};
+  for(const t of simOrder) teamState[t] = {cap:0, F:0, D:0, G:0};
+
+  for(let round = 1; round <= SIM_ROUNDS; round++){
+    for(const team of simOrder){
+      const state      = teamState[team];
+      const picksLeft  = SIM_ROUNDS - round;          // picks remaining after this one
+      const capBudget  = (CAP_LIMIT - state.cap) - picksLeft * CAP_FLOOR;
+
+      let best = null, bestScore = -Infinity;
+
+      for(const p of pool){
+        if(drafted.has(p.id)) continue;
+        const pg = posGroup(p.pos);
+        if(state[pg] >= POS_MAX[pg]) continue;
+        if((p.cap||0) > capBudget)   continue;
+
+        const abp      = abpMap.get(p.id) ?? 5;
+        const abpMult  = abp === 0 ? 1.25 : abp <= 2 ? 1.10 : abp >= 8 ? 0.90 : 1.0;
+        const score    = (p.pts * POS_WEIGHT[pg] * abpMult) / (p.cap||1);
+
+        if(score > bestScore){ bestScore = score; best = p; }
+      }
+
+      if(best){
+        drafted.add(best.id);
+        simRounds[best.id] = round;
+        teamState[team].cap += best.cap||0;
+        teamState[team][posGroup(best.pos)]++;
+      }
+    }
+  }
+
+  draftSimRounds = simRounds;
+  lsSet('hghl_draft_sim', simRounds);
+  render();
+  const n = Object.keys(simRounds).length;
+  toast(`Simulation complete — ${n} players drafted across ${SIM_ROUNDS} rounds.`);
+}
+
+function clearDraftSimulation(){
+  draftSimRounds = null;
+  localStorage.removeItem('hghl_draft_sim');
+  render();
+  toast('Simulation cleared.');
+}
+
 function load(){
   players      = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions = lsGet(LS_TX)      || [];
   teamLogos    = lsGet(LS_LOGOS)   || {};
+  draftSimRounds = lsGet('hghl_draft_sim') || null;
   // migrate: stamp fantasyTeam2526 from fantasyTeam if not yet set
   let migrated = false;
   for(const p of players){
@@ -818,10 +886,13 @@ function render(){
 
   const dropIds = computeDrops(players);
   const abpMap  = computeABP(players);
+  const simActive = draftSimRounds !== null;
+  const scb = document.getElementById('simClearBtn');
+  if(scb) scb.style.display = simActive ? '' : 'none';
   const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='prediction' ? (dropIds.has(a.id)?0:1) : sortCol==='age' ? (calcAge(a)??-1) : sortCol==='abp' ? (abpMap.get(a.id)??-1) : (a[sortCol]??'');
-    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='prediction' ? (dropIds.has(b.id)?0:1) : sortCol==='age' ? (calcAge(b)??-1) : sortCol==='abp' ? (abpMap.get(b.id)??-1) : (b[sortCol]??'');
+    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='prediction' ? (simActive ? (draftSimRounds[a.id]??99) : (dropIds.has(a.id)?0:1)) : sortCol==='age' ? (calcAge(a)??-1) : sortCol==='abp' ? (abpMap.get(a.id)??-1) : (a[sortCol]??'');
+    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='prediction' ? (simActive ? (draftSimRounds[b.id]??99) : (dropIds.has(b.id)?0:1)) : sortCol==='age' ? (calcAge(b)??-1) : sortCol==='abp' ? (abpMap.get(b.id)??-1) : (b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
@@ -836,8 +907,10 @@ function render(){
     const pg=posGroup(p.pos);
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const src=p.source||'manual';
-    const isDrop = dropIds.has(p.id);
-    return `<tr style="${isDrop?'background:#fff5f5':''}">
+    const isDrop  = dropIds.has(p.id);
+    const simRd   = simActive ? (draftSimRounds[p.id] ?? null) : null;
+    const rowBg   = simActive ? '' : (isDrop ? 'background:#fff5f5' : '');
+    return `<tr style="${rowBg}">
       <td>
         <div style="display:flex;align-items:center;gap:5px">
           <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
@@ -866,7 +939,11 @@ function render(){
       <td>${p.pts>0?p.pts:'—'}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
-      <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
+      <td>${simActive
+        ? (simRd != null
+            ? `<span style="font-size:11px;font-weight:700;color:${simRd<=3?'#b45309':simRd<=9?'#185FA5':simRd<=15?'#555':'#9ca3af'}">${simRd}</span>`
+            : '<span style="font-size:11px;color:#d1d5db">—</span>')
+        : (isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':''))}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
