@@ -1254,10 +1254,11 @@ function renderDraftView(){
   }
   // Duplicate for seamless loop
   track.innerHTML = tickerContent + tickerContent;
-  // Restart animation to sync with new content
+  // Measure actual content width and set duration so one full pass takes exactly that long
   track.style.animation = 'none';
   track.offsetHeight;
-  track.style.animation = '';
+  const duration = Math.max(20, track.scrollWidth / 2 / 300); // 300 px/s scroll speed
+  track.style.animation = `tickerScroll ${duration.toFixed(1)}s linear infinite`;
 
   renderDraftSearch();
 }
