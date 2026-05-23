@@ -186,10 +186,15 @@ tr:hover td{background:#fafaf8}
 </head>
 <body>
 
-<div class="view-tabs">
+<div class="view-tabs" style="align-items:center">
   <button class="view-tab active" onclick="setView('roster')">HGHL 2026-27 Players</button>
   <button class="view-tab" onclick="setView('draft')">HGHL 2026–27 Draft</button>
   <button class="view-tab" onclick="setView('summary')">Draft Summary</button>
+  <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
+    <div class="proxy-dot pulse" id="proxyDot"></div>
+    <span id="proxyStatus">Checking…</span>
+    <button style="background:none;border:none;padding:0 0 0 4px;font-size:12px;color:#999;cursor:pointer;line-height:1" onclick="checkProxy()" title="Recheck proxy">↺</button>
+  </div>
 </div>
 
 <div id="view-draft" style="display:none">
@@ -232,11 +237,6 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="openRankModal()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
       <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
       <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
-    </div>
-    <div class="proxy-bar" id="proxyBar">
-      <div class="proxy-dot pulse" id="proxyDot"></div>
-      <span id="proxyStatus">Checking…</span>
-      <button style="background:none;border:none;padding:0 0 0 4px;font-size:12px;color:#999;cursor:pointer;line-height:1" onclick="checkProxy()" title="Recheck proxy">↺</button>
     </div>
   </div>
 </div>
