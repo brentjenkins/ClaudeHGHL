@@ -168,7 +168,7 @@ tr:hover td{background:#fafaf8}
 .summary-progress-bar.running{animation:summaryProg 10s linear forwards}
 /* ── Proj Pts ticker ─────────────────────────────────────────────── */
 #draftTicker{position:fixed;bottom:0;left:0;right:0;height:48px;background:#1a1a18;color:#fff;overflow:hidden;z-index:9000;display:none;border-top:2px solid #185FA5}
-#draftTicker .ticker-track{display:flex;white-space:nowrap;height:100%;animation:tickerScroll 60s linear infinite}
+#draftTicker .ticker-track{display:flex;white-space:nowrap;height:100%;animation:tickerScroll 30s linear infinite}
 #draftTicker .ticker-track:hover{animation-play-state:paused}
 .ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 28px;height:48px;font-size:17px;border-right:1px solid #333}
 .ticker-item-rank{font-size:14px;font-weight:700;color:#9ca3af}
@@ -188,10 +188,11 @@ tr:hover td{background:#fafaf8}
 
 <div id="view-draft" style="display:none">
   <div style="display:flex;align-items:baseline;justify-content:space-between;max-width:1380px;margin-bottom:.75rem">
-    <span id="draftRoundLabel" style="font-size:22px;font-weight:700">Round 1</span>
+    <span id="draftRoundLabel" style="font-size:22px;font-weight:700">HGHL 2026-27 Draft</span>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="undoLastPick()" style="height:28px;font-size:12px">↩ Undo</button>
       <button class="btn" onclick="resetDraft()" style="height:28px;font-size:12px;color:#dc2626;border-color:#dc2626">Reset Draft</button>
+      <button class="btn" onclick="simulateDrops()" style="height:28px;font-size:12px;background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
     </div>
   </div>
   <div class="draft-col" id="draftColumn"></div>
@@ -227,10 +228,9 @@ tr:hover td{background:#fafaf8}
     <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
     <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
     <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
-    <button class="btn" id="simBtn" onclick="runDraftSimulation()" style="background:#6366f1;color:#fff;border-color:#6366f1">⚡ Simulate Draft</button>
-    <button class="btn" id="simClearBtn" onclick="clearDraftSimulation()" style="display:none;color:#6366f1;border-color:#6366f1">✕ Clear Simulation</button>
     <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
     <button class="btn btn-primary" onclick="openAdd()">+ Add player</button>
+    <button class="btn" onclick="rankPlayers()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
   </div>
 </div>
 
@@ -277,6 +277,7 @@ tr:hover td{background:#fafaf8}
 <div class="controls" style="margin-top:0;margin-bottom:.75rem">
   <span style="font-size:12px;color:#888;white-space:nowrap">ABP pts source:</span>
   <select id="abpPtsSrc" onchange="abpPtsSrc=this.value;render()" style="flex:0">
+    <option value="app" selected>APP</option>
     <option value="pts2526">25-26 Pts/G</option>
     <option value="pts2526_raw">25-26 Pts</option>
     <option value="pts">Proj Pts/G</option>
@@ -284,10 +285,10 @@ tr:hover td{background:#fafaf8}
   </select>
   <span style="font-size:12px;color:#888;white-space:nowrap">min GP</span>
   <input type="number" id="abpMinGP" value="5" min="1" max="82" style="flex:0;width:58px" oninput="abpMinGP=+this.value||1;render()">
+  <span style="font-size:12px;color:#888;white-space:nowrap">min pts</span>
+  <input type="number" id="abpMinPts" value="20" min="0" max="200" step="1" style="flex:0;width:58px" oninput="abpMinPts=+this.value||0;render()">
   <span style="font-size:12px;color:#888;white-space:nowrap">cap wiggle $M</span>
   <input type="number" id="abpWiggle" value="0.1" min="0" max="5" step="0.05" style="flex:0;width:68px" oninput="abpWiggle=+this.value;render()">
-  <span style="font-size:12px;color:#888;white-space:nowrap">min pts</span>
-  <input type="number" id="abpMinPts" value="0" min="0" max="200" step="1" style="flex:0;width:58px" oninput="abpMinPts=+this.value||0;render()">
 </div>
 
 <div class="tbl-wrap">
@@ -300,12 +301,14 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('fantasyTeam2526')">25-26 Team <span id="sort-fantasyTeam2526"></span></th>
   <th onclick="setSortCol('fantasyTeam')">26-27 Team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
-  <th onclick="setSortCol('pts2526')">25-26 <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('pts2526')">25-26 Pts <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('gp2526')">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('ptsperm')">Pts/$M <span id="sort-ptsperm"></span></th>
-  <th onclick="setSortCol('pts')">Proj pts <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('pts')">PP <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('app')" title="Adjusted Projected Points: D × 1.25, F/G × 1.0">APP <span id="sort-app"></span></th>
   <th onclick="setSortCol('status')">Status <span id="sort-status"></span></th>
-  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better pts/game">ABP <span id="sort-abp"></span></th>
+  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP">ABP <span id="sort-abp"></span></th>
+  <th onclick="setSortCol('rank')">Rank <span id="sort-rank"></span></th>
   <th onclick="setSortCol('prediction')">Prediction <span id="sort-prediction"></span></th>
   <th></th>
 </tr></thead>
@@ -426,7 +429,6 @@ const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'cap', sortDir = -1, proxyOk = false;
-let draftSimRounds = null; // null = not run; {playerId: round} when simulation has been run
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -464,75 +466,41 @@ function applyProjPtsFallback(){
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
-function runDraftSimulation(){
-  const SIM_ROUNDS    = 20;
-  const POS_MAX       = {F:12, D:6, G:2};
-  const POS_WEIGHT    = {F:1.0, D:1.2, G:0.85};
-  const CAP_FLOOR     = 0.5;  // $M reserved per remaining pick
-
-  // Best team (rank 1) picks first each round — straight draft
-  const simOrder = [...DRAFT_TEAMS].reverse();
-
-  // Seed abpMap for scarcity scoring from current state
+function rankPlayers(){
   const abpMap = computeABP(players);
-
-  // Pool: signed players with projected pts
-  const pool = players.filter(p => (p.cap||0) > 0 && (p.pts||0) > 0);
-  const drafted  = new Set();
-  const simRounds = {};
-
-  const teamState = {};
-  for(const t of simOrder) teamState[t] = {cap:0, F:0, D:0, G:0};
-
-  for(let round = 1; round <= SIM_ROUNDS; round++){
-    for(const team of simOrder){
-      const state      = teamState[team];
-      const picksLeft  = SIM_ROUNDS - round;          // picks remaining after this one
-      const capBudget  = (CAP_LIMIT - state.cap) - picksLeft * CAP_FLOOR;
-
-      let best = null, bestScore = -Infinity;
-
-      for(const p of pool){
-        if(drafted.has(p.id)) continue;
-        const pg = posGroup(p.pos);
-        if(state[pg] >= POS_MAX[pg]) continue;
-        if((p.cap||0) > capBudget)   continue;
-
-        const abp      = abpMap.get(p.id) ?? 5;
-        const abpMult  = abp === 0 ? 1.25 : abp <= 2 ? 1.10 : abp >= 8 ? 0.90 : 1.0;
-        const score    = (p.pts * POS_WEIGHT[pg] * abpMult) / (p.cap||1);
-
-        if(score > bestScore){ bestScore = score; best = p; }
-      }
-
-      if(best){
-        drafted.add(best.id);
-        simRounds[best.id] = round;
-        teamState[team].cap += best.cap||0;
-        teamState[team][posGroup(best.pos)]++;
-      }
-    }
-  }
-
-  draftSimRounds = simRounds;
-  lsSet('hghl_draft_sim', simRounds);
+  // Clear existing ranks
+  for(const p of players) delete p.rank;
+  // Sort all players by APP desc, assign rank only to those with ABP = 0
+  const eligible = [...players]
+    .filter(p => (abpMap.get(p.id) ?? -1) === 0 && calcAPP(p) > 0)
+    .sort((a,b) => calcAPP(b) - calcAPP(a));
+  eligible.forEach((p,i) => { p.rank = i + 1; });
+  lsSet(LS_PLAYERS, players);
   render();
-  const n = Object.keys(simRounds).length;
-  toast(`Simulation complete — ${n} players drafted across ${SIM_ROUNDS} rounds.`);
+  toast(`Ranked ${eligible.length} players with ABP = 0.`);
 }
 
-function clearDraftSimulation(){
-  draftSimRounds = null;
-  localStorage.removeItem('hghl_draft_sim');
-  render();
-  toast('Simulation cleared.');
+function simulateDrops(){
+  const teams = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
+  let dropped = 0;
+  for(const team of teams){
+    const roster = players.filter(p=>p.fantasyTeam===team);
+    // Sort: unranked first (rank=Infinity), then by rank descending (worst ranked = most likely dropped)
+    roster.sort((a,b)=>{
+      const ra = a.rank ?? Infinity;
+      const rb = b.rank ?? Infinity;
+      return rb - ra;
+    });
+    roster.slice(0,7).forEach(p=>{ p.fantasyTeam=''; dropped++; });
+  }
+  lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
+  toast(`Simulate drops complete — ${dropped} players dropped (7 per team).`);
 }
 
 function load(){
   players      = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions = lsGet(LS_TX)      || [];
   teamLogos    = lsGet(LS_LOGOS)   || {};
-  draftSimRounds = lsGet('hghl_draft_sim') || null;
   // migrate: stamp fantasyTeam2526 from fantasyTeam if not yet set
   let migrated = false;
   for(const p of players){
@@ -886,18 +854,15 @@ function render(){
 
   const dropIds = computeDrops(players);
   const abpMap  = computeABP(players);
-  const simActive = draftSimRounds !== null;
-  const scb = document.getElementById('simClearBtn');
-  if(scb) scb.style.display = simActive ? '' : 'none';
   const ppm = p => (p.pts2526>0&&p.gp2526>0&&p.cap>0) ? (p.pts2526/p.gp2526*82)/p.cap : 0;
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm' ? ppm(a) : sortCol==='prediction' ? (simActive ? (draftSimRounds[a.id]??99) : (dropIds.has(a.id)?0:1)) : sortCol==='age' ? (calcAge(a)??-1) : sortCol==='abp' ? (abpMap.get(a.id)??-1) : (a[sortCol]??'');
-    let bv = sortCol==='ptsperm' ? ppm(b) : sortCol==='prediction' ? (simActive ? (draftSimRounds[b.id]??99) : (dropIds.has(b.id)?0:1)) : sortCol==='age' ? (calcAge(b)??-1) : sortCol==='abp' ? (abpMap.get(b.id)??-1) : (b[sortCol]??'');
+    let av = sortCol==='ptsperm'?ppm(a):sortCol==='prediction'?(dropIds.has(a.id)?0:1):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='app'?calcAPP(a):sortCol==='rank'?(a.rank??99999):(a[sortCol]??'');
+    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='prediction'?(dropIds.has(b.id)?0:1):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='app'?calcAPP(b):sortCol==='rank'?(b.rank??99999):(b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','status','abp','prediction'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','ptsperm','pts','app','status','abp','rank','prediction'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -907,10 +872,8 @@ function render(){
     const pg=posGroup(p.pos);
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const src=p.source||'manual';
-    const isDrop  = dropIds.has(p.id);
-    const simRd   = simActive ? (draftSimRounds[p.id] ?? null) : null;
-    const rowBg   = simActive ? '' : (isDrop ? 'background:#fff5f5' : '');
-    return `<tr style="${rowBg}">
+    const isDrop = dropIds.has(p.id);
+    return `<tr style="${isDrop?'background:#fff5f5':''}">
       <td>
         <div style="display:flex;align-items:center;gap:5px">
           <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
@@ -936,14 +899,12 @@ function render(){
       <td>${p.pts2526>0?p.pts2526:'—'}</td>
       <td>${p.gp2526>0?p.gp2526:'—'}</td>
       <td>${p.pts2526>0&&p.gp2526>0&&p.cap>0?((p.pts2526/p.gp2526*82)/p.cap).toFixed(1):'—'}</td>
-      <td>${p.pts>0?p.pts:'—'}</td>
+      <td>${p.pts2526>0?p.pts2526:'—'}</td>
+      <td>${p.pts2526>0?Math.round(calcAPP(p)):'—'}</td>
       <td>${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
-      <td>${simActive
-        ? (simRd != null
-            ? `<span style="font-size:11px;font-weight:700;color:${simRd<=3?'#b45309':simRd<=9?'#185FA5':simRd<=15?'#555':'#9ca3af'}">${simRd}</span>`
-            : '<span style="font-size:11px;color:#d1d5db">—</span>')
-        : (isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':''))}</td>
+      <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
+      <td>${isDrop?'<span class="badge badge-drop">Drop</span>':(!p.fantasyTeam?'':'')}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
@@ -951,7 +912,7 @@ function render(){
           : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
+  }).join(''):`<tr><td colspan="17" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -1203,9 +1164,9 @@ function renderDraftView(){
   const onClock = DRAFT_TEAMS[total % 9];
   if(onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
   showMullerOverlay(onClock === 'Muller Time!');
-  document.getElementById('draftRoundLabel').textContent = `Round ${curRound}`;
+  document.getElementById('draftRoundLabel').textContent = 'HGHL 2026-27 Draft';
   document.getElementById('draftOnClock').textContent =
-    `On the clock: ${onClock} — Pick ${total + 1} (Round ${curRound}, #${total % 9 + 1})`;
+    `Round ${curRound} — On the clock: ${onClock} — Pick ${total + 1} (#${total % 9 + 1})`;
 
   // Sliding window: start 4 picks back, show through end of current round,
   // then preview first 3 picks of the next round.
@@ -1323,13 +1284,19 @@ function renderDraftSearch(){
 }
 
 // ABP config — updated live by the controls row
-let abpPtsSrc = 'pts2526';
+let abpPtsSrc = 'app';
 let abpMinGP  = 5;
 let abpWiggle = 0.1;   // $M
-let abpMinPts = 0;
+let abpMinPts = 20;
+
+const appMult = p => posGroup(p.pos) === 'D' ? 1.25 : 1.0;
+const calcAPP = p => (p.pts2526||0) * appMult(p);
 
 function getPPG(p){
-  if(abpPtsSrc === 'pts2526'){
+  if(abpPtsSrc === 'app'){
+    if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
+    return (p.pts2526 / p.gp2526) * appMult(p);
+  } else if(abpPtsSrc === 'pts2526'){
     if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
     return p.pts2526 / p.gp2526;
   } else if(abpPtsSrc === 'pts2526_raw'){
@@ -1346,9 +1313,9 @@ function getPPG(p){
 
 function computeABP(allPlayers){
   // Free agents with a cap hit, enough data, and meeting the pts minimum
-  const rawPts = p => abpPtsSrc.endsWith('_raw') ? getPPG(p) : (
-    abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts
-  );
+  const rawPts = p => abpPtsSrc === 'app' ? calcAPP(p)
+    : abpPtsSrc.endsWith('_raw') ? getPPG(p)
+    : abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts;
   const fas = allPlayers.filter(p =>
     !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null &&
     (abpMinPts <= 0 || (rawPts(p)||0) >= abpMinPts)
