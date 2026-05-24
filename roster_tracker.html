@@ -246,6 +246,21 @@ tr:hover td{background:#fafaf8}
   </div>
 </div>
 
+<div id="draftFormulaBar" style="display:none;background:#f5f3ff;border:1px solid #c7d2fe;border-radius:8px;padding:7px 14px;margin:6px 0;font-size:12px;color:#4338ca;gap:10px;align-items:center;flex-wrap:wrap">
+  <span style="font-weight:700;white-space:nowrap">⚡ Score =</span>
+  <span style="white-space:nowrap">PPTS &times; pos &times; scarcity</span>
+  <span style="color:#a5b4fc">&plus;</span>
+  <span style="white-space:nowrap">(PPTS/$M) &times; <input id="dmWtPPTSM" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtPPTSM',+this.value)" title="Weight for PPTS per $M cap"></span>
+  <span style="color:#a5b4fc">&plus;</span>
+  <span style="white-space:nowrap">yrs &times; <input id="dmWtYrs" type="number" value="2" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtYrs',+this.value)" title="Weight for contract years remaining"></span>
+  <span style="color:#a5b4fc">&plus;</span>
+  <span style="white-space:nowrap">youth &times; <input id="dmWtAge" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtAge',+this.value)" title="Weight for youth bonus (max 0, 35−age)"></span>
+  <span style="color:#c4b5fd;margin:0 4px">|</span>
+  <span style="white-space:nowrap">F &times; <input id="dmMultF" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multF',+this.value)" title="Forward position multiplier"></span>
+  <span style="white-space:nowrap">D &times; <input id="dmMultD" type="number" value="1.4" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multD',+this.value)" title="Defence position multiplier"></span>
+  <span style="white-space:nowrap">G &times; <input id="dmMultG" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multG',+this.value)" title="Goalie position multiplier"></span>
+</div>
+
 <div class="stats-grid" id="statCards"></div>
 
 <div id="txSection" style="display:none">
@@ -507,6 +522,7 @@ const LS_DROPS   = 'hghl_drops_simulated';
 const LS_ESPN    = 'hghl_espn_proj';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1144,10 +1160,10 @@ function render(){
     const need={F:Math.max(0,DRAFT_ROSTER_MAX.F-fN2),D:Math.max(0,DRAFT_ROSTER_MAX.D-dN2),G:Math.max(0,DRAFT_ROSTER_MAX.G-gN2)};
     const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?1.3:n<=2?1.15:n<=5?1.05:1.0;
-    const pm={F:1.0,D:1.4,G:1.0};
+    const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
     rows=players
       .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0)
-      .map(p=>{const pg=posGroup(p.pos);return Object.assign({},p,{_ds:(p.pts||0)*(pm[pg]??1)*sc(abpMap.get(p.id)??99)+((p.pts>0&&p.cap>0)?p.pts/p.cap*RANK_DEFAULTS.wtPPTSM:0)+(p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0)*RANK_DEFAULTS.wtYrs+Math.max(0,35-(calcAge(p)??35))*RANK_DEFAULTS.wtAge});})
+      .map(p=>{const pg=posGroup(p.pos);return Object.assign({},p,{_ds:(p.pts||0)*(pm[pg]??1)*sc(abpMap.get(p.id)??99)+((p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0)+(p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0)*draftWeights.wtYrs+Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge});})
       .sort((a,b)=>b._ds-a._ds)
       .slice(0,draftModeTop);
   }
@@ -1484,8 +1500,17 @@ function toggleDraftMode(){
   draftMode = !draftMode;
   draftModeTop = +(document.getElementById('draftModeTopInput').value) || 10;
   const btn = document.getElementById('draftModeBtn');
+  const bar = document.getElementById('draftFormulaBar');
   if(draftMode){
     btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1';
+    draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
+    document.getElementById('dmMultF').value   = draftWeights.multF;
+    document.getElementById('dmMultD').value   = draftWeights.multD;
+    document.getElementById('dmMultG').value   = draftWeights.multG;
+    document.getElementById('dmWtPPTSM').value = draftWeights.wtPPTSM;
+    document.getElementById('dmWtYrs').value   = draftWeights.wtYrs;
+    document.getElementById('dmWtAge').value   = draftWeights.wtAge;
+    bar.style.display = 'flex';
     document.getElementById('search').value='';
     document.getElementById('filterPos').value='';
     document.getElementById('filterRoster').value='';
@@ -1495,8 +1520,14 @@ function toggleDraftMode(){
     document.getElementById('filterSource').value='';
   } else {
     btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe';
+    bar.style.display = 'none';
   }
   render();
+}
+
+function updateDraftWeight(key, val){
+  draftWeights[key] = val;
+  if(draftMode) render();
 }
 
 function quickDraft(id){
