@@ -1167,7 +1167,18 @@ function render(){
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
     rows=players
       .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0)
-      .map(p=>{const pg=posGroup(p.pos);return Object.assign({},p,{_ds:(p.pts||0)*(pm[pg]??1)+sc(abpMap.get(p.id)??99)*draftWeights.wtScarcity+((p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0)+(p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0)*draftWeights.wtYrs+Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge});})
+      .map(p=>{
+        const pg=posGroup(p.pos);
+        const scV=sc(abpMap.get(p.id)??99);
+        const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
+        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const tPPTS=(p.pts||0)*(pm[pg]??1);
+        const tSc=scV*draftWeights.wtScarcity;
+        const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
+        const tYrs=yrsRaw*draftWeights.wtYrs;
+        const tYouth=youthRaw*draftWeights.wtAge;
+        return Object.assign({},p,{_ds:tPPTS+tSc+tPPTSM+tYrs+tYouth,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth}});
+      })
       .sort((a,b)=>b._ds-a._ds)
       .slice(0,draftModeTop);
   }
@@ -1209,7 +1220,7 @@ function render(){
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
-      ${draftMode ? `<td style="color:#6366f1;font-weight:700;font-size:11px">${p._ds!=null?p._ds.toFixed(1):'—'}</td>` : ''}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
