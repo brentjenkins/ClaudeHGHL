@@ -57,6 +57,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-nhl:hover{background:#1a1a18;border-color:#1a1a18}
 .btn-puckpedia{background:#0F2446;color:#fff;border-color:#0F2446}
 .btn-puckpedia:hover{background:#F00032;border-color:#F00032}
+.btn-espn{background:#CC0000;color:#fff;border-color:#CC0000}
+.btn-espn:hover{background:#8B0000;border-color:#8B0000}
 .tbl-wrap{overflow-x:auto;overflow-y:auto;border:1px solid #eee;border-radius:10px;flex:1;min-height:0}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:2}
@@ -231,7 +233,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 NHL Rosters</button>
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 NHL 25-26</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Signings</button>
-      <button class="btn" id="espnBtn" onclick="syncESPN()" style="background:#CC0000;color:#fff;border-color:#CC0000">📈 ESPN 26-27</button>
+      <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()">📈 ESPN 26-27</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
