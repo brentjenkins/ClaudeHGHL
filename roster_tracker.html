@@ -1723,7 +1723,7 @@ function updateStats(){
     const te = t.replace(/'/g,"&apos;");
     const isActiveTeam = activeTeam === t;
     const cardBorder = isActiveTeam ? 'outline:2px solid #185FA5' : '';
-    const pillStyle = (pos, n) => `cursor:pointer;${n===0?'color:#9ca3af':''}${isActiveTeam && activePos === pos ? ';background:#185FA5;color:#fff' : ''}`;
+    const pillStyle = (pos) => `cursor:pointer;${isActiveTeam && activePos === pos ? ';background:#185FA5;color:#fff' : ''}`;
     return `<div class="team-card" onclick="filterToTeam('${te}')" style="cursor:pointer;${cardBorder}" title="Filter to ${esc(t)}">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
@@ -1731,7 +1731,7 @@ function updateStats(){
       </div>
       <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
       <div class="team-card-pos">
-        <span onclick="filterToTeam('${te}','F');event.stopPropagation()" style="${pillStyle('F',fRem)}" title="${fRem} forward spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span onclick="filterToTeam('${te}','D');event.stopPropagation()" style="${pillStyle('D',dRem)}" title="${dRem} defence spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span onclick="filterToTeam('${te}','G');event.stopPropagation()" style="${pillStyle('G',gRem)}" title="${gRem} goalie spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
+        <span onclick="filterToTeam('${te}','F');event.stopPropagation()" style="${pillStyle('F')}" title="${fN} forward${fN!==1?'s':''} rostered">F&thinsp;${fN}</span><span onclick="filterToTeam('${te}','D');event.stopPropagation()" style="${pillStyle('D')}" title="${dN} defenceman${dN!==1?'en':''} rostered">D&thinsp;${dN}</span><span onclick="filterToTeam('${te}','G');event.stopPropagation()" style="${pillStyle('G')}" title="${gN} goalie${gN!==1?'s':''} rostered">G&thinsp;${gN}</span>
       </div>
     </div>`;
   }).join('');
