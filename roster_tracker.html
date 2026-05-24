@@ -1714,13 +1714,16 @@ function updateStats(){
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
     const gN = tp.filter(p=>posGroup(p.pos)==='G').length;
+    const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
+    const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
+    const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
     const logo = teamLogos[t];
     const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
     const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
     const te = t.replace(/'/g,"&apos;");
     const isActiveTeam = activeTeam === t;
     const cardBorder = isActiveTeam ? 'outline:2px solid #185FA5' : '';
-    const pillStyle = pos => `cursor:pointer;${isActiveTeam && activePos === pos ? 'background:#185FA5;color:#fff' : ''}`;
+    const pillStyle = (pos, n) => `cursor:pointer;${n===0?'color:#9ca3af':''}${isActiveTeam && activePos === pos ? ';background:#185FA5;color:#fff' : ''}`;
     return `<div class="team-card" onclick="filterToTeam('${te}')" style="cursor:pointer;${cardBorder}" title="Filter to ${esc(t)}">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
@@ -1728,7 +1731,7 @@ function updateStats(){
       </div>
       <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
       <div class="team-card-pos">
-        <span onclick="filterToTeam('${te}','F');event.stopPropagation()" style="${pillStyle('F')}" title="Filter to ${esc(t)} forwards">F&thinsp;${fN}</span><span onclick="filterToTeam('${te}','D');event.stopPropagation()" style="${pillStyle('D')}" title="Filter to ${esc(t)} defence">D&thinsp;${dN}</span><span onclick="filterToTeam('${te}','G');event.stopPropagation()" style="${pillStyle('G')}" title="Filter to ${esc(t)} goalies">G&thinsp;${gN}</span>
+        <span onclick="filterToTeam('${te}','F');event.stopPropagation()" style="${pillStyle('F',fRem)}" title="${fRem} forward spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span onclick="filterToTeam('${te}','D');event.stopPropagation()" style="${pillStyle('D',dRem)}" title="${dRem} defence spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span onclick="filterToTeam('${te}','G');event.stopPropagation()" style="${pillStyle('G',gRem)}" title="${gRem} goalie spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
     </div>`;
   }).join('');
