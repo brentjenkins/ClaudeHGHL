@@ -305,7 +305,7 @@ tr:hover td{background:#fafaf8}
   <th colspan="7"></th>
   <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26</th>
   <th colspan="5" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
-  <th colspan="1"></th>
+  <th colspan="2"></th>
 </tr>
 <tr>
   <th onclick="setSortCol('name')">Player <span id="sort-name"></span></th>
@@ -322,6 +322,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('rank')" style="color:#185FA5">Rank <span id="sort-rank"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
+  <th id="th-score" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
   <th></th>
 </tr>
 </thead>
@@ -1151,6 +1152,7 @@ function render(){
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
 
+  document.getElementById('th-score').style.display = draftMode ? '' : 'none';
   const onClockTeam = DRAFT_TEAMS[draftState.picks.length % 9];
   if(draftMode){
     const teamPicks = draftState.picks.filter(p=>p.team===onClockTeam);
@@ -1205,6 +1207,7 @@ function render(){
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
+      ${draftMode ? `<td style="color:#6366f1;font-weight:700;font-size:11px">${p._ds!=null?p._ds.toFixed(1):'—'}</td>` : ''}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
