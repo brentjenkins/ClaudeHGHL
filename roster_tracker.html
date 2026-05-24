@@ -422,15 +422,6 @@ tr:hover td{background:#fafaf8}
 <div class="modal" style="width:320px">
   <h2>ABP Settings</h2>
   <div class="field">
-    <label>Pts source</label>
-    <select id="abpModalSrc" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
-      <option value="pts">Proj Pts/G</option>
-      <option value="pts_raw">Proj Pts</option>
-      <option value="pts2526">25-26 Pts/G</option>
-      <option value="pts2526_raw">25-26 Pts</option>
-    </select>
-  </div>
-  <div class="field">
     <label>Min GP</label>
     <input type="number" id="abpModalMinGP" min="1" max="82" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
   </div>
@@ -586,7 +577,6 @@ function openRankModal(){
 function closeRankModal(){ document.getElementById('rankModal').style.display = 'none'; }
 
 function openAbpModal(){
-  document.getElementById('abpModalSrc').value    = abpPtsSrc;
   document.getElementById('abpModalMinGP').value  = abpMinGP;
   document.getElementById('abpModalMinPts').value = abpMinPts;
   document.getElementById('abpModalWiggle').value = abpWiggle;
@@ -594,7 +584,6 @@ function openAbpModal(){
 }
 function closeAbpModal(){ document.getElementById('abpModal').style.display = 'none'; }
 function applyAbpModal(){
-  abpPtsSrc = document.getElementById('abpModalSrc').value;
   abpMinGP  = +document.getElementById('abpModalMinGP').value  || 1;
   abpMinPts = +document.getElementById('abpModalMinPts').value || 0;
   abpWiggle = +document.getElementById('abpModalWiggle').value || 0;
@@ -1707,43 +1696,22 @@ function renderDraftSearch(){
 }
 
 // ABP config — updated live by the controls row
-let abpPtsSrc = 'pts';
 let abpMinGP  = 5;
 let abpWiggle = 0.1;   // $M
 let abpMinPts = 20;
 
-function getPPG(p){
-  if(abpPtsSrc === 'pts2526'){
-    if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
-    return p.pts2526 / p.gp2526;
-  } else if(abpPtsSrc === 'pts2526_raw'){
-    if(!(p.pts2526 > 0) || !(p.gp2526 >= abpMinGP)) return null;
-    return p.pts2526;
-  } else if(abpPtsSrc === 'pts_raw'){
-    if(!(p.pts > 0)) return null;
-    return p.pts;
-  } else {
-    if(!(p.pts > 0)) return null;
-    return p.pts / 82;
-  }
-}
-
 function computeABP(allPlayers){
-  // Free agents with a cap hit, enough data, and meeting the pts minimum
-  const rawPts = p => abpPtsSrc.endsWith('_raw') ? getPPG(p)
-    : abpPtsSrc === 'pts2526' ? p.pts2526 : p.pts;
   const fas = allPlayers.filter(p =>
-    !p.fantasyTeam && p.cap > 0 && getPPG(p) !== null &&
-    (abpMinPts <= 0 || (rawPts(p)||0) >= abpMinPts)
+    !p.fantasyTeam && p.cap > 0 && p.pts > 0 &&
+    (abpMinPts <= 0 || p.pts >= abpMinPts)
   );
   const abpMap = new Map();
   for(const p of allPlayers){
-    const ppg = getPPG(p);
-    if(ppg === null || p.cap <= 0){ abpMap.set(p.id, null); continue; }
+    if(!(p.pts > 0) || p.cap <= 0){ abpMap.set(p.id, null); continue; }
     const pg  = posGroup(p.pos);
     const cap = p.cap + abpWiggle;
     abpMap.set(p.id, fas.filter(fa =>
-      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && getPPG(fa) > ppg
+      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && fa.pts > p.pts
     ).length);
   }
   return abpMap;
