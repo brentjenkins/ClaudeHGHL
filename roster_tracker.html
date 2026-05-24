@@ -227,11 +227,11 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Third Party Data</span>
-      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ Sync Yahoo</button>
-      <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 Sync NHL</button>
-      <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ Sync Signings</button>
-      <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 Sync Stats</button>
-      <button class="btn" id="espnBtn" onclick="syncESPN()" style="background:#CC0000;color:#fff;border-color:#CC0000">📈 Sync ESPN</button>
+      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ ⇄ Yahoo</button>
+      <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 ⇄ NHL</button>
+      <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 ⇄ 25-26 Stats</button>
+      <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ ⇄ Signings</button>
+      <button class="btn" id="espnBtn" onclick="syncESPN()" style="background:#CC0000;color:#fff;border-color:#CC0000">📈 ⇄ ESPN</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
@@ -737,7 +737,7 @@ async function syncStats(){
     toast('Stats sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='📊 Sync Stats';
+    btn.innerHTML='📊 ⇄ 25-26 Stats';
   }
 }
 
@@ -771,7 +771,7 @@ async function syncESPN(){
     toast('ESPN sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='📈 Sync ESPN';
+    btn.innerHTML='📈 ⇄ ESPN';
   }
 }
 
@@ -852,7 +852,7 @@ async function syncSignings(){
     toast('Signings sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='✍ Sync Signings';
+    btn.innerHTML='✍ ⇄ Signings';
   }
 }
 async function syncAllNHL(){
@@ -885,7 +885,7 @@ async function syncAllNHL(){
     toast('NHL sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='🏒 Sync NHL';
+    btn.innerHTML='🏒 ⇄ NHL';
   }
 }
 
@@ -980,7 +980,7 @@ async function doSync(){
     console.error(e);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='⬇ Sync Yahoo';
+    btn.innerHTML='⬇ ⇄ Yahoo';
   }
 }
 
