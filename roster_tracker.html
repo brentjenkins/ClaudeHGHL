@@ -229,9 +229,9 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Third Party Data</span>
       <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()">⬇ ⇄ Yahoo</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()">🏒 ⇄ NHL</button>
-      <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 ⇄ 25-26 Stats</button>
+      <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()">📊 ⇄ NHL 25-26</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()">✍ ⇄ Signings</button>
-      <button class="btn" id="espnBtn" onclick="syncESPN()" style="background:#CC0000;color:#fff;border-color:#CC0000">📈 ⇄ ESPN</button>
+      <button class="btn" id="espnBtn" onclick="syncESPN()" style="background:#CC0000;color:#fff;border-color:#CC0000">📈 ⇄ ESPN 26-27</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
@@ -737,7 +737,7 @@ async function syncStats(){
     toast('Stats sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='📊 ⇄ 25-26 Stats';
+    btn.innerHTML='📊 ⇄ NHL 25-26';
   }
 }
 
@@ -771,7 +771,7 @@ async function syncESPN(){
     toast('ESPN sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='📈 ⇄ ESPN';
+    btn.innerHTML='📈 ⇄ ESPN 26-27';
   }
 }
 
