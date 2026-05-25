@@ -988,11 +988,12 @@ async function doSync(){
 
     let added=0, updated=0;
     for(const yp of rd.players){
-      const ex = players.find(p=>normName(p.name).toLowerCase()===normName(yp.name).toLowerCase() && posGroup(p.pos)===posGroup(yp.pos));
+      const ex = players.find(p=>normName(p.name).toLowerCase()===normName(yp.name).toLowerCase());
       if(ex){
-        ex.fantasyTeam = yp.fantasyTeam;
+        ex.fantasyTeam    = yp.fantasyTeam;
         ex.fantasyTeam2526 = yp.fantasyTeam;
         if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
+        if(yp.pos) ex.pos = yp.pos;
         ex.source = 'yahoo'; updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(p=>p.id))+1 : 1;
