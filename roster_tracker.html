@@ -234,6 +234,8 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()" title="Scrape current contract details and cap hits from PuckPedia (~15s)">✍ Signings</button>
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
+      <input type="file" id="athleticFileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic(this)">
+      <button class="btn" id="athleticBtn" onclick="document.getElementById('athleticFileInput').click()" title="Import Athletic 26-27 projections from Excel file (The List sheet: G+A for skaters, W×2+SO×3 for goalies)" style="background:#0f766e;color:#fff;border-color:#0f766e">📰 Athletic 26-27</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
@@ -306,7 +308,7 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th colspan="7"></th>
   <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26</th>
-  <th colspan="5" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
+  <th colspan="6" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
   <th colspan="2"></th>
 </tr>
 <tr>
@@ -319,6 +321,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5" title="Athletic projected HGHL fantasy points (G+A for skaters; W×2+SO×3 for goalies)">ATH <span id="sort-ptsAthletic"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN projected HGHL fantasy points (G+A for skaters; W×2+SO×3 for goalies)">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
   <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
@@ -513,7 +516,8 @@ const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 const LS_DROPS   = 'hghl_drops_simulated';
-const LS_ESPN    = 'hghl_espn_proj';
+const LS_ESPN     = 'hghl_espn_proj';
+const LS_ATHLETIC = 'hghl_athletic_proj';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
@@ -547,8 +551,8 @@ function dedup(){
 function reblendPts(p){
   if(p.ptsManual) return;  // manual entry wins — don't touch p.pts
   const sources = [];
-  if(p.ptsESPN > 0) sources.push(p.ptsESPN);
-  // future: if(p.ptsNHL > 0) sources.push(p.ptsNHL);
+  if(p.ptsESPN     > 0) sources.push(p.ptsESPN);
+  if(p.ptsAthletic > 0) sources.push(p.ptsAthletic);
   if(sources.length > 0){
     p.pts = Math.round(sources.reduce((s,v) => s+v, 0) / sources.length);
   } else if(p.pts2526 > 0){
@@ -710,8 +714,9 @@ function load(){
     }
     // Clear Yahoo bench/utility slot labels that aren't real positions
     if(['Util','BN'].includes(p.pos)){ p.pos = ''; migrated = true; }
-    // Backfill ptsESPN
-    if(p.ptsESPN === undefined){ p.ptsESPN = null; migrated = true; }
+    // Backfill ptsESPN / ptsAthletic
+    if(p.ptsESPN     === undefined){ p.ptsESPN     = null; migrated = true; }
+    if(p.ptsAthletic === undefined){ p.ptsAthletic = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
   applyBlendedPts();
@@ -784,6 +789,43 @@ async function syncESPN(){
   } finally {
     btn.disabled=false;
     btn.innerHTML='📈 ESPN 26-27';
+  }
+}
+
+async function syncAthletic(input){
+  const file = input.files[0];
+  if(!file) return;
+  input.value = '';
+  const btn = document.getElementById('athleticBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const d = await fetch('/athletic-projections', {method:'POST', body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched=0, unmatched=0;
+    for(const p of players){
+      const pg = posGroup(p.pos);
+      const key = `${normName(p.name).toLowerCase()}_${pg}`;
+      if(d.players[key]){
+        p.ptsAthletic = d.players[key].hghl_pts;
+        matched++;
+      } else {
+        p.ptsAthletic = null;
+        unmatched++;
+      }
+    }
+    applyBlendedPts();
+    lsSet(LS_ATHLETIC, d.players);
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`Athletic synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){
+    toast('Athletic import failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='📰 Athletic 26-27';
   }
 }
 
@@ -1138,7 +1180,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsESPN','ptsperm','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsAthletic','ptsESPN','ptsperm','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -1204,6 +1246,7 @@ function render(){
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
+      <td style="color:#9ca3af">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
       <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
       <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>

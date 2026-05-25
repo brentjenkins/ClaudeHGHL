@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, urlencode
 import requests
-from flask import Flask, jsonify, Response
+from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -578,6 +578,111 @@ def espn_projections():
 
     return jsonify({"ok": True, "players": all_players,
                     "count": len(all_players), "errors": errors})
+
+
+# ── Athletic projections importer ────────────────────────────────────────────
+
+@app.route("/athletic-projections", methods=["POST"])
+def athletic_projections():
+    """
+    Parse The Athletic fantasy hockey Excel file ('The List' sheet).
+    Expected columns (may include header rows above the data header):
+      RK, NAME, KEEP?, POS, TEAM, AGE, SALARY, FP, /GP, VORP, /$, ADP, DIFF., ADJ,
+      GP, TOI, G, A, PTS, SOG, PPG, PPP, SHG, SHP, BLK, HIT, +/-, PIM, GWG, FOW, FOL, FO%,
+      GP, W, L, OTL, SO, SV, GA, SV%, GAA
+    Skaters: HGHL pts = G + A  (projected season totals)
+    Goalies: HGHL pts = W×2 + SO×3
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    f = request.files["file"]
+    if not f.filename.lower().endswith((".xlsx", ".xls")):
+        return jsonify({"error": "Please upload an .xlsx file (export from Numbers → File → Export To → Excel)"}), 400
+
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+        sheet = wb["The List"] if "The List" in wb.sheetnames else wb.worksheets[0]
+        rows = list(sheet.iter_rows(values_only=True))
+    except Exception as e:
+        return jsonify({"error": f"Could not read file: {e}"}), 400
+
+    # Find the header row (first row containing "NAME")
+    header_idx = None
+    for i, row in enumerate(rows):
+        if any(str(c).strip().upper() == "NAME" for c in row if c is not None):
+            header_idx = i
+            break
+    if header_idx is None:
+        return jsonify({"error": "Could not find header row (expected a cell labelled NAME)"}), 400
+
+    headers = [str(c).strip().upper() if c is not None else "" for c in rows[header_idx]]
+
+    def col(name):
+        try:
+            return headers.index(name)
+        except ValueError:
+            return None
+
+    # Two GP columns: first = skater, second = goalie
+    gp_all = [i for i, h in enumerate(headers) if h == "GP"]
+    c_name = col("NAME"); c_pos = col("POS")
+    c_g = col("G");  c_a = col("A")
+    c_w = col("W");  c_so = col("SO")
+    c_gp_s = gp_all[0] if len(gp_all) > 0 else None
+    c_gp_g = gp_all[1] if len(gp_all) > 1 else None
+
+    missing = [n for n, c in [("NAME", c_name), ("POS", c_pos), ("G", c_g),
+                               ("A", c_a), ("W", c_w), ("SO", c_so)] if c is None]
+    if missing:
+        return jsonify({"error": f"Missing columns: {', '.join(missing)}"}), 400
+
+    def safe(val):
+        try:
+            return float(val) if val is not None else 0.0
+        except (ValueError, TypeError):
+            return 0.0
+
+    all_players = {}
+    for row in rows[header_idx + 1:]:
+        if not row or all(c is None for c in row):
+            continue
+        name = row[c_name]
+        if not name:
+            continue
+        name = str(name).strip()
+        if not name or name.upper() == "NAME":
+            continue
+
+        pos_raw = str(row[c_pos]).strip().upper() if row[c_pos] else ""
+        if not pos_raw:
+            continue
+        pg = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+
+        if pg == "G":
+            gp = safe(row[c_gp_g] if c_gp_g is not None else None)
+            w  = safe(row[c_w])
+            so = safe(row[c_so])
+            if gp <= 0 and w <= 0:
+                continue
+            hghl_pts = round(w * 2 + so * 3)
+        else:
+            gp = safe(row[c_gp_s] if c_gp_s is not None else None)
+            g  = safe(row[c_g])
+            a  = safe(row[c_a])
+            if gp <= 0 and g <= 0 and a <= 0:
+                continue
+            hghl_pts = round(g + a)
+
+        if hghl_pts <= 0:
+            continue
+
+        key = f"{normalize_name(name).lower()}_{pg}"
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+
+    print(f"  Athletic: {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
 # ── PuckPedia signings scraper ────────────────────────────────────────────────
