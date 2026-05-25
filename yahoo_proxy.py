@@ -1007,6 +1007,90 @@ def signings():
                     "count": len(all_players), "errors": errors})
 
 
+@app.route("/signings-2526")
+def signings_2526():
+    """Return each player's active cap hit as of the start of the 25-26 season.
+
+    Queries PuckPedia for contracts signed on or before 2025-09-27 (the day
+    before the 25-26 season opened) whose expiry covers at least 2025-26.
+    Because sign_date is sorted DESC, the first occurrence per player is their
+    most-recent pre-season contract — i.e. their 25-26 cap hit.
+    """
+    try:
+        import cloudscraper, urllib.parse
+    except ImportError:
+        return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
+
+    scraper = cloudscraper.create_scraper()
+    all_players = {}
+    errors = []
+
+    SEASON_CUTOFF = "2025-2026"   # contract must cover the 25-26 season
+    DATE_FROM = "2017-01-01"
+    DATE_TO   = "2025-09-27"      # signed before the 25-26 season opened
+
+    q_base = {
+        "pageSize": 100,
+        "sortBy": "sign_date",
+        "sortDirection": "DESC",
+        "sign_date": [DATE_FROM, DATE_TO],
+    }
+
+    q_base["curPage"] = 1
+    resp = scraper.get(
+        "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+        timeout=20,
+    )
+    resp.raise_for_status()
+    first = resp.json()["data"]
+    total_count = first["meta"]["count"]
+    total_pages = (total_count + 99) // 100
+    print(f"Signings 25-26: {total_count} records, {total_pages} pages")
+
+    def process_page(records):
+        for p in records:
+            exp = p.get("exp", "")
+            if exp < SEASON_CUTOFF:
+                continue   # contract expired before 25-26 — skip
+            pos = p.get("pos", "C")
+            pg = _POS_GROUP_MAP.get(pos, "F")
+            full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
+            if not full:
+                continue
+            first_lower = p.get("p_fn", "").lower()
+            nick = _FORMAL_TO_NICK.get(first_lower)
+            key = f"{normalize_name(full).lower()}_{pg}"
+            nick_key = f"{normalize_name(nick + ' ' + p.get('p_ln','')).lower()}_{pg}" if nick else None
+
+            # First occurrence wins (sign_date DESC = most recent pre-season contract)
+            cap = round(float(p["cap_hit"]) / 1_000_000, 4)
+            if key not in all_players:
+                entry = {"name": full, "pos": pos, "cap": cap, "nhl_id": p.get("p_nhl_id", "")}
+                all_players[key] = entry
+                if nick_key and nick_key not in all_players:
+                    all_players[nick_key] = entry
+
+    process_page(first["p"])
+
+    for page in range(2, total_pages + 1):
+        try:
+            q_base["curPage"] = page
+            r = scraper.get(
+                "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+                timeout=20,
+            )
+            r.raise_for_status()
+            process_page(r.json()["data"]["p"])
+            print(f"  page {page}/{total_pages} ({len(all_players)} active so far)")
+            time.sleep(0.15)
+        except Exception as e:
+            errors.append(f"page {page}: {str(e)}")
+            print(f"  ✗ page {page}: {e}")
+
+    print(f"Signings 25-26 done: {len(all_players)} players, {len(errors)} errors")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 55)

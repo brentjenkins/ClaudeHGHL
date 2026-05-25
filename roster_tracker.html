@@ -206,6 +206,7 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync<br>Historical</span>
       <button class="btn btn-yahoo" id="sync2425Btn" onclick="sync2425Rosters()" title="Pull end-of-2024-25 rosters from Yahoo (league 453.l.52799) to record who was on each team last season" style="opacity:.75">⬇ Yahoo 24-25</button>
+      <button class="btn" id="signings2526Btn" onclick="syncSignings2526()" title="Pull 25-26 cap hits from PuckPedia (contracts active as of Sep 27, 2025 — ~15s)" style="opacity:.75">✍ Signings 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">25-26<br>Projections</span>
@@ -833,6 +834,7 @@ function load(){
     if(p.proj2526_dfo      === undefined){ p.proj2526_dfo      = null; migrated = true; }
     if(p.proj2526_espn     === undefined){ p.proj2526_espn     = null; migrated = true; }
     if(p.proj2526_athletic === undefined){ p.proj2526_athletic = null; migrated = true; }
+    if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
   applyBlendedPts();
@@ -984,6 +986,9 @@ async function syncSignings(){
         p.contractTerm = s.term || 0;
         p.expYear      = s.exp_year || 0;
         if(s.birthDate && !p.birthDate) p.birthDate = s.birthDate;
+        // cap2526: same contract if it started on or before the 25-26 season (start year ≤ 2025)
+        const startYr = (s.exp_year || 0) - (s.term || 0) + 1;
+        p.cap2526 = startYr <= 2025 ? s.cap : null;
         matchedKeys.add(key);
         matched++;
       } else if(expiredSet.has(key)){
@@ -1000,6 +1005,7 @@ async function syncSignings(){
       const uid = s.nhl_id || s.name;
       if(seenIds.has(uid)) continue;
       seenIds.add(uid);
+      const sStartYr = (s.exp_year || 0) - (s.term || 0) + 1;
       players.push({
         id: nextId++, name: s.name, team: s.team||'', pos: s.pos||'C',
         cap: s.cap||0, contractTerm: s.term||0, expYear: s.exp_year||0,
@@ -1007,6 +1013,7 @@ async function syncSignings(){
         fantasyTeam: '', fantasyTeam2526: '',
         pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
+        cap2526: sStartYr <= 2025 ? s.cap : null,
       });
       added++;
     }
@@ -1220,6 +1227,38 @@ async function syncDFO2627(){
     toast(`DFO 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 26-27 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='🏒 DFO 26-27'; }
+}
+
+async function syncSignings2526(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('signings2526Btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching (~15s)…';
+  try {
+    toast('Fetching 25-26 cap hits from PuckPedia — this takes ~15 seconds…');
+    const d = await fetch('/signings-2526').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+
+    let matched = 0, unmatched = 0;
+    for(const p of players){
+      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+      if(d.players[key]){
+        p.cap2526 = d.players[key].cap;
+        matched++;
+      } else {
+        unmatched++;
+      }
+    }
+    lsSet(LS_PLAYERS, players);
+    render2526();
+    toast(`Signings 25-26 done! ${matched} cap hits set, ${unmatched} unmatched.`);
+    if(d.errors.length) console.warn('Signings 25-26 page errors:', d.errors);
+  } catch(e){
+    toast('Signings 25-26 sync failed: '+e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✍ Signings 25-26';
+  }
 }
 
 async function syncDFO2526(input){
@@ -1867,7 +1906,7 @@ function quickDraft2526(id){
   const onClock = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
   const p = players.find(x=>x.id===id); if(!p) return;
   p.sim2526 = onClock;
-  draftState2526.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:p.cap, projPts:ppts2526blend(p)});
+  draftState2526.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:getCap2526(p), projPts:ppts2526blend(p)});
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2526, draftState2526);
   render2526();
@@ -1902,8 +1941,9 @@ function simulateDrops2526(){
   const posMult = {F:1.0, D:1.4, G:1.0};
   const adjVal2526 = p => {
     const pp = ppts2526blend(p);
+    const c2526 = getCap2526(p);
     const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult(abpMap2526.get(p.id)??99);
-    const ptsPerM = (pp>0&&p.cap>0) ? (pp/p.cap)*RANK_DEFAULTS.wtPPTSM : 0;
+    const ptsPerM = (pp>0&&c2526>0) ? (pp/c2526)*RANK_DEFAULTS.wtPPTSM : 0;
     const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*RANK_DEFAULTS.wtYrs;
     const youth   = Math.max(0,35-(calcAge(p)??35))*RANK_DEFAULTS.wtAge;
     return adjPts + ptsPerM + yrs + youth;
@@ -1911,12 +1951,12 @@ function simulateDrops2526(){
 
   for(const team of teams){
     const roster    = players.filter(p=>p.sim2526===team);
-    const evaluable = roster.filter(p=>ppts2526blend(p)>0&&p.cap>0);
+    const evaluable = roster.filter(p=>ppts2526blend(p)>0&&getCap2526(p)>0);
     const m = evaluable.length;
 
     const keptIds = new Set();
     if(m>0){
-      const W = evaluable.map(p=>Math.round(p.cap*SCALE));
+      const W = evaluable.map(p=>Math.round(getCap2526(p)*SCALE));
       const V = evaluable.map(p=>adjVal2526(p));
       const dp = Array.from({length:m+1},()=>new Float32Array(CAP_CEIL+1));
       for(let i=0;i<m;i++){
@@ -1952,13 +1992,13 @@ function rankPlayers2526(){
   const RANK = RANK_DEFAULTS;
   const posMult = {F:RANK.multF, D:RANK.multD, G:RANK.multG};
   players.forEach(p=>p.rank2526=null);
-  const eligible = players.filter(p=>p.cap>0 && ppts2526blend(p)>0);
+  const eligible = players.filter(p=>getCap2526(p)>0 && ppts2526blend(p)>0);
   eligible.forEach(p=>{
     const pg = posGroup(p.pos);
     const pp = ppts2526blend(p);
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
     const youth = Math.max(0, 35-(calcAge(p)??35));
-    p._score2526 = pp*(posMult[pg]??1) + (pp/p.cap)*RANK.wtPPTSM + yrs*RANK.wtYrs + youth*RANK.wtAge;
+    p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*RANK.wtPPTSM + yrs*RANK.wtYrs + youth*RANK.wtAge;
   });
   eligible.sort((a,b)=>b._score2526-a._score2526).forEach((p,i)=>p.rank2526=i+1);
   lsSet(LS_PLAYERS, players);
@@ -1979,7 +2019,7 @@ function updateStats2526(){
   const onClock = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
   document.getElementById('statCards2526').innerHTML = allTeams.map(t=>{
     const tp = players.filter(p=>p.sim2526===t);
-    const cap = tp.reduce((s,p)=>s+(p.cap||0),0);
+    const cap = tp.reduce((s,p)=>s+getCap2526(p),0);
     const rem = CAP_LIMIT_2526 - cap;
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
@@ -2025,7 +2065,7 @@ function render2526(){
     return true;
   });
 
-  const ppm2526 = p => { const pp=ppts2526blend(p); return (pp>0&&p.cap>0)?pp/p.cap:0; };
+  const ppm2526 = p => { const pp=ppts2526blend(p); const c=getCap2526(p); return (pp>0&&c>0)?pp/c:0; };
   rows.sort((a,b)=>{
     let av,bv;
     if(sortCol2526==='ppts2526blend'){ av=ppts2526blend(a); bv=ppts2526blend(b); }
@@ -2066,7 +2106,7 @@ function render2526(){
         const youthRaw=Math.max(0,35-(calcAge(p)??35));
         const tPPTS=pp*(pm[pg]??1);
         const tSc=scV*draftWeights2526.wtScarcity;
-        const tPPTSM=(pp>0&&p.cap>0)?pp/p.cap*draftWeights2526.wtPPTSM:0;
+        const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights2526.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights2526.wtYrs;
         const tYouth=youthRaw*draftWeights2526.wtAge;
         return Object.assign({},p,{_ds2526:tPPTS+tSc+tPPTSM+tYrs+tYouth,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth}});
@@ -2120,12 +2160,12 @@ function render2526(){
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.fantasyTeam2425||'—')}</td>
       <td style="color:#185FA5">${esc(p.sim2526||'—')}</td>
-      <td>${p.cap>0?`$${p.cap.toFixed(2)}M`:''||'—'}</td>
+      <td>${(()=>{const c=getCap2526(p);return c>0?`$${c.toFixed(2)}M${p.cap2526===null&&p.cap>0?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="26-27 cap used as estimate">~</span>':''}`:''||'—';})()}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
       <td>${pp>0?pp:'—'}</td>
-      <td>${pp>0&&p.cap>0?(pp/p.cap).toFixed(1):'—'}</td>
+      <td>${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
       <td>${rankStr}</td>
       <td style="border-right:2px solid #f0f0ee">${abpStr}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
@@ -2309,16 +2349,21 @@ function ppts2526blend(p){
   return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
 }
 
+// Returns the best available 25-26 cap hit: exact if known from PuckPedia (same contract),
+// otherwise falls back to current cap as an estimate.
+const getCap2526 = p => p.cap2526 != null ? p.cap2526 : (p.cap || 0);
+
 function computeABP2526(allPlayers){
-  const fas = allPlayers.filter(p => !p.sim2526 && p.cap > 0 && ppts2526blend(p) > 0);
+  const fas = allPlayers.filter(p => !p.sim2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0);
   const abpMap = new Map();
   for(const p of allPlayers){
     const pp = ppts2526blend(p);
-    if(!pp || p.cap <= 0){ abpMap.set(p.id, null); continue; }
+    const c2526 = getCap2526(p);
+    if(!pp || c2526 <= 0){ abpMap.set(p.id, null); continue; }
     const pg  = posGroup(p.pos);
-    const cap = p.cap + abpWiggle;
+    const cap = c2526 + abpWiggle;
     abpMap.set(p.id, fas.filter(fa =>
-      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && ppts2526blend(fa) > pp
+      fa.id !== p.id && posGroup(fa.pos) === pg && getCap2526(fa) <= cap && ppts2526blend(fa) > pp
     ).length);
   }
   return abpMap;
