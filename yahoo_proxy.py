@@ -254,55 +254,59 @@ def teamlogos():
         return jsonify({"error": str(e)}), 500
 
 
+def _fetch_rosters(league_key, token):
+    """Fetch all rostered players for a given Yahoo league key. Returns a list of player dicts."""
+    data = yahoo_get(f"/league/{league_key}/teams/roster/players", token)
+    teams_raw = data["fantasy_content"]["league"][1]["teams"]
+    result = []
+    for idx in (k for k in teams_raw.keys() if k != "count"):
+        team = teams_raw[idx]["team"]
+        team_name = next((m["name"] for m in team[0] if isinstance(m, dict) and "name" in m), f"Team {idx}")
+        roster_data = team[1]["roster"]
+        if isinstance(roster_data, list):
+            players_raw = next(r["players"] for r in roster_data if isinstance(r, dict) and "players" in r)
+        else:
+            players_raw = next(v["players"] for k, v in roster_data.items() if isinstance(v, dict) and "players" in v)
+        for pidx in (k for k in players_raw.keys() if k != "count"):
+            p    = players_raw[pidx]["player"]
+            meta = p[0]
+            full_name = next((m.get("full_name") or m.get("name", {}).get("full", "")
+                              for m in meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
+            nhl_team  = next((m.get("editorial_team_abbr", "—").upper()
+                              for m in meta if isinstance(m, dict) and "editorial_team_abbr" in m), "—")
+            positions = next((m.get("eligible_positions", [])
+                              for m in meta if isinstance(m, dict) and "eligible_positions" in m), [])
+            pos_list  = [ep.get("position", "") for ep in positions if isinstance(ep, dict)]
+            pos       = next((p for p in pos_list if p in ("C","LW","RW","D","G","F")), "") or ""
+            if full_name:
+                result.append({"name": full_name, "nhlTeam": nhl_team, "pos": pos, "fantasyTeam": team_name})
+    return result
+
+
+LEAGUE_KEY_2425 = "453.l.52799"
+
+
 @app.route("/rosters")
 def rosters():
     token = get_valid_token()
     if not token:
         return jsonify({"error": "Not authenticated."}), 401
     try:
-        data = yahoo_get(f"/league/{LEAGUE_KEY}/teams/roster/players", token)
-        teams_raw = data["fantasy_content"]["league"][1]["teams"]
-        result = []
+        return jsonify({"ok": True, "players": _fetch_rosters(LEAGUE_KEY, token)})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
-        # Teams are keyed "0", "1", ... plus a "count" key
-        team_indices = [k for k in teams_raw.keys() if k != "count"]
-        for idx in team_indices:
-            team = teams_raw[idx]["team"]
-            # team[0] is a list of metadata dicts; find the one with "name"
-            team_meta = team[0]
-            team_name = next((m["name"] for m in team_meta if isinstance(m, dict) and "name" in m), f"Team {idx}")
 
-            # team[1] is {"roster": ...}
-            roster_data = team[1]["roster"]
-            # roster_data may be a list or dict
-            if isinstance(roster_data, list):
-                players_raw = next(r["players"] for r in roster_data if isinstance(r, dict) and "players" in r)
-            else:
-                players_raw = next(
-                    v["players"] for k, v in roster_data.items() if isinstance(v, dict) and "players" in v)
-            player_indices = [k for k in players_raw.keys() if k != "count"]
-
-            for pidx in player_indices:
-                p = players_raw[pidx]["player"]
-                # p[0] is list of metadata dicts, p[1] is selected_position
-                meta = p[0]
-
-                full_name = next((m.get("full_name") or m.get("name", {}).get("full", "")
-                                  for m in meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
-
-                nhl_team = next((m.get("editorial_team_abbr", "—").upper()
-                                 for m in meta if isinstance(m, dict) and "editorial_team_abbr" in m), "—")
-
-                positions = next((m.get("eligible_positions", [])
-                                  for m in meta if isinstance(m, dict) and "eligible_positions" in m), [])
-                pos_list = [ep.get("position", "") for ep in positions if isinstance(ep, dict)]
-                specific = next((p for p in pos_list if p in ("C","LW","RW","D","G","F")), None)
-                pos = specific or ""
-
-                if full_name:
-                    result.append({"name": full_name, "nhlTeam": nhl_team, "pos": pos, "fantasyTeam": team_name})
-
-        return jsonify({"ok": True, "players": result})
+@app.route("/rosters-2425")
+def rosters_2425():
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        players = _fetch_rosters(LEAGUE_KEY_2425, token)
+        print(f"  2024-25 rosters: {len(players)} players fetched")
+        return jsonify({"ok": True, "players": players})
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

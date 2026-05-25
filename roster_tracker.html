@@ -230,6 +230,7 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync<br>3rd Party Data</span>
       <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo</button>
+      <button class="btn btn-yahoo" id="sync2425Btn" onclick="sync2425Rosters()" title="Pull end-of-2024-25 rosters from Yahoo (league 453.l.52799) to record who was on each team last season" style="opacity:.75">⬇ Yahoo 24-25</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()" title="Scrape current contract details and cap hits from PuckPedia (~15s)">✍ Signings</button>
@@ -517,7 +518,8 @@ const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 const LS_DROPS   = 'hghl_drops_simulated';
 const LS_ESPN     = 'hghl_espn_proj';
-const LS_ATHLETIC = 'hghl_athletic_proj';
+const LS_ATHLETIC  = 'hghl_athletic_proj';
+const LS_ROSTERS2425 = 'hghl_rosters_2425';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
@@ -714,9 +716,10 @@ function load(){
     }
     // Clear Yahoo bench/utility slot labels that aren't real positions
     if(['Util','BN'].includes(p.pos)){ p.pos = ''; migrated = true; }
-    // Backfill ptsESPN / ptsAthletic
-    if(p.ptsESPN     === undefined){ p.ptsESPN     = null; migrated = true; }
-    if(p.ptsAthletic === undefined){ p.ptsAthletic = null; migrated = true; }
+    // Backfill projection / historical roster fields
+    if(p.ptsESPN        === undefined){ p.ptsESPN        = null; migrated = true; }
+    if(p.ptsAthletic    === undefined){ p.ptsAthletic    = null; migrated = true; }
+    if(p.fantasyTeam2425 === undefined){ p.fantasyTeam2425 = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
   applyBlendedPts();
@@ -1036,6 +1039,34 @@ async function doSync(){
   } finally {
     btn.disabled=false;
     btn.innerHTML='⬇ Yahoo';
+  }
+}
+
+async function sync2425Rosters(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('sync2425Btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching…';
+  try {
+    const rd = await fetch('/rosters-2425').then(r=>r.json());
+    if(rd.error) throw new Error(rd.error);
+    // Clear all existing 2024-25 team assignments first
+    for(const p of players) p.fantasyTeam2425 = null;
+    let matched=0, unmatched=0;
+    for(const yp of rd.players){
+      const ex = players.find(p => normName(p.name).toLowerCase() === normName(yp.name).toLowerCase());
+      if(ex){ ex.fantasyTeam2425 = yp.fantasyTeam; matched++; }
+      else unmatched++;
+    }
+    lsSet(LS_ROSTERS2425, rd.players);
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`2024-25 rosters loaded: ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){
+    toast('2024-25 roster sync failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='⬇ Yahoo 24-25';
   }
 }
 
