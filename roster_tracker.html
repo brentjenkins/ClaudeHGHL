@@ -231,6 +231,13 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync<br>3rd Party Data</span>
       <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo</button>
       <button class="btn btn-yahoo" id="sync2425Btn" onclick="sync2425Rosters()" title="Pull end-of-2024-25 rosters from Yahoo (league 453.l.52799) to record who was on each team last season" style="opacity:.75">⬇ Yahoo 24-25</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">25-26<br>Projections</span>
+      <button class="btn" id="dfo2526Btn" onclick="syncDFO2526()" title="Scrape DFO/5v5hockey 2025-26 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)" style="background:#0369a1;color:#fff;border-color:#0369a1">🏒 DFO 25-26</button>
+      <button class="btn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)" style="background:#cc0000;color:#fff;border-color:#8b0000">📈 ESPN 25-26</button>
+      <input type="file" id="athletic2526FileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic2526(this)">
+      <button class="btn" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="background:#0f766e;color:#fff;border-color:#0f766e;opacity:.75">📰 ATH 25-26</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()" title="Scrape current contract details and cap hits from PuckPedia (~15s)">✍ Signings</button>
@@ -308,7 +315,7 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th colspan="7"></th>
-  <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26</th>
+  <th colspan="5" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26</th>
   <th colspan="6" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27</th>
   <th colspan="2"></th>
 </tr>
@@ -321,7 +328,10 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('fantasyTeam')" style="color:#185FA5">26-27 Team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort-gp2526"></span></th>
-  <th onclick="setSortCol('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('pts2526')" style="color:#bbb">Pts <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('proj2526_dfo')" style="color:#bbb" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort-proj2526_dfo"></span></th>
+  <th onclick="setSortCol('proj2526_espn')" style="color:#bbb" title="ESPN 2025-26 projection">ESPN <span id="sort-proj2526_espn"></span></th>
+  <th onclick="setSortCol('proj2526_athletic')" style="color:#bbb;border-right:2px solid #e5e7eb" title="Athletic 2025-26 projection">ATH <span id="sort-proj2526_athletic"></span></th>
   <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5" title="Athletic projected HGHL fantasy points (G+A for skaters; W×2+SO×3 for goalies)">ATH <span id="sort-ptsAthletic"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN projected HGHL fantasy points (G+A for skaters; W×2+SO×3 for goalies)">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
@@ -519,7 +529,10 @@ const LS_STATS   = 'hghl_stats_2526';
 const LS_DROPS   = 'hghl_drops_simulated';
 const LS_ESPN     = 'hghl_espn_proj';
 const LS_ATHLETIC  = 'hghl_athletic_proj';
-const LS_ROSTERS2425 = 'hghl_rosters_2425';
+const LS_ROSTERS2425   = 'hghl_rosters_2425';
+const LS_DFO2526       = 'hghl_dfo_2526';
+const LS_ESPN2526      = 'hghl_espn_2526';
+const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
@@ -719,7 +732,10 @@ function load(){
     // Backfill projection / historical roster fields
     if(p.ptsESPN        === undefined){ p.ptsESPN        = null; migrated = true; }
     if(p.ptsAthletic    === undefined){ p.ptsAthletic    = null; migrated = true; }
-    if(p.fantasyTeam2425 === undefined){ p.fantasyTeam2425 = null; migrated = true; }
+    if(p.fantasyTeam2425   === undefined){ p.fantasyTeam2425   = null; migrated = true; }
+    if(p.proj2526_dfo      === undefined){ p.proj2526_dfo      = null; migrated = true; }
+    if(p.proj2526_espn     === undefined){ p.proj2526_espn     = null; migrated = true; }
+    if(p.proj2526_athletic === undefined){ p.proj2526_athletic = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
   applyBlendedPts();
@@ -1070,6 +1086,61 @@ async function sync2425Rosters(){
   }
 }
 
+function _apply2526Proj(field, lsKey, data){
+  for(const p of players) p[field] = null;
+  let matched=0, unmatched=0;
+  for(const p of players){
+    const pg  = posGroup(p.pos);
+    const key = `${normName(p.name).toLowerCase()}_${pg}`;
+    if(data.players[key]){ p[field] = data.players[key].hghl_pts; matched++; }
+    else unmatched++;
+  }
+  lsSet(lsKey, data.players);
+  lsSet(LS_PLAYERS, players);
+  render();
+  return {matched, unmatched};
+}
+
+async function syncDFO2526(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('dfo2526Btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Scraping…';
+  try {
+    const d = await fetch('/dfo-projections').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', LS_DFO2526, d);
+    toast(`DFO 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){ toast('DFO sync failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='🏒 DFO 25-26'; }
+}
+
+async function syncESPN2526(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('espn2526Btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Fetching (~30s)…';
+  try {
+    const d = await fetch('/espn-projections-2526').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d);
+    toast(`ESPN 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){ toast('ESPN 25-26 sync failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='📈 ESPN 25-26'; }
+}
+
+async function syncAthletic2526(input){
+  const file = input.files[0]; if(!file) return; input.value='';
+  const btn = document.getElementById('athletic2526Btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData(); fd.append('file', file);
+    const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d);
+    toast(`Athletic 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){ toast('Athletic 25-26 import failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='📰 ATH 25-26'; }
+}
+
 function renderTransactions(){
   const sec=document.getElementById('txSection');
   if(!transactions.length){ sec.style.display='none'; return; }
@@ -1212,7 +1283,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','pts2526','gp2526','pts','ptsAthletic','ptsESPN','ptsperm','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','gp2526','pts2526','proj2526_dfo','proj2526_espn','proj2526_athletic','pts','ptsAthletic','ptsESPN','ptsperm','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -1277,7 +1348,10 @@ function render(){
       </td>
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
+      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
+      <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
+      <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
+      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
       <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
       <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>

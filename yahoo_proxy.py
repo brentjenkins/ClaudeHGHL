@@ -8,7 +8,7 @@ Then click "Sync Yahoo" in the roster tracker.
 Requires: pip install requests flask flask-cors
 """
 
-import json, os, time, threading, webbrowser, ssl, subprocess, sys, traceback, unicodedata
+import json, os, re, time, threading, webbrowser, ssl, subprocess, sys, traceback, unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, urlencode
@@ -494,8 +494,6 @@ def season_stats():
 
 # ── ESPN Fantasy Hockey projections ──────────────────────────────────────────
 
-_ESPN_API  = ("https://lm-api-reads.fantasy.espn.com/apis/v3/games/fhl"
-              "/seasons/2026/segments/0/leaguedefaults/2?view=kona_player_info")
 _ESPN_HDRS = {
     "Accept":  "application/json",
     "Referer": "https://fantasy.espn.com/hockey/players/projections?leagueFormatId=2",
@@ -503,8 +501,14 @@ _ESPN_HDRS = {
 _ESPN_POS  = {1: "F", 2: "F", 3: "F", 4: "D", 5: "G"}   # defaultPositionId → group
 
 
-def _espn_fetch_group(slot_ids: list) -> list:
-    """Page through ESPN API for the given slot IDs, return all raw player dicts."""
+def _espn_api_url(season_year: int) -> str:
+    return (f"https://lm-api-reads.fantasy.espn.com/apis/v3/games/fhl"
+            f"/seasons/{season_year}/segments/0/leaguedefaults/2?view=kona_player_info")
+
+
+def _espn_fetch_group(slot_ids: list, season_year: int = 2026) -> list:
+    """Page through ESPN API for the given slot IDs and season, return all raw player dicts."""
+    api_url = _espn_api_url(season_year)
     results = []
     offset  = 0
     total   = None
@@ -517,7 +521,7 @@ def _espn_fetch_group(slot_ids: list) -> list:
                 "filterSlotIds": {"value": slot_ids},
             }
         })
-        r = requests.get(_ESPN_API, headers={**_ESPN_HDRS, "X-Fantasy-Filter": ff}, timeout=15)
+        r = requests.get(api_url, headers={**_ESPN_HDRS, "X-Fantasy-Filter": ff}, timeout=15)
         r.raise_for_status()
         if total is None:
             total = int(r.headers.get("X-Fantasy-Filter-Player-Count", 0))
@@ -528,60 +532,192 @@ def _espn_fetch_group(slot_ids: list) -> list:
     return results
 
 
-@app.route("/espn-projections")
-def espn_projections():
-    """
-    Fetch ESPN 2026-27 HGHL fantasy-point projections for all skaters and goalies.
-    Skaters:  HGHL pts = Goals + Assists  (stat IDs 13 + 14)
-    Goalies:  HGHL pts = Wins×2 + Shutouts×3  (stat IDs 1×2 + 7×3)
-    Only the seasonId=2026 projection entry is used (the upcoming-season forecast).
-    """
+def _espn_fetch_projections(season_year: int):
+    """Fetch HGHL fantasy-point projections from ESPN for the given season year."""
     all_players = {}
     errors      = []
-
     groups = [
         ([0, 1, 2, 3, 4, 6], False, "skaters"),
         ([5],                 True,  "goalies"),
     ]
     for slot_ids, is_goalie, label in groups:
         try:
-            raw = _espn_fetch_group(slot_ids)
+            raw = _espn_fetch_group(slot_ids, season_year)
             for entry in raw:
                 pl   = entry["player"]
                 name = pl.get("fullName", "")
                 if not name:
                     continue
                 pg = _ESPN_POS.get(pl.get("defaultPositionId"), "F")
-
-                # Find the 2026-27 full-season projection
                 proj = next(
                     (s for s in pl.get("stats", [])
                      if s.get("statSourceId") == 1
                      and s.get("statSplitTypeId") == 0
-                     and s.get("seasonId") == 2026
+                     and s.get("seasonId") == season_year
                      and s.get("stats")),
                     None,
                 )
                 if not proj:
                     continue
-
                 st = proj["stats"]
                 if is_goalie:
                     hghl_pts = round(st.get("1", 0) * 2 + st.get("7", 0) * 3)
                 else:
-                    # stat 16 is G+A total; fall back to 13+14 if absent
                     hghl_pts = round(st.get("16") or (st.get("13", 0) + st.get("14", 0)))
-
                 key = f"{normalize_name(name).lower()}_{pg}"
                 all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
-
-            print(f"  ESPN {label}: {len(raw)} fetched")
+            print(f"  ESPN {season_year} {label}: {len(raw)} fetched")
         except Exception as e:
             errors.append(f"{label}: {str(e)}")
-            print(f"  ✗ ESPN {label}: {e}")
+            print(f"  ✗ ESPN {season_year} {label}: {e}")
+    return all_players, errors
 
-    return jsonify({"ok": True, "players": all_players,
-                    "count": len(all_players), "errors": errors})
+
+@app.route("/espn-projections")
+def espn_projections():
+    """Fetch ESPN 2026-27 HGHL fantasy-point projections."""
+    players, errors = _espn_fetch_projections(2026)
+    return jsonify({"ok": True, "players": players, "count": len(players), "errors": errors})
+
+
+@app.route("/espn-projections-2526")
+def espn_projections_2526():
+    """Fetch ESPN 2025-26 HGHL fantasy-point projections (historical)."""
+    players, errors = _espn_fetch_projections(2025)
+    return jsonify({"ok": True, "players": players, "count": len(players), "errors": errors})
+
+
+# ── DFO / 5v5hockey projections scraper ──────────────────────────────────────
+
+_DFO_URL = "https://5v5hockey.com/projections-embedded/"
+_DFO_HDR = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+
+
+def _parse_dfo_func(func_name: str, html: str) -> list:
+    """Extract player records from an inline JS function in the 5v5hockey page."""
+    idx = html.find(f"function {func_name}")
+    if idx == -1:
+        return []
+    start = html.find("const data = [", idx)
+    if start == -1:
+        return []
+    end = html.find("\n      return data", start)
+    section = html[start: end if end > 0 else start + 500_000]
+
+    players = []
+    for m in re.finditer(r"player:\s*\{'logo':[^,]+,\s*'name':\s*'([^']+)'", section):
+        name = m.group(1)
+        block_start = section.rfind("{", 0, m.start())
+        block_end   = section.find("\n          },", m.end())
+        block = section[block_start: block_end if block_end > 0 else block_start + 2000]
+
+        def _fld(key):
+            fm = re.search(rf"\b{key}:\s*([\d.]+)", block)
+            return float(fm.group(1)) if fm else 0.0
+
+        pos_m = re.search(r'Pos:\s*"([^"]+)"', block)
+        players.append({
+            "name": name,
+            "pos":  pos_m.group(1) if pos_m else "",
+            "G": _fld("G"), "A": _fld("A"),
+            "W": _fld("W"), "SO": _fld("SO"),
+        })
+    return players
+
+
+@app.route("/dfo-projections")
+def dfo_projections():
+    """Scrape 5v5hockey/DFO projections (Points league). G+A for skaters, W×2+SO×3 for goalies."""
+    try:
+        r = requests.get(_DFO_URL, headers=_DFO_HDR, timeout=30)
+        r.raise_for_status()
+        html = r.text
+    except Exception as e:
+        return jsonify({"error": f"Could not fetch DFO page: {e}"}), 500
+
+    skaters = _parse_dfo_func("rowsSkatersPts", html)
+    goalies = _parse_dfo_func("rowGoaliesPts",  html)
+
+    all_players = {}
+    for p in skaters:
+        hghl_pts = round(p["G"] + p["A"])
+        if hghl_pts <= 0:
+            continue
+        pg  = "D" if p["pos"] == "D" else "F"
+        key = f"{normalize_name(p['name']).lower()}_{pg}"
+        all_players[key] = {"name": p["name"], "pg": pg, "hghl_pts": hghl_pts}
+    for p in goalies:
+        hghl_pts = round(p["W"] * 2 + p["SO"] * 3)
+        if hghl_pts <= 0:
+            continue
+        key = f"{normalize_name(p['name']).lower()}_G"
+        all_players[key] = {"name": p["name"], "pg": "G", "hghl_pts": hghl_pts}
+
+    print(f"  DFO: {len(skaters)} skaters + {len(goalies)} goalies → {len(all_players)} total")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
+@app.route("/athletic-projections-2526", methods=["POST"])
+def athletic_projections_2526():
+    """Same parser as /athletic-projections but tagged as 2025-26 historical data."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    f = request.files["file"]
+    if not f.filename.lower().endswith((".xlsx", ".xls")):
+        return jsonify({"error": "Please upload an .xlsx file"}), 400
+    try:
+        import openpyxl
+        wb    = openpyxl.load_workbook(f, read_only=True, data_only=True)
+        sheet = wb["The List"] if "The List" in wb.sheetnames else wb.worksheets[0]
+        rows  = list(sheet.iter_rows(values_only=True))
+    except Exception as e:
+        return jsonify({"error": f"Could not read file: {e}"}), 400
+
+    header_idx = next((i for i, row in enumerate(rows)
+                       if any(str(c).strip().upper() == "NAME" for c in row if c)), None)
+    if header_idx is None:
+        return jsonify({"error": "Could not find NAME column in header row"}), 400
+
+    headers = [str(c).strip().upper() if c else "" for c in rows[header_idx]]
+
+    def col(name):
+        try: return headers.index(name)
+        except ValueError: return None
+
+    gp_all = [i for i, h in enumerate(headers) if h == "GP"]
+    c_name, c_pos = col("NAME"), col("POS")
+    c_g,  c_a     = col("G"),   col("A")
+    c_w,  c_so    = col("W"),   col("SO")
+    c_gp_s = gp_all[0] if gp_all else None
+    c_gp_g = gp_all[1] if len(gp_all) > 1 else None
+
+    def safe(val):
+        try: return float(val) if val is not None else 0.0
+        except: return 0.0
+
+    all_players = {}
+    for row in rows[header_idx + 1:]:
+        if not row or all(c is None for c in row): continue
+        name = row[c_name] if c_name is not None else None
+        if not name or str(name).strip().upper() == "NAME": continue
+        name = str(name).strip()
+        pos_raw = str(row[c_pos]).strip().upper() if c_pos is not None and row[c_pos] else ""
+        if not pos_raw: continue
+        pg = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+        if pg == "G":
+            gp = safe(row[c_gp_g] if c_gp_g is not None else None)
+            hghl_pts = round(safe(row[c_w]) * 2 + safe(row[c_so]) * 3)
+            if gp <= 0 and hghl_pts <= 0: continue
+        else:
+            gp = safe(row[c_gp_s] if c_gp_s is not None else None)
+            hghl_pts = round(safe(row[c_g]) + safe(row[c_a]))
+            if gp <= 0 and hghl_pts <= 0: continue
+        if hghl_pts <= 0: continue
+        key = f"{normalize_name(name).lower()}_{pg}"
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+
+    print(f"  Athletic 25-26: {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
 # ── Athletic projections importer ────────────────────────────────────────────
