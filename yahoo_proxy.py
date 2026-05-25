@@ -657,6 +657,60 @@ def dfo_projections():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
+@app.route("/dfo-projections-2526", methods=["POST"])
+def dfo_projections_2526():
+    """Parse a DFO/5v5hockey CSV export for 2025-26 projections.
+    Expected columns: Player, (dup), Team, VAR, ADP, Pos, Site Pos, GP, G, A, PTS, ..., Points
+    The last 'Points' column is the pre-calculated HGHL total (G+A for skaters, W*2+SO*3 for goalies).
+    Pos column: C/LW/RW → F, D → D, G → G.
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    f = request.files["file"]
+    if not f.filename.lower().endswith(".csv"):
+        return jsonify({"error": "Please upload a .csv file"}), 400
+    try:
+        import csv, io
+        text = f.read().decode("utf-8-sig")
+        reader = csv.reader(io.StringIO(text))
+        rows = list(reader)
+    except Exception as e:
+        return jsonify({"error": f"Could not read CSV: {e}"}), 400
+
+    if not rows:
+        return jsonify({"error": "Empty CSV"}), 400
+
+    header = [h.strip() for h in rows[0]]
+    try:
+        col_name = 0
+        col_pos  = header.index("Pos")
+        col_pts  = len(header) - 1  # last column = "Points" (HGHL total)
+    except (ValueError, IndexError) as e:
+        return jsonify({"error": f"Could not find expected columns: {e}"}), 400
+
+    def safe_float(val):
+        try: return float(val) if val and val.strip() else 0.0
+        except: return 0.0
+
+    all_players = {}
+    for row in rows[1:]:
+        if not row or not row[col_name].strip():
+            continue
+        name = row[col_name].strip()
+        pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
+        if not pos_raw:
+            continue
+        pg = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+        hghl_pts = round(safe_float(row[col_pts]) if len(row) > col_pts else 0)
+        if hghl_pts <= 0:
+            continue
+        key = f"{normalize_name(name).lower()}_{pg}"
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+
+    print(f"  DFO 25-26 CSV: {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
 @app.route("/athletic-projections-2526", methods=["POST"])
 def athletic_projections_2526():
     """Same parser as /athletic-projections but tagged as 2025-26 historical data."""
