@@ -1984,9 +1984,6 @@ function updateStats2526(){
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
     const gN = tp.filter(p=>posGroup(p.pos)==='G').length;
-    const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
-    const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
-    const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
     const logo = teamLogos[t];
     const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
@@ -2002,7 +1999,7 @@ function updateStats2526(){
       </div>
       <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
       <div class="team-card-pos">
-        <span onclick="filterToTeam2526('${te}','F');event.stopPropagation()" style="${pillStyle('F')}" title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span onclick="filterToTeam2526('${te}','D');event.stopPropagation()" style="${pillStyle('D')}" title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span onclick="filterToTeam2526('${te}','G');event.stopPropagation()" style="${pillStyle('G')}" title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
+        <span onclick="filterToTeam2526('${te}','F');event.stopPropagation()" style="${pillStyle('F')}" title="${fN} forward${fN!==1?'s':''} rostered">F&thinsp;${fN}</span><span onclick="filterToTeam2526('${te}','D');event.stopPropagation()" style="${pillStyle('D')}" title="${dN} defencemen rostered">D&thinsp;${dN}</span><span onclick="filterToTeam2526('${te}','G');event.stopPropagation()" style="${pillStyle('G')}" title="${gN} goalie${gN!==1?'s':''} rostered">G&thinsp;${gN}</span>
       </div>
     </div>`;
   }).join('');
