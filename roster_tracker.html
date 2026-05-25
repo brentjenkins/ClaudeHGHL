@@ -2031,10 +2031,12 @@ function loadActualRoster2526(){
 }
 
 function simulateDrops2526(){
-  const DROPS    = 7;
-  const SCALE    = 10;
-  const CAP_CEIL = Math.round((CAP_LIMIT_2526 - DROPS) * SCALE);
-  const teams    = [...new Set(players.map(p=>p.sim2526).filter(Boolean))];
+  const MIN_DROPS = 5;
+  const MAX_DROPS = 20;
+  const SCALE     = 10;
+  // Cap ceiling leaves room for at least MIN_DROPS picks; knapsack decides how many to keep.
+  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - MIN_DROPS) * SCALE);
+  const teams     = [...new Set(players.map(p=>p.sim2526).filter(Boolean))];
   if(!teams.length){ toast('Reset 25-26 first to seed rosters.'); return; }
   let dropped = 0;
 
@@ -2056,6 +2058,7 @@ function simulateDrops2526(){
     const evaluable = roster.filter(p=>ppts2526blend(p)>0&&getCap2526(p)>0);
     const m = evaluable.length;
 
+    // Knapsack: find the highest-value subset of evaluable players within the cap ceiling.
     const keptIds = new Set();
     if(m>0){
       const W = evaluable.map(p=>Math.round(getCap2526(p)*SCALE));
@@ -2077,12 +2080,26 @@ function simulateDrops2526(){
       }
     }
 
-    const byDropPriority=[...roster].sort((a,b)=>{
-      const aK=keptIds.has(a.id),bK=keptIds.has(b.id);
-      if(aK!==bK) return aK?1:-1;
-      return adjVal2526(a)-adjVal2526(b);
-    });
-    byDropPriority.slice(0,DROPS).forEach(p=>{p.sim2526=null;dropped++;});
+    // Initial drop list: everyone not selected by the knapsack (includes non-evaluable players).
+    // Drop list sorted highest adjVal first so we can rescue them if we hit MAX_DROPS.
+    let dropList = roster.filter(p=>!keptIds.has(p.id))
+                         .sort((a,b)=>adjVal2526(b)-adjVal2526(a));
+    let keepList = roster.filter(p=>keptIds.has(p.id));
+
+    // Enforce MAX_DROPS: rescue the highest-value players from the drop list.
+    while(dropList.length > MAX_DROPS){
+      keepList.push(dropList.shift());
+    }
+
+    // Enforce MIN_DROPS: if knapsack kept too many, force-drop lowest-value keepers.
+    if(dropList.length < MIN_DROPS){
+      keepList.sort((a,b)=>adjVal2526(a)-adjVal2526(b));
+      while(dropList.length < MIN_DROPS && keepList.length > 0){
+        dropList.push(keepList.shift());
+      }
+    }
+
+    dropList.forEach(p=>{p.sim2526=null; dropped++;});
   }
 
   lsSet(LS_PLAYERS,players);
