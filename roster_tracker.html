@@ -221,6 +221,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank 25-26</button>
       <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
       <button class="btn" onclick="resetDraft2526()" style="color:#dc2626;border-color:#dc2626">Reset 25-26</button>
+      <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
       <input type="number" id="draftModeTop2526Input" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop2526=+this.value;if(draftMode2526)render2526()" title="Number of top picks to show in Draft Mode 25-26">
       <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
     </div>
@@ -1561,6 +1562,86 @@ const DRAFT_TEAMS_2526 = Object.entries(DRAFT_STANDINGS_2425)
 // [Blue Line Bangers, Muller Time!, Silence of the Lamb, Killer Whales,
 //  Dumb and Goalie To, Bossy Posse, Damage Inc., Pernicious Puckers, Motor City Wings]
 
+// Actual pre-draft 25-26 rosters (after drops, before draft picks).
+// Keys = normName(name).toLowerCase() — absent players had no HGHL roster spot going into the draft.
+// Ivan Demidov absent: dropped due to mid-season pickup rule; re-drafted with BLB's 1st pick.
+const ACTUAL_ROSTER_2526 = {
+  // Blue Line Bangers
+  'mackenzie weegar':'Blue Line Bangers','brandon montour':'Blue Line Bangers',
+  'gustav forsling':'Blue Line Bangers','jack eichel':'Blue Line Bangers',
+  'nico hischier':'Blue Line Bangers','adrian kempe':'Blue Line Bangers',
+  'alex tuch':'Blue Line Bangers','jared mccann':'Blue Line Bangers',
+  'macklin celebrini':'Blue Line Bangers','adam fantilli':'Blue Line Bangers',
+  'jordan spence':'Blue Line Bangers','michael kesselring':'Blue Line Bangers',
+  'connor hellebuyck':'Blue Line Bangers',
+  // Bossy Posse
+  'evan bouchard':'Bossy Posse','adam fox':'Bossy Posse',
+  'nathan mackinnon':'Bossy Posse','robert thomas':'Bossy Posse',
+  'tage thompson':'Bossy Posse','kyle connor':'Bossy Posse',
+  'ryan nugenthopkins':'Bossy Posse','juraj slafkovsky':'Bossy Posse',
+  'shane wright':'Bossy Posse','jackson lacombe':'Bossy Posse',
+  'matt coronato':'Bossy Posse',
+  // Damage Inc.
+  'nikita kucherov':'Damage Inc.','mikko rantanen':'Damage Inc.',
+  'brayden point':'Damage Inc.','luke hughes':'Damage Inc.',
+  'matt boldy':'Damage Inc.','dylan strome':'Damage Inc.',
+  'drake batherson':'Damage Inc.','dylan guenther':'Damage Inc.',
+  'adam boqvist':'Damage Inc.','kirill marchenko':'Damage Inc.',
+  'leo carlsson':'Damage Inc.','simon nemec':'Damage Inc.',
+  'philip broberg':'Damage Inc.','sam montembeault':'Damage Inc.',
+  // Dumb and Goalie To
+  'cale makar':'Dumb and Goalie To','david pastrnak':'Dumb and Goalie To',
+  'thomas harley':'Dumb and Goalie To','brandon hagel':'Dumb and Goalie To',
+  'cole caufield':'Dumb and Goalie To','sean monahan':'Dumb and Goalie To',
+  'jonathan drouin':'Dumb and Goalie To','jack quinn':'Dumb and Goalie To',
+  'mackenzie blackwood':'Dumb and Goalie To','stuart skinner':'Dumb and Goalie To',
+  'morgan geekie':'Dumb and Goalie To','dmitri voronkov':'Dumb and Goalie To',
+  'seamus casey':'Dumb and Goalie To','jiri kulich':'Dumb and Goalie To',
+  // Killer Whales
+  'victor hedman':'Killer Whales','auston matthews':'Killer Whales',
+  'jack hughes':'Killer Whales','josh morrissey':'Killer Whales',
+  'dustin wolf':'Killer Whales','connor bedard':'Killer Whales',
+  'anze kopitar':'Killer Whales','seth jarvis':'Killer Whales',
+  'quinton byfield':'Killer Whales','jamie drysdale':'Killer Whales',
+  'will smith':'Killer Whales','william eklund':'Killer Whales',
+  'cole perfetti':'Killer Whales','jacob markstrom':'Killer Whales',
+  'dylan holloway':'Killer Whales',
+  // Motor City Wings
+  'kirill kaprizov':'Motor City Wings','sidney crosby':'Motor City Wings',
+  'zach werenski':'Motor City Wings','jake guentzel':'Motor City Wings',
+  'shayne gostisbehere':'Motor City Wings','clayton keller':'Motor City Wings',
+  'dylan larkin':'Motor City Wings','lucas raymond':'Motor City Wings',
+  'brandt clarke':'Motor City Wings','olen zellweger':'Motor City Wings',
+  'marco rossi':'Motor City Wings','pavel dorofeyev':'Motor City Wings',
+  'jake oettinger':'Motor City Wings','connor mcmichael':'Motor City Wings',
+  'marco kasper':'Motor City Wings',
+  // Muller Time!
+  'mitch marner':'Muller Time!','roope hintz':'Muller Time!',
+  'shea theodore':'Muller Time!','martin necas':'Muller Time!',
+  'vincent trocheck':'Muller Time!','bryan rust':'Muller Time!',
+  'carter verhaeghe':'Muller Time!','aliaksei protas':'Muller Time!',
+  'logan cooley':'Muller Time!','matvei michkov':'Muller Time!',
+  'zayne parekh':'Muller Time!','carter yakemchuk':'Muller Time!',
+  'denton mateychuk':'Muller Time!',
+  // Pernicious Puckers
+  'quinn hughes':'Pernicious Puckers','leon draisaitl':'Pernicious Puckers',
+  'jt miller':'Pernicious Puckers','jason robertson':'Pernicious Puckers',
+  'sam reinhart':'Pernicious Puckers','tim stutzle':'Pernicious Puckers',
+  'lane hutson':'Pernicious Puckers','nick suzuki':'Pernicious Puckers',
+  'logan stankoven':'Pernicious Puckers','kent johnson':'Pernicious Puckers',
+  'filip gustavsson':'Pernicious Puckers','simon edvinsson':'Pernicious Puckers',
+  'thatcher demko':'Pernicious Puckers','artyom levshunov':'Pernicious Puckers',
+  'anthony deangelo':'Pernicious Puckers',
+  // Silence of the Lamb
+  'logan thompson':'Silence of the Lamb','connor mcdavid':'Silence of the Lamb',
+  'jesper bratt':'Silence of the Lamb','rasmus andersson':'Silence of the Lamb',
+  'mark scheifele':'Silence of the Lamb','brad marchand':'Silence of the Lamb',
+  'patrick kane':'Silence of the Lamb','matt duchene':'Silence of the Lamb',
+  'conor garland':'Silence of the Lamb','matthew knies':'Silence of the Lamb',
+  'cutter gauthier':'Silence of the Lamb','darren raddysh':'Silence of the Lamb',
+  'jason zucker':'Silence of the Lamb','erik gustafsson':'Silence of the Lamb',
+};
+
 const LS_DRAFT = 'hghl_draft_2627';
 const LS_DRAFT_2526 = 'hghl_draft_2526';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
@@ -1926,6 +2007,27 @@ function resetDraft2526(){
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2526, draftState2526);
   render2526();
+}
+
+function loadActualRoster2526(){
+  if(!confirm('Load actual 25-26 pre-draft rosters? This overwrites the current 25-26 simulation with the real post-drop, pre-draft state.')) return;
+  let matched = 0, unmatched = 0;
+  for(const p of players){
+    const key = normName(p.name).toLowerCase();
+    if(key in ACTUAL_ROSTER_2526){
+      p.sim2526 = ACTUAL_ROSTER_2526[key]; // null = was dropped before draft
+      matched++;
+    } else {
+      p.sim2526 = null;
+      unmatched++;
+    }
+  }
+  draftState2526 = {picks:[]};
+  lsSet(LS_PLAYERS, players);
+  lsSet(LS_DRAFT_2526, draftState2526);
+  render2526();
+  const rostered = players.filter(p=>p.sim2526).length;
+  toast(`Loaded actual 25-26 pre-draft rosters — ${rostered} players rostered, ${matched} matched.`);
 }
 
 function simulateDrops2526(){
