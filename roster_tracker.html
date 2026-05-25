@@ -1487,6 +1487,7 @@ function render(){
 }
 
 const CAP_LIMIT = 104;
+const CAP_LIMIT_2526 = 95.5;
 const NHL_SEASON_YEAR = 2026;
 
 // 2025-26 final standings — determines draft order (rank 9 picks first)
@@ -1891,7 +1892,7 @@ function resetDraft2526(){
 function simulateDrops2526(){
   const DROPS    = 7;
   const SCALE    = 10;
-  const CAP_CEIL = Math.round((CAP_LIMIT - DROPS) * SCALE);
+  const CAP_CEIL = Math.round((CAP_LIMIT_2526 - DROPS) * SCALE);
   const teams    = [...new Set(players.map(p=>p.sim2526).filter(Boolean))];
   if(!teams.length){ toast('Reset 25-26 first to seed rosters.'); return; }
   let dropped = 0;
@@ -1979,7 +1980,7 @@ function updateStats2526(){
   document.getElementById('statCards2526').innerHTML = allTeams.map(t=>{
     const tp = players.filter(p=>p.sim2526===t);
     const cap = tp.reduce((s,p)=>s+(p.cap||0),0);
-    const rem = CAP_LIMIT - cap;
+    const rem = CAP_LIMIT_2526 - cap;
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
     const gN = tp.filter(p=>posGroup(p.pos)==='G').length;
