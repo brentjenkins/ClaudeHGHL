@@ -711,7 +711,7 @@ function simulateDrops(){
   const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
   const effFloor = draftWeights.effFloor ?? 8;
   const adjVal  = p => {
-    const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult(abpMap.get(p.id) ?? 99);
+    const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
     const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
     const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
@@ -1315,7 +1315,7 @@ function computeDrops(allPlayers){
   const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
   const posMult     = { F: 1.0, D: draftWeights.multD, G: 1.0 };
   const adjVal      = p => {
-    const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult(abpMap.get(p.id) ?? 99);
+    const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
     const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
     const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
@@ -1854,7 +1854,7 @@ function simulateBestPick(){
 
   available.sort((a, b) => {
     const score = p => {
-      const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcity(abpMap.get(p.id) ?? 99);
+      const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcity((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
       const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
       const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
       const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
@@ -2017,7 +2017,7 @@ function simulateDrops2526(){
   const adjVal2526 = p => {
     const pp = ppts2526blend(p);
     const c2526 = getCap2526(p);
-    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult(abpMap2526.get(p.id)??99);
+    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult((abpMap2526.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
     const ptsPerM = (pp>0&&c2526>0) ? (pp/c2526)*draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
     const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
@@ -2108,7 +2108,7 @@ function compareDrops2526(){
 
   const adjVal2526v = p => {
     const pp = ppts2526blend(p), c = getCap2526(p);
-    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult(abpMap.get(p.id)??99);
+    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
     const ptsPerM = (pp>0&&c>0) ? (pp/c)*draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
     const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
