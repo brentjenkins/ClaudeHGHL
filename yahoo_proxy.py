@@ -435,58 +435,65 @@ def nhl_rosters():
 
 # ── 2025-26 season stats ──────────────────────────────────────────────────────
 
+_NHL_STATS_BASE = "https://api.nhle.com/stats/rest/en"
+
 @app.route("/stats")
 def season_stats():
     """
     Returns 2025-26 regular-season fantasy points for all NHL players.
     Scoring: Goal=1, Assist=1, Goalie Win=2, Goalie Shutout=3 (bonus on top of win).
+    Uses the NHL REST stats API to fetch all skaters/goalies in two calls.
     """
     stats = {}
     errors = []
+    cayenne = "seasonId=20252026%20and%20gameTypeId=2"
 
-    for team in NHL_API_TEAMS:
-        try:
-            url = f"https://api-web.nhle.com/v1/club-stats/{team}/20252026/2"
-            resp = requests.get(url, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
+    try:
+        start, page_size, fetched = 0, 100, []
+        while True:
+            url = f"{_NHL_STATS_BASE}/skater/summary?limit={page_size}&start={start}&cayenneExp={cayenne}"
+            page = requests.get(url, timeout=30).json()
+            batch = page.get("data", [])
+            fetched.extend(batch)
+            if len(fetched) >= page.get("total", 0) or not batch:
+                break
+            start += page_size
+        for s in fetched:
+            full = s.get("skaterFullName", "").strip()
+            if not full:
+                continue
+            pos = _POS_MAP.get(s.get("positionCode", ""), "C")
+            key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
+            fpts = s.get("goals", 0) + s.get("assists", 0)
+            stats[key] = {
+                "name": full, "fpts": fpts,
+                "goals": s.get("goals", 0), "assists": s.get("assists", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+            }
+        print(f"  NHL skaters: {len(fetched)} fetched")
+    except Exception as e:
+        errors.append(f"skaters: {e}")
+        print(f"  ✗ skaters: {e}")
 
-            for s in data.get("skaters", []):
-                first = s.get("firstName", {}).get("default", "")
-                last  = s.get("lastName",  {}).get("default", "")
-                full  = f"{first} {last}".strip()
-                pos   = _POS_MAP.get(s.get("positionCode", ""), "C")
-                if not full:
-                    continue
-                key  = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
-                fpts = s.get("goals", 0) + s.get("assists", 0)
-                stats[key] = {
-                    "name": full, "fpts": fpts,
-                    "goals": s.get("goals", 0), "assists": s.get("assists", 0),
-                    "gp": s.get("gamesPlayed", 0),
-                }
-
-            for g in data.get("goalies", []):
-                first = g.get("firstName", {}).get("default", "")
-                last  = g.get("lastName",  {}).get("default", "")
-                full  = f"{first} {last}".strip()
-                if not full:
-                    continue
-                key  = f"{normalize_name(full).lower()}_G"
-                wins = g.get("wins", 0)
-                sos  = g.get("shutouts", 0)
-                fpts = wins * 2 + sos * 3
-                stats[key] = {
-                    "name": full, "fpts": fpts,
-                    "wins": wins, "shutouts": sos,
-                    "gp": g.get("gamesPlayed", 0),
-                }
-
-            print(f"  ✓ {team}")
-        except Exception as e:
-            errors.append(f"{team}: {str(e)}")
-            print(f"  ✗ {team}: {e}")
-        time.sleep(0.3)
+    try:
+        url = f"{_NHL_STATS_BASE}/goalie/summary?limit=200&cayenneExp={cayenne}"
+        data = requests.get(url, timeout=30).json()
+        for g in data.get("data", []):
+            full = g.get("goalieFullName", "").strip()
+            if not full:
+                continue
+            key = f"{normalize_name(full).lower()}_G"
+            wins = g.get("wins", 0)
+            sos  = g.get("shutouts", 0)
+            stats[key] = {
+                "name": full, "fpts": wins * 2 + sos * 3,
+                "wins": wins, "shutouts": sos,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+            }
+        print(f"  NHL goalies: {len(data.get('data', []))} fetched")
+    except Exception as e:
+        errors.append(f"goalies: {e}")
+        print(f"  ✗ goalies: {e}")
 
     print(f"Stats done: {len(stats)} players, {len(errors)} errors")
     return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
@@ -562,10 +569,14 @@ def _espn_fetch_projections(season_year: int):
                 st = proj["stats"]
                 if is_goalie:
                     hghl_pts = round(st.get("1", 0) * 2 + st.get("7", 0) * 3)
+                    ppp = 0
                 else:
                     hghl_pts = round(st.get("16") or (st.get("13", 0) + st.get("14", 0)))
+                    ppp = round(st.get("19", 0) or st.get("17", 0) + st.get("18", 0))
+                if not all_players:
+                    print(f"  ESPN stat keys (first player '{name}'): {sorted(st.keys())}")
                 key = f"{normalize_name(name).lower()}_{pg}"
-                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
             print(f"  ESPN {season_year} {label}: {len(raw)} fetched")
         except Exception as e:
             errors.append(f"{label}: {str(e)}")
@@ -619,7 +630,7 @@ def _parse_dfo_func(func_name: str, html: str) -> list:
         players.append({
             "name": name,
             "pos":  pos_m.group(1) if pos_m else "",
-            "G": _fld("G"), "A": _fld("A"),
+            "G": _fld("G"), "A": _fld("A"), "PPP": _fld("PPP"),
             "W": _fld("W"), "SO": _fld("SO"),
         })
     return players
@@ -645,13 +656,13 @@ def dfo_projections():
             continue
         pg  = "D" if p["pos"] == "D" else "F"
         key = f"{normalize_name(p['name']).lower()}_{pg}"
-        all_players[key] = {"name": p["name"], "pg": pg, "hghl_pts": hghl_pts}
+        all_players[key] = {"name": p["name"], "pg": pg, "hghl_pts": hghl_pts, "ppp": round(p["PPP"])}
     for p in goalies:
         hghl_pts = round(p["W"] * 2 + p["SO"] * 3)
         if hghl_pts <= 0:
             continue
         key = f"{normalize_name(p['name']).lower()}_G"
-        all_players[key] = {"name": p["name"], "pg": "G", "hghl_pts": hghl_pts}
+        all_players[key] = {"name": p["name"], "pg": "G", "hghl_pts": hghl_pts, "ppp": 0}
 
     print(f"  DFO: {len(skaters)} skaters + {len(goalies)} goalies → {len(all_players)} total")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -687,6 +698,7 @@ def dfo_projections_2526():
         col_pts  = len(header) - 1  # last column = "Points" (HGHL total)
     except (ValueError, IndexError) as e:
         return jsonify({"error": f"Could not find expected columns: {e}"}), 400
+    col_ppp = header.index("PPP") if "PPP" in header else None
 
     def safe_float(val):
         try: return float(val) if val and val.strip() else 0.0
@@ -704,8 +716,9 @@ def dfo_projections_2526():
         hghl_pts = round(safe_float(row[col_pts]) if len(row) > col_pts else 0)
         if hghl_pts <= 0:
             continue
+        ppp = round(safe_float(row[col_ppp]) if col_ppp is not None and len(row) > col_ppp else 0)
         key = f"{normalize_name(name).lower()}_{pg}"
-        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
 
     print(f"  DFO 25-26 CSV: {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -740,7 +753,7 @@ def athletic_projections_2526():
 
     gp_all = [i for i, h in enumerate(headers) if h == "GP"]
     c_name, c_pos = col("NAME"), col("POS")
-    c_g,  c_a     = col("G"),   col("A")
+    c_g,  c_a     = col("G"),   col("A"); c_ppp = col("PPP")
     c_w,  c_so    = col("W"),   col("SO")
     c_gp_s = gp_all[0] if gp_all else None
     c_gp_g = gp_all[1] if len(gp_all) > 1 else None
@@ -762,13 +775,15 @@ def athletic_projections_2526():
             gp = safe(row[c_gp_g] if c_gp_g is not None else None)
             hghl_pts = round(safe(row[c_w]) * 2 + safe(row[c_so]) * 3)
             if gp <= 0 and hghl_pts <= 0: continue
+            ppp = 0
         else:
             gp = safe(row[c_gp_s] if c_gp_s is not None else None)
             hghl_pts = round(safe(row[c_g]) + safe(row[c_a]))
             if gp <= 0 and hghl_pts <= 0: continue
+            ppp = round(safe(row[c_ppp]) if c_ppp is not None else 0)
         if hghl_pts <= 0: continue
         key = f"{normalize_name(name).lower()}_{pg}"
-        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
 
     print(f"  Athletic 25-26: {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -822,7 +837,7 @@ def athletic_projections():
     # Two GP columns: first = skater, second = goalie
     gp_all = [i for i, h in enumerate(headers) if h == "GP"]
     c_name = col("NAME"); c_pos = col("POS")
-    c_g = col("G");  c_a = col("A")
+    c_g = col("G");  c_a = col("A"); c_ppp = col("PPP")
     c_w = col("W");  c_so = col("SO")
     c_gp_s = gp_all[0] if len(gp_all) > 0 else None
     c_gp_g = gp_all[1] if len(gp_all) > 1 else None
@@ -861,6 +876,7 @@ def athletic_projections():
             if gp <= 0 and w <= 0:
                 continue
             hghl_pts = round(w * 2 + so * 3)
+            ppp = 0
         else:
             gp = safe(row[c_gp_s] if c_gp_s is not None else None)
             g  = safe(row[c_g])
@@ -868,12 +884,13 @@ def athletic_projections():
             if gp <= 0 and g <= 0 and a <= 0:
                 continue
             hghl_pts = round(g + a)
+            ppp = round(safe(row[c_ppp]) if c_ppp is not None else 0)
 
         if hghl_pts <= 0:
             continue
 
         key = f"{normalize_name(name).lower()}_{pg}"
-        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
 
     print(f"  Athletic: {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -1052,6 +1069,13 @@ def signings_2526():
             exp = p.get("exp", "")
             if exp < SEASON_CUTOFF:
                 continue   # contract expired before 25-26 — skip
+            # Skip contracts that start in 26-27 or later (e.g. player signed new deal
+            # in summer 2025 before season opened — that deal wasn't active in 25-26).
+            term = int(p.get("len") or 0)
+            exp_year = int(exp.split("-")[0]) if exp else 0
+            start_yr = exp_year - term + 1 if term else 0
+            if start_yr > 2025:
+                continue
             pos = p.get("pos", "C")
             pg = _POS_GROUP_MAP.get(pos, "F")
             full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
@@ -1062,7 +1086,7 @@ def signings_2526():
             key = f"{normalize_name(full).lower()}_{pg}"
             nick_key = f"{normalize_name(nick + ' ' + p.get('p_ln','')).lower()}_{pg}" if nick else None
 
-            # First occurrence wins (sign_date DESC = most recent pre-season contract)
+            # First occurrence wins (sign_date DESC = most recent contract active in 25-26)
             cap = round(float(p["cap_hit"]) / 1_000_000, 4)
             if key not in all_players:
                 entry = {"name": full, "pos": pos, "cap": cap, "nhl_id": p.get("p_nhl_id", "")}

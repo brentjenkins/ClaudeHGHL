@@ -219,12 +219,16 @@ tr:hover td{background:#fafaf8}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
-      <button class="btn" onclick="resetDraft2526()" style="color:#dc2626;border-color:#dc2626">Reset 25-26</button>
-      <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank 25-26</button>
+      <button class="btn" onclick="resetDraft2526()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
+      <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
       <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
       <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
       <button class="btn" onclick="compareDrops2526()" style="color:#0369a1;border-color:#0369a1" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
       <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
+      <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
+        <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
+        <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
+      </span>
     </div>
   </div>
 </div>
@@ -256,8 +260,8 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th colspan="7"></th>
-  <th colspan="7" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
-  <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="8" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
+  <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th colspan="1"></th>
 </tr>
 <tr>
@@ -272,11 +276,13 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol2526('proj2526_dfo')" style="color:#bbb" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort2526-proj2526_dfo"></span></th>
   <th onclick="setSortCol2526('proj2526_espn')" style="color:#bbb" title="ESPN 2025-26 projection">ESPN <span id="sort2526-proj2526_espn"></span></th>
   <th onclick="setSortCol2526('ppts2526blend')" style="color:#185FA5">PPTS <span id="sort2526-ppts2526blend"></span></th>
+  <th onclick="setSortCol2526('ppp2526proj')" style="color:#185FA5" title="Power Play Points (blended projection)">PPP <span id="sort2526-ppp2526proj"></span></th>
   <th onclick="setSortCol2526('ptsperm2526')" style="color:#185FA5">PPTS/$M <span id="sort2526-ptsperm2526"></span></th>
   <th onclick="setSortCol2526('rank2526')" style="color:#185FA5">Rank <span id="sort2526-rank2526"></span></th>
   <th onclick="setSortCol2526('abp2526')" title="Available Better Players (25-26)" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort2526-abp2526"></span></th>
   <th onclick="setSortCol2526('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort2526-gp2526"></span></th>
-  <th onclick="setSortCol2526('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort2526-pts2526"></span></th>
+  <th onclick="setSortCol2526('pts2526')" style="color:#bbb">Pts <span id="sort2526-pts2526"></span></th>
+  <th onclick="setSortCol2526('ppp2526')" style="color:#bbb;border-right:2px solid #e5e7eb" title="2025-26 actual power play points">PPP <span id="sort2526-ppp2526"></span></th>
   <th id="th-score2526" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
   <th></th>
 </tr>
@@ -339,6 +345,10 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="rankPlayers()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
       <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
       <button class="btn" id="draftModeBtn" onclick="toggleDraftMode()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
+      <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
+        <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
+        <button id="draftSubBestBtn" onclick="setDraftSubMode('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
+      </span>
     </div>
   </div>
 </div>
@@ -365,6 +375,9 @@ tr:hover td{background:#fafaf8}
     <option value="non-roster">Non-roster (minors/LTIR)</option>
   </select>
   <select id="filterTeam" onchange="render()"></select>
+  <select id="filterFantasy2526" onchange="render()">
+    <option value="">All 25-26 teams</option>
+  </select>
   <select id="filterFantasy" onchange="render()">
     <option value="">All 26-27 teams</option>
   </select>
@@ -382,7 +395,8 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th colspan="7"></th>
-  <th colspan="7" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
+  <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="8" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2"></th>
 </tr>
 <tr>
@@ -393,10 +407,14 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('fantasyTeam2526')" style="color:#bbb">25-26 Team <span id="sort-fantasyTeam2526"></span></th>
   <th onclick="setSortCol('fantasyTeam')" style="color:#185FA5">26-27 Team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
+  <th onclick="setSortCol('gp2526')" style="color:#9ca3af" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
+  <th onclick="setSortCol('pts2526')" style="color:#9ca3af" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('ppp2526')" style="color:#9ca3af;border-right:2px solid #e5e7eb" title="2025-26 actual power play points">PPP <span id="sort-ppp2526"></span></th>
   <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
   <th onclick="setSortCol('ptsDFO')" style="color:#185FA5" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('ppp')" style="color:#185FA5" title="Power Play Points (blended projection)">PPP <span id="sort-ppp"></span></th>
   <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('rank')" style="color:#185FA5">Rank <span id="sort-rank"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
@@ -474,7 +492,7 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Position multiplier</span>
         <div style="display:flex;gap:12px">
           <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Forward<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
-          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Defense<input type="number" id="s-multD" value="1.5" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Defense<input type="number" id="s-multD" value="1.4" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
           <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Goalie<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
         </div>
       </div>
@@ -489,6 +507,10 @@ tr:hover td{background:#fafaf8}
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Youth bonus (35−age) ×</span>
         <input type="number" id="s-wtAge" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtAge',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Source confidence (per extra source) ×</span>
+        <input type="number" id="s-wtSourceConf" value="5" min="0" max="50" step="1" onchange="updateDraftWeight('wtSourceConf',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Scarcity (ABP tiers) ×</span>
@@ -506,7 +528,17 @@ tr:hover td{background:#fafaf8}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Draft mode top picks</span>
-        <input type="number" id="s-draftTop" value="10" min="1" max="50" step="1" onchange="updateSetting('draftTop',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="s-draftTop" value="50" min="1" max="100" step="5" onchange="updateSetting('draftTop',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
+        <span style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.06em">Value Mode</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Prospect bonus (age≤22, cap≤$1.25M) ×</span>
+        <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
+        <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Drops</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
@@ -627,8 +659,8 @@ const LS_DFO2526       = 'hghl_dfo_2526';
 const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
-let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
-let draftWeights = { multF: 1.0, multD: 1.5, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 7 };
+let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, effFloor: 7 };
 let minDrops = 5, maxDrops = 20;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
@@ -670,9 +702,21 @@ function reblendPts(p){
   }
 }
 
+function reblendPpp(p){
+  if(posGroup(p.pos) === 'G'){ p.ppp = 0; return; }
+  const sources = [];
+  if(p.pppAthletic > 0) sources.push(p.pppAthletic);
+  if(p.pppDFO      > 0) sources.push(p.pppDFO);
+  if(p.pppESPN     > 0) sources.push(p.pppESPN);
+  p.ppp = sources.length ? Math.round(sources.reduce((s,v) => s+v, 0) / sources.length) : null;
+}
+
 function applyBlendedPts(){
   let changed = false;
-  for(const p of players){ const old = p.pts; reblendPts(p); if(p.pts !== old) changed = true; }
+  for(const p of players){
+    const old = p.pts; reblendPts(p); if(p.pts !== old) changed = true;
+    const oldPpp = p.ppp; reblendPpp(p); if(p.ppp !== oldPpp) changed = true;
+  }
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
@@ -686,11 +730,15 @@ function rankPlayers(){
 
   eligible
     .map(p => {
+      const age    = calcAge(p) ?? 99;
+      const srcN   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (p.pts / p.cap) * W.wtPPTSM;
       const scoreC = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtYrs;
-      const scoreD = Math.max(0, 35 - (calcAge(p) ?? 35)) * W.wtAge;
-      return { p, score: scoreA + scoreB + scoreC + scoreD };
+      const scoreD = Math.max(0, 35 - age) * W.wtAge;
+      const scoreE = (age <= 22 && p.cap <= 1.25) ? Math.max(0, 23 - age) * W.wtProspect : 0;
+      const scoreF = Math.max(0, srcN - 1) * W.wtSourceConf;
+      return { p, score: scoreA + scoreB + scoreC + scoreD + scoreE + scoreF };
     })
     .sort((a, b) => b.score - a.score)
     .forEach(({ p }, i) => { p.rank = i + 1; });
@@ -715,15 +763,22 @@ function simulateDrops(){
     const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
     const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
-    return adjPts + ptsPerM + yrs + youth;
+    const age     = calcAge(p) ?? 99;
+    const prospect = (age <= 22 && (p.cap||0) <= 1.25) ? Math.max(0, 23 - age) * draftWeights.wtProspect : 0;
+    const srcN    = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
+    const conf    = Math.max(0, srcN - 1) * draftWeights.wtSourceConf;
+    return adjPts + ptsPerM + yrs + youth + prospect + conf;
   };
   const adjPPTSM = p => (p.pts > 0 && p.cap > 0) ? p.pts * (posMult[posGroup(p.pos)] ?? 1.0) / p.cap : 0;
 
   for(const team of teams){
     const roster    = players.filter(p => p.fantasyTeam === team);
     const preDropIds = new Set(
-      roster.filter(p => p.pts > 0 && p.cap > 0 && adjPPTSM(p) < effFloor).map(p => p.id)
+      roster.filter(p => p.pts > 0 && p.cap > 0 && adjPPTSM(p) < effFloor
+                      && !((calcAge(p)??99) <= 22 && (p.cap||0) <= 1.25)).map(p => p.id)
     );
+    roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()))
+          .forEach(p => preDropIds.add(p.id));
     const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0 && !preDropIds.has(p.id));
     const m = evaluable.length;
 
@@ -796,6 +851,15 @@ function load(){
     if(p.ptsESPN        === undefined){ p.ptsESPN        = null; migrated = true; }
     if(p.ptsAthletic    === undefined){ p.ptsAthletic    = null; migrated = true; }
     if(p.ptsDFO         === undefined){ p.ptsDFO         = null; migrated = true; }
+    if(p.pppESPN        === undefined){ p.pppESPN        = null; migrated = true; }
+    if(p.pppAthletic    === undefined){ p.pppAthletic    = null; migrated = true; }
+    if(p.pppDFO         === undefined){ p.pppDFO         = null; migrated = true; }
+    if(p.ppp            === undefined){ p.ppp            = null; migrated = true; }
+    if(p.ppp2526        === undefined){ p.ppp2526        = 0;    migrated = true; }
+    if(p.ppp2526_athletic === undefined){ p.ppp2526_athletic = null; migrated = true; }
+    if(p.ppp2526_dfo      === undefined){ p.ppp2526_dfo      = null; migrated = true; }
+    if(p.ppp2526_espn     === undefined){ p.ppp2526_espn     = null; migrated = true; }
+    if(p.ppp2526proj      === undefined){ p.ppp2526proj      = null; migrated = true; }
     if(p.fantasyTeam2425   === undefined){ p.fantasyTeam2425   = null; migrated = true; }
     if(p.sim2526           === undefined){ p.sim2526           = null; migrated = true; }
     if(p.proj2526_dfo      === undefined){ p.proj2526_dfo      = null; migrated = true; }
@@ -823,6 +887,7 @@ async function syncStats(){
       if(d.players[key]){
         p.pts2526   = d.players[key].fpts;
         p.gp2526    = d.players[key].gp;
+        p.ppp2526   = d.players[key].ppp ?? 0;
         p.ptsManual = false;
         matched++;
       } else {
@@ -857,9 +922,11 @@ async function syncESPN(){
       const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
       if(d.players[key]){
         p.ptsESPN = d.players[key].hghl_pts;
+        p.pppESPN = d.players[key].ppp ?? null;
         matched++;
       } else {
         p.ptsESPN = null;
+        p.pppESPN = null;
         unmatched++;
       }
     }
@@ -895,9 +962,11 @@ async function syncAthletic(input){
       const key = `${normName(p.name).toLowerCase()}_${pg}`;
       if(d.players[key]){
         p.ptsAthletic = d.players[key].hghl_pts;
+        p.pppAthletic = d.players[key].ppp ?? null;
         matched++;
       } else {
         p.ptsAthletic = null;
+        p.pppAthletic = null;
         unmatched++;
       }
     }
@@ -1157,14 +1226,25 @@ async function sync2425Rosters(){
   }
 }
 
-function _apply2526Proj(field, lsKey, data){
-  for(const p of players) p[field] = null;
+function _apply2526Proj(field, lsKey, data, pppField=null){
+  for(const p of players){ p[field] = null; if(pppField) p[pppField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
     const pg  = posGroup(p.pos);
     const key = `${normName(p.name).toLowerCase()}_${pg}`;
-    if(data.players[key]){ p[field] = data.players[key].hghl_pts; matched++; }
-    else unmatched++;
+    if(data.players[key]){
+      p[field] = data.players[key].hghl_pts;
+      if(pppField) p[pppField] = data.players[key].ppp ?? null;
+      matched++;
+    } else unmatched++;
+  }
+  for(const p of players){
+    if(posGroup(p.pos) === 'G'){ p.ppp2526proj = 0; continue; }
+    const srcs = [];
+    if(p.ppp2526_athletic > 0) srcs.push(p.ppp2526_athletic);
+    if(p.ppp2526_dfo      > 0) srcs.push(p.ppp2526_dfo);
+    if(p.ppp2526_espn     > 0) srcs.push(p.ppp2526_espn);
+    p.ppp2526proj = srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : null;
   }
   lsSet(lsKey, data.players);
   lsSet(LS_PLAYERS, players);
@@ -1184,8 +1264,8 @@ async function syncDFO2627(){
     for(const p of players){
       const pg  = posGroup(p.pos);
       const key = `${normName(p.name).toLowerCase()}_${pg}`;
-      if(d.players[key]){ p.ptsDFO = d.players[key].hghl_pts; matched++; }
-      else { p.ptsDFO = null; unmatched++; }
+      if(d.players[key]){ p.ptsDFO = d.players[key].hghl_pts; p.pppDFO = d.players[key].ppp ?? null; matched++; }
+      else { p.ptsDFO = null; p.pppDFO = null; unmatched++; }
     }
     applyBlendedPts();
     lsSet(LS_DFO, d.players);
@@ -1237,7 +1317,7 @@ async function syncDFO2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/dfo-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', LS_DFO2526, d);
+    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', LS_DFO2526, d, 'ppp2526_dfo');
     toast(`DFO 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='🏒 DFO 25-26'; }
@@ -1250,7 +1330,7 @@ async function syncESPN2526(){
   try {
     const d = await fetch('/espn-projections-2526').then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d);
+    const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d, 'ppp2526_espn');
     toast(`ESPN 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ESPN 25-26 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ESPN 25-26'; }
@@ -1264,7 +1344,7 @@ async function syncAthletic2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d);
+    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d, 'ppp2526_athletic');
     toast(`ATH 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📰 ATH 25-26'; }
@@ -1293,6 +1373,14 @@ function populateTeamFilter(){
 }
 
 function populateFantasyFilter() {
+  const el2526 = document.getElementById('filterFantasy2526');
+  const prev2526 = el2526.value;
+  const teams2526 = [...new Set(players.map(p => p.fantasyTeam2526).filter(Boolean))].sort();
+  el2526.innerHTML = '<option value="">All 25-26 teams</option>' +
+    '<option value="__none__">None (Free Agents)</option>' +
+    teams2526.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if(prev2526) el2526.value = prev2526;
+
   const el2627 = document.getElementById('filterFantasy');
   const prev2627 = el2627.value;
   const teams2627 = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
@@ -1319,7 +1407,11 @@ function computeDrops(allPlayers){
     const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
     const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
-    return adjPts + ptsPerM + yrs + youth;
+    const age     = calcAge(p) ?? 99;
+    const prospect = (age <= 22 && (p.cap||0) <= 1.25) ? Math.max(0, 23 - age) * draftWeights.wtProspect : 0;
+    const srcN    = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
+    const conf    = Math.max(0, srcN - 1) * draftWeights.wtSourceConf;
+    return adjPts + ptsPerM + yrs + youth + prospect + conf;
   };
 
   const dropIds = new Set();
@@ -1380,15 +1472,18 @@ function render(){
   const ft=document.getElementById('filterTeam').value;
   const fs=document.getElementById('filterSource').value;
   const ff=document.getElementById('filterFantasy').value;
+  const ff2526=document.getElementById('filterFantasy2526').value;
 
   let rows=players.filter(p=>{
     if(q&&![p.name,p.team,p.fantasyTeam||'',p.fantasyTeam2526||''].some(s=>s.toLowerCase().includes(q))) return false;
-    if(fp&&posGroup(p.pos)!==fp) return false;
+    if(!draftMode&&fp&&posGroup(p.pos)!==fp) return false;
     if(fr&&p.status!==fr) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
     if(ff === '__none__' && p.fantasyTeam) return false;
     else if(ff && ff !== '__none__' && (p.fantasyTeam||'')!==ff) return false;
+    if(ff2526 === '__none__' && p.fantasyTeam2526) return false;
+    else if(ff2526 && ff2526 !== '__none__' && (p.fantasyTeam2526||'')!==ff2526) return false;
     return true;
   });
 
@@ -1402,7 +1497,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','ptsAthletic','ptsDFO','ptsESPN','pts','ptsperm','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','gp2526','pts2526','ppp2526','ptsAthletic','ptsDFO','ptsESPN','pts','ppp','ptsperm','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -1418,8 +1513,8 @@ function render(){
     const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
-    rows=players
-      .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0)
+    const allScored=rows
+      .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos);
         const scV=sc(abpMap.get(p.id)??99);
@@ -1430,14 +1525,24 @@ function render(){
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
-        return Object.assign({},p,{_ds:tPPTS+tSc+tPPTSM+tYrs+tYouth,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth}});
-      })
-      .sort((a,b)=>b._ds-a._ds)
-      .slice(0,draftModeTop);
+        const ageRaw=calcAge(p)??99;
+        const tProspect=(ageRaw<=22&&(p.cap||0)<=1.25)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
+        const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
+        const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
+        const _ds=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
+        const _dsNormal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf;
+        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf}});
+      });
+    rows = draftSubMode==='value'
+      ? allScored.sort((a,b)=>b._ds-a._ds)
+      : allScored.sort((a,b)=>b._dsNormal-a._dsNormal);
   }
 
+  const draftModeLabel = draftSubMode==='value' ? 'Value Mode' : 'Best Available';
+  const draftSectionHdr = draftMode ? `<tr><td colspan="20" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel}</td></tr>` : '';
+
   const tbody=document.getElementById('tbody');
-  tbody.innerHTML=rows.length?rows.map(p=>{
+  tbody.innerHTML=rows.length?(draftSectionHdr+rows.map(p=>{
     const pg=posGroup(p.pos);
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const src=p.source||'manual';
@@ -1466,14 +1571,18 @@ function render(){
         </div>
       </td>
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
+      <td style="color:#9ca3af">${p.gp2526>0?p.gp2526:'—'}</td>
+      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
+      <td style="color:#9ca3af;border-right:2px solid #e5e7eb">${p.ppp2526>0?p.ppp2526:'—'}</td>
       <td style="color:#9ca3af">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
       <td style="color:#9ca3af">${p.ptsDFO>0?p.ptsDFO:'—'}</td>
       <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
       <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
+      <td>${p.ppp>0?p.ppp:'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
@@ -1483,7 +1592,7 @@ function render(){
             : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join(''):`<tr><td colspan="15" class="empty">No players found</td></tr>`;
+  }).join('')):`<tr><td colspan="19" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -1528,6 +1637,13 @@ const DRAFT_TEAMS_2526 = Object.entries(DRAFT_STANDINGS_2425)
 
 // Players dropped for injury reasons — algorithm can't know about these, so excluded from accuracy.
 const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty']);
+
+// Players who must be dropped per league rules: ELC signed after the trade deadline (Mar 7, 2025).
+// These are mandatory pre-drops — counted as correct in compareDrops2526.
+const ELC_MANDATORY_DROPS_2526 = new Set(['ivan demidov']);
+
+// Players who must be dropped for 26-27: ELC signed after the 25-26 trade deadline (Mar 6, 2026).
+const ELC_MANDATORY_DROPS_2627 = new Set([]);
 
 // Actual pre-draft 25-26 rosters (after drops, before draft picks).
 // Keys = normName(name).toLowerCase() — absent players had no HGHL roster spot going into the draft.
@@ -1613,7 +1729,7 @@ const LS_DRAFT = 'hghl_draft_2627';
 const LS_DRAFT_2526 = 'hghl_draft_2526';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let draftState2526 = {picks: []};
-let draftMode2526 = false, draftModeTop2526 = 10;
+let draftMode2526 = false, draftModeTop2526 = 50, draftSubMode2526 = 'value';
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let animDismissed = false;
 
@@ -1857,8 +1973,12 @@ function simulateBestPick(){
       const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcity((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
       const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
       const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
-      const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
-      return adjPts + ptsPerM + yrs + youth;
+      const age2    = calcAge(p) ?? 99;
+      const youth   = Math.max(0, 35 - age2) * draftWeights.wtAge;
+      const prospect2 = (age2 <= 22 && (p.cap||0) <= 1.25) ? Math.max(0, 23 - age2) * draftWeights.wtProspect : 0;
+      const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
+      const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
+      return adjPts + ptsPerM + yrs + youth + prospect2 + conf2;
     };
     return score(b) - score(a);
   });
@@ -1876,12 +1996,23 @@ function toggleDraftMode(){
     document.getElementById('filterPos').value='';
     document.getElementById('filterRoster').value='';
     document.getElementById('filterTeam').value='';
+    document.getElementById('filterFantasy2526').value='';
     document.getElementById('filterFantasy').value='';
     document.getElementById('filterSource').value='';
   } else {
     btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe';
   }
+  document.getElementById('draftSubModeCtrl').style.display = draftMode ? '' : 'none';
   render();
+}
+
+function setDraftSubMode(mode){
+  draftSubMode = mode;
+  document.getElementById('draftSubValueBtn').style.background = mode==='value' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubValueBtn').style.color = mode==='value' ? '#fff' : '#6366f1';
+  document.getElementById('draftSubBestBtn').style.background = mode==='bestAvail' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubBestBtn').style.color = mode==='bestAvail' ? '#fff' : '#6366f1';
+  if(draftMode) render();
 }
 
 function syncSettings(){
@@ -1889,6 +2020,8 @@ function syncSettings(){
   const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; };
   set('s-multF', W.multF);    set('s-multD', W.multD);    set('s-multG', W.multG);
   set('s-wtPPTSM', W.wtPPTSM); set('s-wtYrs', W.wtYrs);  set('s-wtAge', W.wtAge);
+  set('s-wtProspect', W.wtProspect);
+  set('s-wtSourceConf', W.wtSourceConf);
   set('s-wtScarcity', W.wtScarcity); set('s-effFloor', W.effFloor);
   set('s-minDrops', minDrops); set('s-maxDrops', maxDrops);
   set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
@@ -1896,6 +2029,8 @@ function syncSettings(){
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
 }
 function updateDraftWeight(key, val){
+  if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
+  if(draftWeights.wtSourceConf === undefined) draftWeights.wtSourceConf = 5;
   draftWeights[key] = val;
   syncSettings();
   if(draftMode) render();
@@ -1952,7 +2087,17 @@ function toggleDraftMode2526(){
   btn.style.color = draftMode2526 ? '#fff' : '#6366f1';
   btn.style.borderColor = draftMode2526 ? '#6366f1' : '#c7d2fe';
   document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
+  document.getElementById('draftSubModeCtrl2526').style.display = draftMode2526 ? '' : 'none';
   render2526();
+}
+
+function setDraftSubMode2526(mode){
+  draftSubMode2526 = mode;
+  document.getElementById('draftSubValueBtn2526').style.background = mode==='value' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubValueBtn2526').style.color = mode==='value' ? '#fff' : '#6366f1';
+  document.getElementById('draftSubBestBtn2526').style.background = mode==='bestAvail' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubBestBtn2526').style.color = mode==='bestAvail' ? '#fff' : '#6366f1';
+  if(draftMode2526) render2526();
 }
 
 
@@ -2021,7 +2166,11 @@ function simulateDrops2526(){
     const ptsPerM = (pp>0&&c2526>0) ? (pp/c2526)*draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
     const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
-    return adjPts + ptsPerM + yrs + youth;
+    const age2526 = calcAge(p) ?? 99;
+    const prospect2526 = (age2526 <= 23 && c2526 <= 1.25) ? Math.max(0, 24 - age2526) * draftWeights.wtProspect : 0;
+    const srcN2526 = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
+    const conf2526 = Math.max(0, srcN2526 - 1) * draftWeights.wtSourceConf;
+    return adjPts + ptsPerM + yrs + youth + prospect2526 + conf2526;
   };
   // Position-adjusted PPTS/$M — the efficiency metric used for the drop floor.
   const adjPPTSM = p => {
@@ -2032,12 +2181,15 @@ function simulateDrops2526(){
   for(const team of teams){
     const roster    = players.filter(p=>p.sim2526===team);
 
-    // Pre-drop: players with evaluable data but position-adjusted PPTS/$M below the floor
-    // are considered replaceable from the draft pool and go straight to the drop list.
+    // Pre-drop: players below efficiency floor, plus mandatory ELC rule drops.
+    // Prospects (age≤23, cap≤$1.25M) are exempt from the floor pre-drop.
     const preDropIds = new Set(
-      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSM(p) < effFloor)
+      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSM(p) < effFloor
+                      && !((calcAge(p)??99) <= 23 && getCap2526(p) <= 1.25))
             .map(p => p.id)
     );
+    roster.filter(p => ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase()))
+          .forEach(p => preDropIds.add(p.id));
 
     const evaluable = roster.filter(p=>ppts2526blend(p)>0&&getCap2526(p)>0&&!preDropIds.has(p.id));
     const m = evaluable.length;
@@ -2112,7 +2264,11 @@ function compareDrops2526(){
     const ptsPerM = (pp>0&&c>0) ? (pp/c)*draftWeights.wtPPTSM : 0;
     const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
     const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
-    return adjPts + ptsPerM + yrs + youth;
+    const agev    = calcAge(p) ?? 99;
+    const prospectV = (agev <= 23 && c <= 1.25) ? Math.max(0, 24 - agev) * draftWeights.wtProspect : 0;
+    const srcNv    = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
+    const confV    = Math.max(0, srcNv - 1) * draftWeights.wtSourceConf;
+    return adjPts + ptsPerM + yrs + youth + prospectV + confV;
   };
   const adjPPTSMv = p => {
     const pp = ppts2526blend(p), c = getCap2526(p);
@@ -2123,8 +2279,11 @@ function compareDrops2526(){
   for(const team of teams){
     const roster = vp.filter(p => p.sim2526===team);
     const preDropIds = new Set(
-      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSMv(p) < effFloor).map(p=>p.id)
+      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSMv(p) < effFloor
+                      && !((calcAge(p)??99) <= 23 && getCap2526(p) <= 1.25)).map(p=>p.id)
     );
+    roster.filter(p => ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase()))
+          .forEach(p => preDropIds.add(p.id));
     const evaluable = roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && !preDropIds.has(p.id));
     const m = evaluable.length;
     const keptIds = new Set();
@@ -2165,7 +2324,7 @@ function compareDrops2526(){
 
   for(const team of teams){
     const teamPlayers = vp.filter(p => p.fantasyTeam2425===team);
-    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[], injuryExcused=[];
+    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[], injuryExcused=[], elcMandatory=[];
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
@@ -2176,7 +2335,10 @@ function compareDrops2526(){
       const eff = adjPPTSMv(p).toFixed(1);
       const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${eff}x)`;
 
-      if(!simKept && !actuallyKept) correctDrops.push(label);
+      if(!simKept && !actuallyKept){
+        if(ELC_MANDATORY_DROPS_2526.has(key)) elcMandatory.push(label);
+        else correctDrops.push(label);
+      }
       else if(simKept && actuallyKept)  correctKeeps.push(label);
       else if(!simKept && actuallyKept) algoDroppedShouldKeep.push(label);
       else if(simKept && !actuallyKept){
@@ -2185,21 +2347,93 @@ function compareDrops2526(){
       }
     }
 
-    const correct = correctDrops.length + correctKeeps.length;
+    const correct = correctDrops.length + correctKeeps.length + elcMandatory.length;
     const excused = injuryExcused.length;
     const total = teamPlayers.length - excused;
     totalCorrect += correct; totalAll += total;
-    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoKeptShouldDrop, injuryExcused, correct, total});
+    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoKeptShouldDrop, injuryExcused, elcMandatory, correct, total});
   }
 
   const pct = totalAll>0 ? Math.round(100*totalCorrect/totalAll) : 0;
   const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
+  const totalELC = teamResults.reduce((s,r)=>s+r.elcMandatory.length, 0);
+
+  // PPP correlation analysis — skaters only, requires ppp2526proj to be populated
+  const pppAnalysisHtml = (() => {
+    const eligible = vp.filter(p => {
+      if(!p.fantasyTeam2425 || posGroup(p.pos)==='G') return false;
+      if(!(p.ppp2526proj > 0) || !(ppts2526blend(p) > 0)) return false;
+      if(INJURY_DROPS_2526.has(normName(p.name).toLowerCase())) return false;
+      if(ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase())) return false;
+      return true;
+    });
+    if(eligible.length < 10) return '';
+
+    const pppPct = p => p.ppp2526proj / ppts2526blend(p);
+    const wasDropped = p => {
+      const key = normName(p.name).toLowerCase();
+      return !((key in ACTUAL_ROSTER_2526) && ACTUAL_ROSTER_2526[key]===p.fantasyTeam2425);
+    };
+    const avg = (arr, fn) => arr.length ? (arr.reduce((s,p)=>s+fn(p),0)/arr.length) : 0;
+
+    const dropped = eligible.filter(wasDropped);
+    const kept    = eligible.filter(p => !wasDropped(p));
+
+    const buckets = [
+      { label:'0–15%',  lo:0,    hi:0.15 },
+      { label:'15–30%', lo:0.15, hi:0.30 },
+      { label:'30–45%', lo:0.30, hi:0.45 },
+      { label:'45%+',   lo:0.45, hi:1.01 },
+    ];
+    const bucketRows = buckets.map(b => {
+      const grp = eligible.filter(p => { const r=pppPct(p); return r>=b.lo && r<b.hi; });
+      const drp = grp.filter(wasDropped);
+      const dropRate = grp.length ? Math.round(100*drp.length/grp.length) : null;
+      const color = dropRate===null?'#9ca3af':dropRate>=60?'#dc2626':dropRate>=35?'#d97706':'#16a34a';
+      return `<tr>
+        <td style="padding:3px 10px 3px 0;font-size:12px">${b.label}</td>
+        <td style="padding:3px 10px 3px 0;font-size:12px;color:#555">${grp.length} players</td>
+        <td style="padding:3px 0;font-size:12px;font-weight:600;color:${color}">${dropRate!==null?dropRate+'% dropped':'—'}</td>
+      </tr>`;
+    }).join('');
+
+    const cmpTable = `<table style="border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr>
+          <th style="padding:3px 12px 3px 0;text-align:left;color:#374151"></th>
+          <th style="padding:3px 12px 3px 0;text-align:center;color:#dc2626;font-weight:600">Dropped (${dropped.length})</th>
+          <th style="padding:3px 0;text-align:center;color:#16a34a;font-weight:600">Kept (${kept.length})</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:3px 12px 3px 0;color:#555">Avg PPP%</td>
+          <td style="padding:3px 12px 3px 0;text-align:center;font-weight:600">${Math.round(100*avg(dropped,pppPct))}%</td>
+          <td style="padding:3px 0;text-align:center;font-weight:600">${Math.round(100*avg(kept,pppPct))}%</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 12px 3px 0;color:#555">Avg PPTS</td>
+          <td style="padding:3px 12px 3px 0;text-align:center;font-weight:600">${avg(dropped,p=>ppts2526blend(p)).toFixed(1)}</td>
+          <td style="padding:3px 0;text-align:center;font-weight:600">${avg(kept,p=>ppts2526blend(p)).toFixed(1)}</td>
+        </tr>
+      </tbody>
+    </table>`;
+
+    return `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+      <div style="padding:8px 12px;background:#f1f5f9;font-size:13px;font-weight:600">PPP% of PPTS vs Drop Rate (skaters, n=${eligible.length})</div>
+      <div style="padding:8px 12px;display:flex;gap:2.5rem;align-items:flex-start">
+        <table style="border-collapse:collapse">${bucketRows}</table>
+        <div style="border-left:1px solid #e5e7eb;padding-left:2rem">${cmpTable}</div>
+      </div>
+    </div>`;
+  })();
 
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
     `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
     `Floor: <strong>${effFloor}x</strong> adj PPTS/$M &nbsp;|&nbsp; ` +
     `D mult: <strong>${draftWeights.multD}×</strong>` +
+    (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
     (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '');
 
   const rows = teamResults.map(r => {
@@ -2220,13 +2454,14 @@ function compareDrops2526(){
     html += section('Correctly dropped', '#16a34a', '✓', r.correctDrops);
     html += section('Algo dropped — should have kept', '#dc2626', '✗', r.algoDroppedShouldKeep);
     html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
+    html += section('Dropped by rule — ELC', '#6366f1', '📋', r.elcMandatory);
     html += section('Dropped for injury (excused)', '#9ca3af', '🏥', r.injuryExcused);
     // Omit correctKeeps — too verbose; they're the bulk and uninteresting
     html += `</div></div>`;
     return html;
   }).join('');
 
-  document.getElementById('compareDropsBody').innerHTML = rows;
+  document.getElementById('compareDropsBody').innerHTML = pppAnalysisHtml + rows;
   document.getElementById('compareDropsModal').style.display = 'flex';
 }
 
@@ -2242,8 +2477,12 @@ function rankPlayers2526(){
     const pg = posGroup(p.pos);
     const pp = ppts2526blend(p);
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
-    const youth = Math.max(0, 35-(calcAge(p)??35));
-    p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + yrs*draftWeights.wtYrs + youth*draftWeights.wtAge;
+    const ageS = calcAge(p) ?? 99;
+    const youth = Math.max(0, 35-ageS);
+    const prospectS = (ageS <= 23 && getCap2526(p) <= 1.25) ? Math.max(0, 24 - ageS) * draftWeights.wtProspect : 0;
+    const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
+    const confS = Math.max(0, srcNS - 1) * draftWeights.wtSourceConf;
+    p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + yrs*draftWeights.wtYrs + youth*draftWeights.wtAge + prospectS + confS;
   });
   eligible.sort((a,b)=>b._score2526-a._score2526).forEach((p,i)=>p.rank2526=i+1);
   lsSet(LS_PLAYERS, players);
@@ -2302,7 +2541,7 @@ function render2526(){
 
   let rows = players.filter(p=>{
     if(q&&![p.name,p.team,p.fantasyTeam2425||'',p.fantasyTeam2526||''].some(s=>s.toLowerCase().includes(q))) return false;
-    if(fp && posGroup(p.pos)!==fp) return false;
+    if(!draftMode2526&&fp && posGroup(p.pos)!==fp) return false;
     if(fr && p.status!==fr) return false;
     if(ft && p.team!==ft) return false;
     if(ft2425 && (p.fantasyTeam2425||'')!==ft2425) return false;
@@ -2324,7 +2563,7 @@ function render2526(){
   });
 
   const sortCols2526 = ['name','pos','age','team','fantasyTeam2425','fantasyTeam2526','cap',
-    'proj2526_athletic','proj2526_dfo','proj2526_espn','ppts2526blend','ptsperm2526','rank2526','abp2526','gp2526','pts2526'];
+    'proj2526_athletic','proj2526_dfo','proj2526_espn','ppts2526blend','ppp2526proj','ptsperm2526','rank2526','abp2526','gp2526','pts2526','ppp2526'];
   sortCols2526.forEach(c=>{
     const el=document.getElementById('sort2526-'+c);
     if(el) el.textContent=sortCol2526===c?(sortDir2526>0?'↑':'↓'):'';
@@ -2341,8 +2580,8 @@ function render2526(){
     };
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
-    rows=players
-      .filter(p=>!p.sim2526&&need[posGroup(p.pos)]>0)
+    const allScored2526=rows
+      .filter(p=>!p.sim2526&&need[posGroup(p.pos)]>0&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos);
         const pp=ppts2526blend(p);
@@ -2354,10 +2593,17 @@ function render2526(){
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
-        return Object.assign({},p,{_ds2526:tPPTS+tSc+tPPTSM+tYrs+tYouth,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth}});
-      })
-      .sort((a,b)=>b._ds2526-a._ds2526)
-      .slice(0,draftModeTop2526);
+        const ageRaw2526=calcAge(p)??99;
+        const tProspect2526=(ageRaw2526<=23&&getCap2526(p)<=1.25)?Math.max(0,24-ageRaw2526)*draftWeights.wtProspect:0;
+        const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
+        const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
+        const _ds2526=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect2526+tConf2526;
+        const _ds2526Normal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf2526;
+        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526}});
+      });
+    rows = draftSubMode2526==='value'
+      ? allScored2526.sort((a,b)=>b._ds2526-a._ds2526)
+      : allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal);
   }
 
   // Populate filter dropdowns
@@ -2382,8 +2628,11 @@ function render2526(){
   const prev2526=ft2526El.value;
   ft2526El.innerHTML='<option value="">All 25-26 teams</option>'+all2526.map(t=>`<option${t===prev2526?' selected':''}>${esc(t)}</option>`).join('');
 
+  const draftModeLabel2526 = draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
+  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="22" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel2526}</td></tr>` : '';
+
   const tbody=document.getElementById('tbody2526');
-  tbody.innerHTML=rows.length?rows.map(p=>{
+  tbody.innerHTML=rows.length?(draftSectionHdr2526+rows.map(p=>{
     const pg=posGroup(p.pos);
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const src=p.source||'manual';
@@ -2410,12 +2659,14 @@ function render2526(){
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
       <td>${pp>0?pp:'—'}</td>
+      <td>${p.ppp2526proj>0?p.ppp2526proj:'—'}</td>
       <td>${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
       <td>${rankStr}</td>
       <td style="border-right:2px solid #f0f0ee">${abpStr}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
+      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
+      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.ppp2526>0?p.ppp2526:'—'}</td>
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.sim2526
@@ -2423,7 +2674,7 @@ function render2526(){
           : draftMode2526 ? `<button class="add-btn" onclick="quickDraft2526(${p.id})" style="background:#6366f1;color:#fff;border-color:#6366f1">Draft</button>` : ''}
       </td>
     </tr>`;
-  }).join(''):'<tr><td colspan="20" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
+  }).join('')):'<tr><td colspan="21" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
   updateStats2526();
@@ -2653,6 +2904,7 @@ function clearFilters(){
   document.getElementById('filterPos').value = '';
   document.getElementById('filterRoster').value = '';
   document.getElementById('filterTeam').value = '';
+  document.getElementById('filterFantasy2526').value = '';
   document.getElementById('filterFantasy').value = '';
   document.getElementById('filterSource').value = '';
   render();
