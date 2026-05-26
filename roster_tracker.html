@@ -222,6 +222,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
       <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank 25-26</button>
       <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
+      <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor"></span>
       <input type="number" id="draftModeTop2526Input" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop2526=+this.value;if(draftMode2526)render2526()" title="Number of top picks to show in Draft Mode 25-26">
       <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
     </div>
@@ -243,8 +244,6 @@ tr:hover td{background:#fafaf8}
   <span style="white-space:nowrap">F &times; <input id="dmMultF2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multF',+this.value)" title="Forward position multiplier"></span>
   <span style="white-space:nowrap">D &times; <input id="dmMultD2526" type="number" value="1.4" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multD',+this.value)" title="Defence position multiplier"></span>
   <span style="white-space:nowrap">G &times; <input id="dmMultG2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multG',+this.value)" title="Goalie position multiplier"></span>
-  <span style="color:#c4b5fd;margin:0 4px">|</span>
-  <span style="white-space:nowrap">drop floor (adj PPTS/$M) &lt; <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor — replaceable from the draft pool"></span>
 </div>
 
 <div class="stats-grid" id="statCards2526"></div>
