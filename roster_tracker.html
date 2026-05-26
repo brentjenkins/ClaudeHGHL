@@ -221,7 +221,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="resetDraft2526()" style="color:#dc2626;border-color:#dc2626">Reset 25-26</button>
       <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank 25-26</button>
       <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
-      <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor"></span>
+      <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor"></span>
       <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
       <input type="number" id="draftModeTop2526Input" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop2526=+this.value;if(draftMode2526)render2526()" title="Number of top picks to show in Draft Mode 25-26">
       <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
@@ -233,17 +233,17 @@ tr:hover td{background:#fafaf8}
   <span style="font-weight:700;white-space:nowrap">⚡ Score =</span>
   <span style="white-space:nowrap">PPTS &times; pos</span>
   <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">scarcity(0–3) &times; <input id="dmWtScarcity2526" type="number" value="10" min="0" max="100" step="1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('wtScarcity',+this.value)" title="Weight for positional scarcity (ABP=0→3, ≤2→2, ≤5→1, else 0)"></span>
+  <span style="white-space:nowrap">scarcity(0–3) &times; <input id="dmWtScarcity2526" type="number" value="10" min="0" max="100" step="1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtScarcity',+this.value)" title="Weight for positional scarcity (ABP=0→3, ≤2→2, ≤5→1, else 0)"></span>
   <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">(PPTS/$M) &times; <input id="dmWtPPTSM2526" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('wtPPTSM',+this.value)" title="Weight for PPTS per $M cap"></span>
+  <span style="white-space:nowrap">(PPTS/$M) &times; <input id="dmWtPPTSM2526" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtPPTSM',+this.value)" title="Weight for PPTS per $M cap"></span>
   <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">yrs &times; <input id="dmWtYrs2526" type="number" value="2" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('wtYrs',+this.value)" title="Weight for contract years remaining"></span>
+  <span style="white-space:nowrap">yrs &times; <input id="dmWtYrs2526" type="number" value="2" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtYrs',+this.value)" title="Weight for contract years remaining"></span>
   <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">youth &times; <input id="dmWtAge2526" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('wtAge',+this.value)" title="Weight for youth bonus (max 0, 35−age)"></span>
+  <span style="white-space:nowrap">youth &times; <input id="dmWtAge2526" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtAge',+this.value)" title="Weight for youth bonus (max 0, 35−age)"></span>
   <span style="color:#c4b5fd;margin:0 4px">|</span>
-  <span style="white-space:nowrap">F &times; <input id="dmMultF2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multF',+this.value)" title="Forward position multiplier"></span>
-  <span style="white-space:nowrap">D &times; <input id="dmMultD2526" type="number" value="1.2" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multD',+this.value)" title="Defence position multiplier"></span>
-  <span style="white-space:nowrap">G &times; <input id="dmMultG2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multG',+this.value)" title="Goalie position multiplier"></span>
+  <span style="white-space:nowrap">F &times; <input id="dmMultF2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multF',+this.value)" title="Forward position multiplier"></span>
+  <span style="white-space:nowrap">D &times; <input id="dmMultD2526" type="number" value="1.2" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multD',+this.value)" title="Defence position multiplier"></span>
+  <span style="white-space:nowrap">G &times; <input id="dmMultG2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multG',+this.value)" title="Goalie position multiplier"></span>
 </div>
 
 <div class="stats-grid" id="statCards2526"></div>
@@ -354,6 +354,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
       <button class="btn" onclick="openRankModal()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
       <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
+      <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M is below this floor"></span>
       <input type="number" id="draftModeTopInput" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop=+this.value;if(draftMode)render()" title="Number of top picks to show in Draft Mode">
       <button class="btn" id="draftModeBtn" onclick="toggleDraftMode()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
     </div>
@@ -373,7 +374,7 @@ tr:hover td{background:#fafaf8}
   <span style="white-space:nowrap">youth &times; <input id="dmWtAge" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtAge',+this.value)" title="Weight for youth bonus (max 0, 35−age)"></span>
   <span style="color:#c4b5fd;margin:0 4px">|</span>
   <span style="white-space:nowrap">F &times; <input id="dmMultF" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multF',+this.value)" title="Forward position multiplier"></span>
-  <span style="white-space:nowrap">D &times; <input id="dmMultD" type="number" value="1.4" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multD',+this.value)" title="Defence position multiplier"></span>
+  <span style="white-space:nowrap">D &times; <input id="dmMultD" type="number" value="1.2" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multD',+this.value)" title="Defence position multiplier"></span>
   <span style="white-space:nowrap">G &times; <input id="dmMultG" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multG',+this.value)" title="Goalie position multiplier"></span>
 </div>
 
@@ -632,7 +633,7 @@ const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
+let draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 8 };
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -742,15 +743,16 @@ function rankPlayers(){
 }
 
 function simulateDrops(){
-  const DROPS    = 7;
+  const MIN_DROPS = 5, MAX_DROPS = 20;
   const SCALE    = 10;
-  const CAP_CEIL = Math.round((CAP_LIMIT - DROPS) * SCALE); // $97M in $0.1M units
+  const CAP_CEIL = Math.round((CAP_LIMIT - MIN_DROPS) * SCALE);
   const teams    = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
   let dropped    = 0;
 
   const abpMap = computeABP(players);
   const scarcityMult = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
-  const posMult = { F:1.0, D:1.4, G:1.0 };
+  const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
+  const effFloor = draftWeights.effFloor ?? 8;
   const adjVal  = p => {
     const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult(abpMap.get(p.id) ?? 99);
     const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * RANK_DEFAULTS.wtPPTSM : 0;
@@ -758,10 +760,14 @@ function simulateDrops(){
     const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * RANK_DEFAULTS.wtAge;
     return adjPts + ptsPerM + yrs + youth;
   };
+  const adjPPTSM = p => (p.pts > 0 && p.cap > 0) ? p.pts * (posMult[posGroup(p.pos)] ?? 1.0) / p.cap : 0;
 
   for(const team of teams){
     const roster    = players.filter(p => p.fantasyTeam === team);
-    const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0);
+    const preDropIds = new Set(
+      roster.filter(p => p.pts > 0 && p.cap > 0 && adjPPTSM(p) < effFloor).map(p => p.id)
+    );
+    const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0 && !preDropIds.has(p.id));
     const m = evaluable.length;
 
     // Knapsack: find best evaluable players to keep within CAP_CEIL
@@ -786,15 +792,17 @@ function simulateDrops(){
       }
     }
 
-    // Sort by drop priority: knapsack-not-kept first, then kept; within each group, lowest adjVal first
-    const byDropPriority = [...roster].sort((a,b) => {
-      const aKept = keptIds.has(a.id), bKept = keptIds.has(b.id);
-      if(aKept !== bKept) return aKept ? 1 : -1;
-      return adjVal(a) - adjVal(b);
-    });
+    let dropList = roster.filter(p => preDropIds.has(p.id) || !keptIds.has(p.id))
+                         .sort((a,b) => adjVal(b) - adjVal(a));
+    let keepList = roster.filter(p => keptIds.has(p.id));
 
-    // Always drop exactly 7
-    byDropPriority.slice(0, DROPS).forEach(p => { p.fantasyTeam=''; dropped++; });
+    while(dropList.length > MAX_DROPS){ keepList.push(dropList.shift()); }
+    if(dropList.length < MIN_DROPS){
+      keepList.sort((a,b) => adjVal(a) - adjVal(b));
+      while(dropList.length < MIN_DROPS && keepList.length > 0) dropList.push(keepList.shift());
+    }
+
+    dropList.forEach(p => { p.fantasyTeam=''; dropped++; });
   }
 
   dropsSimulated = true;
@@ -1648,7 +1656,6 @@ const LS_DRAFT_2526 = 'hghl_draft_2526';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let draftState2526 = {picks: []};
 let draftMode2526 = false, draftModeTop2526 = 10;
-let draftWeights2526 = {multF:1.0, multD:1.2, multG:1.0, wtScarcity:10, wtPPTSM:1, wtYrs:2, wtAge:1, effFloor:8};
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let animDismissed = false;
 
@@ -1909,14 +1916,8 @@ function toggleDraftMode(){
   const bar = document.getElementById('draftFormulaBar');
   if(draftMode){
     btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1';
-    draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
-    document.getElementById('dmMultF').value      = draftWeights.multF;
-    document.getElementById('dmMultD').value      = draftWeights.multD;
-    document.getElementById('dmMultG').value      = draftWeights.multG;
-    document.getElementById('dmWtScarcity').value = draftWeights.wtScarcity;
-    document.getElementById('dmWtPPTSM').value    = draftWeights.wtPPTSM;
-    document.getElementById('dmWtYrs').value      = draftWeights.wtYrs;
-    document.getElementById('dmWtAge').value      = draftWeights.wtAge;
+    draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 8 };
+    syncDraftWeightInputs();
     bar.style.display = 'flex';
     document.getElementById('search').value='';
     document.getElementById('filterPos').value='';
@@ -1931,9 +1932,23 @@ function toggleDraftMode(){
   render();
 }
 
+function syncDraftWeightInputs(){
+  const W = draftWeights;
+  const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; };
+  set('dmMultF',W.multF);       set('dmMultF2526',W.multF);
+  set('dmMultD',W.multD);       set('dmMultD2526',W.multD);
+  set('dmMultG',W.multG);       set('dmMultG2526',W.multG);
+  set('dmWtScarcity',W.wtScarcity); set('dmWtScarcity2526',W.wtScarcity);
+  set('dmWtPPTSM',W.wtPPTSM);  set('dmWtPPTSM2526',W.wtPPTSM);
+  set('dmWtYrs',W.wtYrs);       set('dmWtYrs2526',W.wtYrs);
+  set('dmWtAge',W.wtAge);       set('dmWtAge2526',W.wtAge);
+  set('dmEffFloor',W.effFloor); set('dmEffFloor2526',W.effFloor);
+}
 function updateDraftWeight(key, val){
   draftWeights[key] = val;
+  syncDraftWeightInputs();
   if(draftMode) render();
+  if(draftMode2526) render2526();
 }
 
 function quickDraft(id){
@@ -1979,10 +1994,6 @@ function toggleDraftMode2526(){
   render2526();
 }
 
-function updateDraftWeight2526(key, val){
-  draftWeights2526[key] = val;
-  if(draftMode2526) render2526();
-}
 
 function quickDraft2526(id){
   const onClock = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
@@ -2043,8 +2054,8 @@ function simulateDrops2526(){
 
   const abpMap2526 = computeABP2526(players);
   const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:1.0;
-  const posMult = {F: draftWeights2526.multF, D: draftWeights2526.multD, G: draftWeights2526.multG};
-  const effFloor = draftWeights2526.effFloor ?? 8;
+  const posMult = {F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG};
+  const effFloor = draftWeights.effFloor ?? 8;
   const adjVal2526 = p => {
     const pp = ppts2526blend(p);
     const c2526 = getCap2526(p);
@@ -2229,7 +2240,7 @@ function render2526(){
       G:Math.max(0,DRAFT_ROSTER_MAX.G-teamRoster.filter(p=>posGroup(p.pos)==='G').length),
     };
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
-    const pm={F:draftWeights2526.multF,D:draftWeights2526.multD,G:draftWeights2526.multG};
+    const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
     rows=players
       .filter(p=>!p.sim2526&&need[posGroup(p.pos)]>0)
       .map(p=>{
@@ -2239,10 +2250,10 @@ function render2526(){
         const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
         const youthRaw=Math.max(0,35-(calcAge(p)??35));
         const tPPTS=pp*(pm[pg]??1);
-        const tSc=scV*draftWeights2526.wtScarcity;
-        const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights2526.wtPPTSM:0;
-        const tYrs=yrsRaw*draftWeights2526.wtYrs;
-        const tYouth=youthRaw*draftWeights2526.wtAge;
+        const tSc=scV*draftWeights.wtScarcity;
+        const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
+        const tYrs=yrsRaw*draftWeights.wtYrs;
+        const tYouth=youthRaw*draftWeights.wtAge;
         return Object.assign({},p,{_ds2526:tPPTS+tSc+tPPTSM+tYrs+tYouth,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth}});
       })
       .sort((a,b)=>b._ds2526-a._ds2526)
@@ -2304,7 +2315,7 @@ function render2526(){
       <td style="border-right:2px solid #f0f0ee">${abpStr}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights2526.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights2526.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights2526.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights2526.wtAge}: ${b.tYouth.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.sim2526
