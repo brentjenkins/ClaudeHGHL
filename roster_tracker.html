@@ -223,6 +223,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
       <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor"></span>
       <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
+      <button class="btn" onclick="compareDrops2526()" style="color:#0369a1;border-color:#0369a1" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
       <input type="number" id="draftModeTop2526Input" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop2526=+this.value;if(draftMode2526)render2526()" title="Number of top picks to show in Draft Mode 25-26">
       <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
     </div>
@@ -561,6 +562,18 @@ tr:hover td{background:#fafaf8}
   <div class="modal-actions">
     <button class="btn" onclick="closeAssignModal()">Cancel</button>
     <button class="btn btn-primary" onclick="confirmAssign()">Add</button>
+  </div>
+</div>
+</div>
+
+<!-- Compare Drops 25-26 modal -->
+<div class="modal-bg" id="compareDropsModal" style="display:none" onclick="if(event.target===this)closeCompareDropsModal()">
+<div class="modal" style="width:680px;max-width:96vw">
+  <h2>📊 Simulated vs Actual 25-26 Drops</h2>
+  <div id="compareDropsSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
+  <div id="compareDropsBody" style="font-size:13px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" onclick="closeCompareDropsModal()">Close</button>
   </div>
 </div>
 </div>
@@ -2131,6 +2144,142 @@ function simulateDrops2526(){
   lsSet(LS_PLAYERS,players);
   render2526();
   toast(`25-26 simulate drops — ${dropped} players dropped across ${teams.length} teams.`);
+}
+
+function compareDrops2526(){
+  const MIN_DROPS = 5, MAX_DROPS = 20, SCALE = 10;
+  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - MIN_DROPS) * SCALE);
+
+  // Virtual copy: seed sim2526 from fantasyTeam2425 (pre-season rosters)
+  const vp = players.map(p => ({...p, sim2526: p.fantasyTeam2425 || null}));
+  const teams = [...new Set(vp.map(p => p.sim2526).filter(Boolean))].sort();
+  if(!teams.length){ toast('No 25-26 team assignments found (fantasyTeam2425 missing).'); return; }
+
+  // Recompute ABP on virtual copy
+  const abpMap = computeABP2526(vp);
+  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:1.0;
+  const posMult = {F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG};
+  const effFloor = draftWeights.effFloor ?? 8;
+
+  const adjVal2526v = p => {
+    const pp = ppts2526blend(p), c = getCap2526(p);
+    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult(abpMap.get(p.id)??99);
+    const ptsPerM = (pp>0&&c>0) ? (pp/c)*RANK_DEFAULTS.wtPPTSM : 0;
+    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*RANK_DEFAULTS.wtYrs;
+    const youth   = Math.max(0,35-(calcAge(p)??35))*RANK_DEFAULTS.wtAge;
+    return adjPts + ptsPerM + yrs + youth;
+  };
+  const adjPPTSMv = p => {
+    const pp = ppts2526blend(p), c = getCap2526(p);
+    return (pp>0&&c>0) ? pp*(posMult[posGroup(p.pos)]??1.0)/c : 0;
+  };
+
+  // Run the simulation on the virtual copy
+  for(const team of teams){
+    const roster = vp.filter(p => p.sim2526===team);
+    const preDropIds = new Set(
+      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSMv(p) < effFloor).map(p=>p.id)
+    );
+    const evaluable = roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && !preDropIds.has(p.id));
+    const m = evaluable.length;
+    const keptIds = new Set();
+    if(m>0){
+      const W = evaluable.map(p=>Math.round(getCap2526(p)*SCALE));
+      const V = evaluable.map(p=>adjVal2526v(p));
+      const dp = Array.from({length:m+1},()=>new Float32Array(CAP_CEIL+1));
+      for(let i=0;i<m;i++){
+        const w=W[i],v=V[i];
+        for(let c=0;c<=CAP_CEIL;c++){
+          dp[i+1][c]=dp[i][c];
+          if(c>=w&&dp[i][c-w]+v>=dp[i+1][c]) dp[i+1][c]=dp[i][c-w]+v;
+        }
+      }
+      let remC=CAP_CEIL;
+      for(let i=m-1;i>=0;i--){
+        const w=W[i],v=V[i];
+        if(remC>=w&&Math.abs(dp[i+1][remC]-(dp[i][remC-w]+v))<0.01){
+          keptIds.add(evaluable[i].id); remC-=w;
+        }
+      }
+    }
+    let dropList = roster.filter(p=>preDropIds.has(p.id)||!keptIds.has(p.id)).sort((a,b)=>adjVal2526v(b)-adjVal2526v(a));
+    let keepList = roster.filter(p=>keptIds.has(p.id));
+    while(dropList.length > MAX_DROPS){ keepList.push(dropList.shift()); }
+    if(dropList.length < MIN_DROPS){
+      keepList.sort((a,b)=>adjVal2526v(a)-adjVal2526v(b));
+      while(dropList.length < MIN_DROPS && keepList.length > 0) dropList.push(keepList.shift());
+    }
+    dropList.forEach(p=>{ p.sim2526=null; });
+  }
+
+  // Compare virtual results to ACTUAL_ROSTER_2526
+  // A player is "actually kept" if they appear in ACTUAL_ROSTER_2526 for this team.
+  // A player is "sim kept" if their virtual sim2526 is still set.
+  const teamResults = [];
+  let totalCorrect = 0, totalAll = 0;
+
+  for(const team of teams){
+    const teamPlayers = vp.filter(p => p.fantasyTeam2425===team);
+    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[];
+
+    for(const p of teamPlayers){
+      const key = normName(p.name).toLowerCase();
+      const actuallyKept = (key in ACTUAL_ROSTER_2526) && ACTUAL_ROSTER_2526[key]===team;
+      const simKept = p.sim2526 !== null;
+      const pp = ppts2526blend(p).toFixed(1);
+      const cap = getCap2526(p).toFixed(2);
+      const eff = adjPPTSMv(p).toFixed(1);
+      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${eff}x)`;
+
+      if(!simKept && !actuallyKept) correctDrops.push(label);
+      else if(simKept && actuallyKept)  correctKeeps.push(label);
+      else if(!simKept && actuallyKept) algoDroppedShouldKeep.push(label);
+      else if(simKept && !actuallyKept) algoKeptShouldDrop.push(label);
+    }
+
+    const correct = correctDrops.length + correctKeeps.length;
+    const total = teamPlayers.length;
+    totalCorrect += correct; totalAll += total;
+    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoKeptShouldDrop, correct, total});
+  }
+
+  const pct = totalAll>0 ? Math.round(100*totalCorrect/totalAll) : 0;
+
+  // Render modal
+  document.getElementById('compareDropsSummary').innerHTML =
+    `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
+    `Floor: <strong>${effFloor}x</strong> adj PPTS/$M &nbsp;|&nbsp; ` +
+    `D mult: <strong>${draftWeights.multD}×</strong>`;
+
+  const rows = teamResults.map(r => {
+    const pct2 = Math.round(100*r.correct/r.total);
+    const badgeColor = pct2>=80?'#16a34a':pct2>=60?'#d97706':'#dc2626';
+    let html = `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+    html += `<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
+    html += `<strong style="font-size:13px">${r.team}</strong>`;
+    html += `<span style="font-size:12px;color:${badgeColor};font-weight:600">${r.correct}/${r.total} (${pct2}%)</span>`;
+    html += `</div><div style="padding:8px 12px">`;
+
+    const section = (label, color, icon, items) => {
+      if(!items.length) return '';
+      return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+        `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s=>`<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+    };
+
+    html += section('Correctly dropped', '#16a34a', '✓', r.correctDrops);
+    html += section('Algo dropped — should have kept', '#dc2626', '✗', r.algoDroppedShouldKeep);
+    html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
+    // Omit correctKeeps — too verbose; they're the bulk and uninteresting
+    html += `</div></div>`;
+    return html;
+  }).join('');
+
+  document.getElementById('compareDropsBody').innerHTML = rows;
+  document.getElementById('compareDropsModal').style.display = 'flex';
+}
+
+function closeCompareDropsModal(){
+  document.getElementById('compareDropsModal').style.display = 'none';
 }
 
 function rankPlayers2526(){
