@@ -498,11 +498,15 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Drop</div>
+    <div class="section-label">Draft</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Efficiency floor (adj PPTS/$M)</span>
         <input type="number" id="s-effFloor" value="7" min="0" max="30" step="0.5" onchange="updateDraftWeight('effFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Draft mode top picks</span>
+        <input type="number" id="s-draftTop" value="10" min="1" max="50" step="1" onchange="updateSetting('draftTop',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
@@ -519,16 +523,6 @@ tr:hover td{background:#fafaf8}
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Cap ceiling 26-27 ($M)</span>
         <input type="number" id="s-capLimit" value="104" min="50" max="200" step="0.5" onchange="updateSetting('capLimit',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <div class="section-label">Draft</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Draft mode top picks</span>
-        <input type="number" id="s-draftTop" value="10" min="1" max="50" step="1" onchange="updateSetting('draftTop',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
@@ -713,7 +707,7 @@ function simulateDrops(){
   let dropped    = 0;
 
   const abpMap = computeABP(players);
-  const scarcityMult = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
+  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
   const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
   const effFloor = draftWeights.effFloor ?? 8;
   const adjVal  = p => {
@@ -1318,7 +1312,7 @@ function computeDrops(allPlayers){
   const CAP_UNITS  = Math.round((CAP_LIMIT - minDrops) * SCALE);
 
   const abpMap      = computeABP(allPlayers);
-  const scarcityMult = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
+  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
   const posMult     = { F: 1.0, D: draftWeights.multD, G: 1.0 };
   const adjVal      = p => {
     const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult(abpMap.get(p.id) ?? 99);
@@ -1531,6 +1525,9 @@ const DRAFT_TEAMS_2526 = Object.entries(DRAFT_STANDINGS_2425)
   .sort((a,b) => b[1] - a[1]).map(([name]) => name);
 // [Blue Line Bangers, Muller Time!, Silence of the Lamb, Killer Whales,
 //  Dumb and Goalie To, Bossy Posse, Damage Inc., Pernicious Puckers, Motor City Wings]
+
+// Players dropped for injury reasons — algorithm can't know about these, so excluded from accuracy.
+const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty']);
 
 // Actual pre-draft 25-26 rosters (after drops, before draft picks).
 // Keys = normName(name).toLowerCase() — absent players had no HGHL roster spot going into the draft.
@@ -1842,7 +1839,7 @@ function simulateBestPick(){
   const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
   const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
   const abpMap  = computeABP(players);
-  const scarcity = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
+  const scarcity = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
 
   const available = players.filter(p =>
     !p.fantasyTeam &&
@@ -2014,7 +2011,7 @@ function simulateDrops2526(){
   let dropped = 0;
 
   const abpMap2526 = computeABP2526(players);
-  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:1.0;
+  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
   const posMult = {F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG};
   const effFloor = draftWeights.effFloor ?? 8;
   const adjVal2526 = p => {
@@ -2105,7 +2102,7 @@ function compareDrops2526(){
 
   // Recompute ABP on virtual copy
   const abpMap = computeABP2526(vp);
-  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:1.0;
+  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
   const posMult = {F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG};
   const effFloor = draftWeights.effFloor ?? 8;
 
@@ -2168,7 +2165,7 @@ function compareDrops2526(){
 
   for(const team of teams){
     const teamPlayers = vp.filter(p => p.fantasyTeam2425===team);
-    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[];
+    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[], injuryExcused=[];
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
@@ -2182,22 +2179,28 @@ function compareDrops2526(){
       if(!simKept && !actuallyKept) correctDrops.push(label);
       else if(simKept && actuallyKept)  correctKeeps.push(label);
       else if(!simKept && actuallyKept) algoDroppedShouldKeep.push(label);
-      else if(simKept && !actuallyKept) algoKeptShouldDrop.push(label);
+      else if(simKept && !actuallyKept){
+        if(INJURY_DROPS_2526.has(key)) injuryExcused.push(label);
+        else algoKeptShouldDrop.push(label);
+      }
     }
 
     const correct = correctDrops.length + correctKeeps.length;
-    const total = teamPlayers.length;
+    const excused = injuryExcused.length;
+    const total = teamPlayers.length - excused;
     totalCorrect += correct; totalAll += total;
-    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoKeptShouldDrop, correct, total});
+    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoKeptShouldDrop, injuryExcused, correct, total});
   }
 
   const pct = totalAll>0 ? Math.round(100*totalCorrect/totalAll) : 0;
+  const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
 
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
     `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
     `Floor: <strong>${effFloor}x</strong> adj PPTS/$M &nbsp;|&nbsp; ` +
-    `D mult: <strong>${draftWeights.multD}×</strong>`;
+    `D mult: <strong>${draftWeights.multD}×</strong>` +
+    (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '');
 
   const rows = teamResults.map(r => {
     const pct2 = Math.round(100*r.correct/r.total);
@@ -2217,6 +2220,7 @@ function compareDrops2526(){
     html += section('Correctly dropped', '#16a34a', '✓', r.correctDrops);
     html += section('Algo dropped — should have kept', '#dc2626', '✗', r.algoDroppedShouldKeep);
     html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
+    html += section('Dropped for injury (excused)', '#9ca3af', '🏥', r.injuryExcused);
     // Omit correctKeeps — too verbose; they're the bulk and uninteresting
     html += `</div></div>`;
     return html;
