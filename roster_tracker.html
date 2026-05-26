@@ -721,9 +721,8 @@ function simulateDrops(){
 
   for(const team of teams){
     const roster    = players.filter(p => p.fantasyTeam === team);
-    const scaledAbp = p => (abpMap.get(p.id)??99) * (posGroup(p.pos)==='G'?6:1);
     const preDropIds = new Set(
-      roster.filter(p => p.pts > 0 && p.cap > 0 && (adjPPTSM(p) < effFloor || scaledAbp(p) > 16)).map(p => p.id)
+      roster.filter(p => p.pts > 0 && p.cap > 0 && adjPPTSM(p) < effFloor).map(p => p.id)
     );
     const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0 && !preDropIds.has(p.id));
     const m = evaluable.length;
@@ -2033,10 +2032,10 @@ function simulateDrops2526(){
   for(const team of teams){
     const roster    = players.filter(p=>p.sim2526===team);
 
-    // Pre-drop: below efficiency floor OR scaled ABP > 16 (highly replaceable at this position).
-    const scaledAbp = p => (abpMap2526.get(p.id)??99) * (posGroup(p.pos)==='G'?6:1);
+    // Pre-drop: players with evaluable data but position-adjusted PPTS/$M below the floor
+    // are considered replaceable from the draft pool and go straight to the drop list.
     const preDropIds = new Set(
-      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && (adjPPTSM(p) < effFloor || scaledAbp(p) > 16))
+      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSM(p) < effFloor)
             .map(p => p.id)
     );
 
@@ -2123,9 +2122,8 @@ function compareDrops2526(){
   // Run the simulation on the virtual copy
   for(const team of teams){
     const roster = vp.filter(p => p.sim2526===team);
-    const scaledAbp = p => (abpMap.get(p.id)??99) * (posGroup(p.pos)==='G'?6:1);
     const preDropIds = new Set(
-      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && (adjPPTSMv(p) < effFloor || scaledAbp(p) > 16)).map(p=>p.id)
+      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSMv(p) < effFloor).map(p=>p.id)
     );
     const evaluable = roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && !preDropIds.has(p.id));
     const m = evaluable.length;
