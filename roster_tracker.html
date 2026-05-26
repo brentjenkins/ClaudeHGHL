@@ -243,6 +243,8 @@ tr:hover td{background:#fafaf8}
   <span style="white-space:nowrap">F &times; <input id="dmMultF2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multF',+this.value)" title="Forward position multiplier"></span>
   <span style="white-space:nowrap">D &times; <input id="dmMultD2526" type="number" value="1.4" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multD',+this.value)" title="Defence position multiplier"></span>
   <span style="white-space:nowrap">G &times; <input id="dmMultG2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('multG',+this.value)" title="Goalie position multiplier"></span>
+  <span style="color:#c4b5fd;margin:0 4px">|</span>
+  <span style="white-space:nowrap">drop floor (adj PPTS/$M) &lt; <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight2526('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor — replaceable from the draft pool"></span>
 </div>
 
 <div class="stats-grid" id="statCards2526"></div>
@@ -1647,7 +1649,7 @@ const LS_DRAFT_2526 = 'hghl_draft_2526';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let draftState2526 = {picks: []};
 let draftMode2526 = false, draftModeTop2526 = 10;
-let draftWeights2526 = {multF:1.0, multD:1.4, multG:1.0, wtScarcity:10, wtPPTSM:1, wtYrs:2, wtAge:1};
+let draftWeights2526 = {multF:1.0, multD:1.4, multG:1.0, wtScarcity:10, wtPPTSM:1, wtYrs:2, wtAge:1, effFloor:8};
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let animDismissed = false;
 
@@ -2042,7 +2044,8 @@ function simulateDrops2526(){
 
   const abpMap2526 = computeABP2526(players);
   const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:1.0;
-  const posMult = {F:1.0, D:1.4, G:1.0};
+  const posMult = {F: draftWeights2526.multF, D: draftWeights2526.multD, G: draftWeights2526.multG};
+  const effFloor = draftWeights2526.effFloor ?? 8;
   const adjVal2526 = p => {
     const pp = ppts2526blend(p);
     const c2526 = getCap2526(p);
@@ -2052,10 +2055,23 @@ function simulateDrops2526(){
     const youth   = Math.max(0,35-(calcAge(p)??35))*RANK_DEFAULTS.wtAge;
     return adjPts + ptsPerM + yrs + youth;
   };
+  // Position-adjusted PPTS/$M — the efficiency metric used for the drop floor.
+  const adjPPTSM = p => {
+    const pp = ppts2526blend(p); const c = getCap2526(p);
+    return (pp > 0 && c > 0) ? pp * (posMult[posGroup(p.pos)] ?? 1.0) / c : 0;
+  };
 
   for(const team of teams){
     const roster    = players.filter(p=>p.sim2526===team);
-    const evaluable = roster.filter(p=>ppts2526blend(p)>0&&getCap2526(p)>0);
+
+    // Pre-drop: players with evaluable data but position-adjusted PPTS/$M below the floor
+    // are considered replaceable from the draft pool and go straight to the drop list.
+    const preDropIds = new Set(
+      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSM(p) < effFloor)
+            .map(p => p.id)
+    );
+
+    const evaluable = roster.filter(p=>ppts2526blend(p)>0&&getCap2526(p)>0&&!preDropIds.has(p.id));
     const m = evaluable.length;
 
     // Knapsack: find the highest-value subset of evaluable players within the cap ceiling.
@@ -2080,9 +2096,9 @@ function simulateDrops2526(){
       }
     }
 
-    // Initial drop list: everyone not selected by the knapsack (includes non-evaluable players).
-    // Drop list sorted highest adjVal first so we can rescue them if we hit MAX_DROPS.
-    let dropList = roster.filter(p=>!keptIds.has(p.id))
+    // Drop list: pre-dropped (below efficiency floor) + anyone the knapsack didn't select.
+    // Sorted highest adjVal first so we can rescue them if MAX_DROPS is hit.
+    let dropList = roster.filter(p=>preDropIds.has(p.id)||!keptIds.has(p.id))
                          .sort((a,b)=>adjVal2526(b)-adjVal2526(a));
     let keepList = roster.filter(p=>keptIds.has(p.id));
 
