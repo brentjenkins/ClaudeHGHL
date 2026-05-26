@@ -475,7 +475,7 @@ tr:hover td{background:#fafaf8}
         <div style="display:flex;gap:12px">
           <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Forward<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
           <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Defense<input type="number" id="s-multD" value="1.5" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
-          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Goalie<input type="number" id="s-multG" value="1.3" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Goalie<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
@@ -628,7 +628,7 @@ const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
-let draftWeights = { multF: 1.0, multD: 1.5, multG: 1.3, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 7 };
+let draftWeights = { multF: 1.0, multD: 1.5, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 7 };
 let minDrops = 5, maxDrops = 20;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
