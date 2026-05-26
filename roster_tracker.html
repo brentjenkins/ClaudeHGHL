@@ -193,6 +193,7 @@ tr:hover td{background:#fafaf8}
   <button class="view-tab active" onclick="setView('roster')">HGHL 26-27 Players</button>
   <button class="view-tab" onclick="setView('draft')">HGHL 26-27 Draft</button>
   <button class="view-tab" onclick="setView('summary')">HGHL 26-27 Team Summary</button>
+  <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
   <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
     <div class="proxy-dot pulse" id="proxyDot"></div>
     <span id="proxyStatus">Checking…</span>
@@ -221,31 +222,13 @@ tr:hover td{background:#fafaf8}
       <button class="btn" onclick="resetDraft2526()" style="color:#dc2626;border-color:#dc2626">Reset 25-26</button>
       <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank 25-26</button>
       <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
-      <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor2526" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M (ppts × posMult / cap) is below this floor"></span>
       <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
       <button class="btn" onclick="compareDrops2526()" style="color:#0369a1;border-color:#0369a1" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
-      <input type="number" id="draftModeTop2526Input" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop2526=+this.value;if(draftMode2526)render2526()" title="Number of top picks to show in Draft Mode 25-26">
       <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
     </div>
   </div>
 </div>
 
-<div id="draftFormulaBar2526" style="display:none;background:#f5f3ff;border:1px solid #c7d2fe;border-radius:8px;padding:7px 14px;margin:6px 0;font-size:12px;color:#4338ca;gap:10px;align-items:center;flex-wrap:wrap">
-  <span style="font-weight:700;white-space:nowrap">⚡ Score =</span>
-  <span style="white-space:nowrap">PPTS &times; pos</span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">scarcity(0–3) &times; <input id="dmWtScarcity2526" type="number" value="10" min="0" max="100" step="1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtScarcity',+this.value)" title="Weight for positional scarcity (ABP=0→3, ≤2→2, ≤5→1, else 0)"></span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">(PPTS/$M) &times; <input id="dmWtPPTSM2526" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtPPTSM',+this.value)" title="Weight for PPTS per $M cap"></span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">yrs &times; <input id="dmWtYrs2526" type="number" value="2" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtYrs',+this.value)" title="Weight for contract years remaining"></span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">youth &times; <input id="dmWtAge2526" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtAge',+this.value)" title="Weight for youth bonus (max 0, 35−age)"></span>
-  <span style="color:#c4b5fd;margin:0 4px">|</span>
-  <span style="white-space:nowrap">F &times; <input id="dmMultF2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multF',+this.value)" title="Forward position multiplier"></span>
-  <span style="white-space:nowrap">D &times; <input id="dmMultD2526" type="number" value="1.2" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multD',+this.value)" title="Defence position multiplier"></span>
-  <span style="white-space:nowrap">G &times; <input id="dmMultG2526" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multG',+this.value)" title="Goalie position multiplier"></span>
-</div>
 
 <div class="stats-grid" id="statCards2526"></div>
 
@@ -353,31 +336,13 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
       <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
-      <button class="btn" onclick="openRankModal()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
+      <button class="btn" onclick="rankPlayers()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
       <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
-      <span style="font-size:11px;color:#6366f1;white-space:nowrap">floor <input id="dmEffFloor" type="number" value="8" min="0" max="30" step="0.5" style="width:40px;height:28px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('effFloor',+this.value)" title="Pre-drop any player whose position-adjusted PPTS/$M is below this floor"></span>
-      <input type="number" id="draftModeTopInput" value="10" min="1" max="50" style="width:42px;height:32px;border:1px solid #ddd;border-radius:6px;padding:0 4px;font-size:12px;text-align:center" onchange="draftModeTop=+this.value;if(draftMode)render()" title="Number of top picks to show in Draft Mode">
       <button class="btn" id="draftModeBtn" onclick="toggleDraftMode()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
     </div>
   </div>
 </div>
 
-<div id="draftFormulaBar" style="display:none;background:#f5f3ff;border:1px solid #c7d2fe;border-radius:8px;padding:7px 14px;margin:6px 0;font-size:12px;color:#4338ca;gap:10px;align-items:center;flex-wrap:wrap">
-  <span style="font-weight:700;white-space:nowrap">⚡ Score =</span>
-  <span style="white-space:nowrap">PPTS &times; pos</span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">scarcity(0–3) &times; <input id="dmWtScarcity" type="number" value="10" min="0" max="100" step="1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtScarcity',+this.value)" title="Weight for positional scarcity (ABP=0→3, ≤2→2, ≤5→1, else 0)"></span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">(PPTS/$M) &times; <input id="dmWtPPTSM" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtPPTSM',+this.value)" title="Weight for PPTS per $M cap"></span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">yrs &times; <input id="dmWtYrs" type="number" value="2" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtYrs',+this.value)" title="Weight for contract years remaining"></span>
-  <span style="color:#a5b4fc">&plus;</span>
-  <span style="white-space:nowrap">youth &times; <input id="dmWtAge" type="number" value="1" min="0" max="20" step="0.5" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('wtAge',+this.value)" title="Weight for youth bonus (max 0, 35−age)"></span>
-  <span style="color:#c4b5fd;margin:0 4px">|</span>
-  <span style="white-space:nowrap">F &times; <input id="dmMultF" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multF',+this.value)" title="Forward position multiplier"></span>
-  <span style="white-space:nowrap">D &times; <input id="dmMultD" type="number" value="1.2" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multD',+this.value)" title="Defence position multiplier"></span>
-  <span style="white-space:nowrap">G &times; <input id="dmMultG" type="number" value="1.0" min="0" max="5" step="0.1" style="width:44px;height:24px;border:1px solid #c7d2fe;border-radius:4px;padding:0 4px;font-size:12px;text-align:center;color:#4338ca;background:#ede9fe" onchange="updateDraftWeight('multG',+this.value)" title="Goalie position multiplier"></span>
-</div>
 
 <div class="stats-grid" id="statCards"></div>
 
@@ -409,7 +374,6 @@ tr:hover td{background:#fafaf8}
     <option value="nhl">NHL API</option>
     <option value="manual">Manual</option>
   </select>
-  <button class="btn" onclick="openAbpModal()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px">ABP</button>
   <button class="btn" onclick="clearFilters()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
@@ -483,74 +447,7 @@ tr:hover td{background:#fafaf8}
 </div>
 </div>
 
-<!-- Rank Players config modal -->
-<div class="modal-bg" id="rankModal" style="display:none">
-<div class="modal" style="width:380px">
-  <h2>★ Rank Players</h2>
-  <div class="field">
-    <label>PPTS position multiplier</label>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <div>
-        <div style="font-size:11px;color:#aaa;margin-bottom:3px">Forward</div>
-        <input type="number" id="rankMultF" min="0" step="0.05" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div>
-        <div style="font-size:11px;color:#aaa;margin-bottom:3px">Defense</div>
-        <input type="number" id="rankMultD" min="0" step="0.05" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div>
-        <div style="font-size:11px;color:#aaa;margin-bottom:3px">Goalie</div>
-        <input type="number" id="rankMultG" min="0" step="0.05" style="width:100%;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-    </div>
-  </div>
-  <div class="field">
-    <label>Scoring weights</label>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-        <span style="flex:1;color:#555">PPTS/$M ×</span>
-        <input type="number" id="rankWtPPTSM" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-        <span style="flex:1;color:#555">Yrs remaining ×</span>
-        <input type="number" id="rankWtYrs" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-        <span style="flex:1;color:#555">Youth bonus (35−age) ×</span>
-        <input type="number" id="rankWtAge" min="0" step="0.5" style="width:70px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-    </div>
-  </div>
-  <div class="modal-actions">
-    <button class="btn" onclick="closeRankModal()">Cancel</button>
-    <button class="btn" style="background:#6366f1;color:#fff;border-color:#6366f1" onclick="rankPlayers()">★ Rank</button>
-  </div>
-</div>
-</div>
-
 <!-- Assign-team modal -->
-<!-- ABP config modal -->
-<div class="modal-bg" id="abpModal" style="display:none">
-<div class="modal" style="width:320px">
-  <h2>ABP Settings</h2>
-  <div class="field">
-    <label>Min GP</label>
-    <input type="number" id="abpModalMinGP" min="1" max="82" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
-  </div>
-  <div class="field">
-    <label>Min pts</label>
-    <input type="number" id="abpModalMinPts" min="0" max="200" step="1" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
-  </div>
-  <div class="field">
-    <label>Cap wiggle ($M)</label>
-    <input type="number" id="abpModalWiggle" min="0" max="5" step="0.05" style="width:100%;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:14px">
-  </div>
-  <div class="modal-actions">
-    <button class="btn" onclick="closeAbpModal()">Cancel</button>
-    <button class="btn btn-primary" onclick="applyAbpModal()">Apply</button>
-  </div>
-</div>
-</div>
 
 <div class="modal-bg" id="assignModal" style="display:none">
 <div class="modal" style="width:320px">
@@ -563,6 +460,97 @@ tr:hover td{background:#fafaf8}
     <button class="btn" onclick="closeAssignModal()">Cancel</button>
     <button class="btn btn-primary" onclick="confirmAssign()">Add</button>
   </div>
+</div>
+</div>
+
+<!-- Settings view -->
+<div id="view-settings" style="display:none;overflow-y:auto;min-height:0;padding:.5rem 0">
+<div style="max-width:600px;display:flex;flex-direction:column;gap:1.75rem">
+
+  <div>
+    <div class="section-label">Rank</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Position multiplier</span>
+        <div style="display:flex;gap:12px">
+          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Forward<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Defense<input type="number" id="s-multD" value="1.2" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Goalie<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">PPTS/$M weight ×</span>
+        <input type="number" id="s-wtPPTSM" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtPPTSM',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Contract yrs remaining ×</span>
+        <input type="number" id="s-wtYrs" value="2" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtYrs',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Youth bonus (35−age) ×</span>
+        <input type="number" id="s-wtAge" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtAge',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Scarcity (ABP tiers) ×</span>
+        <input type="number" id="s-wtScarcity" value="10" min="0" max="100" step="1" onchange="updateDraftWeight('wtScarcity',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Drop</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Efficiency floor (adj PPTS/$M)</span>
+        <input type="number" id="s-effFloor" value="7" min="0" max="30" step="0.5" onchange="updateDraftWeight('effFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
+        <input type="number" id="s-minDrops" value="5" min="1" max="20" step="1" onchange="updateSetting('minDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
+        <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Cap ceiling 25-26 ($M)</span>
+        <input type="number" id="s-capLimit2526" value="95.5" min="50" max="200" step="0.5" onchange="updateSetting('capLimit2526',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Cap ceiling 26-27 ($M)</span>
+        <input type="number" id="s-capLimit" value="104" min="50" max="200" step="0.5" onchange="updateSetting('capLimit',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Draft</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Draft mode top picks</span>
+        <input type="number" id="s-draftTop" value="10" min="1" max="50" step="1" onchange="updateSetting('draftTop',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">ABP</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min GP</span>
+        <input type="number" id="s-abpMinGP" value="5" min="1" max="82" step="1" onchange="updateSetting('abpMinGP',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min pts</span>
+        <input type="number" id="s-abpMinPts" value="20" min="0" max="200" step="1" onchange="updateSetting('abpMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Cap wiggle ($M)</span>
+        <input type="number" id="s-abpWiggle" value="0.1" min="0" max="5" step="0.05" onchange="updateSetting('abpWiggle',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 
@@ -646,7 +634,8 @@ const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 10;
-let draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 8 };
+let draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 7 };
+let minDrops = 5, maxDrops = 20;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -693,72 +682,33 @@ function applyBlendedPts(){
   if(changed) lsSet(LS_PLAYERS, players);
 }
 
-const RANK_DEFAULTS = { multF: 1.0, multD: 1.4, multG: 1.0, wtPPTSM: 1, wtYrs: 2, wtAge: 1 };
-
-function openRankModal(){
-  document.getElementById('rankMultF').value   = RANK_DEFAULTS.multF;
-  document.getElementById('rankMultD').value   = RANK_DEFAULTS.multD;
-  document.getElementById('rankMultG').value   = RANK_DEFAULTS.multG;
-  document.getElementById('rankWtPPTSM').value = RANK_DEFAULTS.wtPPTSM;
-  document.getElementById('rankWtYrs').value   = RANK_DEFAULTS.wtYrs;
-  document.getElementById('rankWtAge').value   = RANK_DEFAULTS.wtAge;
-  document.getElementById('rankModal').style.display = 'flex';
-}
-
-function closeRankModal(){ document.getElementById('rankModal').style.display = 'none'; }
-
-function openAbpModal(){
-  document.getElementById('abpModalMinGP').value  = abpMinGP;
-  document.getElementById('abpModalMinPts').value = abpMinPts;
-  document.getElementById('abpModalWiggle').value = abpWiggle;
-  document.getElementById('abpModal').style.display = 'flex';
-}
-function closeAbpModal(){ document.getElementById('abpModal').style.display = 'none'; }
-function applyAbpModal(){
-  abpMinGP  = +document.getElementById('abpModalMinGP').value  || 1;
-  abpMinPts = +document.getElementById('abpModalMinPts').value || 0;
-  abpWiggle = +document.getElementById('abpModalWiggle').value || 0;
-  closeAbpModal();
-  render();
-}
 
 function rankPlayers(){
-  const multF   = parseFloat(document.getElementById('rankMultF').value)   ?? RANK_DEFAULTS.multF;
-  const multD   = parseFloat(document.getElementById('rankMultD').value)   ?? RANK_DEFAULTS.multD;
-  const multG   = parseFloat(document.getElementById('rankMultG').value)   ?? RANK_DEFAULTS.multG;
-  const wtPPTSM = parseFloat(document.getElementById('rankWtPPTSM').value) ?? RANK_DEFAULTS.wtPPTSM;
-  const wtYrs   = parseFloat(document.getElementById('rankWtYrs').value)   ?? RANK_DEFAULTS.wtYrs;
-  const wtAge   = parseFloat(document.getElementById('rankWtAge').value)   ?? RANK_DEFAULTS.wtAge;
-
-  const multByGroup = { F: multF, D: multD, G: multG };
-  const yrsLeft  = p => (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0);
-  const youthBonus = p => Math.max(0, 35 - (calcAge(p) ?? 35));
+  const W = draftWeights;
+  const multByGroup = { F: W.multF, D: W.multD, G: W.multG };
 
   for(const p of players) delete p.rank;
-
   const eligible = players.filter(p => p.cap > 0 && p.pts > 0);
 
   eligible
     .map(p => {
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
-      const scoreB = p.pts > 0 ? (p.pts / p.cap) * wtPPTSM : 0;
-      const scoreC = yrsLeft(p) * wtYrs;
-      const scoreD = youthBonus(p) * wtAge;
+      const scoreB = (p.pts / p.cap) * W.wtPPTSM;
+      const scoreC = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtYrs;
+      const scoreD = Math.max(0, 35 - (calcAge(p) ?? 35)) * W.wtAge;
       return { p, score: scoreA + scoreB + scoreC + scoreD };
     })
     .sort((a, b) => b.score - a.score)
     .forEach(({ p }, i) => { p.rank = i + 1; });
 
   lsSet(LS_PLAYERS, players);
-  closeRankModal();
   render();
   toast(`Ranked ${eligible.length} players.`);
 }
 
 function simulateDrops(){
-  const MIN_DROPS = 5, MAX_DROPS = 20;
   const SCALE    = 10;
-  const CAP_CEIL = Math.round((CAP_LIMIT - MIN_DROPS) * SCALE);
+  const CAP_CEIL = Math.round((CAP_LIMIT - minDrops) * SCALE);
   const teams    = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
   let dropped    = 0;
 
@@ -768,9 +718,9 @@ function simulateDrops(){
   const effFloor = draftWeights.effFloor ?? 8;
   const adjVal  = p => {
     const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult(abpMap.get(p.id) ?? 99);
-    const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * RANK_DEFAULTS.wtPPTSM : 0;
-    const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * RANK_DEFAULTS.wtYrs;
-    const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * RANK_DEFAULTS.wtAge;
+    const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
+    const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
+    const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
     return adjPts + ptsPerM + yrs + youth;
   };
   const adjPPTSM = p => (p.pts > 0 && p.cap > 0) ? p.pts * (posMult[posGroup(p.pos)] ?? 1.0) / p.cap : 0;
@@ -809,10 +759,10 @@ function simulateDrops(){
                          .sort((a,b) => adjVal(b) - adjVal(a));
     let keepList = roster.filter(p => keptIds.has(p.id));
 
-    while(dropList.length > MAX_DROPS){ keepList.push(dropList.shift()); }
-    if(dropList.length < MIN_DROPS){
+    while(dropList.length > maxDrops){ keepList.push(dropList.shift()); }
+    if(dropList.length < minDrops){
       keepList.sort((a,b) => adjVal(a) - adjVal(b));
-      while(dropList.length < MIN_DROPS && keepList.length > 0) dropList.push(keepList.shift());
+      while(dropList.length < minDrops && keepList.length > 0) dropList.push(keepList.shift());
     }
 
     dropList.forEach(p => { p.fantasyTeam=''; dropped++; });
@@ -1362,21 +1312,19 @@ function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDi
 
 function computeDrops(allPlayers){
   // 0/1 knapsack: for each fantasy team, find the subset of players that
-  // maximises total PPTS while keeping total cap ≤ (CAP_LIMIT - MIN_DROPS×$1M)
-  // so the team has room to sign MIN_DROPS replacement players at ~$1M each.
+  // maximises total PPTS while keeping total cap ≤ (CAP_LIMIT - minDrops×$1M)
   // Players without pts/cap data are excluded from the optimisation and not flagged.
-  const MIN_DROPS  = 7;
-  const SCALE      = 10;                                          // $0.1 M units → integers
-  const CAP_UNITS  = Math.round((CAP_LIMIT - MIN_DROPS) * SCALE); // e.g. 970 for $97M
+  const SCALE      = 10;
+  const CAP_UNITS  = Math.round((CAP_LIMIT - minDrops) * SCALE);
 
   const abpMap      = computeABP(allPlayers);
   const scarcityMult = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
-  const posMult     = { F: 1.0, D: RANK_DEFAULTS.multD, G: 1.0 };
+  const posMult     = { F: 1.0, D: draftWeights.multD, G: 1.0 };
   const adjVal      = p => {
     const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult(abpMap.get(p.id) ?? 99);
-    const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * RANK_DEFAULTS.wtPPTSM : 0;
-    const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * RANK_DEFAULTS.wtYrs;
-    const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * RANK_DEFAULTS.wtAge;
+    const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
+    const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
+    const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
     return adjPts + ptsPerM + yrs + youth;
   };
 
@@ -1389,7 +1337,7 @@ function computeDrops(allPlayers){
     const m          = evaluable.length;
     if(m === 0) continue;
 
-    const maxKeep = Math.max(roster.length - MIN_DROPS, 0);
+    const maxKeep = Math.max(roster.length - minDrops, 0);
     const W = evaluable.map(p => Math.round(p.cap * SCALE));
     const V = evaluable.map(p => adjVal(p));
 
@@ -1548,8 +1496,8 @@ function render(){
   updateStats();
 }
 
-const CAP_LIMIT = 104;
-const CAP_LIMIT_2526 = 95.5;
+let CAP_LIMIT = 104;
+let CAP_LIMIT_2526 = 95.5;
 const NHL_SEASON_YEAR = 2026;
 
 // 2025-26 final standings — determines draft order (rank 9 picks first)
@@ -1892,7 +1840,7 @@ function simulateBestPick(){
   };
 
   const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
-  const posMult = { F:1.0, D:1.4, G:1.0 };
+  const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
   const abpMap  = computeABP(players);
   const scarcity = abp => abp === 0 ? 1.3 : abp <= 2 ? 1.15 : abp <= 5 ? 1.05 : 1.0;
 
@@ -1910,9 +1858,9 @@ function simulateBestPick(){
   available.sort((a, b) => {
     const score = p => {
       const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcity(abpMap.get(p.id) ?? 99);
-      const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * RANK_DEFAULTS.wtPPTSM : 0;
-      const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * RANK_DEFAULTS.wtYrs;
-      const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * RANK_DEFAULTS.wtAge;
+      const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
+      const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
+      const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
       return adjPts + ptsPerM + yrs + youth;
     };
     return score(b) - score(a);
@@ -1924,14 +1872,9 @@ function simulateBestPick(){
 
 function toggleDraftMode(){
   draftMode = !draftMode;
-  draftModeTop = +(document.getElementById('draftModeTopInput').value) || 10;
   const btn = document.getElementById('draftModeBtn');
-  const bar = document.getElementById('draftFormulaBar');
   if(draftMode){
     btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1';
-    draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, effFloor: 8 };
-    syncDraftWeightInputs();
-    bar.style.display = 'flex';
     document.getElementById('search').value='';
     document.getElementById('filterPos').value='';
     document.getElementById('filterRoster').value='';
@@ -1940,28 +1883,36 @@ function toggleDraftMode(){
     document.getElementById('filterSource').value='';
   } else {
     btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe';
-    bar.style.display = 'none';
   }
   render();
 }
 
-function syncDraftWeightInputs(){
+function syncSettings(){
   const W = draftWeights;
   const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; };
-  set('dmMultF',W.multF);       set('dmMultF2526',W.multF);
-  set('dmMultD',W.multD);       set('dmMultD2526',W.multD);
-  set('dmMultG',W.multG);       set('dmMultG2526',W.multG);
-  set('dmWtScarcity',W.wtScarcity); set('dmWtScarcity2526',W.wtScarcity);
-  set('dmWtPPTSM',W.wtPPTSM);  set('dmWtPPTSM2526',W.wtPPTSM);
-  set('dmWtYrs',W.wtYrs);       set('dmWtYrs2526',W.wtYrs);
-  set('dmWtAge',W.wtAge);       set('dmWtAge2526',W.wtAge);
-  set('dmEffFloor',W.effFloor); set('dmEffFloor2526',W.effFloor);
+  set('s-multF', W.multF);    set('s-multD', W.multD);    set('s-multG', W.multG);
+  set('s-wtPPTSM', W.wtPPTSM); set('s-wtYrs', W.wtYrs);  set('s-wtAge', W.wtAge);
+  set('s-wtScarcity', W.wtScarcity); set('s-effFloor', W.effFloor);
+  set('s-minDrops', minDrops); set('s-maxDrops', maxDrops);
+  set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
+  set('s-draftTop', draftModeTop);
+  set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
 }
 function updateDraftWeight(key, val){
   draftWeights[key] = val;
-  syncDraftWeightInputs();
+  syncSettings();
   if(draftMode) render();
   if(draftMode2526) render2526();
+}
+function updateSetting(key, val){
+  if(key === 'minDrops')     minDrops = val;
+  else if(key === 'maxDrops')     maxDrops = val;
+  else if(key === 'capLimit')     CAP_LIMIT = val;
+  else if(key === 'capLimit2526') CAP_LIMIT_2526 = val;
+  else if(key === 'draftTop')     { draftModeTop = val; draftModeTop2526 = val; if(draftMode) render(); if(draftMode2526) render2526(); }
+  else if(key === 'abpMinGP')     abpMinGP = val;
+  else if(key === 'abpMinPts')    abpMinPts = val;
+  else if(key === 'abpWiggle')    abpWiggle = val;
 }
 
 function quickDraft(id){
@@ -2002,7 +1953,7 @@ function toggleDraftMode2526(){
   const btn = document.getElementById('draftMode2526Btn');
   btn.style.background = draftMode2526 ? '#6366f1' : '#e0e7ff';
   btn.style.color = draftMode2526 ? '#fff' : '#6366f1';
-  document.getElementById('draftFormulaBar2526').style.display = draftMode2526 ? 'flex' : 'none';
+  btn.style.borderColor = draftMode2526 ? '#6366f1' : '#c7d2fe';
   document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
   render2526();
 }
@@ -2056,11 +2007,8 @@ function loadActualRoster2526(){
 }
 
 function simulateDrops2526(){
-  const MIN_DROPS = 5;
-  const MAX_DROPS = 20;
   const SCALE     = 10;
-  // Cap ceiling leaves room for at least MIN_DROPS picks; knapsack decides how many to keep.
-  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - MIN_DROPS) * SCALE);
+  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - minDrops) * SCALE);
   const teams     = [...new Set(players.map(p=>p.sim2526).filter(Boolean))];
   if(!teams.length){ toast('Reset 25-26 first to seed rosters.'); return; }
   let dropped = 0;
@@ -2073,9 +2021,9 @@ function simulateDrops2526(){
     const pp = ppts2526blend(p);
     const c2526 = getCap2526(p);
     const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult(abpMap2526.get(p.id)??99);
-    const ptsPerM = (pp>0&&c2526>0) ? (pp/c2526)*RANK_DEFAULTS.wtPPTSM : 0;
-    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*RANK_DEFAULTS.wtYrs;
-    const youth   = Math.max(0,35-(calcAge(p)??35))*RANK_DEFAULTS.wtAge;
+    const ptsPerM = (pp>0&&c2526>0) ? (pp/c2526)*draftWeights.wtPPTSM : 0;
+    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
+    const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
     return adjPts + ptsPerM + yrs + youth;
   };
   // Position-adjusted PPTS/$M — the efficiency metric used for the drop floor.
@@ -2126,14 +2074,14 @@ function simulateDrops2526(){
     let keepList = roster.filter(p=>keptIds.has(p.id));
 
     // Enforce MAX_DROPS: rescue the highest-value players from the drop list.
-    while(dropList.length > MAX_DROPS){
+    while(dropList.length > maxDrops){
       keepList.push(dropList.shift());
     }
 
     // Enforce MIN_DROPS: if knapsack kept too many, force-drop lowest-value keepers.
-    if(dropList.length < MIN_DROPS){
+    if(dropList.length < minDrops){
       keepList.sort((a,b)=>adjVal2526(a)-adjVal2526(b));
-      while(dropList.length < MIN_DROPS && keepList.length > 0){
+      while(dropList.length < minDrops && keepList.length > 0){
         dropList.push(keepList.shift());
       }
     }
@@ -2147,8 +2095,8 @@ function simulateDrops2526(){
 }
 
 function compareDrops2526(){
-  const MIN_DROPS = 5, MAX_DROPS = 20, SCALE = 10;
-  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - MIN_DROPS) * SCALE);
+  const SCALE = 10;
+  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - minDrops) * SCALE);
 
   // Virtual copy: seed sim2526 from fantasyTeam2425 (pre-season rosters)
   const vp = players.map(p => ({...p, sim2526: p.fantasyTeam2425 || null}));
@@ -2164,9 +2112,9 @@ function compareDrops2526(){
   const adjVal2526v = p => {
     const pp = ppts2526blend(p), c = getCap2526(p);
     const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult(abpMap.get(p.id)??99);
-    const ptsPerM = (pp>0&&c>0) ? (pp/c)*RANK_DEFAULTS.wtPPTSM : 0;
-    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*RANK_DEFAULTS.wtYrs;
-    const youth   = Math.max(0,35-(calcAge(p)??35))*RANK_DEFAULTS.wtAge;
+    const ptsPerM = (pp>0&&c>0) ? (pp/c)*draftWeights.wtPPTSM : 0;
+    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
+    const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
     return adjPts + ptsPerM + yrs + youth;
   };
   const adjPPTSMv = p => {
@@ -2204,10 +2152,10 @@ function compareDrops2526(){
     }
     let dropList = roster.filter(p=>preDropIds.has(p.id)||!keptIds.has(p.id)).sort((a,b)=>adjVal2526v(b)-adjVal2526v(a));
     let keepList = roster.filter(p=>keptIds.has(p.id));
-    while(dropList.length > MAX_DROPS){ keepList.push(dropList.shift()); }
-    if(dropList.length < MIN_DROPS){
+    while(dropList.length > maxDrops){ keepList.push(dropList.shift()); }
+    if(dropList.length < minDrops){
       keepList.sort((a,b)=>adjVal2526v(a)-adjVal2526v(b));
-      while(dropList.length < MIN_DROPS && keepList.length > 0) dropList.push(keepList.shift());
+      while(dropList.length < minDrops && keepList.length > 0) dropList.push(keepList.shift());
     }
     dropList.forEach(p=>{ p.sim2526=null; });
   }
@@ -2283,8 +2231,7 @@ function closeCompareDropsModal(){
 }
 
 function rankPlayers2526(){
-  const RANK = RANK_DEFAULTS;
-  const posMult = {F:RANK.multF, D:RANK.multD, G:RANK.multG};
+  const posMult = {F:draftWeights.multF, D:draftWeights.multD, G:draftWeights.multG};
   players.forEach(p=>p.rank2526=null);
   const eligible = players.filter(p=>getCap2526(p)>0 && ppts2526blend(p)>0);
   eligible.forEach(p=>{
@@ -2292,7 +2239,7 @@ function rankPlayers2526(){
     const pp = ppts2526blend(p);
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
     const youth = Math.max(0, 35-(calcAge(p)??35));
-    p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*RANK.wtPPTSM + yrs*RANK.wtYrs + youth*RANK.wtAge;
+    p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + yrs*draftWeights.wtYrs + youth*draftWeights.wtAge;
   });
   eligible.sort((a,b)=>b._score2526-a._score2526).forEach((p,i)=>p.rank2526=i+1);
   lsSet(LS_PLAYERS, players);
@@ -2484,10 +2431,12 @@ function setView(v){
   document.getElementById('view-roster').style.display  = v==='roster'  ? '' : 'none';
   document.getElementById('view-draft').style.display   = v==='draft'   ? '' : 'none';
   document.getElementById('view-summary').style.display = v==='summary' ? '' : 'none';
+  document.getElementById('view-settings').style.display = v==='settings' ? '' : 'none';
   if(v==='roster'||v==='roster2526'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
-  const views = ['roster2526','roster','draft','summary'];
+  if(v==='settings') syncSettings();
+  const views = ['roster2526','roster','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
   });
@@ -2857,8 +2806,6 @@ function toast(msg){
   setTimeout(()=>el.classList.remove('show'),3500);
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
-document.getElementById('rankModal').addEventListener('click',e=>{if(e.target===document.getElementById('rankModal'))closeRankModal();});
-document.getElementById('abpModal').addEventListener('click',e=>{if(e.target===document.getElementById('abpModal'))closeAbpModal();});
 load();
 
 // ── Draft Summary view ────────────────────────────────────────────
