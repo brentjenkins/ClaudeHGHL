@@ -33,6 +33,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .draft-row-cap{font-size:18px;color:#555;white-space:nowrap}
 .draft-row-player{font-size:18px;color:#1a1a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .draft-entry{margin-top:.5rem;max-width:1100px;padding-bottom:56px}
+.srow{display:flex;align-items:center;gap:8px;padding:4px 10px;transition:background .5s}
+.srow.hi{background:#fef3c7}
 .draft-results-row{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0ee;font-size:13px;display:flex;justify-content:space-between;align-items:center}
 .draft-results-row:hover{background:#f7f7f5}
 .draft-results-row:last-child{border-bottom:none}
@@ -332,7 +334,10 @@ tr:hover td{background:#fafaf8}
     </span>
   </div>
   <div id="draftBoardFull" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem;max-width:1100px"></div>
-  <div class="draft-col" id="draftColumn"></div>
+  <div id="draftCompactWrap" style="display:flex;gap:20px;align-items:flex-start">
+    <div style="flex:1;min-width:0"><div class="draft-col" id="draftColumn"></div></div>
+    <div id="draftStandings" style="width:290px;flex-shrink:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;position:sticky;top:8px"></div>
+  </div>
   <div class="draft-entry">
     <div style="display:flex;gap:8px">
       <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
@@ -1857,6 +1862,7 @@ function stopTicker(){
 
 // ── Draft pick timer ──────────────────────────────────────────────
 let _draftTimerStart = null, _draftTimerRAF = null;
+let _standingsAnim = null, _standingsRAF = null;
 function _timerColor(s){ return s<120?'#16a34a':s<180?'#d97706':s<240?'#ea580c':'#dc2626'; }
 function _timerStr(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 function _draftTimerFrame(){
@@ -1881,6 +1887,63 @@ function stopDraftTimer(){
   _draftTimerStart=null;
   const el=document.getElementById('draftTimer'); if(el){ el.textContent=''; el.style.display='none'; }
   document.querySelectorAll('.draft-on-clock-timer').forEach(e=>{ e.textContent=''; });
+}
+
+// ── Draft standings panel ─────────────────────────────────────────
+function _standingsPts(){
+  const pts = {};
+  for(const t of DRAFT_TEAMS) pts[t] = 0;
+  for(const pick of draftState.picks) pts[pick.team] = (pts[pick.team]||0) + (pick.projPts||0);
+  return pts;
+}
+function _standingsRowHtml(t, rank, pts, hi){
+  const logo = teamLogos[t];
+  return `<div class="srow${hi?' hi':''}" data-team="${esc(t)}">
+    <span style="color:#9ca3af;font-size:14px;font-weight:700;width:22px;text-align:right;flex-shrink:0">#${rank}</span>
+    ${logo?`<img src="${esc(logo)}" style="width:33px;height:33px;border-radius:6px;object-fit:cover;flex-shrink:0" loading="lazy">`:'<div style="width:33px;height:33px;border-radius:6px;background:#e5e7eb;flex-shrink:0"></div>'}
+    <span style="font-size:19px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1a1a18">${esc(t)}</span>
+    <span class="spts" style="font-size:18px;color:#555;font-variant-numeric:tabular-nums;min-width:52px;text-align:right">${pts>0?Math.round(pts):'—'}</span>
+  </div>`;
+}
+function renderStandings(){
+  const el = document.getElementById('draftStandings');
+  if(!el) return;
+  if(_standingsRAF){ cancelAnimationFrame(_standingsRAF); _standingsRAF=null; }
+  const ptsByTeam = _standingsPts();
+  const anim = _standingsAnim;
+  const display = anim ? {...ptsByTeam, [anim.team]: anim.fromPts} : ptsByTeam;
+  const sorted = [...DRAFT_TEAMS].sort((a,b)=>display[b]-display[a]);
+  el.innerHTML =
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 10px 4px;border-bottom:1px solid #f0f0ee">League Standings</div>`+
+    sorted.map((t,i)=>_standingsRowHtml(t, i+1, display[t], anim&&t===anim.team)).join('');
+  if(!anim || anim.toPts<=anim.fromPts) return;
+  const animRow = Array.from(el.querySelectorAll('.srow')).find(r=>r.dataset.team===anim.team);
+  const ptsEl = animRow ? animRow.querySelector('.spts') : null;
+  if(!ptsEl) return;
+  const start = Date.now(), dur = 900, diff = anim.toPts - anim.fromPts;
+  function countUp(){
+    const p = Math.min((Date.now()-start)/dur, 1);
+    const ease = 1-Math.pow(1-p, 3);
+    ptsEl.textContent = Math.round(anim.fromPts + diff*ease);
+    if(p<1){ _standingsRAF=requestAnimationFrame(countUp); }
+    else { _standingsRAF=null; _standingsAnim=null; reorderStandings(el, ptsByTeam); }
+  }
+  _standingsRAF = requestAnimationFrame(countUp);
+}
+function reorderStandings(el, ptsByTeam){
+  const rows = el.querySelectorAll('.srow');
+  const tops = {};
+  rows.forEach(r=>{ tops[r.dataset.team]=r.getBoundingClientRect().top; });
+  const sorted = [...DRAFT_TEAMS].sort((a,b)=>ptsByTeam[b]-ptsByTeam[a]);
+  const header = el.querySelector('div:not(.srow)').outerHTML;
+  el.innerHTML = header + sorted.map((t,i)=>_standingsRowHtml(t,i+1,ptsByTeam[t],false)).join('');
+  el.querySelectorAll('.srow').forEach(r=>{
+    const delta = (tops[r.dataset.team]||0) - r.getBoundingClientRect().top;
+    if(Math.abs(delta)<1) return;
+    r.style.transition='none'; r.style.transform=`translateY(${delta}px)`;
+    r.getBoundingClientRect();
+    r.style.transition='transform .45s ease'; r.style.transform='';
+  });
 }
 
 // ── Whale canvas animation ────────────────────────────────────────
@@ -2054,6 +2117,8 @@ function resetDraft(){
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   animDismissed = false;
   const team = DRAFT_TEAMS[draftState.picks.length % 9];
+  const fromPts = draftState.picks.filter(p=>p.team===team).reduce((s,p)=>s+(p.projPts||0),0);
+  _standingsAnim = {team, fromPts, toPts: fromPts+(projPts||0)};
   draftState.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   saveDraft();
   document.getElementById('draftSearch').value = '';
@@ -2064,6 +2129,8 @@ function makeDraftPick(player, pos, nhlTeam, cap, projPts){
 
 function undoLastPick(){
   if(!draftState.picks.length) return;
+  if(_standingsRAF){ cancelAnimationFrame(_standingsRAF); _standingsRAF=null; }
+  _standingsAnim = null;
   draftState.picks.pop();
   saveDraft();
   resetDraftTimer();
@@ -3083,14 +3150,16 @@ function renderDraftView(){
 
   const boardFull = document.getElementById('draftBoardFull');
   const col = document.getElementById('draftColumn');
+  const wrap = document.getElementById('draftCompactWrap');
   if(draftViewMode === 'full'){
     boardFull.style.display = 'block';
     boardFull.innerHTML = buildDraftBoardHTML(draftState, DRAFT_TEAMS);
-    col.style.display = 'none';
+    wrap.style.display = 'none';
   } else {
     boardFull.style.display = 'none';
-    col.style.display = '';
+    wrap.style.display = 'flex';
     col.innerHTML = html;
+    renderStandings();
   }
 
   // Ticker: hidden before draft starts, proj pts standings once picks begin
