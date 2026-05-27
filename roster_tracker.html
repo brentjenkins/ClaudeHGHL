@@ -590,6 +590,10 @@ tr:hover td{background:#fafaf8}
       <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
         <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Drops</span>
       </div>
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="s-useActuals" onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
+        <label for="s-useActuals" style="font-size:12px;color:#d97706;font-weight:600;cursor:pointer">Use 25-26 actuals as 26-27 PPTS (temporary)</label>
+      </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
         <input type="number" id="s-minDrops" value="5" min="1" max="20" step="1" onchange="updateSetting('minDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -738,11 +742,13 @@ function dedup(){
   }
 }
 
+let useActualsPts = false;
+
 // Recompute p.pts from all available projection sources.
-// Priority: manual override > blend of external sources > 25-26 actuals fallback.
-// New sources (NHL.com, Daily Faceoff, etc.) are added to the sources array below.
+// Priority: manual override > (actuals override if useActualsPts) > blend of external sources > 25-26 actuals fallback.
 function reblendPts(p){
-  if(p.ptsManual) return;  // manual entry wins — don't touch p.pts
+  if(p.ptsManual) return;
+  if(useActualsPts && p.pts2526 > 0){ p.pts = p.pts2526; return; }
   const sources = [];
   if(p.ptsAthletic > 0) sources.push(p.ptsAthletic);
   if(p.ptsDFO      > 0) sources.push(p.ptsDFO);
@@ -752,6 +758,12 @@ function reblendPts(p){
   } else if(p.pts2526 > 0){
     p.pts = p.pts2526;
   }
+}
+
+function toggleUseActuals(val){
+  useActualsPts = val;
+  applyBlendedPts();
+  render();
 }
 
 function reblendPpp(p){
@@ -2313,6 +2325,7 @@ function syncSettings(){
   set('s-wtScarcity', W.wtScarcity);
   set('s-minDrops', minDrops); set('s-maxDrops', maxDrops); set('s-ptsTarget', ptsTarget);
   set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
+  const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
 }
