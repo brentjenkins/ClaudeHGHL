@@ -1604,7 +1604,7 @@ function render(){
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
         const _dsNormal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf;
-        return {id:p.id,name:p.name,pos:p.pos,pts:p.pts||0,_ds,_dsNormal};
+        return {id:p.id,name:p.name,pos:p.pos,pts:p.pts||0,cap:p.cap||0,_ds,_dsNormal};
       });
     const allScored=rows
       .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0&&(p.pts||0)>0)
@@ -2704,11 +2704,13 @@ function updateStats2526(){
   }
 
   const posBg2526={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2526={F:'#1e40af',D:'#166534',G:'#92400e'};
-  const top5Html2526=(fRem,dRem,gRem)=>{
+  const top5Html2526=(fRem,dRem,gRem,rem)=>{
     if(!draftMode2526||!lastAllScored2526) return '';
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
-    const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos)))
+    const spotsLeft=fRem+dRem+gRem;
+    const maxCap=rem-(spotsLeft-1)*0.775;
+    const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
       .sort((a,b)=>draftSubMode2526==='value'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
     if(!picks.length) return '';
     return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
@@ -2742,7 +2744,7 @@ function updateStats2526(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
-      ${top5Html2526(fRem,dRem,gRem)}
+      ${top5Html2526(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
@@ -2834,7 +2836,7 @@ function render2526(){
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds2526=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
         const _ds2526Normal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf;
-        return {id:p.id,name:p.name,pos:p.pos,pts:pp,_ds2526,_ds2526Normal};
+        return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:getCap2526(p)||0,_ds2526,_ds2526Normal};
       });
     const allScored2526=rows
       .filter(p=>!p.sim2526&&need[posGroup(p.pos)]>0&&ppts2526blend(p)>0)
@@ -3245,11 +3247,13 @@ function updateStats(){
   }
 
   const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
-  const top5Html=(fRem,dRem,gRem)=>{
+  const top5Html=(fRem,dRem,gRem,rem)=>{
     if(!draftMode||!lastAllScored) return '';
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
-    const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos)))
+    const spotsLeft=fRem+dRem+gRem;
+    const maxCap=rem-(spotsLeft-1)*0.775;
+    const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
       .sort((a,b)=>draftSubMode==='value'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
     if(!picks.length) return '';
     return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
@@ -3283,7 +3287,7 @@ function updateStats(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
-      ${top5Html(fRem,dRem,gRem)}
+      ${top5Html(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
