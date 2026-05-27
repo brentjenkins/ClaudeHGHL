@@ -3005,7 +3005,8 @@ function render2526(){
   const allNHLTeams=[...new Set(players.map(p=>p.team).filter(Boolean))].sort();
   const teamEl=document.getElementById('filterTeam2526');
   const prevT=teamEl.value;
-  teamEl.innerHTML='<option value="">All NHL teams</option>'+allNHLTeams.map(t=>`<option${t===prevT?' selected':''}>${esc(t)}</option>`).join('');
+  teamEl.innerHTML='<option value="">All NHL teams</option>'+allNHLTeams.map(t=>`<option>${esc(t)}</option>`).join('');
+  teamEl.value=prevT;
 
   const all2425=[...new Set(players.map(p=>p.fantasyTeam2425).filter(Boolean))].sort((a,b)=>{
     const ai=DRAFT_TEAMS_2526.indexOf(a),bi=DRAFT_TEAMS_2526.indexOf(b);
@@ -3013,7 +3014,8 @@ function render2526(){
   });
   const ft2425El=document.getElementById('filterFT2425');
   const prev2425=ft2425El.value;
-  ft2425El.innerHTML='<option value="">All 24-25 teams</option><option value="__any__">Any team</option>'+all2425.map(t=>`<option${t===prev2425?' selected':''}>${esc(t)}</option>`).join('');
+  ft2425El.innerHTML='<option value="">All 24-25 teams</option><option value="__any__">Any team</option>'+all2425.map(t=>`<option>${esc(t)}</option>`).join('');
+  ft2425El.value=prev2425;
 
   const all2526=[...new Set(players.map(p=>p.sim2526).filter(Boolean))].sort((a,b)=>{
     const ai=DRAFT_TEAMS_2526.indexOf(a),bi=DRAFT_TEAMS_2526.indexOf(b);
@@ -3021,7 +3023,8 @@ function render2526(){
   });
   const ft2526El=document.getElementById('filterFT2526');
   const prev2526=ft2526El.value;
-  ft2526El.innerHTML='<option value="">All 25-26 teams</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option${t===prev2526?' selected':''}>${esc(t)}</option>`).join('');
+  ft2526El.innerHTML='<option value="">All 25-26 teams</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option>${esc(t)}</option>`).join('');
+  ft2526El.value=prev2526;
 
   const draftModeLabel2526 = draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
   const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="22" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel2526}</td></tr>` : '';
