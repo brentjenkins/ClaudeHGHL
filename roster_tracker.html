@@ -1847,9 +1847,9 @@ let draftMode2526 = false, draftModeTop2526 = 50, draftSubMode2526 = 'value';
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let animDismissed = false;
 const LS_DRAFT_ANIMS = 'hghl_draft_anims';
-let draftAnimsEnabled = localStorage.getItem(LS_DRAFT_ANIMS) !== 'false';
+let draftAnimsEnabled = localStorage.getItem(LS_DRAFT_ANIMS) === 'true';
 const LS_TICKER_ENABLED = 'hghl_ticker_enabled';
-let tickerEnabled = localStorage.getItem(LS_TICKER_ENABLED) !== 'false';
+let tickerEnabled = localStorage.getItem(LS_TICKER_ENABLED) === 'true';
 
 // ── Ticker RAF loop ───────────────────────────────────────────────
 let _tickerRAF = null, _tickerX = 0, _tickerLastTs = null;
