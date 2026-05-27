@@ -1893,7 +1893,10 @@ function stopDraftTimer(){
 function _standingsPts(){
   const pts = {};
   for(const t of DRAFT_TEAMS) pts[t] = 0;
-  for(const pick of draftState.picks) pts[pick.team] = (pts[pick.team]||0) + (pick.projPts||0);
+  for(const p of players){
+    if(p.fantasyTeam && pts.hasOwnProperty(p.fantasyTeam))
+      pts[p.fantasyTeam] = (pts[p.fantasyTeam]||0) + (p.pts||0);
+  }
   return pts;
 }
 function _standingsRowHtml(t, rank, pts, hi){
@@ -2117,8 +2120,8 @@ function resetDraft(){
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   animDismissed = false;
   const team = DRAFT_TEAMS[draftState.picks.length % 9];
-  const fromPts = draftState.picks.filter(p=>p.team===team).reduce((s,p)=>s+(p.projPts||0),0);
-  _standingsAnim = {team, fromPts, toPts: fromPts+(projPts||0)};
+  const toPts = players.filter(p=>p.fantasyTeam===team).reduce((s,p)=>s+(p.pts||0),0);
+  _standingsAnim = {team, fromPts: toPts-(projPts||0), toPts};
   draftState.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   saveDraft();
   document.getElementById('draftSearch').value = '';
