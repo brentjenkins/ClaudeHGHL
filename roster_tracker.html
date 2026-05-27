@@ -573,8 +573,8 @@ tr:hover td{background:#fafaf8}
     <div class="section-label">Draft</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Efficiency floor (adj PPTS/$M)</span>
-        <input type="number" id="s-effFloor" value="7" min="0" max="30" step="0.5" onchange="updateDraftWeight('effFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
+        <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
@@ -710,10 +710,10 @@ const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, effFloor: 7 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
-let minDrops = 5, maxDrops = 20;
+let minDrops = 5, maxDrops = 20, ptsTarget = 1200;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -800,73 +800,86 @@ function rankPlayers(){
   toast(`Ranked ${eligible.length} players.`);
 }
 
-function simulateDrops(){
-  const SCALE    = 10;
-  const CAP_CEIL = Math.round((CAP_LIMIT - minDrops) * SCALE);
-  const teams    = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
-  let dropped    = 0;
+function fitQuadratic(data){
+  // Fit y = a*x^2 + b*x + c to {x,y} pairs via least squares (Gaussian elimination).
+  const n = data.length;
+  if(n < 3) return () => 0;
+  let s0=n, sx=0, sx2=0, sx3=0, sx4=0, sy=0, sxy=0, sx2y=0;
+  for(const {x,y} of data){
+    sx+=x; sx2+=x*x; sx3+=x*x*x; sx4+=x*x*x*x;
+    sy+=y; sxy+=x*y; sx2y+=x*x*y;
+  }
+  const A=[[sx4,sx3,sx2],[sx3,sx2,sx],[sx2,sx,s0]];
+  const B=[sx2y,sxy,sy];
+  for(let i=0;i<3;i++){
+    let mx=i;
+    for(let k=i+1;k<3;k++) if(Math.abs(A[k][i])>Math.abs(A[mx][i])) mx=k;
+    [A[i],A[mx]]=[A[mx],A[i]]; [B[i],B[mx]]=[B[mx],B[i]];
+    if(Math.abs(A[i][i])<1e-12) continue;
+    for(let k=i+1;k<3;k++){
+      const f=A[k][i]/A[i][i];
+      for(let j=i;j<3;j++) A[k][j]-=f*A[i][j];
+      B[k]-=f*B[i];
+    }
+  }
+  const co=[0,0,0];
+  for(let i=2;i>=0;i--){
+    if(Math.abs(A[i][i])<1e-12){co[i]=0;continue;}
+    co[i]=B[i];
+    for(let j=i+1;j<3;j++) co[i]-=A[i][j]*co[j];
+    co[i]/=A[i][i];
+  }
+  const [a,b,c]=co;
+  return x => a*x*x + b*x + c;
+}
 
-  const abpMap = computeABP(players);
-  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
-  const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
-  const effFloor = draftWeights.effFloor ?? 8;
-  const adjVal  = p => {
-    const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
-    const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
-    const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
-    const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
-    const age     = calcAge(p) ?? 99;
-    const prospect = (age <= 22 && (p.cap||0) <= 1.25) ? Math.max(0, 23 - age) * draftWeights.wtProspect : 0;
-    const srcN    = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
-    const conf    = Math.max(0, srcN - 1) * draftWeights.wtSourceConf;
-    return adjPts + ptsPerM + yrs + youth + prospect + conf;
-  };
-  const adjPPTSM = p => (p.pts > 0 && p.cap > 0) ? p.pts * (posMult[posGroup(p.pos)] ?? 1.0) / p.cap : 0;
+function simulateDrops(){
+  const teams = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
+  let dropped = 0;
+
+  // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
+  const rosteredPool = players.filter(p => p.fantasyTeam && p.pts >= 15 && p.cap > 0);
+  const curve = fitQuadratic(rosteredPool.map(p => ({x: p.cap, y: p.pts})));
+
+  // Average replacement pts from top-30 FAs (no fantasy team)
+  const faPool = players.filter(p => !p.fantasyTeam && p.pts > 0)
+                        .sort((a,b) => b.pts - a.pts).slice(0, 30);
+  const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
+
+  // Prospects (age≤22, cap≤$1.25M) protected — sorted last so they're only dropped if forced
+  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= 1.25;
+  // deficit > 0: player is below curve (inefficient); sort desc = most inefficient first
+  const deficit = p => (p.pts > 0 && p.cap > 0) ? curve(p.cap) - p.pts : Infinity;
 
   for(const team of teams){
-    const roster    = players.filter(p => p.fantasyTeam === team);
-    const preDropIds = new Set(
-      roster.filter(p => p.pts > 0 && p.cap > 0 && adjPPTSM(p) < effFloor
-                      && !((calcAge(p)??99) <= 22 && (p.cap||0) <= 1.25)).map(p => p.id)
-    );
-    roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()))
-          .forEach(p => preDropIds.add(p.id));
-    const evaluable = roster.filter(p => p.pts > 0 && p.cap > 0 && !preDropIds.has(p.id));
-    const m = evaluable.length;
+    const roster = players.filter(p => p.fantasyTeam === team);
 
-    // Knapsack: find best evaluable players to keep within CAP_CEIL
-    const keptIds = new Set();
-    if(m > 0){
-      const W = evaluable.map(p => Math.round(p.cap * SCALE));
-      const V = evaluable.map(p => adjVal(p));
-      const dp = Array.from({length:m+1}, ()=>new Float32Array(CAP_CEIL+1));
-      for(let i=0;i<m;i++){
-        const w=W[i],v=V[i];
-        for(let c=0;c<=CAP_CEIL;c++){
-          dp[i+1][c]=dp[i][c];
-          if(c>=w && dp[i][c-w]+v>=dp[i+1][c]) dp[i+1][c]=dp[i][c-w]+v;
-        }
-      }
-      let remC=CAP_CEIL;
-      for(let i=m-1;i>=0;i--){
-        const w=W[i],v=V[i];
-        if(remC>=w && Math.abs(dp[i+1][remC]-(dp[i][remC-w]+v))<0.01){
-          keptIds.add(evaluable[i].id); remC-=w;
-        }
-      }
+    // Mandatory ELC drops applied first
+    const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()));
+    const mandatoryIds = new Set(mandatory.map(p => p.id));
+
+    const remaining = roster.filter(p => !mandatoryIds.has(p.id));
+    const nonProspects = remaining.filter(p => !isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
+    const prospects    = remaining.filter(p =>  isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
+    const candidates   = [...nonProspects, ...prospects];
+
+    const dropList = [...mandatory];
+    let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
+    let keptCap = remaining.reduce((s,p) => s + (p.cap||0), 0);
+    let numDropped = dropList.length;
+
+    for(const p of candidates){
+      if(numDropped >= maxDrops) break;
+      // Stop only when both pts target and cap headroom conditions are satisfied
+      const capOk = keptCap <= CAP_LIMIT - numDropped * 0.9;
+      if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      dropList.push(p);
+      keptPts -= (p.pts || 0);
+      keptCap -= (p.cap || 0);
+      numDropped++;
     }
 
-    let dropList = roster.filter(p => preDropIds.has(p.id) || !keptIds.has(p.id))
-                         .sort((a,b) => adjVal(b) - adjVal(a));
-    let keepList = roster.filter(p => keptIds.has(p.id));
-
-    while(dropList.length > maxDrops){ keepList.push(dropList.shift()); }
-    if(dropList.length < minDrops){
-      keepList.sort((a,b) => adjVal(a) - adjVal(b));
-      while(dropList.length < minDrops && keepList.length > 0) dropList.push(keepList.shift());
-    }
-
-    dropList.forEach(p => { p.fantasyTeam=''; dropped++; });
+    dropList.forEach(p => { p.fantasyTeam = ''; dropped++; });
   }
 
   dropsSimulated = true;
@@ -1468,74 +1481,45 @@ function populateFantasyFilter() {
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
 
 function computeDrops(allPlayers){
-  // 0/1 knapsack: for each fantasy team, find the subset of players that
-  // maximises total PPTS while keeping total cap ≤ (CAP_LIMIT - minDrops×$1M)
-  // Players without pts/cap data are excluded from the optimisation and not flagged.
-  const SCALE      = 10;
-  const CAP_UNITS  = Math.round((CAP_LIMIT - minDrops) * SCALE);
+  // Quick indicator: uses same quadratic deficit + pts-target logic as simulateDrops().
+  const rosteredPool = allPlayers.filter(p => p.fantasyTeam && p.pts >= 15 && p.cap > 0);
+  const curve = fitQuadratic(rosteredPool.map(p => ({x: p.cap, y: p.pts})));
 
-  const abpMap      = computeABP(allPlayers);
-  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
-  const posMult     = { F: 1.0, D: draftWeights.multD, G: 1.0 };
-  const adjVal      = p => {
-    const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcityMult((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
-    const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
-    const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
-    const youth   = Math.max(0, 35 - (calcAge(p) ?? 35)) * draftWeights.wtAge;
-    const age     = calcAge(p) ?? 99;
-    const prospect = (age <= 22 && (p.cap||0) <= 1.25) ? Math.max(0, 23 - age) * draftWeights.wtProspect : 0;
-    const srcN    = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
-    const conf    = Math.max(0, srcN - 1) * draftWeights.wtSourceConf;
-    return adjPts + ptsPerM + yrs + youth + prospect + conf;
-  };
+  const faPool = allPlayers.filter(p => !p.fantasyTeam && p.pts > 0)
+                           .sort((a,b) => b.pts - a.pts).slice(0, 30);
+  const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
+
+  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= 1.25;
+  const deficit = p => (p.pts > 0 && p.cap > 0) ? curve(p.cap) - p.pts : Infinity;
 
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
 
   for(const ft of ftNames){
-    const roster     = allPlayers.filter(p => p.fantasyTeam === ft);
-    const evaluable  = roster.filter(p => p.pts > 0 && p.cap > 0);
-    const m          = evaluable.length;
-    if(m === 0) continue;
+    const roster = allPlayers.filter(p => p.fantasyTeam === ft);
 
-    const maxKeep = Math.max(roster.length - minDrops, 0);
-    const W = evaluable.map(p => Math.round(p.cap * SCALE));
-    const V = evaluable.map(p => adjVal(p));
+    const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()));
+    const mandatoryIds = new Set(mandatory.map(p => p.id));
 
-    // Build 2D DP table: dp[i+1][c] = max pts using items 0..i with cap ≤ c.
-    // Prefer-include on ties so reconstruction is unambiguous.
-    const dp = Array.from({length: m+1}, () => new Float32Array(CAP_UNITS+1));
-    for(let i=0; i<m; i++){
-      const w=W[i], v=V[i];
-      for(let c=0; c<=CAP_UNITS; c++){
-        dp[i+1][c] = dp[i][c];
-        if(c >= w && dp[i][c-w]+v >= dp[i+1][c])
-          dp[i+1][c] = dp[i][c-w]+v;
-      }
+    const remaining = roster.filter(p => !mandatoryIds.has(p.id));
+    const nonProspects = remaining.filter(p => !isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
+    const prospects    = remaining.filter(p =>  isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
+    const candidates   = [...nonProspects, ...prospects];
+
+    mandatory.forEach(p => dropIds.add(p.id));
+    let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
+    let keptCap = remaining.reduce((s,p) => s + (p.cap||0), 0);
+    let numDropped = mandatory.length;
+
+    for(const p of candidates){
+      if(numDropped >= maxDrops) break;
+      const capOk = keptCap <= CAP_LIMIT - numDropped * 0.9;
+      if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      dropIds.add(p.id);
+      keptPts -= (p.pts || 0);
+      keptCap -= (p.cap || 0);
+      numDropped++;
     }
-
-    // Reconstruct which items are in the optimal solution
-    const keptSet = new Set();
-    let remC = CAP_UNITS;
-    for(let i=m-1; i>=0; i--){
-      const w=W[i], v=V[i];
-      if(remC >= w && Math.abs(dp[i+1][remC] - (dp[i][remC-w]+v)) < 0.01){
-        keptSet.add(evaluable[i].id);
-        remC -= w;
-      }
-    }
-
-    // Enforce min-drops: if knapsack kept too many, evict the lowest-adjVal ones
-    if(keptSet.size > maxKeep){
-      evaluable
-        .filter(p => keptSet.has(p.id))
-        .sort((a,b) => adjVal(a)-adjVal(b))
-        .slice(0, keptSet.size-maxKeep)
-        .forEach(p => keptSet.delete(p.id));
-    }
-
-    // Flag evaluable players not selected as keep
-    evaluable.forEach(p => { if(!keptSet.has(p.id)) dropIds.add(p.id); });
   }
   return dropIds;
 }
@@ -2326,8 +2310,8 @@ function syncSettings(){
   set('s-wtProspect', W.wtProspect);
   set('s-wtSourceConf', W.wtSourceConf);
   set('s-wtPressure', W.wtPressure);
-  set('s-wtScarcity', W.wtScarcity); set('s-effFloor', W.effFloor);
-  set('s-minDrops', minDrops); set('s-maxDrops', maxDrops);
+  set('s-wtScarcity', W.wtScarcity);
+  set('s-minDrops', minDrops); set('s-maxDrops', maxDrops); set('s-ptsTarget', ptsTarget);
   set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
   set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
@@ -2344,6 +2328,7 @@ function updateDraftWeight(key, val){
 function updateSetting(key, val){
   if(key === 'minDrops')     minDrops = val;
   else if(key === 'maxDrops')     maxDrops = val;
+  else if(key === 'ptsTarget')    ptsTarget = val;
   else if(key === 'capLimit')     CAP_LIMIT = val;
   else if(key === 'capLimit2526') CAP_LIMIT_2526 = val;
   else if(key === 'draftTop')     { draftModeTop = val; draftModeTop2526 = val; if(draftMode) render(); if(draftMode2526) render2526(); }
@@ -2456,93 +2441,54 @@ function loadActualRoster2526(){
 }
 
 function simulateDrops2526(){
-  const SCALE     = 10;
-  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - minDrops) * SCALE);
-  const teams     = [...new Set(players.map(p=>p.sim2526).filter(Boolean))];
+  const teams = [...new Set(players.map(p=>p.sim2526).filter(Boolean))];
   if(!teams.length){ toast('Reset 25-26 first to seed rosters.'); return; }
   let dropped = 0;
 
-  const abpMap2526 = computeABP2526(players);
-  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
-  const posMult = {F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG};
-  const effFloor = draftWeights.effFloor ?? 8;
-  const adjVal2526 = p => {
-    const pp = ppts2526blend(p);
-    const c2526 = getCap2526(p);
-    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult((abpMap2526.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
-    const ptsPerM = (pp>0&&c2526>0) ? (pp/c2526)*draftWeights.wtPPTSM : 0;
-    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
-    const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
-    const age2526 = calcAge(p) ?? 99;
-    const prospect2526 = (age2526 <= 23 && c2526 <= 1.25) ? Math.max(0, 24 - age2526) * draftWeights.wtProspect : 0;
-    const srcN2526 = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
-    const conf2526 = Math.max(0, srcN2526 - 1) * draftWeights.wtSourceConf;
-    return adjPts + ptsPerM + yrs + youth + prospect2526 + conf2526;
-  };
-  // Position-adjusted PPTS/$M — the efficiency metric used for the drop floor.
-  const adjPPTSM = p => {
-    const pp = ppts2526blend(p); const c = getCap2526(p);
-    return (pp > 0 && c > 0) ? pp * (posMult[posGroup(p.pos)] ?? 1.0) / c : 0;
+  // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
+  const rosteredPool = players.filter(p => p.sim2526 && ppts2526blend(p) >= 15 && getCap2526(p) > 0);
+  const curve = fitQuadratic(rosteredPool.map(p => ({x: getCap2526(p), y: ppts2526blend(p)})));
+
+  // Average replacement pts from top-30 FAs (no sim2526 team)
+  const faPool = players.filter(p => !p.sim2526 && ppts2526blend(p) > 0)
+                        .sort((a,b) => ppts2526blend(b) - ppts2526blend(a)).slice(0, 30);
+  const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+ppts2526blend(p), 0) / faPool.length : 40;
+
+  // Prospects (age≤23, cap≤$1.25M) protected — sorted last so they're only dropped if forced
+  const isProspect2526 = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= 1.25;
+  const deficit2526 = p => {
+    const pp = ppts2526blend(p), c = getCap2526(p);
+    return (pp > 0 && c > 0) ? curve(c) - pp : Infinity;
   };
 
   for(const team of teams){
-    const roster    = players.filter(p=>p.sim2526===team);
+    const roster = players.filter(p => p.sim2526 === team);
 
-    // Pre-drop: players below efficiency floor, plus mandatory ELC rule drops.
-    // Prospects (age≤23, cap≤$1.25M) are exempt from the floor pre-drop.
-    const preDropIds = new Set(
-      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSM(p) < effFloor
-                      && !((calcAge(p)??99) <= 23 && getCap2526(p) <= 1.25))
-            .map(p => p.id)
-    );
-    roster.filter(p => ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase()))
-          .forEach(p => preDropIds.add(p.id));
+    // Mandatory ELC drops applied first
+    const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase()));
+    const mandatoryIds = new Set(mandatory.map(p => p.id));
 
-    const evaluable = roster.filter(p=>ppts2526blend(p)>0&&getCap2526(p)>0&&!preDropIds.has(p.id));
-    const m = evaluable.length;
+    const remaining = roster.filter(p => !mandatoryIds.has(p.id));
+    const nonProspects = remaining.filter(p => !isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const prospects    = remaining.filter(p =>  isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const candidates   = [...nonProspects, ...prospects];
 
-    // Knapsack: find the highest-value subset of evaluable players within the cap ceiling.
-    const keptIds = new Set();
-    if(m>0){
-      const W = evaluable.map(p=>Math.round(getCap2526(p)*SCALE));
-      const V = evaluable.map(p=>adjVal2526(p));
-      const dp = Array.from({length:m+1},()=>new Float32Array(CAP_CEIL+1));
-      for(let i=0;i<m;i++){
-        const w=W[i],v=V[i];
-        for(let c=0;c<=CAP_CEIL;c++){
-          dp[i+1][c]=dp[i][c];
-          if(c>=w&&dp[i][c-w]+v>=dp[i+1][c]) dp[i+1][c]=dp[i][c-w]+v;
-        }
-      }
-      let remC=CAP_CEIL;
-      for(let i=m-1;i>=0;i--){
-        const w=W[i],v=V[i];
-        if(remC>=w&&Math.abs(dp[i+1][remC]-(dp[i][remC-w]+v))<0.01){
-          keptIds.add(evaluable[i].id); remC-=w;
-        }
-      }
+    const dropList = [...mandatory];
+    let keptPts = remaining.reduce((s,p) => s + ppts2526blend(p), 0);
+    let keptCap = remaining.reduce((s,p) => s + getCap2526(p), 0);
+    let numDropped = dropList.length;
+
+    for(const p of candidates){
+      if(numDropped >= maxDrops) break;
+      const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * 0.9;
+      if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      dropList.push(p);
+      keptPts -= ppts2526blend(p);
+      keptCap -= getCap2526(p);
+      numDropped++;
     }
 
-    // Drop list: pre-dropped (below efficiency floor) + anyone the knapsack didn't select.
-    // Sorted highest adjVal first so we can rescue them if MAX_DROPS is hit.
-    let dropList = roster.filter(p=>preDropIds.has(p.id)||!keptIds.has(p.id))
-                         .sort((a,b)=>adjVal2526(b)-adjVal2526(a));
-    let keepList = roster.filter(p=>keptIds.has(p.id));
-
-    // Enforce MAX_DROPS: rescue the highest-value players from the drop list.
-    while(dropList.length > maxDrops){
-      keepList.push(dropList.shift());
-    }
-
-    // Enforce MIN_DROPS: if knapsack kept too many, force-drop lowest-value keepers.
-    if(dropList.length < minDrops){
-      keepList.sort((a,b)=>adjVal2526(a)-adjVal2526(b));
-      while(dropList.length < minDrops && keepList.length > 0){
-        dropList.push(keepList.shift());
-      }
-    }
-
-    dropList.forEach(p=>{p.sim2526=null; dropped++;});
+    dropList.forEach(p => { p.sim2526 = null; dropped++; });
   }
 
   lsSet(LS_PLAYERS,players);
@@ -2551,76 +2497,53 @@ function simulateDrops2526(){
 }
 
 function compareDrops2526(){
-  const SCALE = 10;
-  const CAP_CEIL  = Math.round((CAP_LIMIT_2526 - minDrops) * SCALE);
-
   // Virtual copy: seed sim2526 from fantasyTeam2425 (pre-season rosters)
   const vp = players.map(p => ({...p, sim2526: p.fantasyTeam2425 || null}));
   const teams = [...new Set(vp.map(p => p.sim2526).filter(Boolean))].sort();
   if(!teams.length){ toast('No 25-26 team assignments found (fantasyTeam2425 missing).'); return; }
 
-  // Recompute ABP on virtual copy
-  const abpMap = computeABP2526(vp);
-  const scarcityMult = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
-  const posMult = {F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG};
-  const effFloor = draftWeights.effFloor ?? 8;
+  // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
+  const rosteredPoolV = vp.filter(p => p.sim2526 && ppts2526blend(p) >= 15 && getCap2526(p) > 0);
+  const curveV = fitQuadratic(rosteredPoolV.map(p => ({x: getCap2526(p), y: ppts2526blend(p)})));
 
-  const adjVal2526v = p => {
+  // Average replacement pts from top-30 FAs on the virtual copy
+  const faPoolV = vp.filter(p => !p.sim2526 && ppts2526blend(p) > 0)
+                    .sort((a,b) => ppts2526blend(b) - ppts2526blend(a)).slice(0, 30);
+  const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p) => s+ppts2526blend(p), 0) / faPoolV.length : 40;
+
+  const isProspectV = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= 1.25;
+  const deficitV = p => {
     const pp = ppts2526blend(p), c = getCap2526(p);
-    const adjPts  = pp * (posMult[posGroup(p.pos)]??1.0) * scarcityMult((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
-    const ptsPerM = (pp>0&&c>0) ? (pp/c)*draftWeights.wtPPTSM : 0;
-    const yrs     = (p.expYear>=NHL_SEASON_YEAR ? p.expYear-NHL_SEASON_YEAR+1 : 0)*draftWeights.wtYrs;
-    const youth   = Math.max(0,35-(calcAge(p)??35))*draftWeights.wtAge;
-    const agev    = calcAge(p) ?? 99;
-    const prospectV = (agev <= 23 && c <= 1.25) ? Math.max(0, 24 - agev) * draftWeights.wtProspect : 0;
-    const srcNv    = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
-    const confV    = Math.max(0, srcNv - 1) * draftWeights.wtSourceConf;
-    return adjPts + ptsPerM + yrs + youth + prospectV + confV;
-  };
-  const adjPPTSMv = p => {
-    const pp = ppts2526blend(p), c = getCap2526(p);
-    return (pp>0&&c>0) ? pp*(posMult[posGroup(p.pos)]??1.0)/c : 0;
+    return (pp > 0 && c > 0) ? curveV(c) - pp : Infinity;
   };
 
   // Run the simulation on the virtual copy
   for(const team of teams){
-    const roster = vp.filter(p => p.sim2526===team);
-    const preDropIds = new Set(
-      roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && adjPPTSMv(p) < effFloor
-                      && !((calcAge(p)??99) <= 23 && getCap2526(p) <= 1.25)).map(p=>p.id)
-    );
-    roster.filter(p => ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase()))
-          .forEach(p => preDropIds.add(p.id));
-    const evaluable = roster.filter(p => ppts2526blend(p)>0 && getCap2526(p)>0 && !preDropIds.has(p.id));
-    const m = evaluable.length;
-    const keptIds = new Set();
-    if(m>0){
-      const W = evaluable.map(p=>Math.round(getCap2526(p)*SCALE));
-      const V = evaluable.map(p=>adjVal2526v(p));
-      const dp = Array.from({length:m+1},()=>new Float32Array(CAP_CEIL+1));
-      for(let i=0;i<m;i++){
-        const w=W[i],v=V[i];
-        for(let c=0;c<=CAP_CEIL;c++){
-          dp[i+1][c]=dp[i][c];
-          if(c>=w&&dp[i][c-w]+v>=dp[i+1][c]) dp[i+1][c]=dp[i][c-w]+v;
-        }
-      }
-      let remC=CAP_CEIL;
-      for(let i=m-1;i>=0;i--){
-        const w=W[i],v=V[i];
-        if(remC>=w&&Math.abs(dp[i+1][remC]-(dp[i][remC-w]+v))<0.01){
-          keptIds.add(evaluable[i].id); remC-=w;
-        }
-      }
+    const roster = vp.filter(p => p.sim2526 === team);
+
+    const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase()));
+    const mandatoryIds = new Set(mandatory.map(p => p.id));
+
+    const remaining = roster.filter(p => !mandatoryIds.has(p.id));
+    const nonProspects = remaining.filter(p => !isProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
+    const prospects    = remaining.filter(p =>  isProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
+    const candidates   = [...nonProspects, ...prospects];
+
+    const dropList = [...mandatory];
+    let keptPts = remaining.reduce((s,p) => s + ppts2526blend(p), 0);
+    let keptCap = remaining.reduce((s,p) => s + getCap2526(p), 0);
+    let numDropped = dropList.length;
+
+    for(const p of candidates){
+      if(numDropped >= maxDrops) break;
+      const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * 0.9;
+      if(numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk) break;
+      dropList.push(p);
+      keptPts -= ppts2526blend(p);
+      keptCap -= getCap2526(p);
+      numDropped++;
     }
-    let dropList = roster.filter(p=>preDropIds.has(p.id)||!keptIds.has(p.id)).sort((a,b)=>adjVal2526v(b)-adjVal2526v(a));
-    let keepList = roster.filter(p=>keptIds.has(p.id));
-    while(dropList.length > maxDrops){ keepList.push(dropList.shift()); }
-    if(dropList.length < minDrops){
-      keepList.sort((a,b)=>adjVal2526v(a)-adjVal2526v(b));
-      while(dropList.length < minDrops && keepList.length > 0) dropList.push(keepList.shift());
-    }
-    dropList.forEach(p=>{ p.sim2526=null; });
+    dropList.forEach(p => { p.sim2526 = null; });
   }
 
   // Compare virtual results to ACTUAL_ROSTER_2526
@@ -2639,8 +2562,8 @@ function compareDrops2526(){
       const simKept = p.sim2526 !== null;
       const pp = ppts2526blend(p).toFixed(1);
       const cap = getCap2526(p).toFixed(2);
-      const eff = adjPPTSMv(p).toFixed(1);
-      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${eff}x)`;
+      const def = deficitV(p); const defStr = (def===Infinity?'∞':(def>=0?'+':'')+def.toFixed(1));
+      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}def)`;
 
       if(!simKept && !actuallyKept){
         if(ELC_MANDATORY_DROPS_2526.has(key)) elcMandatory.push(label);
@@ -2738,7 +2661,7 @@ function compareDrops2526(){
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
     `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
-    `Floor: <strong>${effFloor}x</strong> adj PPTS/$M &nbsp;|&nbsp; ` +
+    `Target: <strong>${ptsTarget}pts</strong> &nbsp;|&nbsp; ` +
     `D mult: <strong>${draftWeights.multD}×</strong>` +
     (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
     (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '');
