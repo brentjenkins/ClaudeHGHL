@@ -322,7 +322,10 @@ tr:hover td{background:#fafaf8}
 
 <div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;max-width:1100px">
-    <div style="font-size:12px;color:#888" id="draftOnClock"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:12px;color:#888" id="draftOnClock"></div>
+      <span id="draftTimer" style="font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;letter-spacing:.03em;min-width:3.5ch;display:none"></span>
+    </div>
     <span id="draftViewCtrl" style="border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
       <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
       <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
@@ -1852,6 +1855,34 @@ function stopTicker(){
   if(_tickerRAF){ cancelAnimationFrame(_tickerRAF); _tickerRAF = null; _tickerLastTs = null; }
 }
 
+// ── Draft pick timer ──────────────────────────────────────────────
+let _draftTimerStart = null, _draftTimerRAF = null;
+function _timerColor(s){ return s<120?'#16a34a':s<180?'#d97706':s<240?'#ea580c':'#dc2626'; }
+function _timerStr(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+function _draftTimerFrame(){
+  if(_draftTimerStart===null){ _draftTimerRAF=null; return; }
+  const s=Math.floor((Date.now()-_draftTimerStart)/1000);
+  const col=_timerColor(s), str=_timerStr(s);
+  const el=document.getElementById('draftTimer');
+  if(el){ el.textContent=str; el.style.color=col; }
+  document.querySelectorAll('.draft-on-clock-timer').forEach(e=>{ e.textContent=str; e.style.color=col; });
+  _draftTimerRAF=requestAnimationFrame(_draftTimerFrame);
+}
+function startDraftTimer(){
+  _draftTimerStart=Date.now();
+  const el=document.getElementById('draftTimer'); if(el) el.style.display='';
+  if(!_draftTimerRAF) _draftTimerRAF=requestAnimationFrame(_draftTimerFrame);
+}
+function resetDraftTimer(){
+  _draftTimerStart=Date.now();
+}
+function stopDraftTimer(){
+  if(_draftTimerRAF){ cancelAnimationFrame(_draftTimerRAF); _draftTimerRAF=null; }
+  _draftTimerStart=null;
+  const el=document.getElementById('draftTimer'); if(el){ el.textContent=''; el.style.display='none'; }
+  document.querySelectorAll('.draft-on-clock-timer').forEach(e=>{ e.textContent=''; });
+}
+
 // ── Whale canvas animation ────────────────────────────────────────
 let _whaleRAF = null;
 
@@ -2027,6 +2058,7 @@ function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   saveDraft();
   document.getElementById('draftSearch').value = '';
   document.getElementById('draftResults').style.display = 'none';
+  resetDraftTimer();
   renderDraftView();
 }
 
@@ -2034,6 +2066,7 @@ function undoLastPick(){
   if(!draftState.picks.length) return;
   draftState.picks.pop();
   saveDraft();
+  resetDraftTimer();
   renderDraftView();
 }
 
@@ -2096,8 +2129,10 @@ function toggleDraftMode(){
     document.getElementById('filterFantasy2526').value='';
     document.getElementById('filterFantasy').value='';
     document.getElementById('filterSource').value='';
+    startDraftTimer();
   } else {
     btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe';
+    stopDraftTimer();
   }
   document.getElementById('draftSubModeCtrl').style.display = draftMode ? '' : 'none';
   render();
@@ -2738,7 +2773,7 @@ function updateStats2526(){
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${t===onClock&&draftMode2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
+        ${t===onClock&&draftMode2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
@@ -3282,7 +3317,7 @@ function updateStats(){
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${t===onClock&&draftMode?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
+        ${t===onClock&&draftMode?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
