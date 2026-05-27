@@ -3006,6 +3006,8 @@ function setView(v){
 function renderDraftView(){
   const picks    = draftState.picks;
   const total    = picks.length;
+  const posColors = {F:'#dbeafe', D:'#dcfce7', G:'#fef3c7'};
+  const posText   = {F:'#1e40af', D:'#166534', G:'#92400e'};
   const curRound = Math.floor(total / 9) + 1;
 
   const onClock = DRAFT_TEAMS[total % 9];
@@ -3068,9 +3070,12 @@ function renderDraftView(){
         <span style="${posHi('G')}">G&thinsp;${gRem}</span>
       </div>
       <div class="draft-row-player" style="display:flex;align-items:center;gap:10px">
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${showPlayer
-          ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <em>${pick.projPts} Proj Pts</em>`:''}`
-          : ''}</span>
+        ${showPlayer ? `
+          <span style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(pick.player)}</span>
+          <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pick.pos)}</span>
+          <span style="color:#6b7280;font-size:15px;flex-shrink:0">${esc(pick.nhlTeam||'—')}</span>
+          ${pick.cap>0?`<span style="color:#6b7280;font-size:15px;flex-shrink:0">$${pick.cap.toFixed(1)}M</span>`:''}
+        ` : ''}
         ${isLastPick ? `<button class="btn-undo" onclick="undoLastPick()">↩ Undo</button>` : ''}
       </div>
     </div>`;
