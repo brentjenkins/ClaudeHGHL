@@ -2709,7 +2709,7 @@ function updateStats2526(){
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxCap=rem-(spotsLeft-1)*0.775;
+    const maxCap=rem-(spotsLeft-1)*0.9;
     const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
       .sort((a,b)=>draftSubMode2526==='value'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
     if(!picks.length) return '';
@@ -3252,7 +3252,7 @@ function updateStats(){
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxCap=rem-(spotsLeft-1)*0.775;
+    const maxCap=rem-(spotsLeft-1)*0.9;
     const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
       .sort((a,b)=>draftSubMode==='value'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
     if(!picks.length) return '';
