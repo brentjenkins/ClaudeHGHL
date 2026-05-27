@@ -2950,7 +2950,8 @@ function setView(v){
   document.getElementById('view-settings').style.display = v==='settings' ? '' : 'none';
   if(v==='roster'||v==='roster2526'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
-  if(v!=='draft'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
+  if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
+  if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings') syncSettings();
   const views = ['roster2526','roster','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
@@ -3058,7 +3059,7 @@ function renderDraftView(){
   if(total === 0){
     tickerEl.style.display = 'none';
   } else {
-    tickerEl.style.display = 'block';
+    if(currentView==='draft'||currentView==='summary') tickerEl.style.display = 'block';
     const ptsByTeam = {};
     for(const t of DRAFT_TEAMS) ptsByTeam[t] = 0;
     for(const p of players){
