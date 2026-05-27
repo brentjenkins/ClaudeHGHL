@@ -2601,76 +2601,6 @@ function compareDrops2526(){
   const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
   const totalELC = teamResults.reduce((s,r)=>s+r.elcMandatory.length, 0);
 
-  // PPP correlation analysis — skaters only, requires ppp2526proj to be populated
-  const pppAnalysisHtml = (() => {
-    const eligible = vp.filter(p => {
-      if(!p.fantasyTeam2425 || posGroup(p.pos)==='G') return false;
-      if(!(p.ppp2526proj > 0) || !(ppts2526blend(p) > 0)) return false;
-      if(INJURY_DROPS_2526.has(normName(p.name).toLowerCase())) return false;
-      if(ELC_MANDATORY_DROPS_2526.has(normName(p.name).toLowerCase())) return false;
-      return true;
-    });
-    if(eligible.length < 10) return '';
-
-    const pppPct = p => p.ppp2526proj / ppts2526blend(p);
-    const wasDropped = p => {
-      const key = normName(p.name).toLowerCase();
-      return !((key in ACTUAL_ROSTER_2526) && ACTUAL_ROSTER_2526[key]===p.fantasyTeam2425);
-    };
-    const avg = (arr, fn) => arr.length ? (arr.reduce((s,p)=>s+fn(p),0)/arr.length) : 0;
-
-    const dropped = eligible.filter(wasDropped);
-    const kept    = eligible.filter(p => !wasDropped(p));
-
-    const buckets = [
-      { label:'0–15%',  lo:0,    hi:0.15 },
-      { label:'15–30%', lo:0.15, hi:0.30 },
-      { label:'30–45%', lo:0.30, hi:0.45 },
-      { label:'45%+',   lo:0.45, hi:1.01 },
-    ];
-    const bucketRows = buckets.map(b => {
-      const grp = eligible.filter(p => { const r=pppPct(p); return r>=b.lo && r<b.hi; });
-      const drp = grp.filter(wasDropped);
-      const dropRate = grp.length ? Math.round(100*drp.length/grp.length) : null;
-      const color = dropRate===null?'#9ca3af':dropRate>=60?'#dc2626':dropRate>=35?'#d97706':'#16a34a';
-      return `<tr>
-        <td style="padding:3px 10px 3px 0;font-size:12px">${b.label}</td>
-        <td style="padding:3px 10px 3px 0;font-size:12px;color:#555">${grp.length} players</td>
-        <td style="padding:3px 0;font-size:12px;font-weight:600;color:${color}">${dropRate!==null?dropRate+'% dropped':'—'}</td>
-      </tr>`;
-    }).join('');
-
-    const cmpTable = `<table style="border-collapse:collapse;font-size:12px">
-      <thead>
-        <tr>
-          <th style="padding:3px 12px 3px 0;text-align:left;color:#374151"></th>
-          <th style="padding:3px 12px 3px 0;text-align:center;color:#dc2626;font-weight:600">Dropped (${dropped.length})</th>
-          <th style="padding:3px 0;text-align:center;color:#16a34a;font-weight:600">Kept (${kept.length})</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="padding:3px 12px 3px 0;color:#555">Avg PPP%</td>
-          <td style="padding:3px 12px 3px 0;text-align:center;font-weight:600">${Math.round(100*avg(dropped,pppPct))}%</td>
-          <td style="padding:3px 0;text-align:center;font-weight:600">${Math.round(100*avg(kept,pppPct))}%</td>
-        </tr>
-        <tr>
-          <td style="padding:3px 12px 3px 0;color:#555">Avg PPTS</td>
-          <td style="padding:3px 12px 3px 0;text-align:center;font-weight:600">${avg(dropped,p=>ppts2526blend(p)).toFixed(1)}</td>
-          <td style="padding:3px 0;text-align:center;font-weight:600">${avg(kept,p=>ppts2526blend(p)).toFixed(1)}</td>
-        </tr>
-      </tbody>
-    </table>`;
-
-    return `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
-      <div style="padding:8px 12px;background:#f1f5f9;font-size:13px;font-weight:600">PPP% of PPTS vs Drop Rate (skaters, n=${eligible.length})</div>
-      <div style="padding:8px 12px;display:flex;gap:2.5rem;align-items:flex-start">
-        <table style="border-collapse:collapse">${bucketRows}</table>
-        <div style="border-left:1px solid #e5e7eb;padding-left:2rem">${cmpTable}</div>
-      </div>
-    </div>`;
-  })();
-
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
     `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
@@ -2704,7 +2634,7 @@ function compareDrops2526(){
     return html;
   }).join('');
 
-  document.getElementById('compareDropsBody').innerHTML = pppAnalysisHtml + rows;
+  document.getElementById('compareDropsBody').innerHTML = rows;
   document.getElementById('compareDropsModal').style.display = 'flex';
 }
 
