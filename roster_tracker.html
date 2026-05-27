@@ -60,6 +60,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-puckpedia:hover{background:#F00032;border-color:#F00032}
 .btn-espn{background:#CC0000;color:#fff;border-color:#CC0000}
 .btn-espn:hover{background:#8B0000;border-color:#8B0000}
+.btn-athletic{background:#0f766e;color:#fff;border-color:#0f766e}
+.btn-athletic:hover{background:#065f46;border-color:#065f46}
+.btn-dfo{background:#0369a1;color:#fff;border-color:#0369a1}
+.btn-dfo:hover{background:#025a87;border-color:#025a87}
+.btn-amber{background:#d97706;color:#fff;border-color:#b45309}
+.btn-amber:hover{background:#b45309;border-color:#92400e}
+.btn-indigo{background:#6366f1;color:#fff;border-color:#6366f1}
+.btn-indigo:hover{background:#4f46e5;border-color:#4f46e5}
+.btn-indigo-light{background:#e0e7ff;color:#6366f1;border-color:#c7d2fe}
+.btn-indigo-light:hover{background:#c7d2fe;border-color:#a5b4fc}
+.btn-red-outline{color:#dc2626;border-color:#dc2626}
+.btn-red-outline:hover{background:#fef2f2}
+.btn-green-outline{color:#059669;border-color:#059669}
+.btn-green-outline:hover{background:#f0fdf4}
+.btn-blue-outline{color:#0369a1;border-color:#0369a1}
+.btn-blue-outline:hover{background:#eff6ff}
+.btn-draft{font-size:11px;padding:3px 10px;border:1px solid #6366f1;border-radius:6px;background:#6366f1;color:#fff;cursor:pointer;white-space:nowrap}
+.btn-draft:hover{background:#4f46e5;border-color:#4f46e5}
+.btn-undo{flex-shrink:0;height:26px;font-size:12px;padding:0 10px;background:none;border:1px solid #d1d5db;border-radius:6px;color:#555;cursor:pointer;white-space:nowrap}
+.btn-undo:hover{background:#f7f7f5;border-color:#9ca3af;color:#1a1a18}
+#draftSubValueBtn:hover,#draftSubBestBtn:hover,
+#draftSubValueBtn2526:hover,#draftSubBestBtn2526:hover,
+#draftViewCompactBtn:hover,#draftViewFullBtn:hover{filter:brightness(.9)}
 .tbl-wrap{overflow-x:auto;overflow-y:auto;border:1px solid #eee;border-radius:10px;flex:1;min-height:0}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:2}
@@ -76,6 +99,7 @@ tr:hover td{background:#fafaf8}
 .badge-g{background:#fef3c7;color:#92400e}
 .badge-nr{background:#f3f4f6;color:#6b7280;font-style:italic}
 .badge-drop{background:#fee2e2;color:#991b1b}
+.badge-inj{background:#fef3c7;color:#92400e}
 .badge-watch{background:#fef3c7;color:#92400e}
 .source-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;flex-shrink:0}
 .dot-manual{background:#9ca3af}
@@ -212,26 +236,22 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">25-26<br>Projections</span>
       <input type="file" id="athletic2526FileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic2526(this)">
-      <button class="btn" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="background:#0f766e;color:#fff;border-color:#0f766e;opacity:.75">📰 ATH 25-26</button>
+      <button class="btn btn-athletic" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="opacity:.75">📰 ATH 25-26</button>
       <input type="file" id="dfo2526FileInput" accept=".csv" style="display:none" onchange="syncDFO2526(this)">
-      <button class="btn" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = HGHL pts)" style="background:#0369a1;color:#fff;border-color:#0369a1">🏒 DFO 25-26</button>
-      <button class="btn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)" style="background:#cc0000;color:#fff;border-color:#8b0000">📈 ESPN 25-26</button>
+      <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = HGHL pts)">🏒 DFO 25-26</button>
+      <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)">📈 ESPN 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
-      <button class="btn" onclick="resetDraft2526()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
-      <button class="btn" onclick="rankPlayers2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
-      <button class="btn" onclick="simulateDrops2526()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
-      <button class="btn" onclick="loadActualRoster2526()" style="color:#059669;border-color:#059669" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
-      <button class="btn" onclick="compareDrops2526()" style="color:#0369a1;border-color:#0369a1" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
-      <button class="btn" id="draftMode2526Btn" onclick="toggleDraftMode2526()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
+      <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset Draft</button>
+      <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
+      <button class="btn btn-indigo" onclick="simulateDrops2526()">⬇ Simulate Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
+      <button class="btn btn-blue-outline" onclick="compareDrops2526()" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
+      <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
-      </span>
-      <span id="draftViewCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-        <button id="draftViewCompactBtn2526" onclick="setDraftView2526('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
-        <button id="draftViewFullBtn2526" onclick="setDraftView2526('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
       </span>
     </div>
   </div>
@@ -259,7 +279,6 @@ tr:hover td{background:#fafaf8}
   <button class="btn" onclick="clearFilters2526()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
-<div id="draftBoard2526" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem"></div>
 <div id="tblWrap2526" class="tbl-wrap">
 <table>
 <thead>
@@ -302,14 +321,21 @@ tr:hover td{background:#fafaf8}
 </div><!-- /view-roster2526 -->
 
 <div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;max-width:1100px">
+    <div style="font-size:12px;color:#888" id="draftOnClock"></div>
+    <span id="draftViewCtrl" style="border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
+      <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
+      <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
+    </span>
+  </div>
+  <div id="draftBoardFull" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem;max-width:1100px"></div>
   <div class="draft-col" id="draftColumn"></div>
   <div class="draft-entry">
-    <div style="font-size:12px;color:#888;margin-bottom:.4rem" id="draftOnClock"></div>
     <div style="display:flex;gap:8px">
       <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
              oninput="renderDraftSearch()"
              style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
-      <button class="btn" onclick="simulateBestPick()" style="height:36px;white-space:nowrap;background:#6366f1;color:#fff;border-color:#6366f1">⚡ Best Pick</button>
+      <button class="btn btn-indigo" onclick="simulateBestPick()" style="height:36px;white-space:nowrap">⚡ Best Pick</button>
     </div>
     <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
   </div>
@@ -336,27 +362,24 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
       <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()" title="Scrape current contract details and cap hits from PuckPedia (~15s)">✍ Signings</button>
+      <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">26-27<br>Projections</span>
       <input type="file" id="athleticFileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic(this)">
-      <button class="btn" id="athleticBtn" onclick="document.getElementById('athleticFileInput').click()" title="Import Athletic 26-27 projections from Excel file (The List sheet: G+A for skaters, W×2+SO×3 for goalies)" style="background:#0f766e;color:#fff;border-color:#0f766e">📰 ATH 26-27</button>
-      <button class="btn" id="dfo2627Btn" onclick="syncDFO2627()" title="Scrape DFO/5v5hockey 2026-27 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)" style="background:#0369a1;color:#fff;border-color:#0369a1">🏒 DFO 26-27</button>
+      <button class="btn btn-athletic" id="athleticBtn" onclick="document.getElementById('athleticFileInput').click()" title="Import Athletic 26-27 projections from Excel file (The List sheet: G+A for skaters, W×2+SO×3 for goalies)">📰 ATH 26-27</button>
+      <button class="btn btn-dfo" id="dfo2627Btn" onclick="syncDFO2627()" title="Scrape DFO/5v5hockey 2026-27 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)">🏒 DFO 26-27</button>
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
-      <button class="btn" onclick="resetDraft()" style="color:#dc2626;border-color:#dc2626">Reset Draft</button>
-      <button class="btn" onclick="rankPlayers()" style="background:#6366f1;color:#fff;border-color:#6366f1">★ Rank Players</button>
-      <button class="btn" onclick="simulateDrops()" style="background:#6366f1;color:#fff;border-color:#6366f1">⬇ Simulate Drops</button>
-      <button class="btn" id="draftModeBtn" onclick="toggleDraftMode()" style="background:#e0e7ff;color:#6366f1;border-color:#c7d2fe">⚡ Draft Mode</button>
+      <button class="btn btn-red-outline" onclick="resetDraft()">Reset Draft</button>
+      <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
+      <button class="btn btn-indigo" onclick="simulateDrops()">⬇ Simulate Drops</button>
+      <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn" onclick="setDraftSubMode('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
-      </span>
-      <span id="draftViewCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-        <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
-        <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
       </span>
     </div>
   </div>
@@ -399,7 +422,6 @@ tr:hover td{background:#fafaf8}
   <button class="btn" onclick="clearFilters()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
-<div id="draftBoard" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem"></div>
 <div id="tblWrap" class="tbl-wrap">
 <table>
 <thead>
@@ -672,7 +694,7 @@ const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, effFloor: 7 };
 let lastPressure = null, lastPressure2526 = null;
-let draftViewMode = 'compact', draftViewMode2526 = 'compact';
+let draftViewMode = 'compact';
 let minDrops = 5, maxDrops = 20;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
@@ -1288,6 +1310,28 @@ async function syncDFO2627(){
   finally { btn.disabled=false; btn.innerHTML='🏒 DFO 26-27'; }
 }
 
+async function syncInjuries(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('injuriesBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Fetching…';
+  try {
+    const d = await fetch('/injuries').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    // Clear all existing injury data first
+    players.forEach(p => { delete p.injuryStatus; delete p.injuryDetail; });
+    let matched=0;
+    for(const inj of d.injuries){
+      // Match by stripping all spaces from normalized name (handles P.K., K'Andre, etc.)
+      const p = players.find(x => normName(x.name).toLowerCase().replace(/\s/g,'') === inj.key);
+      if(p){ p.injuryStatus=inj.status; p.injuryDetail=inj.detail; matched++; }
+    }
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`Injuries synced: ${matched} of ${d.injuries.length} matched to roster.`);
+  } catch(e){ toast('Injury sync failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='🩹 Injuries'; }
+}
+
 async function syncSignings2526(){
   if(!proxyOk){ toast('Start the proxy first.'); return; }
   const btn = document.getElementById('signings2526Btn');
@@ -1582,6 +1626,7 @@ function render(){
           <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
           <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
           ${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster: minors / LTIR / waived">NR</span>':''}
+          ${p.injuryStatus?`<span class="badge badge-inj" title="${esc(p.injuryDetail||p.injuryStatus)}">INJ</span>`:''}
         </div>
       </td>
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
@@ -1617,7 +1662,7 @@ function render(){
         ${p.fantasyTeam
           ? `<button class="drop-btn" onclick="dropPlayer(${p.id})" title="Drop from roster">Drop</button>`
           : draftMode
-            ? `<button class="add-btn" onclick="quickDraft(${p.id})" title="Draft for ${esc(onClockTeam)}" style="background:#6366f1;color:#fff;border-color:#6366f1">Draft</button>`
+            ? `<button class="btn-draft" onclick="quickDraft(${p.id})" title="Draft for ${esc(onClockTeam)}">Draft</button>`
             : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
@@ -1625,17 +1670,6 @@ function render(){
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
-  // Full View board / Compact view toggle
-  const board = document.getElementById('draftBoard');
-  const tblWrap = document.getElementById('tblWrap');
-  if(draftMode && draftViewMode==='full'){
-    board.style.display='block';
-    board.innerHTML=buildDraftBoardHTML(draftState, DRAFT_TEAMS);
-    tblWrap.style.display='none';
-  } else {
-    board.style.display='none';
-    tblWrap.style.display='';
-  }
   updateStats();
 }
 
@@ -2044,8 +2078,6 @@ function toggleDraftMode(){
     btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe';
   }
   document.getElementById('draftSubModeCtrl').style.display = draftMode ? '' : 'none';
-  document.getElementById('draftViewCtrl').style.display = draftMode ? '' : 'none';
-  if(!draftMode){ draftViewMode = 'compact'; setDraftView('compact', false); }
   render();
 }
 
@@ -2065,17 +2097,7 @@ function setDraftView(mode, doRender=true){
   document.getElementById('draftViewCompactBtn').style.color    = isF ? '#6366f1' : '#fff';
   document.getElementById('draftViewFullBtn').style.background  = isF ? '#6366f1' : '#e0e7ff';
   document.getElementById('draftViewFullBtn').style.color       = isF ? '#fff'    : '#6366f1';
-  if(doRender && draftMode) render();
-}
-
-function setDraftView2526(mode, doRender=true){
-  draftViewMode2526 = mode;
-  const isF = mode==='full';
-  document.getElementById('draftViewCompactBtn2526').style.background = isF ? '#e0e7ff' : '#6366f1';
-  document.getElementById('draftViewCompactBtn2526').style.color      = isF ? '#6366f1' : '#fff';
-  document.getElementById('draftViewFullBtn2526').style.background    = isF ? '#6366f1' : '#e0e7ff';
-  document.getElementById('draftViewFullBtn2526').style.color         = isF ? '#fff'    : '#6366f1';
-  if(doRender && draftMode2526) render2526();
+  if(doRender) renderDraftView();
 }
 
 function buildDraftBoardHTML(draftStateObj, teamsList){
@@ -2216,8 +2238,6 @@ function toggleDraftMode2526(){
   document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
   document.getElementById('th-group-last-2526').colSpan = draftMode2526 ? 2 : 1;
   document.getElementById('draftSubModeCtrl2526').style.display = draftMode2526 ? '' : 'none';
-  document.getElementById('draftViewCtrl2526').style.display = draftMode2526 ? '' : 'none';
-  if(!draftMode2526){ draftViewMode2526 = 'compact'; setDraftView2526('compact', false); }
   render2526();
 }
 
@@ -2631,7 +2651,7 @@ function updateStats2526(){
   if(!allTeams.length){ document.getElementById('statCards2526').innerHTML=''; return; }
   const onClock = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
 
-  const pBadge2526=(r,need,avail)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';return`<span title="need ${need} / avail ${avail}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
+  const pBadge2526=(r,need,avail,maxP)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';const raw=(need/Math.max(1,avail)).toFixed(3);const tip=`need ${need} / avail ${avail} · raw ratio ${raw} · max ${(maxP||0).toFixed(3)} → norm ${r.toFixed(2)}`;return`<span title="${tip}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
   let leagueCard;
   if(draftMode2526){
     const lnF=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.sim2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
@@ -2641,14 +2661,16 @@ function updateStats2526(){
     const avF=allUndrafted2526.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted2526.filter(p=>posGroup(p.pos)==='D').length;
     const avG=allUndrafted2526.filter(p=>posGroup(p.pos)==='G').length;
+    const rawPF2526=lnF/Math.max(1,avF), rawPD2526=lnD/Math.max(1,avD), rawPG2526=lnG/Math.max(1,avG);
+    const statsMaxP2526=Math.max(rawPF2526,rawPD2526,rawPG2526,0.0001);
     const pr=lastPressure2526||{F:0,D:0,G:0};
     leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
       <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
       <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
       <div class="team-card-pos" style="gap:6px">
-        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge2526(pr.F,lnF,avF)}</span>
-        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge2526(pr.D,lnD,avD)}</span>
-        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge2526(pr.G,lnG,avG)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge2526(pr.F,lnF,avF,statsMaxP2526)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge2526(pr.D,lnD,avD,statsMaxP2526)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge2526(pr.G,lnG,avG,statsMaxP2526)}</span>
       </div>
     </div>`;
   } else {
@@ -2705,7 +2727,8 @@ function render2526(){
     if(fr && p.status!==fr) return false;
     if(ft && p.team!==ft) return false;
     if(ft2425 && (p.fantasyTeam2425||'')!==ft2425) return false;
-    if(ft2526 && (p.sim2526||'')!==ft2526) return false;
+    if(ft2526==='__none__' && p.sim2526) return false;
+    else if(ft2526 && ft2526!=='__none__' && (p.sim2526||'')!==ft2526) return false;
     return true;
   });
 
@@ -2803,7 +2826,7 @@ function render2526(){
   });
   const ft2526El=document.getElementById('filterFT2526');
   const prev2526=ft2526El.value;
-  ft2526El.innerHTML='<option value="">All 25-26 teams</option>'+all2526.map(t=>`<option${t===prev2526?' selected':''}>${esc(t)}</option>`).join('');
+  ft2526El.innerHTML='<option value="">All 25-26 teams</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option${t===prev2526?' selected':''}>${esc(t)}</option>`).join('');
 
   const draftModeLabel2526 = draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
   const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="22" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel2526}</td></tr>` : '';
@@ -2825,6 +2848,7 @@ function render2526(){
         <span class="source-dot dot-${esc(src)}" title="${esc(src)}"></span>
         <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
         ${p.status==='non-roster'?'<span class="badge badge-nr" title="Non-roster">NR</span>':''}
+        ${p.injuryStatus?`<span class="badge badge-inj" title="${esc(p.injuryDetail||p.injuryStatus)}">INJ</span>`:''}
       </div></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge(p)??'—'}</td>
@@ -2848,23 +2872,12 @@ function render2526(){
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.sim2526
           ? `<button class="drop-btn" onclick="dropPlayer2526(${p.id})" title="Drop from 25-26 sim roster">Drop</button>`
-          : draftMode2526 ? `<button class="add-btn" onclick="quickDraft2526(${p.id})" style="background:#6366f1;color:#fff;border-color:#6366f1">Draft</button>` : ''}
+          : draftMode2526 ? `<button class="btn-draft" onclick="quickDraft2526(${p.id})">Draft</button>` : ''}
       </td>
     </tr>`;
   }).join('')):'<tr><td colspan="21" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
-  // Full View board / Compact view toggle
-  const board2526 = document.getElementById('draftBoard2526');
-  const tblWrap2526 = document.getElementById('tblWrap2526');
-  if(draftMode2526 && draftViewMode2526==='full'){
-    board2526.style.display='block';
-    board2526.innerHTML=buildDraftBoardHTML(draftState2526, DRAFT_TEAMS_2526);
-    tblWrap2526.style.display='none';
-  } else {
-    board2526.style.display='none';
-    tblWrap2526.style.display='';
-  }
   updateStats2526();
 }
 
@@ -2962,12 +2975,22 @@ function renderDraftView(){
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${showPlayer
           ? `${esc(pick.player)} &bull; ${esc(pick.pos)} &bull; ${esc(pick.nhlTeam||'—')}${pick.cap>0?` &bull; $${pick.cap.toFixed(2)}M`:''}${pick.projPts?` &bull; <em>${pick.projPts} Proj Pts</em>`:''}`
           : ''}</span>
-        ${isLastPick ? `<button onclick="undoLastPick()" style="flex-shrink:0;height:26px;font-size:12px;padding:0 10px;background:none;border:1px solid #d1d5db;border-radius:6px;color:#555;cursor:pointer;white-space:nowrap">↩ Undo</button>` : ''}
+        ${isLastPick ? `<button class="btn-undo" onclick="undoLastPick()">↩ Undo</button>` : ''}
       </div>
     </div>`;
   }
 
-  document.getElementById('draftColumn').innerHTML = html;
+  const boardFull = document.getElementById('draftBoardFull');
+  const col = document.getElementById('draftColumn');
+  if(draftViewMode === 'full'){
+    boardFull.style.display = 'block';
+    boardFull.innerHTML = buildDraftBoardHTML(draftState, DRAFT_TEAMS);
+    col.style.display = 'none';
+  } else {
+    boardFull.style.display = 'none';
+    col.style.display = '';
+    col.innerHTML = html;
+  }
 
   // Ticker: hidden before draft starts, proj pts standings once picks begin
   const tickerEl = document.getElementById('draftTicker');
@@ -3132,7 +3155,7 @@ function updateStats(){
   if(!teams.length){ document.getElementById('statCards').innerHTML=''; return; }
   const onClock = DRAFT_TEAMS[draftState.picks.length % 9];
 
-  const pBadge=(r,need,avail)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';return`<span title="need ${need} / avail ${avail}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
+  const pBadge=(r,need,avail,maxP)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';const raw=(need/Math.max(1,avail)).toFixed(3);const tip=`need ${need} / avail ${avail} · raw ratio ${raw} · max ${(maxP||0).toFixed(3)} → norm ${r.toFixed(2)}`;return`<span title="${tip}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
   let leagueCard;
   if(draftMode){
     const lnF=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
@@ -3143,14 +3166,16 @@ function updateStats(){
     const avF=allUndrafted.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted.filter(p=>posGroup(p.pos)==='D').length;
     const avG=allUndrafted.filter(p=>posGroup(p.pos)==='G').length;
+    const rawPF=lnF/Math.max(1,avF), rawPD=lnD/Math.max(1,avD), rawPG=lnG/Math.max(1,avG);
+    const statsMaxP=Math.max(rawPF,rawPD,rawPG,0.0001);
     const pr=lastPressure||{F:0,D:0,G:0};
     leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
       <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
       <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
       <div class="team-card-pos" style="gap:6px">
-        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge(pr.F,lnF,avF)}</span>
-        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge(pr.D,lnD,avD)}</span>
-        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge(pr.G,lnG,avG)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge(pr.F,lnF,avF,statsMaxP)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge(pr.D,lnD,avD,statsMaxP)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge(pr.G,lnG,avG,statsMaxP)}</span>
       </div>
     </div>`;
   } else {

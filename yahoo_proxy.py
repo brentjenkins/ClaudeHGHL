@@ -1115,6 +1115,64 @@ def signings_2526():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
 
 
+@app.route("/injuries")
+def injuries():
+    """Scrape current NHL injury report from covers.com.
+
+    Returns list of {name, key, pos, status, detail} where key is the
+    slug with hyphens stripped (e.g. "troyterry") for easy JS matching.
+    """
+    import re as _re
+    try:
+        r = requests.get(
+            "https://www.covers.com/sport/hockey/nhl/injuries",
+            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"},
+            verify=False,
+            timeout=15,
+        )
+        r.raise_for_status()
+        html = r.text
+
+        results = []
+        pending = None
+
+        for m in _re.finditer(r"<tr([^>]*)>(.*?)</tr>", html, _re.DOTALL):
+            attrs, content = m.group(1), m.group(2)
+
+            if 'class="collapse"' in attrs:
+                if pending:
+                    import html as _html
+                    text = _re.sub(r"<[^>]+>", " ", content)
+                    text = _re.sub(r"\s+", " ", text).strip()
+                    pending["detail"] = _html.unescape(text)
+                    results.append(pending)
+                    pending = None
+                continue
+
+            link_m = _re.search(r"href='/sport/hockey/nhl/players/\d+/([^']+)'", content)
+            if not link_m:
+                pending = None
+                continue
+
+            slug = link_m.group(1)  # e.g. "troy-terry"
+            key = slug.replace("-", "").lower()  # "troyterry" — matches normName strip
+            display_name = " ".join(w.capitalize() for w in slug.split("-"))
+
+            pos_m = _re.search(r"<td>\s*(C|LW|RW|W|D|G|F)\s*</td>", content)
+            pos = pos_m.group(1) if pos_m else ""
+
+            status_m = _re.search(r"<b>(.*?)</b>", content)
+            status = _re.sub(r"<[^>]+>", "", status_m.group(1)).strip() if status_m else ""
+
+            if status:
+                pending = {"name": display_name, "key": key, "pos": pos, "status": status, "detail": ""}
+
+        print(f"Injuries: {len(results)} players scraped from covers.com")
+        return jsonify({"injuries": results})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 55)
