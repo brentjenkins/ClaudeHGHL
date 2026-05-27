@@ -693,7 +693,7 @@ const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, effFloor: 7 };
-let lastPressure = null, lastPressure2526 = null;
+let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
 let minDrops = 5, maxDrops = 20;
 
@@ -1584,6 +1584,28 @@ function render(){
     const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
     const pressure={F:rawP.F/maxP,D:rawP.D/maxP,G:rawP.G/maxP};
     lastPressure=pressure;
+    // Score ALL free agents (full pool) for team-card top-picks — no per-team need filter here
+    lastAllScored = players
+      .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
+      .map(p=>{
+        const pg=posGroup(p.pos);
+        const scV=sc(abpMap.get(p.id)??99);
+        const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
+        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure[pg]-1));
+        const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult;
+        const tSc=sc(abpMap.get(p.id)??99)*draftWeights.wtScarcity;
+        const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
+        const tYrs=yrsRaw*draftWeights.wtYrs;
+        const tYouth=youthRaw*draftWeights.wtAge;
+        const ageRaw=calcAge(p)??99;
+        const tProspect=(ageRaw<=22&&(p.cap||0)<=1.25)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
+        const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
+        const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
+        const _ds=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
+        const _dsNormal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf;
+        return {id:p.id,name:p.name,pos:p.pos,pts:p.pts||0,_ds,_dsNormal};
+      });
     const allScored=rows
       .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0&&(p.pts||0)>0)
       .map(p=>{
@@ -2681,6 +2703,19 @@ function updateStats2526(){
     </div>`;
   }
 
+  const posBg2526={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2526={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const top5Html2526=(fRem,dRem,gRem)=>{
+    if(!draftMode2526||!lastAllScored2526) return '';
+    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
+    if(!need.size) return '';
+    const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos)))
+      .sort((a,b)=>draftSubMode2526==='value'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
+    if(!picks.length) return '';
+    return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2526==='value'?'Value':'Best Avail'}</div>
+      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
+    </div>`;
+  };
   document.getElementById('statCards2526').innerHTML = leagueCard + allTeams.map(t=>{
     const tp = players.filter(p=>p.sim2526===t);
     const cap = tp.reduce((s,p)=>s+getCap2526(p),0);
@@ -2707,6 +2742,7 @@ function updateStats2526(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
+      ${top5Html2526(fRem,dRem,gRem)}
     </div>`;
   }).join('');
 }
@@ -2778,6 +2814,28 @@ function render2526(){
     const maxP2526=Math.max(rawP2526.F,rawP2526.D,rawP2526.G,0.0001);
     const pressure2526={F:rawP2526.F/maxP2526,D:rawP2526.D/maxP2526,G:rawP2526.G/maxP2526};
     lastPressure2526=pressure2526;
+    lastAllScored2526 = players
+      .filter(p=>!p.sim2526&&ppts2526blend(p)>0)
+      .map(p=>{
+        const pg=posGroup(p.pos);
+        const pp=ppts2526blend(p);
+        const scV=sc(abpMap2526.get(p.id)??99);
+        const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
+        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2526[pg]-1));
+        const tPPTS=pp*(pm[pg]??1)*pressMult2526;
+        const tSc=scV*draftWeights.wtScarcity;
+        const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
+        const tYrs=yrsRaw*draftWeights.wtYrs;
+        const tYouth=youthRaw*draftWeights.wtAge;
+        const ageRaw=calcAge(p)??99;
+        const tProspect=(ageRaw<=23&&getCap2526(p)<=1.25)?Math.max(0,24-ageRaw)*draftWeights.wtProspect:0;
+        const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
+        const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
+        const _ds2526=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
+        const _ds2526Normal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf;
+        return {id:p.id,name:p.name,pos:p.pos,pts:pp,_ds2526,_ds2526Normal};
+      });
     const allScored2526=rows
       .filter(p=>!p.sim2526&&need[posGroup(p.pos)]>0&&ppts2526blend(p)>0)
       .map(p=>{
@@ -3186,6 +3244,19 @@ function updateStats(){
     </div>`;
   }
 
+  const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const top5Html=(fRem,dRem,gRem)=>{
+    if(!draftMode||!lastAllScored) return '';
+    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
+    if(!need.size) return '';
+    const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos)))
+      .sort((a,b)=>draftSubMode==='value'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
+    if(!picks.length) return '';
+    return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode==='value'?'Value':'Best Avail'}</div>
+      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
+    </div>`;
+  };
   document.getElementById('statCards').innerHTML = leagueCard + teams.map(t => {
     const tp = players.filter(p=>p.fantasyTeam===t);
     const cap = tp.reduce((s,p)=>s+(p.cap||0), 0);
@@ -3212,6 +3283,7 @@ function updateStats(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
+      ${top5Html(fRem,dRem,gRem)}
     </div>`;
   }).join('');
 }
