@@ -36,7 +36,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .draft-results-row{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0ee;font-size:13px;display:flex;justify-content:space-between;align-items:center}
 .draft-results-row:hover{background:#f7f7f5}
 .draft-results-row:last-child{border-bottom:none}
-.stats-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px;margin-bottom:1.25rem;overflow-x:auto}
+.stats-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px;margin-bottom:1.25rem;overflow-x:auto}
 .team-card{background:#f7f7f5;border-radius:8px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:5px;min-width:0}
 .team-card-header{display:flex;align-items:center;gap:5px;min-width:0}
 .team-card-logo{width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
@@ -229,6 +229,10 @@ tr:hover td{background:#fafaf8}
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
+      <span id="draftViewCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
+        <button id="draftViewCompactBtn2526" onclick="setDraftView2526('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
+        <button id="draftViewFullBtn2526" onclick="setDraftView2526('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
+      </span>
     </div>
   </div>
 </div>
@@ -255,14 +259,15 @@ tr:hover td{background:#fafaf8}
   <button class="btn" onclick="clearFilters2526()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
-<div class="tbl-wrap">
+<div id="draftBoard2526" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem"></div>
+<div id="tblWrap2526" class="tbl-wrap">
 <table>
 <thead>
 <tr>
   <th colspan="7"></th>
   <th colspan="8" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
   <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
-  <th colspan="1"></th>
+  <th id="th-group-last-2526" colspan="1"></th>
 </tr>
 <tr>
   <th onclick="setSortCol2526('name')">Player <span id="sort2526-name"></span></th>
@@ -349,6 +354,10 @@ tr:hover td{background:#fafaf8}
         <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn" onclick="setDraftSubMode('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
+      <span id="draftViewCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
+        <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
+        <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
+      </span>
     </div>
   </div>
 </div>
@@ -390,7 +399,8 @@ tr:hover td{background:#fafaf8}
   <button class="btn" onclick="clearFilters()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
-<div class="tbl-wrap">
+<div id="draftBoard" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem"></div>
+<div id="tblWrap" class="tbl-wrap">
 <table>
 <thead>
 <tr>
@@ -527,8 +537,8 @@ tr:hover td{background:#fafaf8}
         <input type="number" id="s-effFloor" value="7" min="0" max="30" step="0.5" onchange="updateDraftWeight('effFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Draft mode top picks</span>
-        <input type="number" id="s-draftTop" value="50" min="1" max="100" step="5" onchange="updateSetting('draftTop',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
+        <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
         <span style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.06em">Value Mode</span>
@@ -660,7 +670,9 @@ const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, effFloor: 7 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, effFloor: 7 };
+let lastPressure = null, lastPressure2526 = null;
+let draftViewMode = 'compact', draftViewMode2526 = 'compact';
 let minDrops = 5, maxDrops = 20;
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
@@ -1504,6 +1516,7 @@ function render(){
 
   document.getElementById('th-score').style.display = draftMode ? '' : 'none';
   const onClockTeam = DRAFT_TEAMS[draftState.picks.length % 9];
+  let pressureHdr = '';
   if(draftMode){
     const teamPicks = draftState.picks.filter(p=>p.team===onClockTeam);
     const fN2=teamPicks.filter(p=>posGroup(p.pos)==='F').length;
@@ -1513,6 +1526,20 @@ function render(){
     const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
+    // league-wide positional pressure: demand/supply ratio per position
+    const leagueNeed={F:0,D:0,G:0};
+    for(const t of DRAFT_TEAMS){
+      const r=players.filter(p=>p.fantasyTeam===t);
+      leagueNeed.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
+      leagueNeed.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
+      leagueNeed.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
+    }
+    const allUndrafted=players.filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
+    const avail={F:allUndrafted.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted.filter(p=>posGroup(p.pos)==='G').length};
+    const rawP={F:leagueNeed.F/Math.max(1,avail.F),D:leagueNeed.D/Math.max(1,avail.D),G:leagueNeed.G/Math.max(1,avail.G)};
+    const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
+    const pressure={F:rawP.F/maxP,D:rawP.D/maxP,G:rawP.G/maxP};
+    lastPressure=pressure;
     const allScored=rows
       .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&need[posGroup(p.pos)]>0&&(p.pts||0)>0)
       .map(p=>{
@@ -1520,7 +1547,9 @@ function render(){
         const scV=sc(abpMap.get(p.id)??99);
         const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
         const youthRaw=Math.max(0,35-(calcAge(p)??35));
-        const tPPTS=(p.pts||0)*(pm[pg]??1);
+        const pressRaw=pressure[pg];
+        const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw-1));
+        const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult;
         const tSc=scV*draftWeights.wtScarcity;
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights.wtYrs;
@@ -1531,7 +1560,7 @@ function render(){
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
         const _dsNormal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf;
-        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf}});
+        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf,pressRaw,pressMult}});
       });
     rows = draftSubMode==='value'
       ? allScored.sort((a,b)=>b._ds-a._ds)
@@ -1582,7 +1611,7 @@ function render(){
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.fantasyTeam
@@ -1596,6 +1625,17 @@ function render(){
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
+  // Full View board / Compact view toggle
+  const board = document.getElementById('draftBoard');
+  const tblWrap = document.getElementById('tblWrap');
+  if(draftMode && draftViewMode==='full'){
+    board.style.display='block';
+    board.innerHTML=buildDraftBoardHTML(draftState, DRAFT_TEAMS);
+    tblWrap.style.display='none';
+  } else {
+    board.style.display='none';
+    tblWrap.style.display='';
+  }
   updateStats();
 }
 
@@ -1920,6 +1960,7 @@ function resetDraft(){
   dropsSimulated = false;
   lsSet(LS_DROPS, false);
   lsSet(LS_PLAYERS, players);
+  if(draftMode) toggleDraftMode();
   location.reload();
 }
 
@@ -2003,6 +2044,8 @@ function toggleDraftMode(){
     btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe';
   }
   document.getElementById('draftSubModeCtrl').style.display = draftMode ? '' : 'none';
+  document.getElementById('draftViewCtrl').style.display = draftMode ? '' : 'none';
+  if(!draftMode){ draftViewMode = 'compact'; setDraftView('compact', false); }
   render();
 }
 
@@ -2015,6 +2058,88 @@ function setDraftSubMode(mode){
   if(draftMode) render();
 }
 
+function setDraftView(mode, doRender=true){
+  draftViewMode = mode;
+  const isF = mode==='full';
+  document.getElementById('draftViewCompactBtn').style.background = isF ? '#e0e7ff' : '#6366f1';
+  document.getElementById('draftViewCompactBtn').style.color    = isF ? '#6366f1' : '#fff';
+  document.getElementById('draftViewFullBtn').style.background  = isF ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftViewFullBtn').style.color       = isF ? '#fff'    : '#6366f1';
+  if(doRender && draftMode) render();
+}
+
+function setDraftView2526(mode, doRender=true){
+  draftViewMode2526 = mode;
+  const isF = mode==='full';
+  document.getElementById('draftViewCompactBtn2526').style.background = isF ? '#e0e7ff' : '#6366f1';
+  document.getElementById('draftViewCompactBtn2526').style.color      = isF ? '#6366f1' : '#fff';
+  document.getElementById('draftViewFullBtn2526').style.background    = isF ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftViewFullBtn2526').style.color         = isF ? '#fff'    : '#6366f1';
+  if(doRender && draftMode2526) render2526();
+}
+
+function buildDraftBoardHTML(draftStateObj, teamsList){
+  const picks = draftStateObj.picks;
+  const n = picks.length;
+  const nT = teamsList.length;
+  const posColors = {F:'#dbeafe', D:'#dcfce7', G:'#fef3c7'};
+  const posText   = {F:'#1e40af', D:'#166534', G:'#92400e'};
+
+  // Build rows: all made picks + next nT picks (one per team)
+  const rows = [];
+  const seenEmpty = new Set();
+  for(let i = 0; rows.filter(r=>r.isEmpty).length < nT || i < n; i++){
+    const round = Math.floor(i / nT);
+    const posInRound = i % nT;
+    const teamIdx = round % 2 === 0 ? posInRound : nT - 1 - posInRound;
+    const team = teamsList[teamIdx];
+    const made = i < n;
+    if(!made && seenEmpty.has(team)) continue;
+    if(!made) seenEmpty.add(team);
+    rows.push({i, globalPick: i+1, round: round+1, team, pick: made ? picks[i] : null, isEmpty: !made, isOnClock: i===n});
+  }
+
+  // Group by round
+  const byRound = {};
+  for(const r of rows){
+    (byRound[r.round] = byRound[r.round]||[]).push(r);
+  }
+
+  let html = '';
+  for(const rNum of Object.keys(byRound).map(Number).sort((a,b)=>a-b)){
+    const rRows = byRound[rNum];
+    const allEmpty = rRows.every(r=>r.isEmpty);
+    const anyMade  = rRows.some(r=>!r.isEmpty);
+    const label = allEmpty ? `Round ${rNum} — Up Next` : anyMade && rRows.some(r=>r.isEmpty) ? `Round ${rNum} — In Progress` : `Round ${rNum}`;
+    html += `<div style="margin-bottom:1px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 12px 3px;background:#f9fafb;border-bottom:1px solid #f0f0ee;position:sticky;top:0;z-index:1">${label}</div>`;
+    for(const r of rRows){
+      if(r.isEmpty){
+        const oc = r.isOnClock;
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #f0f0ee;background:${oc?'#eff6ff':'#fafafa'};${oc?'border-left:3px solid #6366f1':'border-left:3px solid transparent'}">
+          <span style="color:#9ca3af;width:32px;font-size:11px;flex-shrink:0">#${r.globalPick}</span>
+          <span style="font-size:12px;font-weight:600;flex:1;color:${oc?'#1d4ed8':'#6b7280'}">${esc(r.team)}</span>
+          ${oc?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 6px">On Clock</span>':''}
+          <span style="font-size:12px;color:#d1d5db;flex:2">—</span>
+        </div>`;
+      } else {
+        const p = r.pick;
+        const pg = posGroup(p.pos);
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #f0f0ee;background:#fff;border-left:3px solid transparent">
+          <span style="color:#9ca3af;width:32px;font-size:11px;flex-shrink:0">#${r.globalPick}</span>
+          <span style="font-size:12px;font-weight:600;flex:1;color:#1a1a18">${esc(r.team)}</span>
+          <span style="font-size:12px;flex:2">${esc(p.player)}</span>
+          <span style="background:${posColors[pg]||'#f3f4f6'};color:${posText[pg]||'#374151'};border-radius:5px;padding:1px 7px;font-size:10px;font-weight:600;flex-shrink:0">${esc(p.pos)}</span>
+          <span style="color:#6b7280;font-size:11px;width:36px;flex-shrink:0">${esc(p.nhlTeam||'')}</span>
+          <span style="color:#6b7280;font-size:11px;width:44px;text-align:right;flex-shrink:0">${p.cap?'$'+p.cap.toFixed(1)+'M':''}</span>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  }
+  return html || '<div style="padding:2rem;text-align:center;color:#9ca3af;font-size:13px">No picks yet — start drafting.</div>';
+}
+
 function syncSettings(){
   const W = draftWeights;
   const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; };
@@ -2022,6 +2147,7 @@ function syncSettings(){
   set('s-wtPPTSM', W.wtPPTSM); set('s-wtYrs', W.wtYrs);  set('s-wtAge', W.wtAge);
   set('s-wtProspect', W.wtProspect);
   set('s-wtSourceConf', W.wtSourceConf);
+  set('s-wtPressure', W.wtPressure);
   set('s-wtScarcity', W.wtScarcity); set('s-effFloor', W.effFloor);
   set('s-minDrops', minDrops); set('s-maxDrops', maxDrops);
   set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
@@ -2031,6 +2157,7 @@ function syncSettings(){
 function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
   if(draftWeights.wtSourceConf === undefined) draftWeights.wtSourceConf = 5;
+  if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
   draftWeights[key] = val;
   syncSettings();
   if(draftMode) render();
@@ -2087,7 +2214,10 @@ function toggleDraftMode2526(){
   btn.style.color = draftMode2526 ? '#fff' : '#6366f1';
   btn.style.borderColor = draftMode2526 ? '#6366f1' : '#c7d2fe';
   document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
+  document.getElementById('th-group-last-2526').colSpan = draftMode2526 ? 2 : 1;
   document.getElementById('draftSubModeCtrl2526').style.display = draftMode2526 ? '' : 'none';
+  document.getElementById('draftViewCtrl2526').style.display = draftMode2526 ? '' : 'none';
+  if(!draftMode2526){ draftViewMode2526 = 'compact'; setDraftView2526('compact', false); }
   render2526();
 }
 
@@ -2124,7 +2254,8 @@ function resetDraft2526(){
   draftState2526 = {picks:[]};
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2526, draftState2526);
-  render2526();
+  if(draftMode2526) toggleDraftMode2526();
+  else render2526();
 }
 
 function loadActualRoster2526(){
@@ -2498,32 +2629,61 @@ function updateStats2526(){
     return ai-bi;
   });
   if(!allTeams.length){ document.getElementById('statCards2526').innerHTML=''; return; }
-  const activeTeam = document.getElementById('filterFT2526').value;
-  const activePos  = document.getElementById('filterPos2526').value;
   const onClock = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
-  document.getElementById('statCards2526').innerHTML = allTeams.map(t=>{
+
+  const pBadge2526=(r,need,avail)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';return`<span title="need ${need} / avail ${avail}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
+  let leagueCard;
+  if(draftMode2526){
+    const lnF=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.sim2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
+    const lnD=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.sim2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
+    const lnG=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.sim2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
+    const allUndrafted2526=players.filter(p=>!p.sim2526&&ppts2526blend(p)>=abpMinPts);
+    const avF=allUndrafted2526.filter(p=>posGroup(p.pos)==='F').length;
+    const avD=allUndrafted2526.filter(p=>posGroup(p.pos)==='D').length;
+    const avG=allUndrafted2526.filter(p=>posGroup(p.pos)==='G').length;
+    const pr=lastPressure2526||{F:0,D:0,G:0};
+    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+      <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
+      <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
+      <div class="team-card-pos" style="gap:6px">
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge2526(pr.F,lnF,avF)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge2526(pr.D,lnD,avD)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge2526(pr.G,lnG,avG)}</span>
+      </div>
+    </div>`;
+  } else {
+    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+      <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
+      <div class="team-card-cap" style="color:#d1d5db">—</div>
+      <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
+    </div>`;
+  }
+
+  document.getElementById('statCards2526').innerHTML = leagueCard + allTeams.map(t=>{
     const tp = players.filter(p=>p.sim2526===t);
     const cap = tp.reduce((s,p)=>s+getCap2526(p),0);
     const rem = CAP_LIMIT_2526 - cap;
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
     const gN = tp.filter(p=>posGroup(p.pos)==='G').length;
+    const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
+    const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
+    const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
+    const picks = fRem + dRem + gRem;
+    const cpp = picks > 0 ? rem / picks : 0;
     const logo = teamLogos[t];
     const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
-    const te = t.replace(/'/g,"&apos;");
-    const isActive = activeTeam===t;
-    const cardBorder = isActive ? 'outline:2px solid #185FA5' : '';
-    const pillStyle = pos => `cursor:pointer;${isActive&&activePos===pos?'background:#185FA5;color:#fff':''}`;
-    return `<div class="team-card" onclick="filterToTeam2526('${te}')" style="cursor:pointer;${cardBorder}" title="Filter to ${esc(t)}">
+    const cppStr = picks>0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
+    return `<div class="team-card">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${t===onClock?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
+        ${t===onClock&&draftMode2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
       </div>
-      <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
+      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
-        <span onclick="filterToTeam2526('${te}','F');event.stopPropagation()" style="${pillStyle('F')}" title="${fN} forward${fN!==1?'s':''} rostered">F&thinsp;${fN}</span><span onclick="filterToTeam2526('${te}','D');event.stopPropagation()" style="${pillStyle('D')}" title="${dN} defencemen rostered">D&thinsp;${dN}</span><span onclick="filterToTeam2526('${te}','G');event.stopPropagation()" style="${pillStyle('G')}" title="${gN} goalie${gN!==1?'s':''} rostered">G&thinsp;${gN}</span>
+        <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
     </div>`;
   }).join('');
@@ -2571,6 +2731,7 @@ function render2526(){
   document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
 
   const onClockTeam2526 = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
+  let pressureHdr2526 = '';
   if(draftMode2526){
     const teamRoster = players.filter(p=>p.sim2526===onClockTeam2526);
     const need={
@@ -2580,6 +2741,20 @@ function render2526(){
     };
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
+    // league-wide positional pressure for 25-26
+    const leagueNeed2526={F:0,D:0,G:0};
+    for(const t of DRAFT_TEAMS_2526){
+      const r=players.filter(p=>p.sim2526===t);
+      leagueNeed2526.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
+      leagueNeed2526.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
+      leagueNeed2526.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
+    }
+    const allUndrafted2526=players.filter(p=>!p.sim2526&&ppts2526blend(p)>=abpMinPts);
+    const avail2526={F:allUndrafted2526.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted2526.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted2526.filter(p=>posGroup(p.pos)==='G').length};
+    const rawP2526={F:leagueNeed2526.F/Math.max(1,avail2526.F),D:leagueNeed2526.D/Math.max(1,avail2526.D),G:leagueNeed2526.G/Math.max(1,avail2526.G)};
+    const maxP2526=Math.max(rawP2526.F,rawP2526.D,rawP2526.G,0.0001);
+    const pressure2526={F:rawP2526.F/maxP2526,D:rawP2526.D/maxP2526,G:rawP2526.G/maxP2526};
+    lastPressure2526=pressure2526;
     const allScored2526=rows
       .filter(p=>!p.sim2526&&need[posGroup(p.pos)]>0&&ppts2526blend(p)>0)
       .map(p=>{
@@ -2588,7 +2763,9 @@ function render2526(){
         const scV=sc(abpMap2526.get(p.id)??99);
         const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
         const youthRaw=Math.max(0,35-(calcAge(p)??35));
-        const tPPTS=pp*(pm[pg]??1);
+        const pressRaw2526=pressure2526[pg];
+        const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw2526-1));
+        const tPPTS=pp*(pm[pg]??1)*pressMult2526;
         const tSc=scV*draftWeights.wtScarcity;
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights.wtYrs;
@@ -2599,7 +2776,7 @@ function render2526(){
         const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
         const _ds2526=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect2526+tConf2526;
         const _ds2526Normal=tPPTS+tSc+tPPTSM+tYrs+tYouth+tConf2526;
-        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526}});
+        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,tYrs,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526,pressRaw2526,pressMult2526}});
       });
     rows = draftSubMode2526==='value'
       ? allScored2526.sort((a,b)=>b._ds2526-a._ds2526)
@@ -2666,7 +2843,7 @@ function render2526(){
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
       <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.ppp2526>0?p.ppp2526:'—'}</td>
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos: ${b.tPPTS.toFixed(1)}\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.sim2526
@@ -2677,6 +2854,17 @@ function render2526(){
   }).join('')):'<tr><td colspan="21" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
+  // Full View board / Compact view toggle
+  const board2526 = document.getElementById('draftBoard2526');
+  const tblWrap2526 = document.getElementById('tblWrap2526');
+  if(draftMode2526 && draftViewMode2526==='full'){
+    board2526.style.display='block';
+    board2526.innerHTML=buildDraftBoardHTML(draftState2526, DRAFT_TEAMS_2526);
+    tblWrap2526.style.display='none';
+  } else {
+    board2526.style.display='none';
+    tblWrap2526.style.display='';
+  }
   updateStats2526();
 }
 
@@ -2942,10 +3130,38 @@ function updateStats(){
       return ai - bi;
     });
   if(!teams.length){ document.getElementById('statCards').innerHTML=''; return; }
-  const activeTeam = document.getElementById('filterFantasy').value;
-  const activePos  = document.getElementById('filterPos').value;
-  const onClock    = DRAFT_TEAMS[draftState.picks.length % 9];
-  document.getElementById('statCards').innerHTML = teams.map(t => {
+  const onClock = DRAFT_TEAMS[draftState.picks.length % 9];
+
+  const pBadge=(r,need,avail)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';return`<span title="need ${need} / avail ${avail}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
+  let leagueCard;
+  if(draftMode){
+    const lnF=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
+    const lnD=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
+    const lnG=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
+    const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
+    const allUndrafted=players.filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
+    const avF=allUndrafted.filter(p=>posGroup(p.pos)==='F').length;
+    const avD=allUndrafted.filter(p=>posGroup(p.pos)==='D').length;
+    const avG=allUndrafted.filter(p=>posGroup(p.pos)==='G').length;
+    const pr=lastPressure||{F:0,D:0,G:0};
+    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+      <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
+      <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
+      <div class="team-card-pos" style="gap:6px">
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge(pr.F,lnF,avF)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge(pr.D,lnD,avD)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge(pr.G,lnG,avG)}</span>
+      </div>
+    </div>`;
+  } else {
+    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+      <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
+      <div class="team-card-cap" style="color:#d1d5db">—</div>
+      <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
+    </div>`;
+  }
+
+  document.getElementById('statCards').innerHTML = leagueCard + teams.map(t => {
     const tp = players.filter(p=>p.fantasyTeam===t);
     const cap = tp.reduce((s,p)=>s+(p.cap||0), 0);
     const rem = CAP_LIMIT - cap;
@@ -2955,22 +3171,21 @@ function updateStats(){
     const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
     const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
     const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
+    const picks = fRem + dRem + gRem;
+    const cpp = picks > 0 ? rem / picks : 0;
     const logo = teamLogos[t];
     const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
     const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
-    const te = t.replace(/'/g,"&apos;");
-    const isActiveTeam = activeTeam === t;
-    const cardBorder = isActiveTeam ? 'outline:2px solid #185FA5' : '';
-    const pillStyle = (pos) => `cursor:pointer;${isActiveTeam && activePos === pos ? ';background:#185FA5;color:#fff' : ''}`;
-    return `<div class="team-card" onclick="filterToTeam('${te}')" style="cursor:pointer;${cardBorder}" title="Filter to ${esc(t)}">
+    const cppStr = picks > 0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
+    return `<div class="team-card">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${t===onClock?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
+        ${t===onClock&&draftMode?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
       </div>
-      <div class="team-card-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
+      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
-        <span onclick="filterToTeam('${te}','F');event.stopPropagation()" style="${pillStyle('F')}" title="${fN} forward${fN!==1?'s':''} rostered">F&thinsp;${fN}</span><span onclick="filterToTeam('${te}','D');event.stopPropagation()" style="${pillStyle('D')}" title="${dN} defenceman${dN!==1?'en':''} rostered">D&thinsp;${dN}</span><span onclick="filterToTeam('${te}','G');event.stopPropagation()" style="${pillStyle('G')}" title="${gN} goalie${gN!==1?'s':''} rostered">G&thinsp;${gN}</span>
+        <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
     </div>`;
   }).join('');
@@ -3063,6 +3278,16 @@ function toast(msg){
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
+
+window.addEventListener('storage', e => {
+  const watched = [LS_PLAYERS, LS_DRAFT, LS_DRAFT_2526];
+  if(!watched.includes(e.key) || e.newValue === null) return;
+  if(e.key === LS_PLAYERS)    players       = JSON.parse(e.newValue) || [];
+  if(e.key === LS_DRAFT)      draftState    = JSON.parse(e.newValue) || {picks:[]};
+  if(e.key === LS_DRAFT_2526) draftState2526= JSON.parse(e.newValue) || {picks:[]};
+  const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
+  if(tab === '2526') render2526(); else render();
+});
 
 // ── Draft Summary view ────────────────────────────────────────────
 let _summaryIdx    = 0;
