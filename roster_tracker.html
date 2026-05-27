@@ -1451,6 +1451,7 @@ function populateFantasyFilter() {
   const prev2526 = el2526.value;
   const teams2526 = [...new Set(players.map(p => p.fantasyTeam2526).filter(Boolean))].sort();
   el2526.innerHTML = '<option value="">All 25-26 teams</option>' +
+    '<option value="__any__">Any team</option>' +
     '<option value="__none__">None (Free Agents)</option>' +
     teams2526.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   if(prev2526) el2526.value = prev2526;
@@ -1556,8 +1557,9 @@ function render(){
     if(fs&&(p.source||'manual')!==fs) return false;
     if(ff === '__none__' && p.fantasyTeam) return false;
     else if(ff && ff !== '__none__' && (p.fantasyTeam||'')!==ff) return false;
-    if(ff2526 === '__none__' && p.fantasyTeam2526) return false;
-    else if(ff2526 && ff2526 !== '__none__' && (p.fantasyTeam2526||'')!==ff2526) return false;
+    if(ff2526 === '__any__' && !p.fantasyTeam2526) return false;
+    else if(ff2526 === '__none__' && p.fantasyTeam2526) return false;
+    else if(ff2526 && ff2526 !== '__none__' && ff2526 !== '__any__' && (p.fantasyTeam2526||'')!==ff2526) return false;
     return true;
   });
 
@@ -2896,7 +2898,8 @@ function render2526(){
     if(!draftMode2526&&fp && posGroup(p.pos)!==fp) return false;
     if(fr && p.status!==fr) return false;
     if(ft && p.team!==ft) return false;
-    if(ft2425 && (p.fantasyTeam2425||'')!==ft2425) return false;
+    if(ft2425 === '__any__' && !(p.fantasyTeam2425||'')) return false;
+    else if(ft2425 && ft2425 !== '__any__' && (p.fantasyTeam2425||'')!==ft2425) return false;
     if(ft2526==='__none__' && p.sim2526) return false;
     else if(ft2526 && ft2526!=='__none__' && (p.sim2526||'')!==ft2526) return false;
     return true;
@@ -3010,7 +3013,7 @@ function render2526(){
   });
   const ft2425El=document.getElementById('filterFT2425');
   const prev2425=ft2425El.value;
-  ft2425El.innerHTML='<option value="">All 24-25 teams</option>'+all2425.map(t=>`<option${t===prev2425?' selected':''}>${esc(t)}</option>`).join('');
+  ft2425El.innerHTML='<option value="">All 24-25 teams</option><option value="__any__">Any team</option>'+all2425.map(t=>`<option${t===prev2425?' selected':''}>${esc(t)}</option>`).join('');
 
   const all2526=[...new Set(players.map(p=>p.sim2526).filter(Boolean))].sort((a,b)=>{
     const ai=DRAFT_TEAMS_2526.indexOf(a),bi=DRAFT_TEAMS_2526.indexOf(b);
