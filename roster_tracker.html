@@ -333,6 +333,10 @@ tr:hover td{background:#fafaf8}
         <input type="checkbox" id="draftAnimToggle" onchange="setDraftAnims(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
         Animations
       </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
+        <input type="checkbox" id="draftTickerToggle" onchange="setTickerEnabled(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
+        Ticker
+      </label>
       <span id="draftViewCtrl" style="border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
         <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
@@ -1844,6 +1848,8 @@ let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let animDismissed = false;
 const LS_DRAFT_ANIMS = 'hghl_draft_anims';
 let draftAnimsEnabled = localStorage.getItem(LS_DRAFT_ANIMS) !== 'false';
+const LS_TICKER_ENABLED = 'hghl_ticker_enabled';
+let tickerEnabled = localStorage.getItem(LS_TICKER_ENABLED) !== 'false';
 
 // ── Ticker RAF loop ───────────────────────────────────────────────
 let _tickerRAF = null, _tickerX = 0, _tickerLastTs = null;
@@ -2229,6 +2235,13 @@ function setDraftAnims(val){
   draftAnimsEnabled = val;
   localStorage.setItem(LS_DRAFT_ANIMS, val);
   if(!val){ stopWhaleAnimation(); showMullerOverlay(false); }
+}
+function setTickerEnabled(val){
+  tickerEnabled = val;
+  localStorage.setItem(LS_TICKER_ENABLED, val);
+  const el = document.getElementById('draftTicker');
+  if(!val){ el.style.display='none'; stopTicker(); }
+  else if(currentView==='draft'||currentView==='summary'){ el.style.display='block'; startTicker(); }
 }
 
 function setDraftView(mode, doRender=true){
@@ -3070,7 +3083,7 @@ function setView(v){
   if(v==='roster'||v==='roster2526'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
-  if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
+  if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings') syncSettings();
   const views = ['roster2526','roster','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
@@ -3080,6 +3093,8 @@ function setView(v){
   if(v==='draft'){
     const tog = document.getElementById('draftAnimToggle');
     if(tog) tog.checked = draftAnimsEnabled;
+    const ttog = document.getElementById('draftTickerToggle');
+    if(ttog) ttog.checked = tickerEnabled;
     renderDraftView();
   }
   if(v==='summary'){
@@ -3189,7 +3204,7 @@ function renderDraftView(){
   if(total === 0){
     tickerEl.style.display = 'none';
   } else {
-    if(currentView==='draft'||currentView==='summary') tickerEl.style.display = 'block';
+    if((currentView==='draft'||currentView==='summary') && tickerEnabled) tickerEl.style.display = 'block';
     const ptsByTeam = {};
     for(const t of DRAFT_TEAMS) ptsByTeam[t] = 0;
     for(const p of players){
