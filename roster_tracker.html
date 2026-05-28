@@ -270,11 +270,6 @@ tr:hover td{background:#fafaf8}
     <option value="D">Defense</option>
     <option value="G">Goalies</option>
   </select>
-  <select id="filterRoster2526" onchange="render2526()">
-    <option value="">All NHL statuses</option>
-    <option value="roster">NHL roster</option>
-    <option value="non-roster">Non-roster (minors/LTIR)</option>
-  </select>
   <select id="filterTeam2526" onchange="render2526()"></select>
   <select id="filterFT2425" onchange="render2526()"><option value="">All 24-25 teams</option></select>
   <select id="filterFT2526" onchange="render2526()"><option value="">All 25-26 teams</option></select>
@@ -420,11 +415,6 @@ tr:hover td{background:#fafaf8}
     <option value="D">Defense</option>
     <option value="G">Goalies</option>
   </select>
-  <select id="filterRoster" onchange="render()">
-    <option value="">All NHL statuses</option>
-    <option value="roster">NHL roster</option>
-    <option value="non-roster">Non-roster (minors/LTIR)</option>
-  </select>
   <select id="filterTeam" onchange="render()"></select>
   <select id="filterFantasy2526" onchange="render()">
     <option value="">All 25-26 teams</option>
@@ -538,6 +528,67 @@ tr:hover td{background:#fafaf8}
 <div style="max-width:600px;display:flex;flex-direction:column;gap:1.75rem">
 
   <div>
+    <div class="section-label">Drops</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="s-useActuals" checked onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
+        <label for="s-useActuals" style="font-size:12px;color:#d97706;font-weight:600;cursor:pointer">Use 25-26 actuals as 26-27 PPTS (temporary)</label>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
+        <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
+        <input type="number" id="s-minDrops" value="5" min="1" max="20" step="1" onchange="updateSetting('minDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
+        <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Cap ceiling 25-26 ($M)</span>
+        <input type="number" id="s-capLimit2526" value="95.5" min="50" max="200" step="0.5" onchange="updateSetting('capLimit2526',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Cap ceiling 26-27 ($M)</span>
+        <input type="number" id="s-capLimit" value="104" min="50" max="200" step="0.5" onchange="updateSetting('capLimit',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Efficiency Curve</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min pts to include in curve fit</span>
+        <input type="number" id="s-curveMinPts" value="15" min="0" max="50" step="1" onchange="updateSetting('curveMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div></div>
+      <div style="grid-column:1/-1;margin-top:4px">
+        <canvas id="curveChart" width="480" height="250" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;display:block"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Draft</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
+        <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
+        <span style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.06em">Value Mode</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Prospect bonus (age≤22, cap≤$1.25M) ×</span>
+        <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+    </div>
+  </div>
+
+  <div>
     <div class="section-label">Rank</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
@@ -567,50 +618,6 @@ tr:hover td{background:#fafaf8}
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Scarcity (ABP tiers) ×</span>
         <input type="number" id="s-wtScarcity" value="10" min="0" max="100" step="1" onchange="updateDraftWeight('wtScarcity',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <div class="section-label">Draft</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
-        <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
-        <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
-        <span style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.06em">Value Mode</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Prospect bonus (age≤22, cap≤$1.25M) ×</span>
-        <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
-        <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Drops</span>
-      </div>
-      <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="s-useActuals" checked onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
-        <label for="s-useActuals" style="font-size:12px;color:#d97706;font-weight:600;cursor:pointer">Use 25-26 actuals as 26-27 PPTS (temporary)</label>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
-        <input type="number" id="s-minDrops" value="5" min="1" max="20" step="1" onchange="updateSetting('minDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
-        <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Cap ceiling 25-26 ($M)</span>
-        <input type="number" id="s-capLimit2526" value="95.5" min="50" max="200" step="0.5" onchange="updateSetting('capLimit2526',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Cap ceiling 26-27 ($M)</span>
-        <input type="number" id="s-capLimit" value="104" min="50" max="200" step="0.5" onchange="updateSetting('capLimit',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
@@ -719,7 +726,7 @@ let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'p
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
-let minDrops = 5, maxDrops = 20, ptsTarget = 1200;
+let minDrops = 5, maxDrops = 20, ptsTarget = 1200, curveMinPts = 15;
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
@@ -864,7 +871,7 @@ function simulateDrops(){
   let dropped = 0;
 
   // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
-  const rosteredPool = players.filter(p => p.fantasyTeam && p.pts >= 15 && p.cap > 0);
+  const rosteredPool = players.filter(p => p.fantasyTeam && p.pts >= curveMinPts && p.cap > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
@@ -1525,7 +1532,7 @@ function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDi
 
 function computeDrops(allPlayers){
   // Quick indicator: uses same quadratic deficit + pts-target logic as simulateDrops().
-  const rosteredPool = allPlayers.filter(p => p.fantasyTeam && p.pts >= 15 && p.cap > 0);
+  const rosteredPool = allPlayers.filter(p => p.fantasyTeam && p.pts >= curveMinPts && p.cap > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
@@ -1578,7 +1585,6 @@ function computeDrops(allPlayers){
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
   const fp=document.getElementById('filterPos').value;
-  const fr=document.getElementById('filterRoster').value;
   const ft=document.getElementById('filterTeam').value;
   const fs=document.getElementById('filterSource').value;
   const ff=document.getElementById('filterFantasy').value;
@@ -1587,7 +1593,6 @@ function render(){
   let rows=players.filter(p=>{
     if(q&&![p.name,p.team,p.fantasyTeam||'',p.fantasyTeam2526||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(!draftMode&&fp&&posGroup(p.pos)!==fp) return false;
-    if(fr&&p.status!==fr) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
     if(ff === '__none__' && p.fantasyTeam) return false;
@@ -1601,7 +1606,7 @@ function render(){
   const dropIds = dropsSimulated ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
-  const rosteredPool2627 = players.filter(p => p.fantasyTeam && (p.pts||0) >= 15 && p.cap > 0);
+  const rosteredPool2627 = players.filter(p => p.fantasyTeam && (p.pts||0) >= curveMinPts && p.cap > 0);
   const curveFns2627 = {
     F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
@@ -2259,7 +2264,6 @@ function toggleDraftMode(){
     btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1';
     document.getElementById('search').value='';
     document.getElementById('filterPos').value='';
-    document.getElementById('filterRoster').value='';
     document.getElementById('filterTeam').value='';
     document.getElementById('filterFantasy2526').value='';
     document.getElementById('filterFantasy').value='';
@@ -2377,6 +2381,7 @@ function syncSettings(){
   set('s-wtPressure', W.wtPressure);
   set('s-wtScarcity', W.wtScarcity);
   set('s-minDrops', minDrops); set('s-maxDrops', maxDrops); set('s-ptsTarget', ptsTarget);
+  set('s-curveMinPts', curveMinPts);
   set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-draftTop', draftModeTop);
@@ -2401,6 +2406,92 @@ function updateSetting(key, val){
   else if(key === 'abpMinGP')     abpMinGP = val;
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
+  else if(key === 'curveMinPts')  { curveMinPts = val; renderCurveChart(); }
+}
+
+function renderCurveChart(){
+  const canvas = document.getElementById('curveChart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = {top: 22, right: 22, bottom: 38, left: 36};
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+  const maxCap = 14, maxPts = 140;
+  const tx = c => pad.left + (c / maxCap) * pw;
+  const ty = v => pad.top + ph - (Math.max(0, Math.min(maxPts, v)) / maxPts) * ph;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+  for(let v = 0; v <= maxPts; v += 20){ ctx.beginPath(); ctx.moveTo(pad.left, ty(v)); ctx.lineTo(W-pad.right, ty(v)); ctx.stroke(); }
+  for(let c = 0; c <= maxCap; c += 2){ ctx.beginPath(); ctx.moveTo(tx(c), pad.top); ctx.lineTo(tx(c), H-pad.bottom); ctx.stroke(); }
+
+  // Threshold line
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(pad.left, ty(curveMinPts)); ctx.lineTo(W-pad.right, ty(curveMinPts)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#f59e0b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText(`${curveMinPts}pts threshold`, W-pad.right-2, ty(curveMinPts)-3);
+
+  // Data points
+  const allRostered = players.filter(p => p.fantasyTeam && (p.pts||0) > 0 && p.cap > 0);
+  const pool = allRostered.filter(p => (p.pts||0) >= curveMinPts);
+  const POS_COLORS = {F:'#3b82f6', D:'#f97316', G:'#22c55e'};
+
+  // Below-threshold points (gray)
+  ctx.fillStyle = '#d1d5db';
+  for(const p of allRostered.filter(p => (p.pts||0) < curveMinPts)){
+    ctx.beginPath(); ctx.arc(tx(p.cap), ty(p.pts||0), 2.5, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Per-position curves
+  const curveFns = {};
+  for(const pos of ['F','D','G']){
+    curveFns[pos] = fitQuadratic(pool.filter(p=>posGroup(p.pos)===pos).map(p=>({x:p.cap,y:p.pts})));
+  }
+  for(const pos of ['F','D','G']){
+    const fn = curveFns[pos]; if(!fn) continue;
+    ctx.strokeStyle = POS_COLORS[pos]; ctx.lineWidth = 2;
+    ctx.beginPath(); let first=true;
+    for(let c=0.3; c<=maxCap; c+=0.1){
+      const y=ty(fn(c)); const x=tx(c);
+      if(y<pad.top-2||y>H-pad.bottom+2){first=true;continue;}
+      first ? ctx.moveTo(x,y) : ctx.lineTo(x,y); first=false;
+    }
+    ctx.stroke();
+  }
+
+  // In-pool data points (on top of curves)
+  ctx.globalAlpha = 0.7;
+  for(const p of pool){
+    ctx.fillStyle = POS_COLORS[posGroup(p.pos)] || '#9ca3af';
+    ctx.beginPath(); ctx.arc(tx(p.cap), ty(p.pts||0), 3, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Axes
+  ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left,pad.top); ctx.lineTo(pad.left,H-pad.bottom); ctx.lineTo(W-pad.right,H-pad.bottom); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#6b7280'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  for(let c=0; c<=maxCap; c+=2) ctx.fillText(`$${c}M`, tx(c), H-pad.bottom+13);
+  ctx.textAlign = 'right';
+  for(let v=0; v<=maxPts; v+=20) ctx.fillText(v, pad.left-4, ty(v)+3);
+
+  // Legend + pool count
+  ctx.textAlign = 'left'; ctx.font = '11px sans-serif';
+  [['F','#3b82f6'],['D','#f97316'],['G','#22c55e']].forEach(([lbl,col],i)=>{
+    const lx=pad.left+10+i*42, ly=pad.top+12;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#374151'; ctx.fillText(lbl,lx+7,ly+4);
+  });
+  ctx.fillStyle='#9ca3af'; ctx.textAlign='right'; ctx.font='10px sans-serif';
+  ctx.fillText(`${pool.length} in pool`, W-pad.right, pad.top+12);
 }
 
 function quickDraft(id){
@@ -2420,7 +2511,7 @@ function setSortCol2526(col){
 }
 
 function clearFilters2526(){
-  ['search2526','filterPos2526','filterRoster2526','filterTeam2526','filterFT2425','filterFT2526'].forEach(id=>{
+  ['search2526','filterPos2526','filterTeam2526','filterFT2425','filterFT2526'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   render2526();
@@ -2512,7 +2603,7 @@ function simulateDrops2526(){
   let dropped = 0;
 
   // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
-  const rosteredPool = players.filter(p => p.sim2526 && ppts2526blend(p) >= 15 && getCap2526(p) > 0);
+  const rosteredPool = players.filter(p => p.sim2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
   const curveFns2526 = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
@@ -2574,7 +2665,7 @@ function compareDrops2526(){
   if(!teams.length){ toast('No 25-26 team assignments found (fantasyTeam2425 missing).'); return; }
 
   // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
-  const rosteredPoolV = vp.filter(p => p.sim2526 && ppts2526blend(p) >= 15 && getCap2526(p) > 0);
+  const rosteredPoolV = vp.filter(p => p.sim2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
   const curveFnsV = {
     F: fitQuadratic(rosteredPoolV.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
     D: fitQuadratic(rosteredPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
@@ -2814,13 +2905,12 @@ function updateStats2526(){
 function render2526(){
   const q    = document.getElementById('search2526').value.toLowerCase();
   const fp   = document.getElementById('filterPos2526').value;
-  const fr   = document.getElementById('filterRoster2526').value;
   const ft   = document.getElementById('filterTeam2526').value;
   const ft2425 = document.getElementById('filterFT2425').value;
   const ft2526 = document.getElementById('filterFT2526').value;
 
   const abpMap2526 = computeABP2526(players);
-  const rosteredPool2526 = players.filter(p => p.sim2526 && ppts2526blend(p) >= 15 && getCap2526(p) > 0);
+  const rosteredPool2526 = players.filter(p => p.sim2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
   const curveFns2526 = {
     F: fitQuadratic(rosteredPool2526.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
     D: fitQuadratic(rosteredPool2526.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
@@ -2836,7 +2926,6 @@ function render2526(){
   let rows = players.filter(p=>{
     if(q&&![p.name,p.team,p.fantasyTeam2425||'',p.fantasyTeam2526||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(!draftMode2526&&fp && posGroup(p.pos)!==fp) return false;
-    if(fr && p.status!==fr) return false;
     if(ft && p.team!==ft) return false;
     if(ft2425 === '__any__' && !(p.fantasyTeam2425||'')) return false;
     else if(ft2425 && ft2425 !== '__any__' && (p.fantasyTeam2425||'')!==ft2425) return false;
@@ -3050,7 +3139,7 @@ function setView(v){
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
-  if(v==='settings') syncSettings();
+  if(v==='settings'){ syncSettings(); renderCurveChart(); }
   const views = ['roster2526','roster','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
@@ -3285,7 +3374,6 @@ const contractYearStr = p => {
 function clearFilters(){
   document.getElementById('search').value = '';
   document.getElementById('filterPos').value = '';
-  document.getElementById('filterRoster').value = '';
   document.getElementById('filterTeam').value = '';
   document.getElementById('filterFantasy2526').value = '';
   document.getElementById('filterFantasy').value = '';
