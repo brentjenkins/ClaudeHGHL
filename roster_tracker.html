@@ -2728,8 +2728,8 @@ function compareDrops2526(){
       const simKept = p.sim2526 !== null;
       const pp = ppts2526blend(p).toFixed(1);
       const cap = getCap2526(p).toFixed(2);
-      const def = deficitV(p); const defStr = (def===Infinity?'∞':(def>=0?'+':'')+def.toFixed(1));
-      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}def)`;
+      const delta = -deficitV(p); const defStr = (!isFinite(delta)?'∞':(delta>=0?'+':'')+delta.toFixed(1));
+      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
 
       if(!simKept && !actuallyKept){
         if(ELC_MANDATORY_DROPS_2526.has(key)) elcMandatory.push(label);
