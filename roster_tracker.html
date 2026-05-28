@@ -1286,16 +1286,22 @@ async function sync2425Rosters(){
     if(rd.error) throw new Error(rd.error);
     // Clear all existing 2024-25 team assignments first
     for(const p of players) p.fantasyTeam2425 = null;
-    let matched=0, unmatched=0;
+    let matched=0;
+    const unmatchedPlayers=[];
     for(const yp of rd.players){
       const ex = players.find(p => normName(p.name).toLowerCase() === normName(yp.name).toLowerCase());
       if(ex){ ex.fantasyTeam2425 = yp.fantasyTeam; matched++; }
-      else unmatched++;
+      else unmatchedPlayers.push(`${yp.name} (${yp.fantasyTeam})`);
     }
     lsSet(LS_ROSTERS2425, rd.players);
     lsSet(LS_PLAYERS, players);
     render();
-    toast(`2024-25 rosters loaded: ${matched} matched, ${unmatched} unmatched.`);
+    if(unmatchedPlayers.length){
+      console.warn('Yahoo 24-25 unmatched:', unmatchedPlayers);
+      toast(`2024-25 rosters: ${matched} matched. Unmatched: ${unmatchedPlayers.join(', ')}`);
+    } else {
+      toast(`2024-25 rosters loaded: ${matched} matched.`);
+    }
   } catch(e){
     toast('2024-25 roster sync failed: '+e.message);
   } finally {
