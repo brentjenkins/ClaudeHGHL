@@ -130,7 +130,9 @@ tr:hover td{background:#fafaf8}
 .tag-drop{background:#fee2e2;color:#991b1b}
 .tag-trade{background:#dbeafe;color:#1e40af}
 .section-label{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin:1.25rem 0 .5rem;display:flex;align-items:center;gap:8px}
-.section-label::after{content:'';flex:1;height:1px;background:#eee}
+.section-line{flex:0 0 12px;height:1px;background:#eee;border-radius:1px}
+.section-line-full{flex:1;height:1px;background:#eee}
+.section-desc{font-size:10px;color:#b0b7c3;font-weight:400;text-transform:none;letter-spacing:0;flex:1;line-height:1.4}
 .proxy-bar{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;background:#f0f0ef;font-size:12px;color:#666;cursor:default;user-select:none}
 .proxy-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db;flex-shrink:0}
 .proxy-dot.green{background:#16a34a}
@@ -403,7 +405,7 @@ tr:hover td{background:#fafaf8}
 <div class="stats-grid" id="statCards"></div>
 
 <div id="txSection" style="display:none">
-  <div class="section-label">Recent transactions</div>
+  <div class="section-label">Recent transactions <span class="section-line-full"></span></div>
   <div class="tx-list" id="txList"></div>
 </div>
 
@@ -526,7 +528,33 @@ tr:hover td{background:#fafaf8}
 <div style="max-width:600px;display:flex;flex-direction:column;gap:1.75rem">
 
   <div>
-    <div class="section-label">Drops</div>
+    <div class="section-label">NHL <span class="section-line"></span><span class="section-desc">League salary cap rules. Cap ceilings are used in drop cap-constraint checks. ELC max = league minimum + $175,000 (read-only). Editable caps are used by the drop algorithm.</span></div>
+    <div style="display:grid;grid-template-columns:72px repeat(5,1fr);gap:6px;align-items:center;font-size:12px">
+      <div></div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">24–25</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">25–26</div>
+      <div style="text-align:center;color:#185FA5;font-size:10px;font-weight:600">26–27</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">27–28</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">28–29</div>
+
+      <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Cap ceiling</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 6px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$88M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$95.5M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$104M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;font-size:12px">—</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;font-size:12px">—</div>
+
+      <div style="font-size:11px;color:#9ca3af;white-space:nowrap">ELC max</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$0.975M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$0.975M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.025M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.075M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.125M</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Drops <span class="section-line"></span><span class="section-desc">Per-position curves classify players as above/below average for their cap. Below-curve players drop first by deficit; at/above-curve players are protected. Stops once minDrops is met and projected pts reach the target.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
         <input type="checkbox" id="s-useActuals" checked onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
@@ -544,19 +572,11 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
         <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Cap ceiling 25-26 ($M)</span>
-        <input type="number" id="s-capLimit2526" value="95.5" min="50" max="200" step="0.5" onchange="updateSetting('capLimit2526',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Cap ceiling 26-27 ($M)</span>
-        <input type="number" id="s-capLimit" value="104" min="50" max="200" step="0.5" onchange="updateSetting('capLimit',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
     </div>
   </div>
 
   <div>
-    <div class="section-label">Efficiency Curve</div>
+    <div class="section-label">Efficiency Curve <span class="section-line"></span><span class="section-desc">Quadratic pts vs cap fit, per position (F/D/G). Players below curveMinPts are excluded. The △ column shows pts above (+) or below (−) the average for their position at their cap. Drives drop tier placement and sort order.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min pts to include in curve fit</span>
@@ -570,7 +590,7 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Draft</div>
+    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Position pressure boosts scores for scarce positions (high demand vs available supply). Value mode prospect bonus adds weight to young cheap players (age ≤ 22, cap ≤ $1.25M) in Value Mode ordering only.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
@@ -584,7 +604,7 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Rank</div>
+    <div class="section-label">Rank <span class="section-line"></span><span class="section-desc">Weighted score for the Rank column and Value Mode: PPTS × position multiplier + scarcity + contract yrs + youth + source confidence. Position multipliers do not affect drops — drops use per-position efficiency curves.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Position multiplier</span>
@@ -618,7 +638,7 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">ABP</div>
+    <div class="section-label">ABP <span class="section-line"></span><span class="section-desc">Available Better Players: unrostered players at same position with cap ≤ (this player's cap + wiggle%) and more pts. Min GP filters fringe call-ups via last season's GP. Low ABP = scarce position = draft premium.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min GP</span>
@@ -723,6 +743,8 @@ let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllS
 let draftViewMode = 'compact';
 let minDrops = 5, maxDrops = 20, ptsTarget = 1200, curveMinPts = 15;
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
+const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
+const ELC_MAX_2627 = 1.025; // ELC max cap hit 2026-27
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -805,7 +827,7 @@ function rankPlayers(){
       const scoreB = (p.pts / p.cap) * W.wtPPTSM;
       const scoreC = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtYrs;
       const scoreD = Math.max(0, 35 - age) * W.wtAge;
-      const scoreE = (age <= 22 && p.cap <= 1.25) ? Math.max(0, 23 - age) * W.wtProspect : 0;
+      const scoreE = (age <= 22 && p.cap <= ELC_MAX_2627) ? Math.max(0, 23 - age) * W.wtProspect : 0;
       const scoreF = Math.max(0, srcN - 1) * W.wtSourceConf;
       return { p, score: scoreA + scoreB + scoreC + scoreD + scoreE + scoreF };
     })
@@ -879,7 +901,7 @@ function simulateDrops(){
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
   // Prospects (age≤22, cap≤$1.25M) protected — sorted last so they're only dropped if forced
-  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= 1.25;
+  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
   // deficit > 0: player is below their position curve; sort desc = most inefficient first
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   // isHighVal: at or above average for their position at this cap level
@@ -1538,7 +1560,7 @@ function computeDrops(allPlayers){
                            .sort((a,b) => b.pts - a.pts).slice(0, 30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
-  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= 1.25;
+  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return fn ? (p.pts||0)-fn(p.cap) >= 0 : (p.pts||0) >= DROP_VALUE_FLOOR; };
 
@@ -1665,7 +1687,7 @@ function render(){
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=(ageRaw<=22&&(p.cap||0)<=1.25)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
+        const tProspect=(ageRaw<=22&&(p.cap||0)<=ELC_MAX_2627)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
         const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
@@ -1687,7 +1709,7 @@ function render(){
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=(ageRaw<=22&&(p.cap||0)<=1.25)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
+        const tProspect=(ageRaw<=22&&(p.cap||0)<=ELC_MAX_2627)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
         const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
@@ -2238,7 +2260,7 @@ function simulateBestPick(){
       const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
       const age2    = calcAge(p) ?? 99;
       const youth   = Math.max(0, 35 - age2) * draftWeights.wtAge;
-      const prospect2 = (age2 <= 22 && (p.cap||0) <= 1.25) ? Math.max(0, 23 - age2) * draftWeights.wtProspect : 0;
+      const prospect2 = (age2 <= 22 && (p.cap||0) <= ELC_MAX_2627) ? Math.max(0, 23 - age2) * draftWeights.wtProspect : 0;
       const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
       const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
       return adjPts + ptsPerM + yrs + youth + prospect2 + conf2;
@@ -2375,7 +2397,6 @@ function syncSettings(){
   set('s-wtScarcity', W.wtScarcity);
   set('s-minDrops', minDrops); set('s-maxDrops', maxDrops); set('s-ptsTarget', ptsTarget);
   set('s-curveMinPts', curveMinPts);
-  set('s-capLimit', CAP_LIMIT); set('s-capLimit2526', CAP_LIMIT_2526);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
@@ -2609,7 +2630,7 @@ function simulateDrops2526(){
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+ppts2526blend(p), 0) / faPool.length : 40;
 
   // Prospects (age≤23, cap≤$1.25M) protected — sorted last so they're only dropped if forced
-  const isProspect2526 = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= 1.25;
+  const isProspect2526 = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
   const deficit2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const isHighVal2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p); return fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR; };
 
@@ -2670,7 +2691,7 @@ function compareDrops2526(){
                     .sort((a,b) => ppts2526blend(b) - ppts2526blend(a)).slice(0, 30);
   const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p) => s+ppts2526blend(p), 0) / faPoolV.length : 40;
 
-  const isProspectV = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= 1.25;
+  const isProspectV = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
   const deficitV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const isHighValV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p); return fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR; };
 
@@ -2798,7 +2819,7 @@ function rankPlayers2526(){
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
     const ageS = calcAge(p) ?? 99;
     const youth = Math.max(0, 35-ageS);
-    const prospectS = (ageS <= 23 && getCap2526(p) <= 1.25) ? Math.max(0, 24 - ageS) * draftWeights.wtProspect : 0;
+    const prospectS = (ageS <= 23 && getCap2526(p) <= ELC_MAX_2526) ? Math.max(0, 24 - ageS) * draftWeights.wtProspect : 0;
     const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
     const confS = Math.max(0, srcNS - 1) * draftWeights.wtSourceConf;
     p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + yrs*draftWeights.wtYrs + youth*draftWeights.wtAge + prospectS + confS;
@@ -2989,7 +3010,7 @@ function render2526(){
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=(ageRaw<=23&&getCap2526(p)<=1.25)?Math.max(0,24-ageRaw)*draftWeights.wtProspect:0;
+        const tProspect=(ageRaw<=23&&getCap2526(p)<=ELC_MAX_2627)?Math.max(0,24-ageRaw)*draftWeights.wtProspect:0;
         const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds2526=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect+tConf;
@@ -3012,7 +3033,7 @@ function render2526(){
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw2526=calcAge(p)??99;
-        const tProspect2526=(ageRaw2526<=23&&getCap2526(p)<=1.25)?Math.max(0,24-ageRaw2526)*draftWeights.wtProspect:0;
+        const tProspect2526=(ageRaw2526<=23&&getCap2526(p)<=ELC_MAX_2627)?Math.max(0,24-ageRaw2526)*draftWeights.wtProspect:0;
         const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
         const _ds2526=tPPTS+tSc+tPPTSM+tYrs+tYouth+tProspect2526+tConf2526;
