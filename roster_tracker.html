@@ -217,7 +217,7 @@ tr:hover td{background:#fafaf8}
 <div class="view-tabs" style="align-items:center">
   <button class="view-tab" onclick="setView('roster2526')">HGHL 25-26 Players</button>
   <button class="view-tab active" onclick="setView('roster')">HGHL 26-27 Players</button>
-  <button class="view-tab" onclick="setView('draft')">HGHL 26-27 Draft</button>
+  <button class="view-tab" id="tab-draft" onclick="setView('draft')">HGHL 26-27 Draft</button>
   <button class="view-tab" onclick="setView('summary')">HGHL 26-27 Team Summary</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
   <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
@@ -897,6 +897,7 @@ function simulateDrops(){
   dropsSimulated = true;
   lsSet(LS_DROPS, true);
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
+  updateDraftTab();
   toast(`Simulate drops complete — ${dropped} players dropped.`);
 }
 
@@ -2140,6 +2141,7 @@ function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   document.getElementById('draftResults').style.display = 'none';
   resetDraftTimer();
   renderDraftView();
+  updateDraftTab();
 }
 
 function undoLastPick(){
@@ -2150,6 +2152,7 @@ function undoLastPick(){
   saveDraft();
   resetDraftTimer();
   renderDraftView();
+  updateDraftTab();
 }
 
 function simulateBestPick(){
@@ -2945,7 +2948,25 @@ function render2526(){
   updateStats2526();
 }
 
+function updateDraftTab(){
+  const btn = document.getElementById('tab-draft');
+  if(!btn) return;
+  const ROSTER_TOTAL = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
+  const allFull = dropsSimulated && DRAFT_TEAMS.every(t => {
+    const retained = players.filter(p => p.fantasyTeam === t).length;
+    const picked   = draftState.picks.filter(p => p.team === t).length;
+    return retained + picked >= ROSTER_TOTAL;
+  });
+  const blocked = !dropsSimulated || allFull;
+  btn.style.opacity  = blocked ? '0.45' : '';
+  btn.style.cursor   = blocked ? 'not-allowed' : '';
+  btn.title = !dropsSimulated ? 'Run Simulate Drops first'
+            : allFull         ? 'All rosters are full'
+            : '';
+}
+
 function setView(v){
+  if(v === 'draft' && !dropsSimulated){ toast('Run Simulate Drops first.'); return; }
   currentView = v;
   document.getElementById('view-roster2526').style.display = v==='roster2526' ? '' : 'none';
   document.getElementById('view-roster').style.display  = v==='roster'  ? '' : 'none';
@@ -3397,6 +3418,7 @@ function toast(msg){
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
+updateDraftTab();
 
 window.addEventListener('storage', e => {
   const watched = [LS_PLAYERS, LS_DRAFT, LS_DRAFT_2526];
