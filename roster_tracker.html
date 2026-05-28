@@ -885,8 +885,11 @@ function simulateDrops(){
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const isValuable = (p.pts||0) >= DROP_VALUE_FLOOR || isProspect(p);
+      // High-value and prospect players are only dropped to satisfy minDrops, never for pts/cap
+      if(isValuable && numDropped >= minDrops) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * 0.9;
-      if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
       dropList.push(p);
       keptPts -= (p.pts || 0);
       keptCap -= (p.cap || 0);
@@ -1535,8 +1538,10 @@ function computeDrops(allPlayers){
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const isValuable = (p.pts||0) >= DROP_VALUE_FLOOR || isProspect(p);
+      if(isValuable && numDropped >= minDrops) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * 0.9;
-      if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
       dropIds.add(p.id);
       keptPts -= (p.pts || 0);
       keptCap -= (p.cap || 0);
@@ -2506,8 +2511,10 @@ function simulateDrops2526(){
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const isValuable = ppts2526blend(p) >= DROP_VALUE_FLOOR || isProspect2526(p);
+      if(isValuable && numDropped >= minDrops) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * 0.9;
-      if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
       keptCap -= getCap2526(p);
@@ -2563,8 +2570,10 @@ function compareDrops2526(){
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const isValuable = ppts2526blend(p) >= DROP_VALUE_FLOOR || isProspectV(p);
+      if(isValuable && numDropped >= minDrops) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * 0.9;
-      if(numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
       keptCap -= getCap2526(p);
