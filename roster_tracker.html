@@ -244,12 +244,13 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)">📈 ESPN 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
-      <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset Draft</button>
-      <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
+      <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
       <button class="btn btn-indigo" onclick="simulateDrops2526()">⬇ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
       <button class="btn btn-blue-outline" onclick="compareDrops2526()" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
+      <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
@@ -386,10 +387,11 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Draft</span>
-      <button class="btn btn-red-outline" onclick="resetDraft()">Reset Draft</button>
-      <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
+      <button class="btn btn-red-outline" onclick="resetDraft()">Reset</button>
       <button class="btn btn-indigo" onclick="simulateDrops()">⬇ Simulate Drops</button>
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
+      <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
@@ -578,11 +580,8 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
         <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
-      <div style="grid-column:1/-1;margin-top:4px;padding-top:8px;border-top:1px solid #f0f0f0">
-        <span style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.06em">Value Mode</span>
-      </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Prospect bonus (age≤22, cap≤$1.25M) ×</span>
+        <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤$1.25M) ×</span>
         <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
@@ -631,7 +630,7 @@ tr:hover td{background:#fafaf8}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min pts</span>
-        <input type="number" id="s-abpMinPts" value="20" min="0" max="200" step="1" onchange="updateSetting('abpMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="s-abpMinPts" value="15" min="0" max="200" step="1" onchange="updateSetting('abpMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Cap wiggle (% of cap)</span>
@@ -3309,7 +3308,7 @@ function renderDraftSearch(){
 // ABP config — updated live by the controls row
 let abpMinGP  = 5;
 let abpWiggle = 0.5;   // % of cap limit
-let abpMinPts = 20;
+let abpMinPts = 15;
 
 function ppts2526blend(p){
   const srcs = [];
@@ -3324,7 +3323,8 @@ function ppts2526blend(p){
 const getCap2526 = p => p.cap2526 != null ? p.cap2526 : (p.cap || 0);
 
 function computeABP2526(allPlayers){
-  const fas = allPlayers.filter(p => !p.sim2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0);
+  const fas = allPlayers.filter(p => !p.sim2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0 &&
+    (abpMinGP <= 0 || (p.gp2526||0) >= abpMinGP));
   const abpMap = new Map();
   for(const p of allPlayers){
     const pp = ppts2526blend(p);
@@ -3342,7 +3342,8 @@ function computeABP2526(allPlayers){
 function computeABP(allPlayers){
   const fas = allPlayers.filter(p =>
     !p.fantasyTeam && p.cap > 0 && p.pts > 0 &&
-    (abpMinPts <= 0 || p.pts >= abpMinPts)
+    (abpMinPts <= 0 || p.pts >= abpMinPts) &&
+    (abpMinGP  <= 0 || (p.gp2526||0) >= abpMinGP)
   );
   const abpMap = new Map();
   for(const p of allPlayers){
