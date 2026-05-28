@@ -718,6 +718,7 @@ let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
 let minDrops = 5, maxDrops = 20, ptsTarget = 1200;
+const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 
 const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ? 'D' : p === 'G' ? 'G' : 'F';
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -871,9 +872,11 @@ function simulateDrops(){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const nonProspects = remaining.filter(p => !isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
-    const prospects    = remaining.filter(p =>  isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
-    const candidates   = [...nonProspects, ...prospects];
+    // Three tiers: low-value non-prospects first, high-value non-prospects second (last resort), prospects last
+    const lowVal   = remaining.filter(p => !isProspect(p) && (p.pts||0) < DROP_VALUE_FLOOR).sort((a,b) => deficit(b) - deficit(a));
+    const highVal  = remaining.filter(p => !isProspect(p) && (p.pts||0) >= DROP_VALUE_FLOOR).sort((a,b) => deficit(b) - deficit(a));
+    const prospects = remaining.filter(p => isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
+    const candidates = [...lowVal, ...highVal, ...prospects];
 
     const dropList = [...mandatory];
     let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
@@ -882,7 +885,6 @@ function simulateDrops(){
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
-      // Stop only when both pts target and cap headroom conditions are satisfied
       const capOk = keptCap <= CAP_LIMIT - numDropped * 0.9;
       if(numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
       dropList.push(p);
@@ -1521,9 +1523,10 @@ function computeDrops(allPlayers){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const nonProspects = remaining.filter(p => !isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
-    const prospects    = remaining.filter(p =>  isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
-    const candidates   = [...nonProspects, ...prospects];
+    const lowVal   = remaining.filter(p => !isProspect(p) && (p.pts||0) < DROP_VALUE_FLOOR).sort((a,b) => deficit(b) - deficit(a));
+    const highVal  = remaining.filter(p => !isProspect(p) && (p.pts||0) >= DROP_VALUE_FLOOR).sort((a,b) => deficit(b) - deficit(a));
+    const prospects = remaining.filter(p => isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
+    const candidates = [...lowVal, ...highVal, ...prospects];
 
     mandatory.forEach(p => dropIds.add(p.id));
     let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
@@ -2491,9 +2494,10 @@ function simulateDrops2526(){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const nonProspects = remaining.filter(p => !isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
-    const prospects    = remaining.filter(p =>  isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
-    const candidates   = [...nonProspects, ...prospects];
+    const lowVal2526   = remaining.filter(p => !isProspect2526(p) && ppts2526blend(p) < DROP_VALUE_FLOOR).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const highVal2526  = remaining.filter(p => !isProspect2526(p) && ppts2526blend(p) >= DROP_VALUE_FLOOR).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const prospects2526 = remaining.filter(p => isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const candidates   = [...lowVal2526, ...highVal2526, ...prospects2526];
 
     const dropList = [...mandatory];
     let keptPts = remaining.reduce((s,p) => s + ppts2526blend(p), 0);
@@ -2547,9 +2551,10 @@ function compareDrops2526(){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const nonProspects = remaining.filter(p => !isProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
-    const prospects    = remaining.filter(p =>  isProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
-    const candidates   = [...nonProspects, ...prospects];
+    const lowValV   = remaining.filter(p => !isProspectV(p) && ppts2526blend(p) < DROP_VALUE_FLOOR).sort((a,b) => deficitV(b) - deficitV(a));
+    const highValV  = remaining.filter(p => !isProspectV(p) && ppts2526blend(p) >= DROP_VALUE_FLOOR).sort((a,b) => deficitV(b) - deficitV(a));
+    const prospectsV = remaining.filter(p => isProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
+    const candidates = [...lowValV, ...highValV, ...prospectsV];
 
     const dropList = [...mandatory];
     let keptPts = remaining.reduce((s,p) => s + ppts2526blend(p), 0);
