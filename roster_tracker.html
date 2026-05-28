@@ -283,7 +283,7 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th colspan="7"></th>
   <th colspan="8" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
-  <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th id="th-group-last-2526" colspan="1"></th>
 </tr>
 <tr>
@@ -298,14 +298,12 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol2526('proj2526_dfo')" style="color:#bbb" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort2526-proj2526_dfo"></span></th>
   <th onclick="setSortCol2526('proj2526_espn')" style="color:#bbb" title="ESPN 2025-26 projection">ESPN <span id="sort2526-proj2526_espn"></span></th>
   <th onclick="setSortCol2526('ppts2526blend')" style="color:#185FA5">PPTS <span id="sort2526-ppts2526blend"></span></th>
-  <th onclick="setSortCol2526('ppp2526proj')" style="color:#185FA5" title="Power Play Points (blended projection)">PPP <span id="sort2526-ppp2526proj"></span></th>
   <th onclick="setSortCol2526('ptsperm2526')" style="color:#185FA5">PPTS/$M <span id="sort2526-ptsperm2526"></span></th>
   <th onclick="setSortCol2526('curvedelta2526')" style="color:#185FA5" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort2526-curvedelta2526"></span></th>
   <th onclick="setSortCol2526('rank2526')" style="color:#185FA5">Rank <span id="sort2526-rank2526"></span></th>
   <th onclick="setSortCol2526('abp2526')" title="Available Better Players (25-26)" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort2526-abp2526"></span></th>
   <th onclick="setSortCol2526('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort2526-gp2526"></span></th>
-  <th onclick="setSortCol2526('pts2526')" style="color:#bbb">Pts <span id="sort2526-pts2526"></span></th>
-  <th onclick="setSortCol2526('ppp2526')" style="color:#bbb;border-right:2px solid #e5e7eb" title="2025-26 actual power play points">PPP <span id="sort2526-ppp2526"></span></th>
+  <th onclick="setSortCol2526('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort2526-pts2526"></span></th>
   <th id="th-score2526" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
   <th></th>
 </tr>
@@ -438,7 +436,7 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th colspan="7"></th>
-  <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="2" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th colspan="8" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2"></th>
 </tr>
@@ -451,13 +449,11 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('fantasyTeam')" style="color:#185FA5">26-27 Team <span id="sort-fantasyTeam"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('gp2526')" style="color:#9ca3af" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
-  <th onclick="setSortCol('pts2526')" style="color:#9ca3af" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
-  <th onclick="setSortCol('ppp2526')" style="color:#9ca3af;border-right:2px solid #e5e7eb" title="2025-26 actual power play points">PPP <span id="sort-ppp2526"></span></th>
+  <th onclick="setSortCol('pts2526')" style="color:#9ca3af;border-right:2px solid #e5e7eb" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
   <th onclick="setSortCol('ptsDFO')" style="color:#185FA5" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
-  <th onclick="setSortCol('ppp')" style="color:#185FA5" title="Power Play Points (blended projection)">PPP <span id="sort-ppp"></span></th>
   <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('curvedelta')" style="color:#185FA5" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort-curvedelta"></span></th>
   <th onclick="setSortCol('rank')" style="color:#185FA5">Rank <span id="sort-rank"></span></th>
@@ -1623,7 +1619,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','gp2526','pts2526','ppp2526','ptsAthletic','ptsDFO','ptsESPN','pts','ppp','ptsperm','curvedelta','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','fantasyTeam2526','fantasyTeam','cap','gp2526','pts2526','ptsAthletic','ptsDFO','ptsESPN','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -1704,7 +1700,7 @@ function render(){
   }
 
   const draftModeLabel = draftSubMode==='value' ? 'Value Mode' : 'Best Available';
-  const draftSectionHdr = draftMode ? `<tr><td colspan="21" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel}</td></tr>` : '';
+  const draftSectionHdr = draftMode ? `<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody');
   tbody.innerHTML=rows.length?(draftSectionHdr+rows.map(p=>{
@@ -1738,13 +1734,11 @@ function render(){
       </td>
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
       <td style="color:#9ca3af">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
-      <td style="color:#9ca3af;border-right:2px solid #e5e7eb">${p.ppp2526>0?p.ppp2526:'—'}</td>
+      <td style="color:#9ca3af;border-right:2px solid #e5e7eb">${p.pts2526>0?p.pts2526:'—'}</td>
       <td style="color:#9ca3af">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
       <td style="color:#9ca3af">${p.ptsDFO>0?p.ptsDFO:'—'}</td>
       <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
       <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
-      <td>${p.ppp>0?p.ppp:'—'}</td>
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
@@ -1759,7 +1753,7 @@ function render(){
             : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join('')):`<tr><td colspan="20" class="empty">No players found</td></tr>`;
+  }).join('')):`<tr><td colspan="18" class="empty">No players found</td></tr>`;
 
   const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
   document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
@@ -2948,7 +2942,7 @@ function render2526(){
   });
 
   const sortCols2526 = ['name','pos','age','team','fantasyTeam2425','fantasyTeam2526','cap',
-    'proj2526_athletic','proj2526_dfo','proj2526_espn','ppts2526blend','ppp2526proj','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526','ppp2526'];
+    'proj2526_athletic','proj2526_dfo','proj2526_espn','ppts2526blend','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526'];
   sortCols2526.forEach(c=>{
     const el=document.getElementById('sort2526-'+c);
     if(el) el.textContent=sortCol2526===c?(sortDir2526>0?'↑':'↓'):'';
@@ -3056,7 +3050,7 @@ function render2526(){
   ft2526El.value=prev2526;
 
   const draftModeLabel2526 = draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
-  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="23" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel2526}</td></tr>` : '';
+  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="21" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel2526}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody2526');
   tbody.innerHTML=rows.length?(draftSectionHdr2526+rows.map(p=>{
@@ -3087,14 +3081,12 @@ function render2526(){
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
       <td>${pp>0?pp:'—'}</td>
-      <td>${p.ppp2526proj>0?p.ppp2526proj:'—'}</td>
       <td>${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
       ${(()=>{const s=curveDelta2526(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td>${rankStr}</td>
       <td style="border-right:2px solid #f0f0ee">${abpStr}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
-      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.ppp2526>0?p.ppp2526:'—'}</td>
+      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
       ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
@@ -3103,7 +3095,7 @@ function render2526(){
           : draftMode2526 ? `<button class="btn-draft" onclick="quickDraft2526(${p.id})">Draft</button>` : ''}
       </td>
     </tr>`;
-  }).join('')):'<tr><td colspan="22" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
+  }).join('')):'<tr><td colspan="20" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
   updateStats2526();
