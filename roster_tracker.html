@@ -591,7 +591,7 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Drops</span>
       </div>
       <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="s-useActuals" onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
+        <input type="checkbox" id="s-useActuals" checked onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
         <label for="s-useActuals" style="font-size:12px;color:#d97706;font-weight:600;cursor:pointer">Use 25-26 actuals as 26-27 PPTS (temporary)</label>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
@@ -742,7 +742,7 @@ function dedup(){
   }
 }
 
-let useActualsPts = false;
+let useActualsPts = true;
 
 // Recompute p.pts from all available projection sources.
 // Priority: manual override > (actuals override if useActualsPts) > blend of external sources > 25-26 actuals fallback.
