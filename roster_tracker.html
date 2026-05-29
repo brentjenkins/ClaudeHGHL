@@ -590,14 +590,14 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Position pressure boosts scores for scarce positions (high demand vs available supply). Value mode prospect bonus adds weight to young cheap players (age ≤ 22, cap ≤ $1.25M) in Value Mode ordering only.</span></div>
+    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Position pressure boosts scores for scarce positions (high demand vs available supply). Value mode prospect bonus adds weight to young cheap players (age ≤ 22, cap ≤ ELC max) in Value Mode ordering only.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
         <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤$1.25M) ×</span>
+        <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤ELC max) ×</span>
         <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
@@ -741,6 +741,8 @@ let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'p
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
+let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
+let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDrops = 5, maxDrops = 20, ptsTarget = 1200, curveMinPts = 15;
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
@@ -900,12 +902,14 @@ function simulateDrops(){
                         .sort((a,b) => b.pts - a.pts).slice(0, 30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
-  // Prospects (age≤22, cap≤$1.25M) protected — sorted last so they're only dropped if forced
+  // Prospects (age≤22, cap≤ELC_MAX_2627) protected — sorted last so they're only dropped if forced
   const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
   // deficit > 0: player is below their position curve; sort desc = most inefficient first
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
-  // isHighVal: at or above average for their position at this cap level
-  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return fn ? (p.pts||0)-fn(p.cap) >= 0 : (p.pts||0) >= DROP_VALUE_FLOOR; };
+  // Best FA pts by position — protect any rostered player who scores more than every FA at their position
+  const bestFAByPos = {};
+  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.fantasyTeam&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
+  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?(p.pts||0)-fn(p.cap)>=0:(p.pts||0)>=DROP_VALUE_FLOOR)||(p.pts||0)>(bestFAByPos[pg]||0); };
 
   for(const team of teams){
     const roster = players.filter(p => p.fantasyTeam === team);
@@ -1562,7 +1566,9 @@ function computeDrops(allPlayers){
 
   const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
-  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return fn ? (p.pts||0)-fn(p.cap) >= 0 : (p.pts||0) >= DROP_VALUE_FLOOR; };
+  const bestFAByPos = {};
+  for(const pg of ['F','D','G']){ const fas=allPlayers.filter(x=>!x.fantasyTeam&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
+  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?(p.pts||0)-fn(p.cap)>=0:(p.pts||0)>=DROP_VALUE_FLOOR)||(p.pts||0)>(bestFAByPos[pg]||0); };
 
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
@@ -1650,10 +1656,11 @@ function render(){
   const onClockTeam = DRAFT_TEAMS[draftState.picks.length % 9];
   let pressureHdr = '';
   if(draftMode){
-    const teamPicks = draftState.picks.filter(p=>p.team===onClockTeam);
-    const fN2=teamPicks.filter(p=>posGroup(p.pos)==='F').length;
-    const dN2=teamPicks.filter(p=>posGroup(p.pos)==='D').length;
-    const gN2=teamPicks.filter(p=>posGroup(p.pos)==='G').length;
+    const viewTeam = draftFocusTeam || onClockTeam;
+    const viewRoster = players.filter(p=>p.fantasyTeam===viewTeam);
+    const fN2=viewRoster.filter(p=>posGroup(p.pos)==='F').length;
+    const dN2=viewRoster.filter(p=>posGroup(p.pos)==='D').length;
+    const gN2=viewRoster.filter(p=>posGroup(p.pos)==='G').length;
     const need={F:Math.max(0,DRAFT_ROSTER_MAX.F-fN2),D:Math.max(0,DRAFT_ROSTER_MAX.D-dN2),G:Math.max(0,DRAFT_ROSTER_MAX.G-gN2)};
     const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
@@ -1721,8 +1728,8 @@ function render(){
       : allScored.sort((a,b)=>b._dsNormal-a._dsNormal);
   }
 
-  const draftModeLabel = draftSubMode==='value' ? 'Value Mode' : 'Best Available';
-  const draftSectionHdr = draftMode ? `<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel}</td></tr>` : '';
+  const draftModeLabel = draftFocusTeam ? `Viewing: ${draftFocusTeam}` : draftSubMode==='value' ? 'Value Mode' : 'Best Available';
+  const draftSectionHdr = draftMode ? `<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel)}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody');
   tbody.innerHTML=rows.length?(draftSectionHdr+rows.map(p=>{
@@ -2202,6 +2209,7 @@ function resetDraft(){
 
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   animDismissed = false;
+  draftFocusTeam = null;
   const team = DRAFT_TEAMS[draftState.picks.length % 9];
   const toPts = players.filter(p=>p.fantasyTeam===team).reduce((s,p)=>s+(p.pts||0),0);
   _standingsAnim = {team, fromPts: toPts-(projPts||0), toPts};
@@ -2272,8 +2280,15 @@ function simulateBestPick(){
   makeDraftPick(pick.name, pick.pos, pick.team||'—', pick.cap||0, pick.pts||0);
 }
 
+function setDraftFocus(t){
+  if(!draftMode) return;
+  draftFocusTeam = (draftFocusTeam === t) ? null : t;
+  render();
+}
+
 function toggleDraftMode(){
   draftMode = !draftMode;
+  draftFocusTeam = null;
   const btn = document.getElementById('draftModeBtn');
   if(draftMode){
     btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1';
@@ -2541,8 +2556,15 @@ function filterToTeam2526(team, pos){
   render2526();
 }
 
+function setDraftFocus2526(t){
+  if(!draftMode2526) return;
+  draftFocusTeam2526 = (draftFocusTeam2526 === t) ? null : t;
+  render2526();
+}
+
 function toggleDraftMode2526(){
   draftMode2526 = !draftMode2526;
+  draftFocusTeam2526 = null;
   const btn = document.getElementById('draftMode2526Btn');
   btn.style.background = draftMode2526 ? '#6366f1' : '#e0e7ff';
   btn.style.color = draftMode2526 ? '#fff' : '#6366f1';
@@ -2564,6 +2586,7 @@ function setDraftSubMode2526(mode){
 
 
 function quickDraft2526(id){
+  draftFocusTeam2526 = null;
   const onClock = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
   const p = players.find(x=>x.id===id); if(!p) return;
   p.sim2526 = onClock;
@@ -2629,10 +2652,12 @@ function simulateDrops2526(){
                         .sort((a,b) => ppts2526blend(b) - ppts2526blend(a)).slice(0, 30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+ppts2526blend(p), 0) / faPool.length : 40;
 
-  // Prospects (age≤23, cap≤$1.25M) protected — sorted last so they're only dropped if forced
+  // Prospects (age≤23, cap≤ELC_MAX_2526) protected — sorted last so they're only dropped if forced
   const isProspect2526 = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
   const deficit2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const isHighVal2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p); return fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR; };
+  const bestFAByPos2526 = {};
+  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.sim2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPos2526[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
+  const isHighVal2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),pg=posGroup(p.pos); return (fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR)||pp>(bestFAByPos2526[pg]||0); };
 
   for(const team of teams){
     const roster = players.filter(p => p.sim2526 === team);
@@ -2693,7 +2718,9 @@ function compareDrops2526(){
 
   const isProspectV = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
   const deficitV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const isHighValV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p); return fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR; };
+  const bestFAByPosV = {};
+  for(const pg of ['F','D','G']){ const fas=vp.filter(x=>!x.sim2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPosV[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
+  const isHighValV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p),pg=posGroup(p.pos); return (fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR)||pp>(bestFAByPosV[pg]||0); };
 
   // Run the simulation on the virtual copy
   for(const team of teams){
@@ -2901,11 +2928,12 @@ function updateStats2526(){
     const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
     const cppStr = picks>0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
-    return `<div class="team-card">
+    const isFocused2526 = draftMode2526 && draftFocusTeam2526 === t;
+    return `<div class="team-card" ${draftMode2526?`onclick="setDraftFocus2526('${esc(t)}')" style="cursor:pointer;${isFocused2526?'outline:2px solid #6366f1;outline-offset:-2px;':''}"`:''}">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${t===onClock&&draftMode2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
+        ${isFocused2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':t===onClock&&draftMode2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
@@ -2973,7 +3001,8 @@ function render2526(){
   const onClockTeam2526 = DRAFT_TEAMS_2526[draftState2526.picks.length % 9];
   let pressureHdr2526 = '';
   if(draftMode2526){
-    const teamRoster = players.filter(p=>p.sim2526===onClockTeam2526);
+    const viewTeam2526 = draftFocusTeam2526 || onClockTeam2526;
+    const teamRoster = players.filter(p=>p.sim2526===viewTeam2526);
     const need={
       F:Math.max(0,DRAFT_ROSTER_MAX.F-teamRoster.filter(p=>posGroup(p.pos)==='F').length),
       D:Math.max(0,DRAFT_ROSTER_MAX.D-teamRoster.filter(p=>posGroup(p.pos)==='D').length),
@@ -3070,8 +3099,8 @@ function render2526(){
   ft2526El.innerHTML='<option value="">All 25-26 teams</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option>${esc(t)}</option>`).join('');
   ft2526El.value=prev2526;
 
-  const draftModeLabel2526 = draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
-  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="21" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${draftModeLabel2526}</td></tr>` : '';
+  const draftModeLabel2526 = draftFocusTeam2526 ? `Viewing: ${draftFocusTeam2526}` : draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
+  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="21" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2526)}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody2526');
   tbody.innerHTML=rows.length?(draftSectionHdr2526+rows.map(p=>{
@@ -3491,11 +3520,12 @@ function updateStats(){
     const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
     const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
     const cppStr = picks > 0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
-    return `<div class="team-card">
+    const isFocused = draftMode && draftFocusTeam === t;
+    return `<div class="team-card" ${draftMode?`onclick="setDraftFocus('${esc(t)}')" style="cursor:pointer;${isFocused?'outline:2px solid #6366f1;outline-offset:-2px;':''}"`:''}">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${t===onClock&&draftMode?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
+        ${isFocused?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':t===onClock&&draftMode?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
