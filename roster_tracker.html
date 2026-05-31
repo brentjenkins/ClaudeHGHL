@@ -373,7 +373,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
-      <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings()" title="Scrape current contract details and cap hits from PuckPedia (~15s)">✍ Signings</button>
+      <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings(event)" title="Full sync: scrape all current contracts from PuckPedia (~15s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -553,8 +553,12 @@ tr:hover td{background:#fafaf8}
         <label for="s-useActuals" style="font-size:12px;color:#d97706;font-weight:600;cursor:pointer">Use 25-26 actuals as 26-27 PPTS (temporary)</label>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
-        <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
+        <input type="number" id="s-minDropF" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropF',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min D drops per team</span>
+        <input type="number" id="s-minDropD" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropD',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
@@ -565,12 +569,8 @@ tr:hover td{background:#fafaf8}
         <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
-        <input type="number" id="s-minDropF" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropF',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min D drops per team</span>
-        <input type="number" id="s-minDropD" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropD',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
+        <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
@@ -739,7 +739,8 @@ const LS_PLAYERS = 'nhl_players_v3';
 const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
-const LS_DROPS   = 'hghl_drops_simulated';
+const LS_DROPS        = 'hghl_drops_simulated';
+const LS_SIGNINGS_HWM = 'hghl_signings_hwm'; // YYYY-MM-DD high-water mark for incremental signings
 const LS_ESPN     = 'hghl_espn_proj';
 const LS_ATHLETIC  = 'hghl_athletic_proj';
 const LS_DFO       = 'hghl_dfo_proj';
@@ -1147,14 +1148,39 @@ function defaultPlayers(){
     {id:10,name:'Sidney Crosby',team:'PIT',pos:'C',cap:8.7,pts:78,status:'roster',source:'manual',fantasyTeam:''},
   ];
 }
-async function syncSignings(){
+function updateSigningsBtn(){
+  const btn = document.getElementById('signingsBtn');
+  if(!btn) return;
+  const hwm = localStorage.getItem(LS_SIGNINGS_HWM);
+  btn.title = hwm
+    ? `Load signings since ${hwm} (shift-click for full sync)`
+    : 'Full sync: scrape all current contracts from PuckPedia (~15s)';
+}
+
+async function syncSignings(e){
   if(!proxyOk){ toast('Start the proxy first.'); return; }
   const btn = document.getElementById('signingsBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Fetching (~15s)…';
+
+  const hwm = localStorage.getItem(LS_SIGNINGS_HWM);
+  const forceFullSync = e?.shiftKey || !hwm;
+  let url = '/signings';
+  if(!forceFullSync && hwm){
+    // 2-day buffer in case a signing was backdated slightly
+    const since = new Date(hwm);
+    since.setDate(since.getDate() - 2);
+    url = `/signings?since=${since.toISOString().slice(0,10)}`;
+  }
+  const isIncremental = url.includes('since');
+
+  btn.innerHTML = isIncremental
+    ? `<span class="spinner"></span>Updating…`
+    : `<span class="spinner"></span>Fetching (~15s)…`;
   try {
-    toast('Fetching all current contracts from PuckPedia signings — this takes ~15 seconds…');
-    const d = await fetch('/signings').then(r=>r.json());
+    toast(isIncremental
+      ? `Fetching new signings since ${hwm}…`
+      : 'Fetching all current contracts from PuckPedia — this takes ~15 seconds…');
+    const d = await fetch(url).then(r=>r.json());
     if(d.error) throw new Error(d.error);
 
     const expiredSet = new Set(d.expired || []);
@@ -1207,9 +1233,12 @@ async function syncSignings(){
     applyBlendedPts();
     lsSet(LS_PLAYERS, players);
     populateTeamFilter(); populateFantasyFilter(); render();
+    if(d.fetched_through) localStorage.setItem(LS_SIGNINGS_HWM, d.fetched_through);
+    updateSigningsBtn();
     const clearedMsg = cleared ? `, ${cleared} expired cleared` : '';
     const addedMsg   = added   ? `, ${added} new players added` : '';
-    toast(`Signings sync done! ${matched} updated${clearedMsg}${addedMsg}.`);
+    const modeMsg    = isIncremental ? ' (incremental)' : '';
+    toast(`Signings sync done! ${matched} updated${clearedMsg}${addedMsg}${modeMsg}.`);
     if(d.errors.length) console.warn('Signings page errors:', d.errors);
   } catch(e){
     toast('Signings sync failed: '+e.message);
@@ -1921,7 +1950,7 @@ const ACTUAL_ROSTER_2526 = {
   'carter verhaeghe':'Muller Time!','aliaksei protas':'Muller Time!',
   'logan cooley':'Muller Time!','matvei michkov':'Muller Time!',
   'zayne parekh':'Muller Time!','carter yakemchuk':'Muller Time!',
-  'denton mateychuk':'Muller Time!',
+  'denton mateychuk':'Muller Time!','matthew tkachuk':'Muller Time!',
   // Pernicious Puckers
   'quinn hughes':'Pernicious Puckers','leon draisaitl':'Pernicious Puckers',
   'jt miller':'Pernicious Puckers','jason robertson':'Pernicious Puckers',
@@ -1943,10 +1972,72 @@ const ACTUAL_ROSTER_2526 = {
 
 // Actual 25-26 draft picks (players added via draft, not in pre-draft rosters above).
 // Keys = normName(name).toLowerCase(), values = fantasy team name.
-// Populate via Yahoo historical transactions or manual entry.
 const ACTUAL_DRAFT_2526 = {
-  // Example format:
-  // 'player name': 'Team Name',
+  // Blue Line Bangers (7 picks — Ivan Demidov re-drafted after mandatory ELC drop)
+  'ivan demidov':'Blue Line Bangers',
+  'jordan binnington':'Blue Line Bangers',
+  'mason lohrei':'Blue Line Bangers',
+  'matthew savoie':'Blue Line Bangers',
+  'rickard rakell':'Blue Line Bangers',
+  'sebastian aho':'Blue Line Bangers',
+  'tyson foerster':'Blue Line Bangers',
+  // Bossy Posse (9 picks)
+  'adin hill':'Bossy Posse',
+  'jet greaves':'Bossy Posse',
+  'joel eriksson ek':'Bossy Posse',
+  'matthew schaefer':'Bossy Posse',
+  'mavrik bourque':'Bossy Posse',
+  'sam dickinson':'Bossy Posse',
+  'scott morrow':'Bossy Posse',
+  'ville koivunen':'Bossy Posse',
+  'zach benson':'Bossy Posse',
+  // Damage Inc. (6 picks)
+  'anthony stolarz':'Damage Inc.',
+  'isaac howard':'Damage Inc.',
+  'kevin korchinski':'Damage Inc.',
+  'logan mailloux':'Damage Inc.',
+  'maxim shabanov':'Damage Inc.',
+  'william nylander':'Damage Inc.',
+  // Dumb and Goalie To (6 picks)
+  'claude giroux':'Dumb and Goalie To',
+  'gabriel landeskog':'Dumb and Goalie To',
+  'nick blankenburg':'Dumb and Goalie To',
+  'rasmus dahlin':'Dumb and Goalie To',
+  'sam rinzel':'Dumb and Goalie To',
+  'zack bolduc':'Dumb and Goalie To',
+  // Killer Whales (5 picks)
+  'frank nazar':'Killer Whales',
+  'john klingberg':'Killer Whales',
+  'matias maccelli':'Killer Whales',
+  'morgan rielly':'Killer Whales',
+  'sean durzi':'Killer Whales',
+  // Motor City Wings (5 picks)
+  'braden schneider':'Motor City Wings',
+  'brent burns':'Motor City Wings',
+  'jimmy snuggerud':'Motor City Wings',
+  'john gibson':'Motor City Wings',
+  'mackie samoskevich':'Motor City Wings',
+  // Muller Time! (7 picks)
+  'darcy kuemper':'Muller Time!',
+  'karel vejmelka':'Muller Time!',
+  'roman josi':'Muller Time!',
+  'ryan donato':'Muller Time!',
+  'ryan leonard':'Muller Time!',
+  'wyatt johnston':'Muller Time!',
+  'zeev buium':'Muller Time!',
+  // Pernicious Puckers (5 picks)
+  'danila yurov':'Pernicious Puckers',
+  'dylan cozens':'Pernicious Puckers',
+  'jake walman':'Pernicious Puckers',
+  'john tavares':'Pernicious Puckers',
+  'liam ohgren':'Pernicious Puckers',
+  // Silence of the Lamb (6 picks)
+  'alexander nikishin':'Silence of the Lamb',
+  'andrei vasilevskiy':'Silence of the Lamb',
+  'jonathan toews':'Silence of the Lamb',
+  'michael misa':'Silence of the Lamb',
+  'noah hanifin':'Silence of the Lamb',
+  'pavel mintyukov':'Silence of the Lamb',
 };
 
 const LS_DRAFT = 'hghl_draft_2627';
@@ -3806,6 +3897,7 @@ function toast(msg){
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
+updateSigningsBtn();
 updateDraftTab();
 
 window.addEventListener('storage', e => {

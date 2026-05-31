@@ -930,15 +930,18 @@ def signings():
     except ImportError:
         return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
 
+    from datetime import date as _date
     scraper = cloudscraper.create_scraper()
     all_players = {}
     errors = []
 
-    # Fetch signings back to 2017-01-01: an 8-year deal signed mid-season 2018-19
-    # (e.g. Stone Feb 2019, Seguin Sep 2018) starts 2019-20 and expires 2026-27.
     # SEASON_CUTOFF filters to only contracts still active this season.
     SEASON_CUTOFF = "2026-2027"
-    DATE_FROM = "2017-01-01"
+    # ?since=YYYY-MM-DD enables incremental mode: only fetch signings from that date onward.
+    # Full sync (no since) fetches back to 2017-01-01 to catch 8-year deals signed mid-season.
+    since_param = request.args.get("since")
+    incremental = since_param is not None
+    DATE_FROM = since_param if since_param else "2017-01-01"
     DATE_TO = "2027-12-31"
 
     q_base = {
@@ -1017,11 +1020,16 @@ def signings():
             errors.append(f"page {page}: {str(e)}")
             print(f"  ✗ page {page}: {e}")
 
-    # Remove from expired any keys that ended up with an active contract
-    expired_keys -= set(all_players.keys())
-    print(f"Signings done: {len(all_players)} active, {len(expired_keys)} expired, {len(errors)} errors")
+    # Expired logic only reliable for full sync — incremental only sees recent signings
+    if incremental:
+        expired_keys = set()
+    else:
+        expired_keys -= set(all_players.keys())
+    print(f"Signings {'incremental' if incremental else 'full'}: {len(all_players)} active, {len(expired_keys)} expired, {len(errors)} errors")
     return jsonify({"ok": True, "players": all_players, "expired": list(expired_keys),
-                    "count": len(all_players), "errors": errors})
+                    "count": len(all_players), "errors": errors,
+                    "fetched_through": _date.today().isoformat(),
+                    "incremental": incremental})
 
 
 @app.route("/signings-2526")
