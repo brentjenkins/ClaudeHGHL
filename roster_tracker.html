@@ -246,10 +246,11 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
       <button class="btn btn-indigo" onclick="simulateDrops2526()">⬇ Simulate Drops</button>
       <button class="btn btn-blue-outline" onclick="compareDrops2526()" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual 25-26</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
+      <button class="btn btn-blue-outline" onclick="compareDrafts2526()" title="Compare algorithm's simulated draft picks against actual 25-26 draft picks">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
@@ -563,6 +564,14 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
         <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
+        <input type="number" id="s-minDropF" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropF',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min D drops per team</span>
+        <input type="number" id="s-minDropD" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropD',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
     </div>
   </div>
 
@@ -661,6 +670,17 @@ tr:hover td{background:#fafaf8}
 </div>
 </div>
 
+<div class="modal-bg" id="compareDraftsModal" style="display:none" onclick="if(event.target===this)closeCompareDraftsModal()">
+<div class="modal" style="width:720px;max-width:96vw">
+  <h2>📋 Simulated vs Actual 25-26 Draft Picks</h2>
+  <div id="compareDraftsSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
+  <div id="compareDraftsBody" style="font-size:13px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" onclick="closeCompareDraftsModal()">Close</button>
+  </div>
+</div>
+</div>
+
 <div id="draftTicker"><div class="ticker-track" id="tickerTrack"></div></div>
 <canvas id="whaleCanvas"></canvas>
 
@@ -735,6 +755,7 @@ let draftViewMode = 'compact';
 let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDrops = 5, maxDrops = 20, ptsTarget = 1200, curveMinPts = 15;
+let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
 const ELC_MAX_2627 = 1.025; // ELC max cap hit 2026-27
@@ -922,18 +943,24 @@ function simulateDrops(){
     let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
     let keptCap = remaining.reduce((s,p) => s + (p.cap||0), 0);
     let numDropped = dropList.length;
+    let droppedF = mandatory.filter(p => posGroup(p.pos) === 'F').length;
+    let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const pg = posGroup(p.pos);
+      const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const isValuable = isHighVal(p) || isProspect(p);
       // High-value and prospect players are only dropped to satisfy minDrops, never for pts/cap
-      if(isValuable && numDropped >= minDrops) break;
+      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= (p.pts || 0);
       keptCap -= (p.cap || 0);
       numDropped++;
+      if(pg === 'F') droppedF++;
+      else if(pg === 'D') droppedD++;
     }
 
     dropList.forEach(p => { p.fantasyTeam = ''; dropped++; });
@@ -1582,17 +1609,23 @@ function computeDrops(allPlayers){
     let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
     let keptCap = remaining.reduce((s,p) => s + (p.cap||0), 0);
     let numDropped = mandatory.length;
+    let droppedF = mandatory.filter(p => posGroup(p.pos) === 'F').length;
+    let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const pg = posGroup(p.pos);
+      const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const isValuable = isHighVal(p) || isProspect(p);
-      if(isValuable && numDropped >= minDrops) break;
+      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropIds.add(p.id);
       keptPts -= (p.pts || 0);
       keptCap -= (p.cap || 0);
       numDropped++;
+      if(pg === 'F') droppedF++;
+      else if(pg === 'D') droppedD++;
     }
   }
   return dropIds;
@@ -1906,6 +1939,14 @@ const ACTUAL_ROSTER_2526 = {
   'conor garland':'Silence of the Lamb','matthew knies':'Silence of the Lamb',
   'cutter gauthier':'Silence of the Lamb','darren raddysh':'Silence of the Lamb',
   'jason zucker':'Silence of the Lamb','erik gustafsson':'Silence of the Lamb',
+};
+
+// Actual 25-26 draft picks (players added via draft, not in pre-draft rosters above).
+// Keys = normName(name).toLowerCase(), values = fantasy team name.
+// Populate via Yahoo historical transactions or manual entry.
+const ACTUAL_DRAFT_2526 = {
+  // Example format:
+  // 'player name': 'Team Name',
 };
 
 const LS_DRAFT = 'hghl_draft_2627';
@@ -2423,6 +2464,7 @@ function syncSettings(){
   set('s-wtPressure', W.wtPressure);
   set('s-wtScarcity', W.wtScarcity);
   set('s-minDrops', minDrops); set('s-maxDrops', maxDrops); set('s-ptsTarget', ptsTarget);
+  set('s-minDropF', minDropF); set('s-minDropD', minDropD);
   set('s-curveMinPts', curveMinPts);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-draftTop', draftModeTop);
@@ -2440,6 +2482,8 @@ function updateDraftWeight(key, val){
 function updateSetting(key, val){
   if(key === 'minDrops')     minDrops = val;
   else if(key === 'maxDrops')     maxDrops = val;
+  else if(key === 'minDropF')     minDropF = val;
+  else if(key === 'minDropD')     minDropD = val;
   else if(key === 'ptsTarget')    ptsTarget = val;
   else if(key === 'capLimit')     CAP_LIMIT = val;
   else if(key === 'capLimit2526') CAP_LIMIT_2526 = val;
@@ -2689,17 +2733,23 @@ function simulateDrops2526(){
     let keptPts = remaining.reduce((s,p) => s + ppts2526blend(p), 0);
     let keptCap = remaining.reduce((s,p) => s + getCap2526(p), 0);
     let numDropped = dropList.length;
+    let droppedF = mandatory.filter(p => posGroup(p.pos) === 'F').length;
+    let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const pg = posGroup(p.pos);
+      const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const isValuable = isHighVal2526(p) || isProspect2526(p);
-      if(isValuable && numDropped >= minDrops) break;
+      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
       keptCap -= getCap2526(p);
       numDropped++;
+      if(pg === 'F') droppedF++;
+      else if(pg === 'D') droppedD++;
     }
 
     dropList.forEach(p => { p.sim2526 = null; dropped++; });
@@ -2752,17 +2802,23 @@ function compareDrops2526(){
     let keptPts = remaining.reduce((s,p) => s + ppts2526blend(p), 0);
     let keptCap = remaining.reduce((s,p) => s + getCap2526(p), 0);
     let numDropped = dropList.length;
+    let droppedF = mandatory.filter(p => posGroup(p.pos) === 'F').length;
+    let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
       if(numDropped >= maxDrops) break;
+      const pg = posGroup(p.pos);
+      const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const isValuable = isHighValV(p) || isProspectV(p);
-      if(isValuable && numDropped >= minDrops) break;
+      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk) break;
+      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
       keptCap -= getCap2526(p);
       numDropped++;
+      if(pg === 'F') droppedF++;
+      else if(pg === 'D') droppedD++;
     }
     dropList.forEach(p => { p.sim2526 = null; });
   }
@@ -2847,6 +2903,119 @@ function compareDrops2526(){
 
 function closeCompareDropsModal(){
   document.getElementById('compareDropsModal').style.display = 'none';
+}
+
+function closeCompareDraftsModal(){
+  document.getElementById('compareDraftsModal').style.display = 'none';
+}
+
+function compareDrafts2526(){
+  const hasActualData = Object.keys(ACTUAL_DRAFT_2526).length > 0;
+  if(!hasActualData){
+    toast('No actual draft data yet. Populate ACTUAL_DRAFT_2526 in the source (normName → team) to enable comparison.');
+    return;
+  }
+  if(!draftState2526.picks.length){
+    toast('No simulated picks found. Run Draft Mode first to generate algorithm picks.');
+    return;
+  }
+
+  // Build algo picks per team from draftState2526
+  const algoByTeam = {};
+  for(const pick of draftState2526.picks){
+    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
+  }
+
+  // Build actual picks per team from ACTUAL_DRAFT_2526
+  const actualByTeam = {};
+  for(const [key, team] of Object.entries(ACTUAL_DRAFT_2526)){
+    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+  }
+
+  const findPlayer = key => players.find(p => normName(p.name).toLowerCase() === key);
+  const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
+  const hasActuals = players.some(p => (p.pts2526||0) > 0);
+
+  const teamResults = [];
+  let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
+  let totalMatches = 0, totalSlots = 0;
+
+  for(const team of allTeams){
+    const algoKeys  = algoByTeam[team]   || [];
+    const actualKeys = actualByTeam[team] || [];
+
+    const algoPicks   = algoKeys.map(findPlayer).filter(Boolean);
+    const actualPicks = actualKeys.map(findPlayer).filter(Boolean);
+
+    const actualKeySet = new Set(actualKeys);
+    const algoKeySet   = new Set(algoKeys);
+
+    const matched    = algoPicks.filter(p => actualKeySet.has(normName(p.name).toLowerCase()));
+    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(normName(p.name).toLowerCase()));
+    const actualOnly = actualPicks.filter(p => !algoKeySet.has(normName(p.name).toLowerCase()));
+
+    const algoProj   = algoPicks.reduce((s,p) => s + ppts2526blend(p), 0);
+    const actualProj = actualPicks.reduce((s,p) => s + ppts2526blend(p), 0);
+    const algoAct    = algoPicks.reduce((s,p) => s + (p.pts2526||0), 0);
+    const actualAct  = actualPicks.reduce((s,p) => s + (p.pts2526||0), 0);
+
+    lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
+    lgAlgoActual += algoAct;    lgActualActual += actualAct;
+    totalMatches += matched.length;
+    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
+
+    teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
+      algoProj, actualProj, algoAct, actualAct});
+  }
+
+  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
+  const projDelta = lgAlgoProj - lgActualProj;
+  const actDelta  = lgAlgoActual - lgActualActual;
+  const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
+  const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
+
+  document.getElementById('compareDraftsSummary').innerHTML =
+    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
+    `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
+    `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
+    (hasActuals
+      ? ` &nbsp;|&nbsp; Actual pts* — Algo: <strong>${Math.round(lgAlgoActual)}</strong> vs Actual: <strong>${Math.round(lgActualActual)}</strong> ` +
+        `<span style="color:${col(actDelta)};font-weight:600">(${sign(actDelta)})</span> ` +
+        `<span style="color:#9ca3af;font-size:11px">*totals shift mid-year with roster moves</span>`
+      : '');
+
+  const playerLabel = p => {
+    const proj = Math.round(ppts2526blend(p));
+    const act  = p.pts2526 > 0 ? `, ${p.pts2526}act` : '';
+    return `${p.name} (${posGroup(p.pos)}, $${getCap2526(p).toFixed(2)}M, ${proj}proj${act})`;
+  };
+
+  const section = (label, color, icon, items) => {
+    if(!items.length) return '';
+    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+  };
+
+  const rows = teamResults.map(r => {
+    const pd = r.algoProj - r.actualProj;
+    const ad = r.algoAct  - r.actualAct;
+    let html  = `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+    html += `<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
+    html += `<strong style="font-size:13px">${r.team}</strong>`;
+    html += `<span style="font-size:12px;display:flex;gap:12px">`;
+    html += `<span>Proj <strong style="color:${col(pd)}">${sign(pd)} pts</strong></span>`;
+    if(hasActuals) html += `<span>Actual <strong style="color:${col(ad)}">${sign(ad)} pts</strong>*</span>`;
+    html += `<span style="color:#6b7280">${r.algoPicks.length} algo / ${r.actualPicks.length} actual picks</span>`;
+    html += `</span></div><div style="padding:8px 12px">`;
+    html += section('Matched picks', '#16a34a', '✓', r.matched.map(playerLabel));
+    html += section('Algo recommended — not actually picked', '#6366f1', '◆', r.algoOnly.map(playerLabel));
+    html += section('Actually picked — algo skipped', '#d97706', '△', r.actualOnly.map(playerLabel));
+    html += `</div></div>`;
+    return html;
+  }).join('');
+
+  document.getElementById('compareDraftsBody').innerHTML = rows;
+  document.getElementById('compareDraftsModal').style.display = 'flex';
 }
 
 function rankPlayers2526(){
