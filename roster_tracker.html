@@ -1131,6 +1131,14 @@ function load(){
     if(p.proj2425_athletic === undefined){ p.proj2425_athletic = null; migrated = true; }
     if(p.proj2425_nhl      === undefined){ p.proj2425_nhl      = null; migrated = true; }
     if(p.rank2425          === undefined){ p.rank2425          = null; migrated = true; }
+    if(p.end2324           === undefined){ p.end2324           = null; migrated = true; }
+  }
+  // Sync end2324 from PREDROP_ROSTER_2425 constant (stays current if constant changes)
+  if(Object.keys(PREDROP_ROSTER_2425).length){
+    for(const p of players){
+      const v = PREDROP_ROSTER_2425[normName(p.name).toLowerCase()] || null;
+      if(p.end2324 !== v){ p.end2324 = v; migrated = true; }
+    }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
   applyBlendedPts();
@@ -2671,7 +2679,7 @@ function loadDraft(){
 }
 function saveDraft(){ lsSet(LS_DRAFT, draftState); }
 function resetDraft(){
-  if(!confirm('Reset the entire draft? This will restore all 26-27 team assignments to match 25-26.')) return;
+  if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 and clears draft picks.')) return;
   draftState = {picks:[]};
   saveDraft();
   for(const p of players) p.fantasyTeam = p.end2526 || '';
@@ -3018,7 +3026,7 @@ function dropPlayer2526(id){
 }
 
 function resetDraft2526(){
-  if(!confirm('Reset 25-26 simulation? This will copy 24-25 rosters to 25-26 and clear simulated picks.')) return;
+  if(!confirm('Reset 25-26 simulation? Sets start2526 = end2425 and clears simulated picks.')) return;
   for(const p of players) p.start2526 = p.end2425 || null;
   draftState2526 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -3393,12 +3401,12 @@ function dropSim2425(id){
 }
 
 function resetSim2425(){
-  if(!Object.keys(PREDROP_ROSTER_2425).length){
+  if(!players.some(p => p.end2324)){
     toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
     return;
   }
-  if(!confirm('Reset 24-25 simulation? This loads pre-drop 23-24 rosters into start2425.')) return;
-  for(const p of players) p.start2425 = PREDROP_ROSTER_2425[normName(p.name).toLowerCase()] || null;
+  if(!confirm('Reset 24-25 simulation? Sets start2425 = end2324 (23-24 final rosters).')) return;
+  for(const p of players) p.start2425 = p.end2324 || null;
   lsSet(LS_PLAYERS, players);
   render2425();
 }
