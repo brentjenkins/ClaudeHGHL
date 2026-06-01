@@ -868,6 +868,62 @@ def dfo_projections_2526():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
+@app.route("/nhl-projections-2425", methods=["POST"])
+def nhl_projections_2425():
+    """Parse the NHL 24-25 projections CSV.
+    Columns: combined data, first, last, position, NHL team, points, ..., Proj Pts
+    Name = first + last; position = D/F; hghl_pts = points (col 5 = G+A for skaters).
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    f = request.files["file"]
+    if not f.filename.lower().endswith(".csv"):
+        return jsonify({"error": "Please upload a .csv file"}), 400
+    try:
+        import csv, io
+        text = f.read().decode("utf-8-sig")
+        reader = csv.reader(io.StringIO(text))
+        rows = list(reader)
+    except Exception as e:
+        return jsonify({"error": f"Could not read CSV: {e}"}), 400
+
+    if not rows:
+        return jsonify({"error": "Empty CSV"}), 400
+
+    header = [h.strip().lower() for h in rows[0]]
+    try:
+        c_first = header.index("first")
+        c_last  = header.index("last")
+        c_pos   = header.index("position")
+        c_pts   = header.index("points")
+    except ValueError as e:
+        return jsonify({"error": f"Could not find expected columns (first/last/position/points): {e}"}), 400
+
+    def safe_float(v):
+        try: return float(v) if v and str(v).strip() else 0.0
+        except: return 0.0
+
+    all_players = {}
+    for row in rows[1:]:
+        if len(row) <= max(c_first, c_last, c_pos, c_pts):
+            continue
+        first = row[c_first].strip()
+        last  = row[c_last].strip()
+        if not first or not last:
+            continue
+        name    = f"{first} {last}"
+        pos_raw = row[c_pos].strip().upper()
+        pg      = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+        hghl_pts = round(safe_float(row[c_pts]))
+        if hghl_pts <= 0:
+            continue
+        key = f"{normalize_name(name).lower()}_{pg}"
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts}
+
+    print(f"  NHL 24-25 proj CSV: {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
 @app.route("/athletic-projections-2526", methods=["POST"])
 def athletic_projections_2526():
     """Same parser as /athletic-projections but tagged as 2025-26 historical data."""

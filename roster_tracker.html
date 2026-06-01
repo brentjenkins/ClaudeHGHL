@@ -3386,8 +3386,7 @@ async function syncNHL2425(input){
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
   try {
     const fd = new FormData(); fd.append('file', file);
-    // Reuse DFO CSV parser — same column format expected
-    const d = await fetch('/dfo-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
+    const d = await fetch('/nhl-projections-2425',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
     const {matched,unmatched} = _apply2425Proj('proj2425_nhl', LS_NHL2425, d);
     toast(`NHL 24-25 proj synced! ${matched} matched, ${unmatched} unmatched.`);
