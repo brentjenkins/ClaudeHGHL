@@ -499,6 +499,150 @@ def season_stats():
     return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
 
 
+@app.route("/stats-2425")
+def season_stats_2425():
+    """Returns 2024-25 regular-season fantasy points for all NHL players."""
+    stats = {}
+    errors = []
+    cayenne = "seasonId=20242025%20and%20gameTypeId=2"
+
+    try:
+        start, page_size, fetched = 0, 100, []
+        while True:
+            url = f"{_NHL_STATS_BASE}/skater/summary?limit={page_size}&start={start}&cayenneExp={cayenne}"
+            page = requests.get(url, timeout=30).json()
+            batch = page.get("data", [])
+            fetched.extend(batch)
+            if len(fetched) >= page.get("total", 0) or not batch:
+                break
+            start += page_size
+        for s in fetched:
+            full = s.get("skaterFullName", "").strip()
+            if not full:
+                continue
+            pos = _POS_MAP.get(s.get("positionCode", ""), "C")
+            key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
+            fpts = s.get("goals", 0) + s.get("assists", 0)
+            stats[key] = {
+                "name": full, "fpts": fpts,
+                "goals": s.get("goals", 0), "assists": s.get("assists", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+            }
+        print(f"  2024-25 NHL skaters: {len(fetched)} fetched")
+    except Exception as e:
+        errors.append(f"skaters: {e}")
+        print(f"  ✗ skaters: {e}")
+
+    try:
+        url = f"{_NHL_STATS_BASE}/goalie/summary?limit=200&cayenneExp={cayenne}"
+        data = requests.get(url, timeout=30).json()
+        for g in data.get("data", []):
+            full = g.get("goalieFullName", "").strip()
+            if not full:
+                continue
+            key = f"{normalize_name(full).lower()}_G"
+            wins = g.get("wins", 0)
+            sos  = g.get("shutouts", 0)
+            stats[key] = {
+                "name": full, "fpts": wins * 2 + sos * 3,
+                "wins": wins, "shutouts": sos,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+            }
+        print(f"  2024-25 NHL goalies: {len(data.get('data', []))} fetched")
+    except Exception as e:
+        errors.append(f"goalies: {e}")
+        print(f"  ✗ goalies: {e}")
+
+    print(f"Stats 2024-25 done: {len(stats)} players, {len(errors)} errors")
+    return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
+
+
+@app.route("/signings-2425")
+def signings_2425():
+    """Return each player's active cap hit as of the 24-25 draft date (Oct 5, 2024).
+
+    Queries PuckPedia for contracts signed on or before 2024-10-05 whose
+    expiry covers at least the 2024-25 season. First occurrence per player
+    (sign_date DESC) is their 24-25 cap hit.
+    """
+    try:
+        import cloudscraper, urllib.parse
+    except ImportError:
+        return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
+
+    scraper = cloudscraper.create_scraper()
+    all_players = {}
+    errors = []
+
+    SEASON_CUTOFF = "2024-2025"
+    DATE_FROM = "2017-01-01"
+    DATE_TO   = "2024-10-05"
+
+    q_base = {
+        "pageSize": 100,
+        "sortBy": "sign_date",
+        "sortDirection": "DESC",
+        "sign_date": [DATE_FROM, DATE_TO],
+    }
+
+    q_base["curPage"] = 1
+    resp = scraper.get(
+        "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+        timeout=20,
+    )
+    resp.raise_for_status()
+    first = resp.json()["data"]
+    total_count = first["meta"]["count"]
+    total_pages = (total_count + 99) // 100
+    print(f"Signings 24-25: {total_count} records, {total_pages} pages")
+
+    def process_page(records):
+        for p in records:
+            exp = p.get("exp", "")
+            if exp < SEASON_CUTOFF:
+                continue
+            term = int(p.get("len") or 0)
+            exp_year = int(exp.split("-")[0]) if exp else 0
+            start_yr = exp_year - term + 1 if term else 0
+            if start_yr > 2024:
+                continue
+            pos = p.get("pos", "C")
+            pg = _POS_GROUP_MAP.get(pos, "F")
+            full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
+            if not full:
+                continue
+            first_lower = p.get("p_fn", "").lower()
+            nick = _FORMAL_TO_NICK.get(first_lower)
+            key = f"{normalize_name(full).lower()}_{pg}"
+            nick_key = f"{normalize_name(nick + ' ' + p.get('p_ln','')).lower()}_{pg}" if nick else None
+            cap = round(float(p["cap_hit"]) / 1_000_000, 4)
+            if key not in all_players:
+                entry = {"name": full, "pos": pos, "cap": cap, "nhl_id": p.get("p_nhl_id", "")}
+                all_players[key] = entry
+                if nick_key and nick_key not in all_players:
+                    all_players[nick_key] = entry
+
+    process_page(first["p"])
+
+    for page in range(2, total_pages + 1):
+        try:
+            q_base["curPage"] = page
+            r = scraper.get(
+                "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+                timeout=20,
+            )
+            r.raise_for_status()
+            process_page(r.json()["data"]["p"])
+            print(f"  page {page}/{total_pages} ({len(all_players)} active so far)")
+            time.sleep(0.15)
+        except Exception as e:
+            errors.append(f"page {page}: {str(e)}")
+            print(f"  ✗ page {page}: {e}")
+
+    print(f"Signings 24-25 done: {len(all_players)} players, {len(errors)} errors")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+
+
 # ── ESPN Fantasy Hockey projections ──────────────────────────────────────────
 
 _ESPN_HDRS = {
