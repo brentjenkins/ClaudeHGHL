@@ -251,6 +251,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
       <button class="btn btn-blue-outline" onclick="compareDrafts2526()" title="Compare algorithm's simulated draft picks against actual 25-26 draft picks">📋 Compare Drafts</button>
+      <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft2526()" title="Simulate January mid-season draft on 25-26 rosters — requires MIDSEASON_STANDINGS_2526">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
@@ -390,6 +391,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
+      <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft()" title="Simulate January mid-season draft — 5 rounds, reverse projected standings">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
         <button id="draftSubBestBtn" onclick="setDraftSubMode('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
@@ -677,6 +679,17 @@ tr:hover td{background:#fafaf8}
   <div id="compareDraftsBody" style="font-size:13px"></div>
   <div class="modal-actions">
     <button class="btn btn-primary" onclick="closeCompareDraftsModal()">Close</button>
+  </div>
+</div>
+</div>
+
+<div class="modal-bg" id="midseasonDraftModal" style="display:none" onclick="if(event.target===this)closeMidseasonDraftModal()">
+<div class="modal" style="width:760px;max-width:96vw">
+  <h2>🔄 Simulated Mid-Season Draft</h2>
+  <div id="midseasonDraftSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
+  <div id="midseasonDraftBody" style="font-size:13px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" onclick="closeMidseasonDraftModal()">Close</button>
   </div>
 </div>
 </div>
@@ -2040,6 +2053,20 @@ const ACTUAL_DRAFT_2526 = {
   'pavel mintyukov':'Silence of the Lamb',
 };
 
+// Mid-season draft pick order for 25-26: teams listed worst→best (picks 1st→9th).
+// Source: actual All-Star break standings (Pernicious Puckers 1st, Killer Whales 9th).
+const MIDSEASON_STANDINGS_2526 = [
+  'Killer Whales',       // 9th — picks 1st
+  'Blue Line Bangers',   // 8th
+  'Dumb and Goalie To',  // 7th
+  'Damage Inc.',         // 6th
+  'Silence of the Lamb', // 5th
+  'Muller Time!',        // 4th
+  'Motor City Wings',    // 3rd
+  'Bossy Posse',         // 2nd
+  'Pernicious Puckers',  // 1st — picks last
+];
+
 const LS_DRAFT = 'hghl_draft_2627';
 const LS_DRAFT_2526 = 'hghl_draft_2526';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
@@ -2998,6 +3025,192 @@ function closeCompareDropsModal(){
 
 function closeCompareDraftsModal(){
   document.getElementById('compareDraftsModal').style.display = 'none';
+}
+
+function closeMidseasonDraftModal(){
+  document.getElementById('midseasonDraftModal').style.display = 'none';
+}
+
+// ── Shared mid-season draft renderer ─────────────────────────────────────────
+function _renderMidseasonDraftModal(draftLog, draftOrder, teamProjPts){
+  const totalPicks = draftLog.reduce((s,r) => s + r.picks.length, 0);
+  const totalDelta = draftLog.reduce((s,r) => r.picks.reduce((ss,p) => ss + p.projDelta, s), 0);
+  const activePicks = draftLog.filter(r => r.picks.length).length;
+  const teamDelta = {};
+  for(const r of draftLog) for(const p of r.picks) teamDelta[p.team] = (teamDelta[p.team]||0) + p.projDelta;
+
+  document.getElementById('midseasonDraftSummary').innerHTML =
+    `${totalPicks} changes across ${activePicks} of ${draftLog.length} rounds &nbsp;|&nbsp; ` +
+    `<span style="color:#16a34a;font-weight:600">+${Math.round(totalDelta)} proj pts added league-wide</span><br>` +
+    `<span style="color:#9ca3af;font-size:11px">Draft order (pick 1→${draftOrder.length}): ` +
+    draftOrder.map((t,i) => `${i+1}. ${t}`).join(' · ') + `</span>`;
+
+  // Team summary chips
+  let html = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem">`;
+  for(const t of draftOrder){
+    const d = teamDelta[t] || 0;
+    const col = d > 5 ? '#16a34a' : d > 0 ? '#22c55e' : '#9ca3af';
+    html += `<div style="border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;min-width:0">`;
+    html += `<div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">${t}</div>`;
+    html += `<div style="color:${col};font-weight:600">${d>0?'+':''}${Math.round(d)} pts</div>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  // Round-by-round table
+  for(const r of draftLog){
+    html += `<div style="margin-bottom:1rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+    html += `<div style="padding:6px 12px;background:#f1f5f9;font-weight:600;font-size:12px">Round ${r.round}`;
+    if(!r.picks.length) html += ` <span style="color:#9ca3af;font-weight:400">— no improvements available</span>`;
+    html += `</div>`;
+    if(r.picks.length){
+      html += `<table style="width:100%;border-collapse:collapse;font-size:12px"><thead>`;
+      html += `<tr style="color:#9ca3af;border-bottom:1px solid #e5e7eb">`;
+      html += `<th style="text-align:left;padding:4px 8px;font-weight:500">Team</th>`;
+      html += `<th style="text-align:left;padding:4px 8px;font-weight:500">Dropped</th>`;
+      html += `<th style="text-align:left;padding:4px 8px;font-weight:500">Picked up</th>`;
+      html += `<th style="text-align:right;padding:4px 8px;font-weight:500">Δ proj</th>`;
+      html += `</tr></thead><tbody>`;
+      for(const p of r.picks){
+        html += `<tr style="border-bottom:1px solid #f3f4f6">`;
+        html += `<td style="padding:4px 8px;font-weight:500">${p.team}</td>`;
+        html += `<td style="padding:4px 8px;color:#dc2626">${p.dropped.name} <span style="color:#9ca3af">(${posGroup(p.dropped.pos)}, ${p.dropVal}pts, $${p.dropCap}M)</span></td>`;
+        html += `<td style="padding:4px 8px;color:#16a34a">${p.picked.name} <span style="color:#9ca3af">(${posGroup(p.picked.pos)}, ${p.pickVal}pts, $${p.pickCap}M)</span></td>`;
+        html += `<td style="padding:4px 8px;text-align:right;font-weight:600;color:#16a34a">+${Math.round(p.projDelta)}</td>`;
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+    }
+    html += `</div>`;
+  }
+
+  document.getElementById('midseasonDraftBody').innerHTML = html;
+  document.getElementById('midseasonDraftModal').style.display = 'flex';
+}
+
+// ── 26-27 mid-season draft ────────────────────────────────────────────────────
+function simulateMidseasonDraft(){
+  const teams = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))];
+  if(!teams.length){ toast('No rostered teams — run Simulate Drops first.'); return; }
+
+  // Standings: rank teams by total projected pts (worst→best = draft order 1→N)
+  const teamProjPts = Object.fromEntries(
+    teams.map(t => [t, players.filter(p => p.fantasyTeam===t).reduce((s,p)=>s+(p.pts||0),0)])
+  );
+  const draftOrder = [...teams].sort((a,b) => teamProjPts[a] - teamProjPts[b]);
+
+  const snap = players.map(p => ({...p}));
+
+  const rPool = snap.filter(p => p.fantasyTeam && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
+  const cf = {
+    F: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap,y:p.pts}))),
+    D: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
+    G: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap,y:p.pts}))),
+  };
+  const val      = p => p.pts || 0;
+  const getCap   = p => p.cap || 0;
+  const deficit  = p => { const fn=cf[posGroup(p.pos)]; return (val(p)>0&&getCap(p)>0&&fn) ? fn(getCap(p))-val(p) : Infinity; };
+  const isProsp  = p => (calcAge(p)??99) <= 22 && getCap(p) <= ELC_MAX_2627;
+  const bestFAByPos = {};
+  for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.fantasyTeam&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
+  const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
+
+  const draftLog = [];
+  for(let round = 1; round <= 5; round++){
+    const roundPicks = [];
+    for(const team of draftOrder){
+      const roster = snap.filter(p => p.fantasyTeam === team);
+      if(!roster.length) continue;
+      const teamCap = roster.reduce((s,p)=>s+getCap(p),0);
+
+      // Droppable: non-prospect, below curve first; fall back to above-curve if nothing else
+      const belowCurve = roster.filter(p=>!isProsp(p)&&!isHighVal(p)).sort((a,b)=>deficit(b)-deficit(a));
+      const droppable  = belowCurve.length ? belowCurve : roster.filter(p=>!isProsp(p)).sort((a,b)=>deficit(b)-deficit(a));
+      if(!droppable.length) continue;
+      const toDrop = droppable[0];
+
+      const maxPickCap = CAP_LIMIT - (teamCap - getCap(toDrop));
+      const toPick = snap
+        .filter(p => !p.fantasyTeam && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap)
+        .sort((a,b) => val(b)-val(a))[0];
+      if(!toPick || val(toPick) <= val(toDrop)) continue;
+
+      toDrop.fantasyTeam = '';
+      toPick.fantasyTeam = team;
+      roundPicks.push({
+        team,
+        dropped: {...toDrop}, picked: {...toPick},
+        dropVal: Math.round(val(toDrop)), dropCap: getCap(toDrop).toFixed(2),
+        pickVal: Math.round(val(toPick)), pickCap: getCap(toPick).toFixed(2),
+        projDelta: val(toPick) - val(toDrop),
+      });
+    }
+    draftLog.push({round, picks: roundPicks});
+  }
+
+  _renderMidseasonDraftModal(draftLog, draftOrder, teamProjPts);
+}
+
+// ── 25-26 mid-season draft ────────────────────────────────────────────────────
+function simulateMidseasonDraft2526(){
+  if(!MIDSEASON_STANDINGS_2526.length){
+    toast('Populate MIDSEASON_STANDINGS_2526 (worst→best) to run the 25-26 mid-season sim.');
+    return;
+  }
+  const teams = MIDSEASON_STANDINGS_2526.filter(t => players.some(p => p.sim2526===t));
+  if(!teams.length){ toast('No sim2526 rosters found — run Simulate Drops on 25-26 first.'); return; }
+
+  const snap = players.map(p => ({...p}));
+
+  const rPool = snap.filter(p => p.sim2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
+  const cf = {
+    F: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
+    D: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
+    G: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
+  };
+  const val     = p => ppts2526blend(p);
+  const getCap  = p => getCap2526(p);
+  const deficit = p => { const fn=cf[posGroup(p.pos)]; const pp=val(p),c=getCap(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
+  const isProsp = p => (calcAge(p)??99) <= 23 && getCap(p) <= ELC_MAX_2526;
+  const bestFAByPos = {};
+  for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.sim2526&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
+  const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
+
+  const teamProjPts = Object.fromEntries(teams.map(t=>[t, snap.filter(p=>p.sim2526===t).reduce((s,p)=>s+val(p),0)]));
+
+  const draftLog = [];
+  for(let round = 1; round <= 5; round++){
+    const roundPicks = [];
+    for(const team of teams){
+      const roster = snap.filter(p => p.sim2526 === team);
+      if(!roster.length) continue;
+      const teamCap = roster.reduce((s,p)=>s+getCap(p),0);
+
+      const belowCurve = roster.filter(p=>!isProsp(p)&&!isHighVal(p)).sort((a,b)=>deficit(b)-deficit(a));
+      const droppable  = belowCurve.length ? belowCurve : roster.filter(p=>!isProsp(p)).sort((a,b)=>deficit(b)-deficit(a));
+      if(!droppable.length) continue;
+      const toDrop = droppable[0];
+
+      const maxPickCap = CAP_LIMIT_2526 - (teamCap - getCap(toDrop));
+      const toPick = snap
+        .filter(p => !p.sim2526 && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap)
+        .sort((a,b) => val(b)-val(a))[0];
+      if(!toPick || val(toPick) <= val(toDrop)) continue;
+
+      toDrop.sim2526 = null;
+      toPick.sim2526 = team;
+      roundPicks.push({
+        team,
+        dropped: {...toDrop}, picked: {...toPick},
+        dropVal: Math.round(val(toDrop)), dropCap: getCap(toDrop).toFixed(2),
+        pickVal: Math.round(val(toPick)), pickCap: getCap(toPick).toFixed(2),
+        projDelta: val(toPick) - val(toDrop),
+      });
+    }
+    draftLog.push({round, picks: roundPicks});
+  }
+
+  _renderMidseasonDraftModal(draftLog, teams, teamProjPts);
 }
 
 function compareDrafts2526(){
