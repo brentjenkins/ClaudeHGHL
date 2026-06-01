@@ -3636,7 +3636,14 @@ function ppts2526blend(p){
 
 // Returns the best available 25-26 cap hit: exact if known from PuckPedia (same contract),
 // otherwise falls back to current cap as an estimate.
-const getCap2526 = p => p.cap2526 != null ? p.cap2526 : (p.cap || 0);
+const getCap2526 = p => {
+  if(p.cap2526 != null) return p.cap2526;
+  // If the current contract starts in 26-27 or later, the player was on a different
+  // (typically ELC) deal in 25-26. Avoid inflating their 25-26 cap with the new rate.
+  const startYr = (p.expYear && p.contractTerm) ? p.expYear - p.contractTerm + 1 : 0;
+  if(startYr > 2025 && (p.cap || 0) > ELC_MAX_2526) return ELC_MAX_2526;
+  return p.cap || 0;
+};
 
 function computeABP2526(allPlayers){
   const fas = allPlayers.filter(p => !p.sim2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0 &&
