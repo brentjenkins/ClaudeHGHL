@@ -964,6 +964,8 @@ def signings():
     print(f"Signings: {total_count} records, {total_pages} pages")
 
     expired_keys = set()   # players whose most-recent contract is expired (no active deal)
+    cap2526_hits = {}      # most-recent contract active during 25-26 (exp >= 2025-2026, start <= 2025)
+    SEASON_2526  = "2025-2026"
 
     def process_page(records):
         for p in records:
@@ -1003,6 +1005,21 @@ def signings():
                 if nick_key and nick_key not in all_players:
                     expired_keys.add(nick_key)
 
+            # Track 25-26 cap: most-recent contract that was active that season.
+            # Sorted DESC so first match per player wins (handles multiple overlapping deals).
+            try:
+                term_int = int(p.get("len") or 0)
+                exp_yr   = int(exp.split("-")[0]) if exp else 0
+                start_yr = exp_yr - term_int + 1 if exp_yr and term_int else 0
+                if exp >= SEASON_2526 and start_yr <= 2025:
+                    cap_val = round(float(p["cap_hit"]) / 1_000_000, 4)
+                    if key not in cap2526_hits:
+                        cap2526_hits[key] = cap_val
+                    if nick_key and nick_key not in cap2526_hits:
+                        cap2526_hits[nick_key] = cap_val
+            except (ValueError, TypeError):
+                pass
+
     process_page(first["p"])
 
     for page in range(2, total_pages + 1):
@@ -1025,9 +1042,9 @@ def signings():
         expired_keys = set()
     else:
         expired_keys -= set(all_players.keys())
-    print(f"Signings {'incremental' if incremental else 'full'}: {len(all_players)} active, {len(expired_keys)} expired, {len(errors)} errors")
+    print(f"Signings {'incremental' if incremental else 'full'}: {len(all_players)} active, {len(expired_keys)} expired, {len(cap2526_hits)} 25-26 caps, {len(errors)} errors")
     return jsonify({"ok": True, "players": all_players, "expired": list(expired_keys),
-                    "count": len(all_players), "errors": errors,
+                    "cap2526": cap2526_hits, "count": len(all_players), "errors": errors,
                     "fetched_through": _date.today().isoformat(),
                     "incremental": incremental})
 

@@ -303,7 +303,8 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol2526('rank2526')" style="color:#185FA5">Rank <span id="sort2526-rank2526"></span></th>
   <th onclick="setSortCol2526('abp2526')" title="Available Better Players (25-26)" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort2526-abp2526"></span></th>
   <th onclick="setSortCol2526('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort2526-gp2526"></span></th>
-  <th onclick="setSortCol2526('pts2526')" style="color:#bbb;border-right:2px solid #e5e7eb">Pts <span id="sort2526-pts2526"></span></th>
+  <th onclick="setSortCol2526('pts2526')" style="color:#bbb">Pts <span id="sort2526-pts2526"></span></th>
+  <th onclick="setSortCol2526('curvedelta2526actual')" style="color:#bbb;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the projection curve for their position at this cap hit">△Act <span id="sort2526-curvedelta2526actual"></span></th>
   <th id="th-score2526" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
   <th></th>
 </tr>
@@ -585,9 +586,7 @@ tr:hover td{background:#fafaf8}
         <input type="number" id="s-curveMinPts" value="15" min="0" max="50" step="1" onchange="updateSetting('curveMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div></div>
-      <div style="grid-column:1/-1;margin-top:4px">
-        <canvas id="curveChart" width="480" height="250" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;display:block"></canvas>
-      </div>
+      <div></div>
     </div>
   </div>
 
@@ -1211,9 +1210,17 @@ async function syncSignings(e){
         p.contractTerm = s.term || 0;
         p.expYear      = s.exp_year || 0;
         if(s.birthDate && !p.birthDate) p.birthDate = s.birthDate;
-        // cap2526: same contract if it started on or before the 25-26 season (start year ≤ 2025)
+        // cap2526: use same contract if it covered 25-26; otherwise look up the prior contract
+        // from the backend's cap2526 dict (built from historical records). For incremental
+        // syncs where prior history isn't fetched, leave cap2526 unchanged if we have no data.
         const startYr = (s.exp_year || 0) - (s.term || 0) + 1;
-        p.cap2526 = startYr <= 2025 ? s.cap : null;
+        if(startYr <= 2025){
+          p.cap2526 = s.cap;
+        } else if(d.cap2526?.[key] !== undefined){
+          p.cap2526 = d.cap2526[key];
+        } else if(!isIncremental){
+          p.cap2526 = null; // full sync found no prior contract — genuinely unknown
+        }
         matchedKeys.add(key);
         matched++;
       } else if(expiredSet.has(key)){
@@ -1231,6 +1238,7 @@ async function syncSignings(e){
       if(seenIds.has(uid)) continue;
       seenIds.add(uid);
       const sStartYr = (s.exp_year || 0) - (s.term || 0) + 1;
+      const sCap2526 = sStartYr <= 2025 ? s.cap : (d.cap2526?.[key] ?? null);
       players.push({
         id: nextId++, name: s.name, team: s.team||'', pos: s.pos||'C',
         cap: s.cap||0, contractTerm: s.term||0, expYear: s.exp_year||0,
@@ -1238,7 +1246,7 @@ async function syncSignings(e){
         fantasyTeam: '', fantasyTeam2526: '',
         pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
-        cap2526: sStartYr <= 2025 ? s.cap : null,
+        cap2526: sCap2526,
       });
       added++;
     }
@@ -2067,6 +2075,57 @@ const MIDSEASON_STANDINGS_2526 = [
   'Pernicious Puckers',  // 1st — picks last
 ];
 
+// Actual 25-26 mid-season draft (All-Star break, 5 rounds, reverse standings).
+// drop/add keys = normName(name).toLowerCase(). Pass rounds omitted.
+const ACTUAL_MIDSEASON_DRAFT_2526 = [
+  // Round 1
+  {round:1, team:'Killer Whales',       drop:'dylan holloway',        add:'igor chernyshov'},
+  {round:1, team:'Blue Line Bangers',   drop:'michael kesselring',    add:'sam malinski'},
+  {round:1, team:'Dumb and Goalie To',  drop:'sam rinzel',            add:'shayne gostisbehere'},
+  {round:1, team:'Damage Inc.',         drop:'anthony stolarz',       add:'brandon bussi'},
+  {round:1, team:'Silence of the Lamb', drop:'noah hanifin',          add:'mattias samuelsson'},
+  {round:1, team:'Muller Time!',        drop:'carter verhaeghe',      add:'zach hyman'},
+  {round:1, team:'Motor City Wings',    drop:'marco rossi',           add:'rickard rakell'},
+  {round:1, team:'Bossy Posse',         drop:'lian bichsel',          add:'trevor zegras'},
+  {round:1, team:'Pernicious Puckers',  drop:'kent johnson',          add:'alex debrincat'},
+  // Round 2
+  {round:2, team:'Killer Whales',       drop:'jacob markstrom',       add:'spencer knight'},
+  {round:2, team:'Blue Line Bangers',   drop:'jordan binnington',     add:'akira schmid'},
+  {round:2, team:'Dumb and Goalie To',  drop:'gabriel landeskog',     add:'josh doan'},
+  {round:2, team:'Damage Inc.',         drop:'kevin korchinski',      add:'ryan shea'},
+  {round:2, team:'Silence of the Lamb', drop:'jonathan toews',        add:'troy terry'},
+  {round:2, team:'Muller Time!',        drop:'roope hintz',           add:'oliver kapanen'},
+  {round:2, team:'Motor City Wings',    drop:'marco kasper',          add:'ryan oreilly'},
+  {round:2, team:'Bossy Posse',         drop:'shane wright',          add:'emil heineman'},
+  {round:2, team:'Pernicious Puckers',  drop:'jt miller',             add:'mats zuccarello'},
+  // Round 3
+  {round:3, team:'Killer Whales',       drop:'victor hedman',         add:'sean durzi'},
+  {round:3, team:'Blue Line Bangers',   drop:'brandon montour',       add:'mike matheson'},
+  {round:3, team:'Dumb and Goalie To',  drop:'sean monahan',          add:'joshua norris'},
+  {round:3, team:'Damage Inc.',         drop:'philipp kurashev',      add:'luke evangelista'},
+  {round:3, team:'Silence of the Lamb', drop:'uvis balinskis',        add:'josh manson'},
+  {round:3, team:'Muller Time!',        drop:'carter yakemchuk',      add:'miro heiskanen'},
+  {round:3, team:'Motor City Wings',    drop:'braden schneider',      add:'tom willander'},
+  {round:3, team:'Bossy Posse',         drop:'jakub dobes',           add:'ilya sorokin'},
+  {round:3, team:'Pernicious Puckers',  drop:'dylan cozens',          add:'tom wilson'},
+  // Round 4
+  {round:4, team:'Killer Whales',       drop:'shakir mukhamadullin',  add:'jakob chychrun'},
+  {round:4, team:'Blue Line Bangers',   drop:'gustav forsling',       add:'john marino'},
+  {round:4, team:'Dumb and Goalie To',  drop:'jonathan drouin',       add:'brock nelson'},
+  {round:4, team:'Damage Inc.',         drop:'adam boqvist',          add:'charlesedouard dastous'},
+  {round:4, team:'Silence of the Lamb', drop:'conor garland',         add:'tyler bertuzzi'},
+  {round:4, team:'Muller Time!',        drop:'shea theodore',         add:'john carlson'},
+  {round:4, team:'Motor City Wings',    drop:'cam york',              add:'scott morrow'},
+  {round:4, team:'Bossy Posse',         drop:'adam fox',              add:'ryker evans'},
+  {round:4, team:'Pernicious Puckers',  drop:'logan stankoven',       add:'jackson blake'},
+  // Round 5
+  {round:5, team:'Killer Whales',       drop:'anze kopitar',          add:'logan stankoven'},
+  {round:5, team:'Blue Line Bangers',   drop:'tyson foerster',        add:'artemi panarin'},
+  {round:5, team:'Motor City Wings',    drop:'mackie samoskevich',    add:'connor mcmichael'},
+  {round:5, team:'Bossy Posse',         drop:'matt coronato',         add:'matt grzelcyk'},
+  // DGT, DI, SOTL, MT!, PP passed in round 5
+];
+
 const LS_DRAFT = 'hghl_draft_2627';
 const LS_DRAFT_2526 = 'hghl_draft_2526';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
@@ -2609,93 +2668,9 @@ function updateSetting(key, val){
   else if(key === 'abpMinGP')     abpMinGP = val;
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
-  else if(key === 'curveMinPts')  { curveMinPts = val; renderCurveChart(); }
+  else if(key === 'curveMinPts')  { curveMinPts = val; }
 }
 
-function renderCurveChart(){
-  const canvas = document.getElementById('curveChart');
-  if(!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const pad = {top: 22, right: 22, bottom: 38, left: 36};
-  const pw = W - pad.left - pad.right;
-  const ph = H - pad.top - pad.bottom;
-  const maxCap = 14, maxPts = 140;
-  const tx = c => pad.left + (c / maxCap) * pw;
-  const ty = v => pad.top + ph - (Math.max(0, Math.min(maxPts, v)) / maxPts) * ph;
-
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#fafafa';
-  ctx.fillRect(0, 0, W, H);
-
-  // Grid
-  ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
-  for(let v = 0; v <= maxPts; v += 20){ ctx.beginPath(); ctx.moveTo(pad.left, ty(v)); ctx.lineTo(W-pad.right, ty(v)); ctx.stroke(); }
-  for(let c = 0; c <= maxCap; c += 2){ ctx.beginPath(); ctx.moveTo(tx(c), pad.top); ctx.lineTo(tx(c), H-pad.bottom); ctx.stroke(); }
-
-  // Threshold line
-  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
-  ctx.beginPath(); ctx.moveTo(pad.left, ty(curveMinPts)); ctx.lineTo(W-pad.right, ty(curveMinPts)); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#f59e0b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText(`${curveMinPts}pts threshold`, W-pad.right-2, ty(curveMinPts)-3);
-
-  // Data points
-  const allRostered = players.filter(p => p.fantasyTeam && (p.pts||0) > 0 && p.cap > 0);
-  const pool = allRostered.filter(p => (p.pts||0) >= curveMinPts);
-  const POS_COLORS = {F:'#3b82f6', D:'#f97316', G:'#22c55e'};
-
-  // Below-threshold points (gray)
-  ctx.fillStyle = '#d1d5db';
-  for(const p of allRostered.filter(p => (p.pts||0) < curveMinPts)){
-    ctx.beginPath(); ctx.arc(tx(p.cap), ty(p.pts||0), 2.5, 0, Math.PI*2); ctx.fill();
-  }
-
-  // Per-position curves
-  const curveFns = {};
-  for(const pos of ['F','D','G']){
-    curveFns[pos] = fitQuadratic(pool.filter(p=>posGroup(p.pos)===pos).map(p=>({x:p.cap,y:p.pts})));
-  }
-  for(const pos of ['F','D','G']){
-    const fn = curveFns[pos]; if(!fn) continue;
-    ctx.strokeStyle = POS_COLORS[pos]; ctx.lineWidth = 2;
-    ctx.beginPath(); let first=true;
-    for(let c=0.3; c<=maxCap; c+=0.1){
-      const y=ty(fn(c)); const x=tx(c);
-      if(y<pad.top-2||y>H-pad.bottom+2){first=true;continue;}
-      first ? ctx.moveTo(x,y) : ctx.lineTo(x,y); first=false;
-    }
-    ctx.stroke();
-  }
-
-  // In-pool data points (on top of curves)
-  ctx.globalAlpha = 0.7;
-  for(const p of pool){
-    ctx.fillStyle = POS_COLORS[posGroup(p.pos)] || '#9ca3af';
-    ctx.beginPath(); ctx.arc(tx(p.cap), ty(p.pts||0), 3, 0, Math.PI*2); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  // Axes
-  ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(pad.left,pad.top); ctx.lineTo(pad.left,H-pad.bottom); ctx.lineTo(W-pad.right,H-pad.bottom); ctx.stroke();
-
-  // Axis labels
-  ctx.fillStyle = '#6b7280'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-  for(let c=0; c<=maxCap; c+=2) ctx.fillText(`$${c}M`, tx(c), H-pad.bottom+13);
-  ctx.textAlign = 'right';
-  for(let v=0; v<=maxPts; v+=20) ctx.fillText(v, pad.left-4, ty(v)+3);
-
-  // Legend + pool count
-  ctx.textAlign = 'left'; ctx.font = '11px sans-serif';
-  [['F','#3b82f6'],['D','#f97316'],['G','#22c55e']].forEach(([lbl,col],i)=>{
-    const lx=pad.left+10+i*42, ly=pad.top+12;
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#374151'; ctx.fillText(lbl,lx+7,ly+4);
-  });
-  ctx.fillStyle='#9ca3af'; ctx.textAlign='right'; ctx.font='10px sans-serif';
-  ctx.fillText(`${pool.length} in pool`, W-pad.right, pad.top+12);
-}
 
 function quickDraft(id){
   const p = players.find(x=>x.id===id);
@@ -3131,7 +3106,8 @@ function simulateMidseasonDraft(){
 
       const maxPickCap = CAP_LIMIT - (teamCap - getCap(toDrop));
       const toPick = snap
-        .filter(p => !p.fantasyTeam && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap)
+        .filter(p => !p.fantasyTeam && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap
+                  && posGroup(p.pos) === posGroup(toDrop.pos))
         .sort((a,b) => val(b)-val(a))[0];
       if(!toPick || val(toPick) <= val(toDrop)) continue;
 
@@ -3193,7 +3169,8 @@ function simulateMidseasonDraft2526(){
 
       const maxPickCap = CAP_LIMIT_2526 - (teamCap - getCap(toDrop));
       const toPick = snap
-        .filter(p => !p.sim2526 && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap)
+        .filter(p => !p.sim2526 && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap
+                  && posGroup(p.pos) === posGroup(toDrop.pos))
         .sort((a,b) => val(b)-val(a))[0];
       if(!toPick || val(toPick) <= val(toDrop)) continue;
 
@@ -3450,6 +3427,12 @@ function render2526(){
     const fn = curveFns2526[posGroup(p.pos)];
     return fn ? pp - fn(c) : null;
   };
+  const curveDeltaActual2526 = p => {
+    const ap=p.pts2526||0, c=getCap2526(p);
+    if(!(ap>0 && c>0)) return null;
+    const fn = curveFns2526[posGroup(p.pos)];
+    return fn ? ap - fn(c) : null;
+  };
 
   let rows = players.filter(p=>{
     if(q&&![p.name,p.team,p.fantasyTeam2425||'',p.fantasyTeam2526||''].some(s=>s.toLowerCase().includes(q))) return false;
@@ -3471,13 +3454,14 @@ function render2526(){
     else if(sortCol2526==='abp2526'){ av=abpMap2526.get(a.id)??-1; bv=abpMap2526.get(b.id)??-1; }
     else if(sortCol2526==='rank2526'){ av=a.rank2526??99999; bv=b.rank2526??99999; }
     else if(sortCol2526==='curvedelta2526'){ av=curveDelta2526(a)??-Infinity; bv=curveDelta2526(b)??-Infinity; }
+    else if(sortCol2526==='curvedelta2526actual'){ av=curveDeltaActual2526(a)??-Infinity; bv=curveDeltaActual2526(b)??-Infinity; }
     else { av=a[sortCol2526]??''; bv=b[sortCol2526]??''; }
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir2526:av>bv?sortDir2526:0;
   });
 
   const sortCols2526 = ['name','pos','age','team','fantasyTeam2425','fantasyTeam2526','cap',
-    'proj2526_athletic','proj2526_dfo','proj2526_espn','ppts2526blend','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526'];
+    'proj2526_athletic','proj2526_dfo','proj2526_espn','ppts2526blend','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526','curvedelta2526actual'];
   sortCols2526.forEach(c=>{
     const el=document.getElementById('sort2526-'+c);
     if(el) el.textContent=sortCol2526===c?(sortDir2526>0?'↑':'↓'):'';
@@ -3621,7 +3605,8 @@ function render2526(){
       <td>${rankStr}</td>
       <td style="border-right:2px solid #f0f0ee">${abpStr}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af;border-right:2px solid #f0f0ee">${p.pts2526>0?p.pts2526:'—'}</td>
+      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
+      ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
@@ -3630,7 +3615,7 @@ function render2526(){
           : draftMode2526 ? `<button class="btn-draft" onclick="quickDraft2526(${p.id})">Draft</button>` : ''}
       </td>
     </tr>`;
-  }).join('')):'<tr><td colspan="20" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
+  }).join('')):'<tr><td colspan="21" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
   updateStats2526();
@@ -3665,7 +3650,7 @@ function setView(v){
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
-  if(v==='settings'){ syncSettings(); renderCurveChart(); }
+  if(v==='settings'){ syncSettings(); }
   const views = ['roster2526','roster','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
@@ -3849,14 +3834,7 @@ function ppts2526blend(p){
 
 // Returns the best available 25-26 cap hit: exact if known from PuckPedia (same contract),
 // otherwise falls back to current cap as an estimate.
-const getCap2526 = p => {
-  if(p.cap2526 != null) return p.cap2526;
-  // If the current contract starts in 26-27 or later, the player was on a different
-  // (typically ELC) deal in 25-26. Avoid inflating their 25-26 cap with the new rate.
-  const startYr = (p.expYear && p.contractTerm) ? p.expYear - p.contractTerm + 1 : 0;
-  if(startYr > 2025 && (p.cap || 0) > ELC_MAX_2526) return ELC_MAX_2526;
-  return p.cap || 0;
-};
+const getCap2526 = p => p.cap2526 != null ? p.cap2526 : (p.cap || 0);
 
 function computeABP2526(allPlayers){
   const fas = allPlayers.filter(p => !p.sim2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0 &&
