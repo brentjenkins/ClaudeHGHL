@@ -3403,12 +3403,15 @@ function dropSim2425(id){
 }
 
 function resetSim2425(){
-  if(!players.some(p => p.end2324)){
+  if(!Object.keys(PREDROP_ROSTER_2425).length){
     toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
     return;
   }
   if(!confirm('Reset 24-25 simulation? Sets start2425 = end2324 (23-24 final rosters).')) return;
-  for(const p of players) p.start2425 = p.end2324 || null;
+  for(const p of players){
+    p.end2324   = PREDROP_ROSTER_2425[normName(p.name).toLowerCase()] || null;
+    p.start2425 = p.end2324;
+  }
   lsSet(LS_PLAYERS, players);
   render2425();
 }
