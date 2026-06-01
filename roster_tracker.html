@@ -285,7 +285,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol2425('pos')">Pos <span id="sort2425-pos"></span></th>
   <th onclick="setSortCol2425('age')">Age <span id="sort2425-age"></span></th>
   <th onclick="setSortCol2425('team')">NHL Team <span id="sort2425-team"></span></th>
-  <th onclick="setSortCol2425('end2425')" style="color:#bbb">23-24 Team <span id="sort2425-end2425"></span></th>
+  <th onclick="setSortCol2425('end2324')" style="color:#bbb">23-24 Team <span id="sort2425-end2324"></span></th>
   <th onclick="setSortCol2425('start2425')" style="color:#185FA5">24-25 Team <span id="sort2425-start2425"></span></th>
   <th onclick="setSortCol2425('cap2425')">Cap <span id="sort2425-cap2425"></span></th>
   <th onclick="setSortCol2425('proj2425_athletic')" style="color:#185FA5;border-left:2px solid #e5e7eb" title="Athletic 2024-25 projection">ATH <span id="sort2425-proj2425_athletic"></span></th>
@@ -3675,11 +3675,11 @@ function render2425(){
   }
 
   let rows=players.filter(p=>{
-    if(q&&![p.name,p.team,p.end2425||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team,p.end2324||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(fp && posGroup(p.pos)!==fp) return false;
     if(ft && p.team!==ft) return false;
-    if(ft2425v==='__any__' && !(p.end2425||'')) return false;
-    else if(ft2425v && ft2425v!=='__any__' && (p.end2425||'')!==ft2425v) return false;
+    if(ft2425v==='__any__' && !(p.end2324||'')) return false;
+    else if(ft2425v && ft2425v!=='__any__' && (p.end2324||'')!==ft2425v) return false;
     if(fsim==='__none__' && p.start2425) return false;
     else if(fsim && fsim!=='__none__' && (p.start2425||'')!==fsim) return false;
     return true;
@@ -3700,7 +3700,7 @@ function render2425(){
     return av<bv?-sortDir2425:av>bv?sortDir2425:0;
   });
 
-  const sortCols2425=['name','pos','age','team','end2425','start2425','cap2425',
+  const sortCols2425=['name','pos','age','team','end2324','start2425','cap2425',
     'proj2425_athletic','proj2425_dfo','proj2425_nhl','ppts2425blend','ptsperm2425',
     'curvedelta2425','rank2425','abp2425','gp2425','pts2425','curvedelta2425actual'];
   sortCols2425.forEach(c=>{
@@ -3709,7 +3709,7 @@ function render2425(){
   });
 
   // Populate team filters
-  const allFT=[...new Set(players.map(p=>p.end2425).filter(Boolean))].sort();
+  const allFT=[...new Set(players.map(p=>p.end2324).filter(Boolean))].sort();
   const ft2425vEl=document.getElementById('filterFT2425_v');
   if(ft2425vEl){
     const prev=ft2425vEl.value;
@@ -3747,7 +3747,7 @@ function render2425(){
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:#9ca3af">${esc(p.end2425||'—')}</td>
+      <td style="color:#9ca3af">${esc(p.end2324||'—')}</td>
       <td style="color:#185FA5">${esc(p.start2425||'—')}</td>
       <td>${cap>0?capStr+capMarkStr:'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
