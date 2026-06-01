@@ -530,7 +530,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('age')">Age <span id="sort-age"></span></th>
   <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
   <th onclick="setSortCol('end2526')" style="color:#bbb">25-26 Team <span id="sort-end2526"></span></th>
-  <th onclick="setSortCol('fantasyTeam')" style="color:#185FA5">26-27 Team <span id="sort-fantasyTeam"></span></th>
+  <th onclick="setSortCol('start2627')" style="color:#185FA5">26-27 Team <span id="sort-start2627"></span></th>
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('gp2526')" style="color:#9ca3af" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts2526')" style="color:#9ca3af" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
@@ -1000,11 +1000,11 @@ function curveSurplusColor(s){
 }
 
 function simulateDrops(){
-  const teams = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))];
+  const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))];
   let dropped = 0;
 
   // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
-  const rosteredPool = players.filter(p => p.fantasyTeam && p.pts >= curveMinPts && p.cap > 0);
+  const rosteredPool = players.filter(p => p.start2627 && p.pts >= curveMinPts && p.cap > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
@@ -1012,7 +1012,7 @@ function simulateDrops(){
   };
 
   // Average replacement pts from top-30 FAs (no fantasy team)
-  const faPool = players.filter(p => !p.fantasyTeam && p.pts > 0)
+  const faPool = players.filter(p => !p.start2627 && p.pts > 0)
                         .sort((a,b) => b.pts - a.pts).slice(0, 30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
@@ -1022,11 +1022,11 @@ function simulateDrops(){
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   // Best FA pts by position — protect any rostered player who scores more than every FA at their position
   const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.fantasyTeam&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
+  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
   const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?(p.pts||0)-fn(p.cap)>=0:(p.pts||0)>=DROP_VALUE_FLOOR)||(p.pts||0)>(bestFAByPos[pg]||0); };
 
   for(const team of teams){
-    const roster = players.filter(p => p.fantasyTeam === team);
+    const roster = players.filter(p => p.start2627 === team);
 
     // Mandatory ELC drops applied first
     const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()));
@@ -1063,7 +1063,7 @@ function simulateDrops(){
       else if(pg === 'D') droppedD++;
     }
 
-    dropList.forEach(p => { p.fantasyTeam = ''; dropped++; });
+    dropList.forEach(p => { p.start2627 = ''; dropped++; });
   }
 
   dropsSimulated = true;
@@ -1078,13 +1078,15 @@ function load(){
   transactions   = lsGet(LS_TX)      || [];
   teamLogos      = lsGet(LS_LOGOS)   || {};
   dropsSimulated = lsGet(LS_DROPS)   || false;
-  // migrate: stamp end2526 from fantasyTeam if not yet set
+  // migrate: stamp end2526 from start2627 if not yet set
   let migrated = false;
   for(const p of players){
     // Migrate renamed fields from old localStorage
     const _oldEnd2526   = 'fantasy'+'Team2526', _oldStart2526 = 'sim'+'2526';
+    const _oldStart2627 = 'fantasy'+'Team';
+    if(p.start2627 === undefined){ p.start2627 = p[_oldStart2627] !== undefined ? p[_oldStart2627] : ''; migrated = true; }
     if(p.end2526 === undefined){
-      p.end2526 = p[_oldEnd2526] !== undefined ? p[_oldEnd2526] : (p.fantasyTeam || '');
+      p.end2526 = p[_oldEnd2526] !== undefined ? p[_oldEnd2526] : (p[_oldStart2627] || '');
       migrated = true;
     }
     if(p.start2526 === undefined){
@@ -1258,16 +1260,16 @@ async function syncAthletic(input){
 
 function defaultPlayers(){
   return [
-    {id:1,name:'Connor McDavid',team:'EDM',pos:'C',cap:12.5,pts:107,status:'roster',source:'manual',fantasyTeam:''},
-    {id:2,name:'Nathan MacKinnon',team:'COL',pos:'C',cap:12.6,pts:102,status:'roster',source:'manual',fantasyTeam:''},
-    {id:3,name:'Auston Matthews',team:'TOR',pos:'C',cap:13.25,pts:96,status:'roster',source:'manual',fantasyTeam:''},
-    {id:4,name:'Leon Draisaitl',team:'EDM',pos:'C',cap:14.0,pts:98,status:'roster',source:'manual',fantasyTeam:''},
-    {id:5,name:'Nikita Kucherov',team:'TBL',pos:'RW',cap:9.5,pts:94,status:'roster',source:'manual',fantasyTeam:''},
-    {id:6,name:'Cale Makar',team:'COL',pos:'D',cap:9.0,pts:82,status:'roster',source:'manual',fantasyTeam:''},
-    {id:7,name:'Roman Josi',team:'NSH',pos:'D',cap:9.06,pts:71,status:'roster',source:'manual',fantasyTeam:''},
-    {id:8,name:'David Pastrnak',team:'BOS',pos:'RW',cap:11.25,pts:88,status:'roster',source:'manual',fantasyTeam:''},
-    {id:9,name:'Igor Shesterkin',team:'NYR',pos:'G',cap:11.5,pts:0,status:'roster',source:'manual',fantasyTeam:''},
-    {id:10,name:'Sidney Crosby',team:'PIT',pos:'C',cap:8.7,pts:78,status:'roster',source:'manual',fantasyTeam:''},
+    {id:1,name:'Connor McDavid',team:'EDM',pos:'C',cap:12.5,pts:107,status:'roster',source:'manual',start2627:''},
+    {id:2,name:'Nathan MacKinnon',team:'COL',pos:'C',cap:12.6,pts:102,status:'roster',source:'manual',start2627:''},
+    {id:3,name:'Auston Matthews',team:'TOR',pos:'C',cap:13.25,pts:96,status:'roster',source:'manual',start2627:''},
+    {id:4,name:'Leon Draisaitl',team:'EDM',pos:'C',cap:14.0,pts:98,status:'roster',source:'manual',start2627:''},
+    {id:5,name:'Nikita Kucherov',team:'TBL',pos:'RW',cap:9.5,pts:94,status:'roster',source:'manual',start2627:''},
+    {id:6,name:'Cale Makar',team:'COL',pos:'D',cap:9.0,pts:82,status:'roster',source:'manual',start2627:''},
+    {id:7,name:'Roman Josi',team:'NSH',pos:'D',cap:9.06,pts:71,status:'roster',source:'manual',start2627:''},
+    {id:8,name:'David Pastrnak',team:'BOS',pos:'RW',cap:11.25,pts:88,status:'roster',source:'manual',start2627:''},
+    {id:9,name:'Igor Shesterkin',team:'NYR',pos:'G',cap:11.5,pts:0,status:'roster',source:'manual',start2627:''},
+    {id:10,name:'Sidney Crosby',team:'PIT',pos:'C',cap:8.7,pts:78,status:'roster',source:'manual',start2627:''},
   ];
 }
 function updateSigningsBtn(){
@@ -1353,7 +1355,7 @@ async function syncSignings(e){
         id: nextId++, name: s.name, team: s.team||'', pos: s.pos||'C',
         cap: s.cap||0, contractTerm: s.term||0, expYear: s.exp_year||0,
         birthDate: s.birthDate||'', source: 'puckpedia', status: 'roster',
-        fantasyTeam: '', end2526: '',
+        start2627: '', end2526: '',
         pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
         cap2526: sCap2526,
@@ -1397,7 +1399,7 @@ async function syncAllNHL(){
       } else {
         const newId = players.length>0 ? Math.max(...players.map(x=>x.id))+1 : 1;
         players.push({id:newId, name:p.name, team:p.nhlTeam, pos:p.pos, cap:0, pts:0,
-                      status:'roster', source:'nhl', fantasyTeam:'', birthDate:p.birthDate||''});
+                      status:'roster', source:'nhl', start2627:'', birthDate:p.birthDate||''});
         added++;
       }
     }
@@ -1459,14 +1461,14 @@ async function doSync(){
     for(const yp of rd.players){
       const ex = players.find(p=>normName(p.name).toLowerCase()===normName(yp.name).toLowerCase());
       if(ex){
-        ex.fantasyTeam    = yp.fantasyTeam;
+        ex.start2627    = yp.fantasyTeam;
         ex.end2526 = yp.fantasyTeam;
         if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
         if(yp.pos) ex.pos = yp.pos;
         ex.source = 'yahoo'; updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(p=>p.id))+1 : 1;
-        players.push({id:newId,name:yp.name,team:yp.nhlTeam,pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',fantasyTeam:yp.fantasyTeam,end2526:yp.fantasyTeam});
+        players.push({id:newId,name:yp.name,team:yp.nhlTeam,pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',start2627:yp.fantasyTeam,end2526:yp.fantasyTeam});
         added++;
       }
     }
@@ -1493,7 +1495,7 @@ async function doSync(){
     }
     // Promote source from 'nhl' to 'yahoo' for fantasy-rostered players
     for(const p of players){
-      if(p.source === 'nhl' && p.fantasyTeam) p.source = 'yahoo';
+      if(p.source === 'nhl' && p.start2627) p.source = 'yahoo';
     }
 
     lsSet(LS_PLAYERS, players);
@@ -1722,7 +1724,7 @@ function populateFantasyFilter() {
 
   const el2627 = document.getElementById('filterFantasy');
   const prev2627 = el2627.value;
-  const teams2627 = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))].sort();
+  const teams2627 = [...new Set(players.map(p => p.start2627).filter(Boolean))].sort();
   el2627.innerHTML = '<option value="">All 26-27 teams</option>' +
     '<option value="__none__">None (Free Agents)</option>' +
     teams2627.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
@@ -1733,28 +1735,28 @@ function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDi
 
 function computeDrops(allPlayers){
   // Quick indicator: uses same quadratic deficit + pts-target logic as simulateDrops().
-  const rosteredPool = allPlayers.filter(p => p.fantasyTeam && p.pts >= curveMinPts && p.cap > 0);
+  const rosteredPool = allPlayers.filter(p => p.start2627 && p.pts >= curveMinPts && p.cap > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
     G: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
   };
 
-  const faPool = allPlayers.filter(p => !p.fantasyTeam && p.pts > 0)
+  const faPool = allPlayers.filter(p => !p.start2627 && p.pts > 0)
                            .sort((a,b) => b.pts - a.pts).slice(0, 30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
   const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=allPlayers.filter(x=>!x.fantasyTeam&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
+  for(const pg of ['F','D','G']){ const fas=allPlayers.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
   const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?(p.pts||0)-fn(p.cap)>=0:(p.pts||0)>=DROP_VALUE_FLOOR)||(p.pts||0)>(bestFAByPos[pg]||0); };
 
   const dropIds = new Set();
-  const ftNames = [...new Set(allPlayers.map(p=>p.fantasyTeam).filter(Boolean))];
+  const ftNames = [...new Set(allPlayers.map(p=>p.start2627).filter(Boolean))];
 
   for(const ft of ftNames){
-    const roster = allPlayers.filter(p => p.fantasyTeam === ft);
+    const roster = allPlayers.filter(p => p.start2627 === ft);
 
     const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()));
     const mandatoryIds = new Set(mandatory.map(p => p.id));
@@ -1800,12 +1802,12 @@ function render(){
   const ff2526=document.getElementById('filterFantasy2526').value;
 
   let rows=players.filter(p=>{
-    if(q&&![p.name,p.team,p.fantasyTeam||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team,p.start2627||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(!draftMode&&fp&&posGroup(p.pos)!==fp) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
-    if(ff === '__none__' && p.fantasyTeam) return false;
-    else if(ff && ff !== '__none__' && (p.fantasyTeam||'')!==ff) return false;
+    if(ff === '__none__' && p.start2627) return false;
+    else if(ff && ff !== '__none__' && (p.start2627||'')!==ff) return false;
     if(ff2526 === '__any__' && !p.end2526) return false;
     else if(ff2526 === '__none__' && p.end2526) return false;
     else if(ff2526 && ff2526 !== '__none__' && ff2526 !== '__any__' && (p.end2526||'')!==ff2526) return false;
@@ -1815,7 +1817,7 @@ function render(){
   const dropIds = dropsSimulated ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
-  const rosteredPool2627 = players.filter(p => p.fantasyTeam && (p.pts||0) >= curveMinPts && p.cap > 0);
+  const rosteredPool2627 = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && p.cap > 0);
   const curveFns2627 = {
     F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
@@ -1838,7 +1840,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','end2526','fantasyTeam','cap','gp2526','pts2526','curvedelta_actual','ptsAthletic','ptsDFO','ptsESPN','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','ptsAthletic','ptsDFO','ptsESPN','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -1848,7 +1850,7 @@ function render(){
   let pressureHdr = '';
   if(draftMode){
     const viewTeam = draftFocusTeam || onClockTeam;
-    const viewRoster = players.filter(p=>p.fantasyTeam===viewTeam);
+    const viewRoster = players.filter(p=>p.start2627===viewTeam);
     const fN2=viewRoster.filter(p=>posGroup(p.pos)==='F').length;
     const dN2=viewRoster.filter(p=>posGroup(p.pos)==='D').length;
     const gN2=viewRoster.filter(p=>posGroup(p.pos)==='G').length;
@@ -1859,12 +1861,12 @@ function render(){
     // league-wide positional pressure: demand/supply ratio per position
     const leagueNeed={F:0,D:0,G:0};
     for(const t of DRAFT_TEAMS){
-      const r=players.filter(p=>p.fantasyTeam===t);
+      const r=players.filter(p=>p.start2627===t);
       leagueNeed.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
       leagueNeed.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
       leagueNeed.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
     }
-    const allUndrafted=players.filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
+    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
     const avail={F:allUndrafted.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted.filter(p=>posGroup(p.pos)==='G').length};
     const rawP={F:leagueNeed.F/Math.max(1,avail.F),D:leagueNeed.D/Math.max(1,avail.D),G:leagueNeed.G/Math.max(1,avail.G)};
     const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
@@ -1872,7 +1874,7 @@ function render(){
     lastPressure=pressure;
     // Score ALL free agents (full pool) for team-card top-picks — no per-team need filter here
     lastAllScored = players
-      .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
+      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos);
         const scV=sc(abpMap.get(p.id)??99);
@@ -1893,7 +1895,7 @@ function render(){
         return {id:p.id,name:p.name,pos:p.pos,pts:p.pts||0,cap:p.cap||0,_ds,_dsNormal};
       });
     const allScored=rows
-      .filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||need[posGroup(p.pos)]>0)&&(p.pts||0)>0)
+      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||need[posGroup(p.pos)]>0)&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos);
         const scV=sc(abpMap.get(p.id)??99);
@@ -1946,10 +1948,10 @@ function render(){
           <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.end2526||'—')}</span>
         </div>
       </td>
-      <td style="color:${p.fantasyTeam?'#1a1a18':'#9ca3af'}">
+      <td style="color:${p.start2627?'#1a1a18':'#9ca3af'}">
         <div style="display:flex;align-items:center;gap:5px">
-          ${p.fantasyTeam&&teamLogos[p.fantasyTeam]?`<img src="${teamLogos[p.fantasyTeam]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
-          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.fantasyTeam||'—')}</span>
+          ${p.start2627&&teamLogos[p.start2627]?`<img src="${teamLogos[p.start2627]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
+          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.start2627||'—')}</span>
         </div>
       </td>
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
@@ -1967,7 +1969,7 @@ function render(){
       ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
-        ${p.fantasyTeam
+        ${p.start2627
           ? `<button class="drop-btn" onclick="dropPlayer(${p.id})" title="Drop from roster">Drop</button>`
           : draftMode
             ? `<button class="btn-draft" onclick="quickDraft(${p.id})" title="Draft for ${esc(onClockTeam)}">Draft</button>`
@@ -2467,8 +2469,8 @@ function _standingsPts(){
   const pts = {};
   for(const t of DRAFT_TEAMS) pts[t] = 0;
   for(const p of players){
-    if(p.fantasyTeam && pts.hasOwnProperty(p.fantasyTeam))
-      pts[p.fantasyTeam] = (pts[p.fantasyTeam]||0) + (p.pts||0);
+    if(p.start2627 && pts.hasOwnProperty(p.start2627))
+      pts[p.start2627] = (pts[p.start2627]||0) + (p.pts||0);
   }
   return pts;
 }
@@ -2682,7 +2684,7 @@ function resetDraft(){
   if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 and clears draft picks.')) return;
   draftState = {picks:[]};
   saveDraft();
-  for(const p of players) p.fantasyTeam = p.end2526 || '';
+  for(const p of players) p.start2627 = p.end2526 || '';
   dropsSimulated = false;
   lsSet(LS_DROPS, false);
   lsSet(LS_PLAYERS, players);
@@ -2694,7 +2696,7 @@ function resetDraft(){
 function buildDraftSeq(){
   const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
   const seq = [], rem = {};
-  for(const t of DRAFT_TEAMS) rem[t] = Math.max(0, target - players.filter(p=>p.fantasyTeam===t).length);
+  for(const t of DRAFT_TEAMS) rem[t] = Math.max(0, target - players.filter(p=>p.start2627===t).length);
   let any = true;
   while(any){ any=false; for(const t of DRAFT_TEAMS){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
   return seq;
@@ -2712,7 +2714,7 @@ function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   animDismissed = false;
   draftFocusTeam = null;
   const team = buildDraftSeq()[draftState.picks.length];
-  const toPts = players.filter(p=>p.fantasyTeam===team).reduce((s,p)=>s+(p.pts||0),0);
+  const toPts = players.filter(p=>p.start2627===team).reduce((s,p)=>s+(p.pts||0),0);
   _standingsAnim = {team, fromPts: toPts-(projPts||0), toPts};
   draftState.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   saveDraft();
@@ -2753,7 +2755,7 @@ function simulateBestPick(){
   const scarcity = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
 
   const available = players.filter(p =>
-    !p.fantasyTeam &&
+    !p.start2627 &&
     !drafted.has(normName(p.name).toLowerCase()) &&
     need[posGroup(p.pos)] > 0
   );
@@ -3827,18 +3829,18 @@ function _renderMidseasonDraftModal(draftLog, draftOrder, teamProjPts){
 
 // ── 26-27 mid-season draft ────────────────────────────────────────────────────
 function simulateMidseasonDraft(){
-  const teams = [...new Set(players.map(p => p.fantasyTeam).filter(Boolean))];
+  const teams = [...new Set(players.map(p => p.start2627).filter(Boolean))];
   if(!teams.length){ toast('No rostered teams — run Simulate Drops first.'); return; }
 
   // Standings: rank teams by total projected pts (worst→best = draft order 1→N)
   const teamProjPts = Object.fromEntries(
-    teams.map(t => [t, players.filter(p => p.fantasyTeam===t).reduce((s,p)=>s+(p.pts||0),0)])
+    teams.map(t => [t, players.filter(p => p.start2627===t).reduce((s,p)=>s+(p.pts||0),0)])
   );
   const draftOrder = [...teams].sort((a,b) => teamProjPts[a] - teamProjPts[b]);
 
   const snap = players.map(p => ({...p}));
 
-  const rPool = snap.filter(p => p.fantasyTeam && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
+  const rPool = snap.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
   const cf = {
     F: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap,y:p.pts}))),
     D: fitQuadratic(rPool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
@@ -3849,14 +3851,14 @@ function simulateMidseasonDraft(){
   const deficit  = p => { const fn=cf[posGroup(p.pos)]; return (val(p)>0&&getCap(p)>0&&fn) ? fn(getCap(p))-val(p) : Infinity; };
   const isProsp  = p => (calcAge(p)??99) <= 22 && getCap(p) <= ELC_MAX_2627;
   const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.fantasyTeam&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
+  for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
   const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
 
   const draftLog = [];
   for(let round = 1; round <= 5; round++){
     const roundPicks = [];
     for(const team of draftOrder){
-      const roster = snap.filter(p => p.fantasyTeam === team);
+      const roster = snap.filter(p => p.start2627 === team);
       if(!roster.length) continue;
       const teamCap = roster.reduce((s,p)=>s+getCap(p),0);
 
@@ -3868,13 +3870,13 @@ function simulateMidseasonDraft(){
 
       const maxPickCap = CAP_LIMIT - (teamCap - getCap(toDrop));
       const toPick = snap
-        .filter(p => !p.fantasyTeam && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap
+        .filter(p => !p.start2627 && val(p)>0 && getCap(p)>0 && getCap(p)<=maxPickCap
                   && posGroup(p.pos) === posGroup(toDrop.pos))
         .sort((a,b) => val(b)-val(a))[0];
       if(!toPick || val(toPick) <= val(toDrop)) continue;
 
-      toDrop.fantasyTeam = '';
-      toPick.fantasyTeam = team;
+      toDrop.start2627 = '';
+      toPick.start2627 = team;
       roundPicks.push({
         team,
         dropped: {...toDrop}, picked: {...toPick},
@@ -4388,7 +4390,7 @@ function updateDraftTab(){
   if(!btn) return;
   const ROSTER_TOTAL = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
   const allFull = dropsSimulated && DRAFT_TEAMS.every(t => {
-    const retained = players.filter(p => p.fantasyTeam === t).length;
+    const retained = players.filter(p => p.start2627 === t).length;
     const picked   = draftState.picks.filter(p => p.team === t).length;
     return retained + picked >= ROSTER_TOTAL;
   });
@@ -4475,7 +4477,7 @@ function renderDraftView(){
     }
 
     const logo   = teamLogos[team];
-    const roster = players.filter(p => p.fantasyTeam === team);
+    const roster = players.filter(p => p.start2627 === team);
     const cap    = roster.reduce((s,p) => s+(p.cap||0), 0);
     const rem    = CAP_LIMIT - cap;
     const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
@@ -4540,8 +4542,8 @@ function renderDraftView(){
     const ptsByTeam = {};
     for(const t of DRAFT_TEAMS) ptsByTeam[t] = 0;
     for(const p of players){
-      if(p.fantasyTeam && ptsByTeam.hasOwnProperty(p.fantasyTeam))
-        ptsByTeam[p.fantasyTeam] += (p.pts||0);
+      if(p.start2627 && ptsByTeam.hasOwnProperty(p.start2627))
+        ptsByTeam[p.start2627] += (p.pts||0);
     }
     const ranked = [...DRAFT_TEAMS].sort((a,b) => ptsByTeam[b] - ptsByTeam[a]);
     const tickerHeader = `<span class="ticker-item" style="color:#60a5fa;font-weight:700;letter-spacing:.04em">Team Rankings based on Projected Points for 2026-27</span>`;
@@ -4569,7 +4571,7 @@ function renderDraftSearch(){
 
   const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
   const fa = players
-    .filter(p => !p.fantasyTeam && normName(p.name).toLowerCase().includes(q) && !drafted.has(normName(p.name).toLowerCase()))
+    .filter(p => !p.start2627 && normName(p.name).toLowerCase().includes(q) && !drafted.has(normName(p.name).toLowerCase()))
     .sort((a,b) => (b.pts2526||0)-(a.pts2526||0))
     .slice(0, 12);
 
@@ -4630,7 +4632,7 @@ function computeABP2526(allPlayers){
 
 function computeABP(allPlayers){
   const fas = allPlayers.filter(p =>
-    !p.fantasyTeam && p.cap > 0 && p.pts > 0 &&
+    !p.start2627 && p.cap > 0 && p.pts > 0 &&
     (abpMinPts <= 0 || p.pts >= abpMinPts) &&
     (abpMinGP  <= 0 || (p.gp2526||0) >= abpMinGP)
   );
@@ -4694,7 +4696,7 @@ function filterToTeam(team, pos){
 }
 
 function updateStats(){
-  const teams = [...new Set(players.map(p=>p.fantasyTeam).filter(Boolean))]
+  const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))]
     .sort((a,b)=>{
       const ai = DRAFT_TEAMS.indexOf(a), bi = DRAFT_TEAMS.indexOf(b);
       if(ai===-1 && bi===-1) return a.localeCompare(b);
@@ -4708,11 +4710,11 @@ function updateStats(){
   const pBadge=(r,need,avail,maxP)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';const raw=(need/Math.max(1,avail)).toFixed(3);const tip=`need ${need} / avail ${avail} · raw ratio ${raw} · max ${(maxP||0).toFixed(3)} → norm ${r.toFixed(2)}`;return`<span title="${tip}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
   let leagueCard;
   if(draftMode){
-    const lnF=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
-    const lnD=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
-    const lnG=teams.reduce((s,t)=>{const r=players.filter(p=>p.fantasyTeam===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
+    const lnF=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
+    const lnD=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
+    const lnG=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
     const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
-    const allUndrafted=players.filter(p=>!p.fantasyTeam&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
+    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
     const avF=allUndrafted.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted.filter(p=>posGroup(p.pos)==='D').length;
     const avG=allUndrafted.filter(p=>posGroup(p.pos)==='G').length;
@@ -4752,7 +4754,7 @@ function updateStats(){
     </div>`;
   };
   document.getElementById('statCards').innerHTML = leagueCard + teams.map(t => {
-    const tp = players.filter(p=>p.fantasyTeam===t);
+    const tp = players.filter(p=>p.start2627===t);
     const cap = tp.reduce((s,p)=>s+(p.cap||0), 0);
     const rem = CAP_LIMIT - cap;
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
@@ -4808,7 +4810,7 @@ function openEdit(id){
   document.getElementById('fCap').value=p.cap;
   document.getElementById('fPts').value=p.pts;
   document.getElementById('fStatus').value=p.status;
-  populateFantasyTeamModal(p.fantasyTeam||'');
+  populateFantasyTeamModal(p.start2627||'');
   document.getElementById('modal').style.display='flex';
 }
 function closeModal(){ document.getElementById('modal').style.display='none'; }
@@ -4825,13 +4827,13 @@ function savePlayer(){
     const idx=players.findIndex(p=>p.id===editId);
     if(idx>-1){
       const old=players[idx];
-      players[idx]={...old,name,team,pos,cap,pts,status,fantasyTeam:ft2627,
+      players[idx]={...old,name,team,pos,cap,pts,status,start2627:ft2627,
         capManual: cap!==old.cap ? true : (old.capManual||false),
         ptsManual: pts!==old.pts ? true : (old.ptsManual||false)};
     }
   } else {
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
-    players.push({id:newId,name,team,pos,cap,pts,status,source:'manual',fantasyTeam:ft2627,end2526:''});
+    players.push({id:newId,name,team,pos,cap,pts,status,source:'manual',start2627:ft2627,end2526:''});
   }
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render(); closeModal();
   toast(editId!==null?'Player updated.':'Player added.');
@@ -4839,7 +4841,7 @@ function savePlayer(){
 function dropPlayer(id){
   const p=players.find(x=>x.id===id);
   if(!p) return;
-  p.fantasyTeam='';
+  p.start2627='';
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
   toast(`${p.name} dropped.`);
 }
@@ -4858,7 +4860,7 @@ function closeAssignModal(){ document.getElementById('assignModal').style.displa
 function confirmAssign(){
   const p=players.find(x=>x.id===_assignId); if(!p) return;
   const team=document.getElementById('assignTeamSelect').value;
-  p.fantasyTeam=team;
+  p.start2627=team;
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
   toast(team ? `${p.name} added to ${team}.` : `${p.name} set as free agent.`);
   closeAssignModal();
@@ -4892,8 +4894,8 @@ const SUMMARY_DURATION = 10000; // ms per team
 function buildProjRanking(){
   const totals = {};
   for(const t of DRAFT_TEAMS) totals[t] = 0;
-  for(const p of players) if(p.fantasyTeam && totals.hasOwnProperty(p.fantasyTeam))
-    totals[p.fantasyTeam] += (p.pts||0);
+  for(const p of players) if(p.start2627 && totals.hasOwnProperty(p.start2627))
+    totals[p.start2627] += (p.pts||0);
   return [...DRAFT_TEAMS].sort((a,b) => totals[b]-totals[a]);
 }
 
@@ -4906,16 +4908,16 @@ function renderSummaryCard(teamIdx){
   const projRank    = projRanking.indexOf(team) + 1;
 
   const roster2526 = players.filter(p => p.end2526 === team);
-  const roster2627 = players.filter(p => p.fantasyTeam  === team);
+  const roster2627 = players.filter(p => p.start2627  === team);
 
   const departed = players
-    .filter(p => p.end2526 === team && p.fantasyTeam !== team)
+    .filter(p => p.end2526 === team && p.start2627 !== team)
     .sort((a,b) => (b.pts||0)-(a.pts||0));
   const arrived = players
-    .filter(p => p.fantasyTeam === team && p.end2526 !== team)
+    .filter(p => p.start2627 === team && p.end2526 !== team)
     .sort((a,b) => (b.pts||0)-(a.pts||0));
   const returning = players
-    .filter(p => p.end2526 === team && p.fantasyTeam === team)
+    .filter(p => p.end2526 === team && p.start2627 === team)
     .sort((a,b) => (b.pts||0)-(a.pts||0));
 
   // Totals
