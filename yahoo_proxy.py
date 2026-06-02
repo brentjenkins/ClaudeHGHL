@@ -284,7 +284,7 @@ def _fetch_rosters(league_key, token):
 
 
 LEAGUE_KEY_2425 = "453.l.52799"
-LEAGUE_KEY_2324 = "nhl.l.52799"   # game key 'nhl' may resolve to 2023-24; try 449.l.52799 if it fails
+LEAGUE_KEY_2324 = "449.l.52799"
 
 
 @app.route("/rosters")
