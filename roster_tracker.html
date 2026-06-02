@@ -2080,7 +2080,8 @@ const PREDROP_ROSTER_2425 = {
   'morgan rielly':'Motor City Wings','brandon montour':'Motor City Wings','shayne gostisbehere':'Motor City Wings',
   'jj moser':'Motor City Wings','egor zamula':'Motor City Wings','brandt clarke':'Motor City Wings',
   'jake oettinger':'Motor City Wings','alex lyon':'Motor City Wings',
-  // Muller Time! (19 players — Elias Pettersson F/VAN excluded due to name collision with D)
+  // Muller Time! (20 players — elias pettersson_F qualifies the F to avoid collision with D)
+  'elias pettersson_F':'Muller Time!',
   'jonathan marchessault':'Muller Time!','cole caufield':'Muller Time!',
   'matias maccelli':'Muller Time!','logan cooley':'Muller Time!','matthew tkachuk':'Muller Time!',
   'carter verhaeghe':'Muller Time!','travis konecny':'Muller Time!','matthew poitras':'Muller Time!',
@@ -3417,7 +3418,11 @@ function resetSim2425(){
   }
   if(!confirm('Reset 24-25 simulation? Sets start2425 = end2324 (23-24 final rosters).')) return;
   for(const p of players){
-    p.end2324   = PREDROP_ROSTER_2425[normName(p.name).toLowerCase()] || null;
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    // Try position-qualified key first (e.g. 'elias pettersson_F') to resolve name collisions,
+    // then fall back to unqualified key for all other entries.
+    p.end2324   = PREDROP_ROSTER_2425[`${base}_${pg}`] ?? PREDROP_ROSTER_2425[base] ?? null;
     p.start2425 = p.end2324;
   }
   // Create stubs for any PREDROP player with no existing record
