@@ -3766,6 +3766,54 @@ function render2425(){
       </td>
     </tr>`;
   }).join('') : '<tr><td colspan="19" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
+
+  updateStats2425();
+}
+
+function updateStats2425(){
+  const allTeams = [...new Set(players.map(p=>p.start2425).filter(Boolean))].sort((a,b)=>{
+    const ai=DRAFT_TEAMS_2425.indexOf(a), bi=DRAFT_TEAMS_2425.indexOf(b);
+    if(ai===-1&&bi===-1) return a.localeCompare(b);
+    if(ai===-1) return 1; if(bi===-1) return -1;
+    return ai-bi;
+  });
+  if(!allTeams.length){ document.getElementById('statCards2425').innerHTML=''; return; }
+
+  const leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+    <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
+    <div class="team-card-cap" style="color:#d1d5db">—</div>
+    <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
+  </div>`;
+
+  document.getElementById('statCards2425').innerHTML = leagueCard + allTeams.map(t=>{
+    const tp  = players.filter(p=>p.start2425===t);
+    const cap = tp.reduce((s,p)=>s+getCap2425(p),0);
+    const rem = CAP_LIMIT_2425 - cap;
+    const fN  = tp.filter(p=>posGroup(p.pos)==='F').length;
+    const dN  = tp.filter(p=>posGroup(p.pos)==='D').length;
+    const gN  = tp.filter(p=>posGroup(p.pos)==='G').length;
+    const projPts  = Math.round(tp.reduce((s,p)=>s+ppts2425blend(p),0));
+    const actualPts = tp.reduce((s,p)=>s+(p.pts2425||0),0);
+    const logo = teamLogos[t];
+    const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
+    const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
+    return `<div class="team-card">
+      <div class="team-card-header">
+        ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
+        <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
+      </div>
+      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span></div>
+      <div class="team-card-pos">
+        <span title="${fN} forwards">F&thinsp;${fN}</span>
+        <span title="${dN} defense">D&thinsp;${dN}</span>
+        <span title="${gN} goalies">G&thinsp;${gN}</span>
+      </div>
+      <div style="font-size:10px;color:#6b7280;margin-top:3px;text-align:center">
+        ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
+        ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function closeMidseasonDraftModal(){
