@@ -608,8 +608,9 @@ tr:hover td{background:#fafaf8}
 
   <div>
     <div class="section-label">NHL <span class="section-line"></span><span class="section-desc">League salary cap rules. Cap ceilings are used in drop cap-constraint checks. ELC max = league minimum + $175,000 (read-only). Editable caps are used by the drop algorithm.</span></div>
-    <div style="display:grid;grid-template-columns:72px repeat(5,1fr);gap:6px;align-items:center;font-size:12px">
+    <div style="display:grid;grid-template-columns:72px repeat(6,1fr);gap:6px;align-items:center;font-size:12px">
       <div></div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">23–24</div>
       <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">24–25</div>
       <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">25–26</div>
       <div style="text-align:center;color:#185FA5;font-size:10px;font-weight:600">26–27</div>
@@ -617,13 +618,15 @@ tr:hover td{background:#fafaf8}
       <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">28–29</div>
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Cap ceiling</div>
-      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 6px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$88M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$83.5M</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$88M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$95.5M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$104M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;font-size:12px">—</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;font-size:12px">—</div>
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">ELC max</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$0.950M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$0.975M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$0.975M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.025M</div>
@@ -631,6 +634,7 @@ tr:hover td{background:#fafaf8}
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.125M</div>
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">League key</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:10px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;letter-spacing:-.3px">453.l.52799</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:10px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;letter-spacing:-.3px">465.l.97882</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
@@ -2060,8 +2064,10 @@ const DRAFT_TEAMS_2526 = Object.entries(DRAFT_STANDINGS_2425)
 //  Dumb and Goalie To, Bossy Posse, Damage Inc., Pernicious Puckers, Motor City Wings]
 
 // ── 24-25 season constants ────────────────────────────────────────────────────
+let CAP_LIMIT_2324 = 83.5;
+const ELC_MAX_2324 = 0.950;
 let CAP_LIMIT_2425 = 88;
-const ELC_MAX_2425 = 0.925;
+const ELC_MAX_2425 = 0.975;
 const DRAFT_RESERVE_2425 = 1.5 * (ELC_MAX_2425 - 0.175);
 
 // 24-25 draft pick order (determined by 23-24 standings — worst team picks first).
