@@ -231,6 +231,7 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
+      <button class="btn btn-yahoo" id="rosters2324Btn" onclick="sync2324Rosters()" title="Pull end-of-23-24 rosters from Yahoo (league nhl.l.52799) to set end2324" style="opacity:.75">⬇ Yahoo 23-24</button>
       <button class="btn btn-puckpedia" id="signings2425Btn" onclick="syncSignings2425()" title="Pull 24-25 cap hits from PuckPedia (contracts active as of Oct 5, 2024 — ~15s)" style="opacity:.75">✍ Signings 24-25</button>
       <button class="btn btn-nhl" id="stats2425Btn" onclick="syncStats2425()" title="Pull 2024-25 actual NHL stats">📊 NHL 24-25</button>
     </div>
@@ -1507,6 +1508,38 @@ async function doSync(){
   } finally {
     btn.disabled=false;
     btn.innerHTML='⬇ Yahoo';
+  }
+}
+
+async function sync2324Rosters(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('rosters2324Btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching…';
+  try {
+    const rd = await fetch('/rosters-2324').then(r=>r.json());
+    if(rd.error) throw new Error(rd.error);
+    for(const p of players) p.end2324 = null;
+    let matched=0;
+    const unmatched=[];
+    for(const yp of rd.players){
+      const ex = players.find(p => normName(p.name).toLowerCase() === normName(yp.name).toLowerCase());
+      if(ex){ ex.end2324 = yp.fantasyTeam; matched++; }
+      else unmatched.push(`${yp.name} (${yp.fantasyTeam})`);
+    }
+    lsSet(LS_PLAYERS, players);
+    render2425();
+    if(unmatched.length){
+      console.warn('Yahoo 23-24 unmatched:', unmatched);
+      toast(`23-24 rosters: ${matched} matched. Unmatched: ${unmatched.join(', ')}`);
+    } else {
+      toast(`23-24 rosters loaded: ${matched} matched.`);
+    }
+  } catch(e){
+    toast('23-24 roster sync failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='⬇ Yahoo 23-24';
   }
 }
 

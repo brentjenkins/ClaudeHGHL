@@ -284,6 +284,7 @@ def _fetch_rosters(league_key, token):
 
 
 LEAGUE_KEY_2425 = "453.l.52799"
+LEAGUE_KEY_2324 = "nhl.l.52799"   # game key 'nhl' may resolve to 2023-24; try 449.l.52799 if it fails
 
 
 @app.route("/rosters")
@@ -293,6 +294,20 @@ def rosters():
         return jsonify({"error": "Not authenticated."}), 401
     try:
         return jsonify({"ok": True, "players": _fetch_rosters(LEAGUE_KEY, token)})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/rosters-2324")
+def rosters_2324():
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        players = _fetch_rosters(LEAGUE_KEY_2324, token)
+        print(f"  2023-24 rosters: {len(players)} players fetched")
+        return jsonify({"ok": True, "players": players})
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
