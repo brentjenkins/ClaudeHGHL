@@ -284,7 +284,7 @@ def _fetch_rosters(league_key, token):
 
 
 LEAGUE_KEY_2425 = "453.l.52799"
-LEAGUE_KEY_2324 = "449.l.1827"
+LEAGUE_KEY_2324 = "nhl.l.52799"   # TODO: find correct 23-24 game key (449 is NFL)
 
 
 @app.route("/rosters")
