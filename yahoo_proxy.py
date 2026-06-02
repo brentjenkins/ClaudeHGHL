@@ -570,77 +570,81 @@ def signings_2425():
     except ImportError:
         return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
 
-    scraper = cloudscraper.create_scraper()
-    all_players = {}
-    errors = []
+    try:
+        scraper = cloudscraper.create_scraper()
+        all_players = {}
+        errors = []
 
-    SEASON_CUTOFF = "2024-2025"
-    DATE_FROM = "2017-01-01"
-    DATE_TO   = "2024-10-05"
+        SEASON_CUTOFF = "2024-2025"
+        DATE_FROM = "2017-01-01"
+        DATE_TO   = "2024-10-05"
 
-    q_base = {
-        "pageSize": 100,
-        "sortBy": "sign_date",
-        "sortDirection": "DESC",
-        "sign_date": [DATE_FROM, DATE_TO],
-    }
+        q_base = {
+            "pageSize": 100,
+            "sortBy": "sign_date",
+            "sortDirection": "DESC",
+            "sign_date": [DATE_FROM, DATE_TO],
+        }
 
-    q_base["curPage"] = 1
-    resp = scraper.get(
-        "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
-        timeout=20,
-    )
-    resp.raise_for_status()
-    first = resp.json()["data"]
-    total_count = first["meta"]["count"]
-    total_pages = (total_count + 99) // 100
-    print(f"Signings 24-25: {total_count} records, {total_pages} pages")
+        q_base["curPage"] = 1
+        resp = scraper.get(
+            "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+            timeout=20,
+        )
+        resp.raise_for_status()
+        first = resp.json()["data"]
+        total_count = first["meta"]["count"]
+        total_pages = (total_count + 99) // 100
+        print(f"Signings 24-25: {total_count} records, {total_pages} pages")
 
-    def process_page(records):
-        for p in records:
-            exp = p.get("exp", "")
-            if exp < SEASON_CUTOFF:
-                continue
-            term = int(p.get("len") or 0)
-            exp_year = int(exp.split("-")[0]) if exp else 0
-            start_yr = exp_year - term + 1 if term else 0
-            if start_yr > 2024:
-                continue
-            pos = p.get("pos", "C")
-            pg = _POS_GROUP_MAP.get(pos, "F")
-            full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
-            if not full:
-                continue
-            first_lower = p.get("p_fn", "").lower()
-            nick = _FORMAL_TO_NICK.get(first_lower)
-            key = f"{normalize_name(full).lower()}_{pg}"
-            nick_key = f"{normalize_name(nick + ' ' + p.get('p_ln','')).lower()}_{pg}" if nick else None
-            cap = round(float(p["cap_hit"]) / 1_000_000, 4)
-            if key not in all_players:
-                entry = {"name": full, "pos": pos, "cap": cap, "nhl_id": p.get("p_nhl_id", "")}
-                all_players[key] = entry
-                if nick_key and nick_key not in all_players:
-                    all_players[nick_key] = entry
+        def process_page(records):
+            for p in records:
+                exp = p.get("exp", "")
+                if exp < SEASON_CUTOFF:
+                    continue
+                term = int(p.get("len") or 0)
+                exp_year = int(exp.split("-")[0]) if exp else 0
+                start_yr = exp_year - term + 1 if term else 0
+                if start_yr > 2024:
+                    continue
+                pos = p.get("pos", "C")
+                pg = _POS_GROUP_MAP.get(pos, "F")
+                full = f"{p.get('p_fn','')} {p.get('p_ln','')}".strip()
+                if not full:
+                    continue
+                first_lower = p.get("p_fn", "").lower()
+                nick = _FORMAL_TO_NICK.get(first_lower)
+                key = f"{normalize_name(full).lower()}_{pg}"
+                nick_key = f"{normalize_name(nick + ' ' + p.get('p_ln','')).lower()}_{pg}" if nick else None
+                cap = round(float(p["cap_hit"]) / 1_000_000, 4)
+                if key not in all_players:
+                    entry = {"name": full, "pos": pos, "cap": cap, "nhl_id": p.get("p_nhl_id", "")}
+                    all_players[key] = entry
+                    if nick_key and nick_key not in all_players:
+                        all_players[nick_key] = entry
 
-    process_page(first["p"])
+        process_page(first["p"])
 
-    for page in range(2, total_pages + 1):
-        try:
-            q_base["curPage"] = page
-            r = scraper.get(
-                "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
-                timeout=20,
-            )
-            r.raise_for_status()
-            process_page(r.json()["data"]["p"])
-            print(f"  page {page}/{total_pages} ({len(all_players)} active so far)")
-            time.sleep(0.15)
-        except Exception as e:
-            errors.append(f"page {page}: {str(e)}")
-            print(f"  ✗ page {page}: {e}")
+        for page in range(2, total_pages + 1):
+            try:
+                q_base["curPage"] = page
+                r = scraper.get(
+                    "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+                    timeout=20,
+                )
+                r.raise_for_status()
+                process_page(r.json()["data"]["p"])
+                print(f"  page {page}/{total_pages} ({len(all_players)} active so far)")
+                time.sleep(0.15)
+            except Exception as e:
+                errors.append(f"page {page}: {str(e)}")
+                print(f"  ✗ page {page}: {e}")
 
-    print(f"Signings 24-25 done: {len(all_players)} players, {len(errors)} errors")
-    return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+        print(f"Signings 24-25 done: {len(all_players)} players, {len(errors)} errors")
+        return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 # ── ESPN Fantasy Hockey projections ──────────────────────────────────────────
