@@ -284,26 +284,32 @@ def _fetch_rosters(league_key, token):
 
 
 LEAGUE_KEY_2425 = "453.l.52799"
-LEAGUE_KEY_2324 = "441.l.1827"
+LEAGUE_KEY_2324 = "427.l.1827"
 
 
 @app.route("/teams-2324")
 def teams_2324():
-    """Return just the team names for the 23-24 league — quick sanity check."""
+    """Try candidate NHL game keys against league 1827 to find the 23-24 key."""
     token = get_valid_token()
     if not token:
         return jsonify({"error": "Not authenticated."}), 401
-    try:
-        data = yahoo_get(f"/league/{LEAGUE_KEY_2324}/teams", token)
-        teams_raw = data["fantasy_content"]["league"][1]["teams"]
-        names = [
-            next((m["name"] for m in teams_raw[k]["team"][0] if isinstance(m, dict) and "name" in m), f"Team {k}")
-            for k in teams_raw if k != "count"
-        ]
-        return jsonify({"ok": True, "league_key": LEAGUE_KEY_2324, "teams": sorted(names)})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    # NHL game keys near 2023-24 (453=24-25, so 23-24 is somewhere below)
+    candidates = [LEAGUE_KEY_2324] + [f"{g}.l.1827" for g in [427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442]]
+    results = {}
+    for key in candidates:
+        try:
+            data = yahoo_get(f"/league/{key}/teams", token)
+            teams_raw = data["fantasy_content"]["league"][1]["teams"]
+            names = sorted([
+                next((m["name"] for m in teams_raw[k]["team"][0] if isinstance(m, dict) and "name" in m), f"Team {k}")
+                for k in teams_raw if k != "count"
+            ])
+            results[key] = {"ok": True, "teams": names}
+            print(f"  ✓ {key}: {names}")
+        except Exception as e:
+            results[key] = {"error": str(e)[:80]}
+            print(f"  ✗ {key}: {e}")
+    return jsonify(results)
 
 
 @app.route("/rosters")
