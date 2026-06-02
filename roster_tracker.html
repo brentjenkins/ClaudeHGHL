@@ -2106,6 +2106,13 @@ const PREDROP_ROSTER_2425 = {
   'linus ullmark':'Silence of the Lamb','jeremy swayman':'Silence of the Lamb',
 };
 
+// Players that may not have a record in the main players array (retired, low-profile, etc.)
+// Created as stubs during resetSim2425() if missing.
+const PREDROP_STUBS_2425 = [
+  {name:'Calen Addison',     pos:'D'},
+  {name:'Kevin Shattenkirk', pos:'D'},
+];
+
 // Post-drop pre-pick 24-25 rosters. Keys = normName.toLowerCase().
 const ACTUAL_ROSTER_2425 = {
   // Damage Inc. (14 keepers — dropped: Nylander, Scheifele, Chinakhov, Chychrun, Letang)
@@ -3410,6 +3417,24 @@ function resetSim2425(){
   for(const p of players){
     p.end2324   = PREDROP_ROSTER_2425[normName(p.name).toLowerCase()] || null;
     p.start2425 = p.end2324;
+  }
+  // Create stubs for any PREDROP player with no existing record
+  const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
+  let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
+  for(const stub of PREDROP_STUBS_2425){
+    const key = normName(stub.name).toLowerCase();
+    if(matched.has(key)) continue;
+    const team = PREDROP_ROSTER_2425[key] || null;
+    players.push({
+      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2425:null,
+      pts:0, pts2425:0, gp2425:0, status:'roster', source:'manual',
+      start2627:'', end2526:'', end2425:null, start2526:null,
+      end2324:team, start2425:team,
+      rank:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
+      proj2425_dfo:null, proj2425_athletic:null, proj2425_nhl:null,
+      proj2526_dfo:null, proj2526_espn:null, proj2526_athletic:null,
+      cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null,
+    });
   }
   lsSet(LS_PLAYERS, players);
   render2425();
