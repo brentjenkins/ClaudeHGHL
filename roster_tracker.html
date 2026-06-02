@@ -232,7 +232,7 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-yahoo" id="rosters2324Btn" onclick="sync2324Rosters()" title="Pull end-of-23-24 rosters from Yahoo (league 427.l.1827) to set end2324" style="opacity:.75">⬇ Yahoo 23-24</button>
-      <button class="btn btn-puckpedia" id="signings2425Btn" onclick="syncSignings2425()" title="Pull 24-25 cap hits from PuckPedia (contracts active as of Oct 5, 2024 — ~15s)" style="opacity:.75">✍ Signings 24-25</button>
+      <button class="btn btn-puckpedia" id="histCapsBtn" onclick="fetchHistoricalCaps()" title="Scrape PuckPedia player pages to fill missing 24-25 cap hits (players who signed new deals)" style="opacity:.75">📜 Historical Caps</button>
       <button class="btn btn-nhl" id="stats2425Btn" onclick="syncStats2425()" title="Pull 2024-25 actual NHL stats">📊 NHL 24-25</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -252,6 +252,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">Load Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2425()">★ Rank Players</button>
+      <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
     </div>
   </div>
 </div>
@@ -312,9 +313,9 @@ tr:hover td{background:#fafaf8}
 <div class="header">
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync<br>Historical</span>
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-yahoo" id="sync2425Btn" onclick="sync2425Rosters()" title="Pull end-of-2024-25 rosters from Yahoo (league 453.l.52799) to record who was on each team last season" style="opacity:.75">⬇ Yahoo 24-25</button>
-      <button class="btn btn-puckpedia" id="signings2526Btn" onclick="syncSignings2526()" title="Pull 25-26 cap hits from PuckPedia (contracts active as of Sep 27, 2025 — ~15s)" style="opacity:.75">✍ Signings 25-26</button>
+      <button class="btn btn-nhl" id="statsBtn2526" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">25-26<br>Projections</span>
@@ -334,6 +335,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
       <button class="btn btn-blue-outline" onclick="compareDrafts2526()" title="Compare algorithm's simulated draft picks against actual 25-26 draft picks">📋 Compare Drafts</button>
+      <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
       <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft2526()" title="Simulate January mid-season draft on 25-26 rosters — requires MIDSEASON_STANDINGS_2526">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
@@ -366,7 +368,7 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th colspan="7"></th>
   <th colspan="8" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
-  <th colspan="2" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th id="th-group-last-2526" colspan="1"></th>
 </tr>
 <tr>
@@ -457,8 +459,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync<br>3rd Party Data</span>
       <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
-      <button class="btn btn-nhl" id="statsBtn" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
-      <button class="btn btn-puckpedia" id="signingsBtn" onclick="syncSignings(event)" title="Full sync: scrape all current contracts from PuckPedia (~15s)">✍ Signings</button>
+      <button class="btn btn-puckpedia signings-all-btn" id="signingsBtn" onclick="syncSigningsAll(event)" title="Fetch all contracts from PuckPedia (~30s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -757,7 +758,7 @@ tr:hover td{background:#fafaf8}
 <!-- Compare Drops 25-26 modal -->
 <div class="modal-bg" id="compareDropsModal" style="display:none" onclick="if(event.target===this)closeCompareDropsModal()">
 <div class="modal" style="width:680px;max-width:96vw">
-  <h2>📊 Simulated vs Actual 25-26 Drops</h2>
+  <h2 id="compareDropsTitle">📊 Simulated vs Actual 25-26 Drops</h2>
   <div id="compareDropsSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
   <div id="compareDropsBody" style="font-size:13px"></div>
   <div class="modal-actions">
@@ -773,6 +774,18 @@ tr:hover td{background:#fafaf8}
   <div id="compareDraftsBody" style="font-size:13px"></div>
   <div class="modal-actions">
     <button class="btn btn-primary" onclick="closeCompareDraftsModal()">Close</button>
+  </div>
+</div>
+</div>
+
+<!-- Draft simulation vs actual modal -->
+<div class="modal-bg" id="draftSimModal" style="display:none" onclick="if(event.target===this)closeDraftSimModal()">
+<div class="modal" style="width:820px;max-width:96vw">
+  <h2 id="draftSimTitle">📋 Simulated Draft vs Actual 25-26</h2>
+  <div id="draftSimSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
+  <div id="draftSimBody" style="font-size:13px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" onclick="closeDraftSimModal()">Close</button>
   </div>
 </div>
 </div>
@@ -848,6 +861,7 @@ const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
 const LS_DROPS        = 'hghl_drops_simulated';
 const LS_SIGNINGS_HWM = 'hghl_signings_hwm'; // YYYY-MM-DD high-water mark for incremental signings
+const LS_SIGNINGS_RAW = 'hghl_signings_raw_v1'; // all contracts grouped by player key
 const LS_ESPN     = 'hghl_espn_proj';
 const LS_ATHLETIC  = 'hghl_athletic_proj';
 const LS_DFO       = 'hghl_dfo_proj';
@@ -1062,10 +1076,10 @@ function simulateDrops(){
       if(numDropped >= maxDrops) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
-      const isValuable = isHighVal(p) || isProspect(p);
-      // High-value and prospect players are only dropped to satisfy minDrops, never for pts/cap
-      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
+      const isValuable = isHighVal(p) || isProspect(p);
+      // High-value / prospect players are protected only once the team is under cap
+      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
       if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= (p.pts || 0);
@@ -1147,14 +1161,9 @@ function load(){
     if(p.rank2425          === undefined){ p.rank2425          = null; migrated = true; }
     if(p.end2324           === undefined){ p.end2324           = null; migrated = true; }
   }
-  // Sync end2324 from PREDROP_ROSTER_2425 constant (stays current if constant changes)
-  if(Object.keys(PREDROP_ROSTER_2425).length){
-    for(const p of players){
-      const v = PREDROP_ROSTER_2425[normName(p.name).toLowerCase()] || null;
-      if(p.end2324 !== v){ p.end2324 = v; migrated = true; }
-    }
-  }
   if(migrated) lsSet(LS_PLAYERS, players);
+  assignCapFromSignings();
+  applyManualCaps2425();
   applyBlendedPts();
   dedup(); loadDraft();
   populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
@@ -1162,7 +1171,7 @@ function load(){
 }
 
 async function syncStats(){
-  const btn = document.getElementById('statsBtn');
+  const btn = document.getElementById('statsBtn2526');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Syncing 32 teams…';
   try {
@@ -1285,113 +1294,218 @@ function defaultPlayers(){
   ];
 }
 function updateSigningsBtn(){
-  const btn = document.getElementById('signingsBtn');
-  if(!btn) return;
   const hwm = localStorage.getItem(LS_SIGNINGS_HWM);
-  btn.title = hwm
-    ? `Load signings since ${hwm} (shift-click for full sync)`
-    : 'Full sync: scrape all current contracts from PuckPedia (~15s)';
+  const title = hwm
+    ? `Load signings since ${hwm} (shift-click for full sync from 2014)`
+    : 'Full sync: fetch all contracts from PuckPedia (~30s)';
+  document.querySelectorAll('.signings-all-btn').forEach(b => b.title = title);
 }
 
-async function syncSignings(e){
+// Merge incremental signings into the cached raw store.
+// Deduplicates by (exp + start_yr): incoming overwrites existing for the same contract.
+function _mergeSigningsRaw(existing, incoming){
+  const merged = Object.assign({}, existing);
+  for(const [key, contracts] of Object.entries(incoming)){
+    if(!merged[key]){ merged[key] = contracts; continue; }
+    const byId = new Map();
+    for(const c of merged[key])  byId.set(c.exp + '_' + c.start_yr, c);
+    for(const c of contracts)    byId.set(c.exp + '_' + c.start_yr, c); // incoming wins
+    merged[key] = [...byId.values()].sort((a,b) => b.sign_date.localeCompare(a.sign_date));
+  }
+  return merged;
+}
+
+// "Yr X / Y" label for a specific contract in a given season.
+function _signingYrStr(contract, seasonYear){
+  if(!contract || !contract.term) return '';
+  const yr = seasonYear - contract.start_yr + 1;
+  return (yr >= 1 && yr <= contract.term) ? `Yr ${yr} / ${contract.term}` : '';
+}
+
+// Derive cap2425 / cap2526 / cap (26-27) from LS_SIGNINGS_RAW.
+// Always writes cap2425/cap2526 when the player is in the signings store —
+// null means "no contract active that season" (avoids stale / cascaded wrong values).
+function assignCapFromSignings(){
+  const raw = lsGet(LS_SIGNINGS_RAW);
+  if(!raw) return;
+  for(const p of players){
+    const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+    const contracts = raw[key];
+    if(!contracts || !contracts.length) continue;
+    // contracts stored sign_date DESC; first match = most recently signed active contract
+    const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
+    const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
+    const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
+    // Always set — null is honest ("not found"), avoids cascading to wrong current cap
+    p.cap2425    = c2425?.cap ?? null;
+    p.cap2526    = c2526?.cap ?? null;
+    p.yrStr2425  = _signingYrStr(c2425, 2024);
+    p.yrStr2526  = _signingYrStr(c2526, 2025);
+    p.yrStr2627  = _signingYrStr(c2627, 2026);
+    if(c2627){
+      if(!p.capManual) p.cap = c2627.cap;
+      p.contractTerm = c2627.term || 0;
+      p.expYear      = parseInt(c2627.exp?.split('-')[0]) || 0;
+      if(c2627.team && (!p.team || p.team==='—')) p.team = c2627.team;
+      if(c2627.birthDate && !p.birthDate)          p.birthDate = c2627.birthDate;
+    } else if(!p.capManual){
+      p.cap = 0; p.contractTerm = 0; p.expYear = 0;
+    }
+  }
+}
+
+function applyManualCaps2425(){
+  for(const p of players){
+    const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+    const m = MANUAL_CAPS_2425[key];
+    if(!m) continue;
+    if(p.cap2425 === null || p.cap2425 === undefined){ p.cap2425 = m.cap || null; }
+    if(!p.yrStr2425 && m.yrStr) p.yrStr2425 = m.yrStr;
+  }
+}
+
+async function syncSigningsAll(e){
   if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('signingsBtn');
-  btn.disabled = true;
+  const btns = document.querySelectorAll('.signings-all-btn');
+  btns.forEach(b => { b.disabled = true; });
 
   const hwm = localStorage.getItem(LS_SIGNINGS_HWM);
   const forceFullSync = e?.shiftKey || !hwm;
-  let url = '/signings';
+  let url = '/signings-all';
   if(!forceFullSync && hwm){
-    // 2-day buffer in case a signing was backdated slightly
     const since = new Date(hwm);
     since.setDate(since.getDate() - 2);
-    url = `/signings?since=${since.toISOString().slice(0,10)}`;
+    url = `/signings-all?since=${since.toISOString().slice(0,10)}`;
   }
   const isIncremental = url.includes('since');
 
-  btn.innerHTML = isIncremental
-    ? `<span class="spinner"></span>Updating…`
-    : `<span class="spinner"></span>Fetching (~15s)…`;
+  btns.forEach(b => { b.innerHTML = isIncremental ? '<span class="spinner"></span>Updating…' : '<span class="spinner"></span>Fetching (~30s)…'; });
   try {
-    toast(isIncremental
-      ? `Fetching new signings since ${hwm}…`
-      : 'Fetching all current contracts from PuckPedia — this takes ~15 seconds…');
+    toast(isIncremental ? `Fetching signings since ${hwm}…` : 'Fetching all contracts from PuckPedia (~30s)…');
     const d = await fetch(url).then(r=>r.json());
     if(d.error) throw new Error(d.error);
 
-    const expiredSet = new Set(d.expired || []);
-    let matched=0, cleared=0, added=0;
+    // Merge into cached store (incremental) or replace (full)
+    const existing = isIncremental ? (lsGet(LS_SIGNINGS_RAW) || {}) : {};
+    const raw = isIncremental ? _mergeSigningsRaw(existing, d.contracts) : d.contracts;
+    lsSet(LS_SIGNINGS_RAW, raw);
 
-    // Track which PuckPedia keys already exist in our player list
+    // Apply cap hits to all existing players
+    let matched = 0;
     const matchedKeys = new Set();
     for(const p of players){
       const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        const s = d.players[key];
-        p.cap          = s.cap;
-        p.capManual    = false;
-        if(!p.team || p.team==='—') p.team = s.team;
-        p.contractTerm = s.term || 0;
-        p.expYear      = s.exp_year || 0;
-        if(s.birthDate && !p.birthDate) p.birthDate = s.birthDate;
-        // cap2526: use same contract if it covered 25-26; otherwise look up the prior contract
-        // from the backend's cap2526 dict (built from historical records). For incremental
-        // syncs where prior history isn't fetched, leave cap2526 unchanged if we have no data.
-        const startYr = (s.exp_year || 0) - (s.term || 0) + 1;
-        if(startYr <= 2025){
-          p.cap2526 = s.cap;
-        } else if(d.cap2526?.[key] !== undefined){
-          p.cap2526 = d.cap2526[key];
-        } else if(!isIncremental){
-          p.cap2526 = null; // full sync found no prior contract — genuinely unknown
-        }
-        matchedKeys.add(key);
-        matched++;
-      } else if(expiredSet.has(key)){
+      const contracts = raw[key];
+      if(!contracts || !contracts.length) continue;
+      const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
+      const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
+      const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
+      p.cap2425   = c2425?.cap ?? null;
+      p.cap2526   = c2526?.cap ?? null;
+      p.yrStr2425 = _signingYrStr(c2425, 2024);
+      p.yrStr2526 = _signingYrStr(c2526, 2025);
+      p.yrStr2627 = _signingYrStr(c2627, 2026);
+      p.capManual = false;
+      if(c2627){
+        p.cap = c2627.cap;
+        p.contractTerm = c2627.term || 0;
+        p.expYear = parseInt(c2627.exp?.split('-')[0]) || 0;
+        if(c2627.team && (!p.team || p.team==='—')) p.team = c2627.team;
+        if(c2627.birthDate && !p.birthDate) p.birthDate = c2627.birthDate;
+      } else {
         p.cap = 0; p.contractTerm = 0; p.expYear = 0;
-        cleared++;
       }
+      matchedKeys.add(key);
+      matched++;
     }
 
-    // Add players from PuckPedia that don't exist in our list yet
+    // Add players from PuckPedia not yet in our list
+    let added = 0;
     let nextId = Math.max(0, ...players.map(p => p.id ?? 0)) + 1;
-    const seenIds = new Set(); // deduplicate by nhl_id (key may appear twice: formal + nick)
-    for(const [key, s] of Object.entries(d.players)){
-      if(matchedKeys.has(key)) continue;
-      const uid = s.nhl_id || s.name;
+    const seenIds = new Set();
+    for(const [key, contracts] of Object.entries(raw)){
+      if(matchedKeys.has(key) || !contracts.length) continue;
+      const latest = contracts[0];
+      const uid = latest.nhl_id || latest.name;
       if(seenIds.has(uid)) continue;
       seenIds.add(uid);
-      const sStartYr = (s.exp_year || 0) - (s.term || 0) + 1;
-      const sCap2526 = sStartYr <= 2025 ? s.cap : (d.cap2526?.[key] ?? null);
+      const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
+      const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
+      const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
       players.push({
-        id: nextId++, name: s.name, team: s.team||'', pos: s.pos||'C',
-        cap: s.cap||0, contractTerm: s.term||0, expYear: s.exp_year||0,
-        birthDate: s.birthDate||'', source: 'puckpedia', status: 'roster',
-        start2627: '', end2526: '',
-        pts: 0, pts2526: 0, gp2526: 0,
+        id: nextId++, name: latest.name, team: c2627?.team || latest.team || '',
+        pos: latest.pos || 'C',
+        cap: c2627?.cap || 0, contractTerm: c2627?.term || 0,
+        expYear: c2627 ? parseInt(c2627.exp?.split('-')[0]) || 0 : 0,
+        birthDate: latest.birthDate || '', source: 'puckpedia', status: 'roster',
+        start2627: '', end2526: '', pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
-        cap2526: sCap2526,
+        cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null,
       });
       added++;
     }
 
     applyBlendedPts();
     lsSet(LS_PLAYERS, players);
-    populateTeamFilter(); populateFantasyFilter(); render();
+    populateTeamFilter(); populateFantasyFilter(); render(); render2526(); render2425();
     if(d.fetched_through) localStorage.setItem(LS_SIGNINGS_HWM, d.fetched_through);
     updateSigningsBtn();
-    const clearedMsg = cleared ? `, ${cleared} expired cleared` : '';
-    const addedMsg   = added   ? `, ${added} new players added` : '';
-    const modeMsg    = isIncremental ? ' (incremental)' : '';
-    toast(`Signings sync done! ${matched} updated${clearedMsg}${addedMsg}${modeMsg}.`);
-    if(d.errors.length) console.warn('Signings page errors:', d.errors);
+    const addedMsg = added ? `, ${added} new players added` : '';
+    const modeMsg  = isIncremental ? ' (incremental)' : '';
+    toast(`Signings sync done! ${matched} cap hits assigned${addedMsg}${modeMsg}.`);
+    if(d.errors?.length) console.warn('Signings page errors:', d.errors);
   } catch(e){
     toast('Signings sync failed: '+e.message);
   } finally {
-    btn.disabled=false;
-    btn.innerHTML='✍ Signings';
+    btns.forEach(b => { b.disabled = false; b.innerHTML = '✍ Signings'; });
+    updateSigningsBtn();
   }
 }
+async function fetchHistoricalCaps(){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('histCapsBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching…';
+
+  // Target all players who were on a 24-25 HGHL roster — ensures complete cap2425 coverage
+  const predropKeys = new Set(Object.keys(PREDROP_ROSTER_2425));
+  const targets = players.filter(p => predropKeys.has(normName(p.name).toLowerCase()) && !p.capManual);
+  if(!targets.length){
+    toast('No 24-25 roster players found — populate PREDROP_ROSTER_2425 first.');
+    btn.disabled = false; btn.innerHTML = '📜 Historical Caps';
+    return;
+  }
+  toast(`Fetching player pages for ${targets.length} players — ~${Math.ceil(targets.length*0.25)}s…`);
+  try {
+    const payload = targets.map(p => ({name: p.name, pos: p.pos}));
+    const d = await fetch('/player-page-contracts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({players: payload}),
+    }).then(r => r.json());
+    if(d.error) throw new Error(d.error);
+
+    // Merge into LS_SIGNINGS_RAW
+    const existing = lsGet(LS_SIGNINGS_RAW) || {};
+    const merged   = _mergeSigningsRaw(existing, d.contracts);
+    lsSet(LS_SIGNINGS_RAW, merged);
+
+    // Re-assign caps from the updated store
+    const rawBefore = lsGet(LS_SIGNINGS_RAW);
+    assignCapFromSignings();
+    applyManualCaps2425();
+    lsSet(LS_PLAYERS, players);
+    render2425(); render2526(); render();
+
+    const filled = targets.filter(p => p.cap2425 !== null).length;
+    toast(`Historical caps: ${filled} of ${targets.length} filled from ${d.count} player pages.`);
+  } catch(e){
+    toast('Historical caps fetch failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = '📜 Historical Caps';
+  }
+}
+
 async function syncAllNHL(){
   if(!proxyOk){ toast('Start the proxy first.'); return; }
   const btn = document.getElementById('nhlBtn');
@@ -1660,37 +1774,6 @@ async function syncInjuries(){
   finally { btn.disabled=false; btn.innerHTML='🩹 Injuries'; }
 }
 
-async function syncSignings2526(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('signings2526Btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Fetching (~15s)…';
-  try {
-    toast('Fetching 25-26 cap hits from PuckPedia — this takes ~15 seconds…');
-    const d = await fetch('/signings-2526').then(r=>r.json());
-    if(d.error) throw new Error(d.error);
-
-    let matched = 0, unmatched = 0;
-    for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.cap2526 = d.players[key].cap;
-        matched++;
-      } else {
-        unmatched++;
-      }
-    }
-    lsSet(LS_PLAYERS, players);
-    render2526();
-    toast(`Signings 25-26 done! ${matched} cap hits set, ${unmatched} unmatched.`);
-    if(d.errors.length) console.warn('Signings 25-26 page errors:', d.errors);
-  } catch(e){
-    toast('Signings 25-26 sync failed: '+e.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '✍ Signings 25-26';
-  }
-}
 
 async function syncDFO2526(input){
   const file = input.files[0]; if(!file) return; input.value='';
@@ -1822,9 +1905,9 @@ function computeDrops(allPlayers){
       if(numDropped >= maxDrops) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
-      const isValuable = isHighVal(p) || isProspect(p);
-      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
+      const isValuable = isHighVal(p) || isProspect(p);
+      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
       if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropIds.add(p.id);
       keptPts -= (p.pts || 0);
@@ -1998,7 +2081,7 @@ function render(){
           <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.start2627||'—')}</span>
         </div>
       </td>
-      <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${contractYearStr(p)||'—'}</div>`:''}</td>
+      <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2627||contractYearStr(p)||'—'}</div>`:''}</td>
       <td style="color:#9ca3af">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -2153,6 +2236,20 @@ const PREDROP_ROSTER_2425 = {
   'linus ullmark':'Silence of the Lamb','jeremy swayman':'Silence of the Lamb',
 };
 
+// Manual 2024-25 cap hits for players whose PuckPedia slugs 404 or had no page contract panel.
+// Key = normName(name).toLowerCase() + "_" + posGroup. yrStr = contract year label.
+const MANUAL_CAPS_2425 = {
+  'cam york_D':       { cap: 1.6000, yrStr: 'Yr 2 / 2' },
+  'matty beniers_F':  { cap: 7.1400, yrStr: 'Yr 1 / 7' },
+  'will borgen_D':    { cap: 2.7000, yrStr: 'Yr 2 / 2' },
+  'egor zamula_D':    { cap: 1.7000, yrStr: 'Yr 1 / 2' },
+  'jake middleton_D': { cap: 2.4500, yrStr: 'Yr 3 / 3' },
+  'nick perbix_D':    { cap: 1.1250, yrStr: 'Yr 2 / 2' },
+  'jj moser_D':       { cap: 3.3750, yrStr: 'Yr 1 / 2' },
+  'jj peterka_F':     { cap: 0.8558, yrStr: 'Yr 3 / 3' },
+  'calen addison_D':  { cap: 0,      yrStr: '' },          // no 2024-25 contract
+};
+
 // Players that may not have a record in the main players array (retired, low-profile, etc.)
 // Created as stubs during resetSim2425() if missing.
 const PREDROP_STUBS_2425 = [
@@ -2304,7 +2401,7 @@ const ACTUAL_ROSTER_2526 = {
   'carter verhaeghe':'Muller Time!','aliaksei protas':'Muller Time!',
   'logan cooley':'Muller Time!','matvei michkov':'Muller Time!',
   'zayne parekh':'Muller Time!','carter yakemchuk':'Muller Time!',
-  'denton mateychuk':'Muller Time!','matthew tkachuk':'Muller Time!',
+  'denton mateychuk':'Muller Time!',
   // Pernicious Puckers
   'quinn hughes':'Pernicious Puckers','leon draisaitl':'Pernicious Puckers',
   'jt miller':'Pernicious Puckers','jason robertson':'Pernicious Puckers',
@@ -2761,6 +2858,14 @@ function buildDraftSeq(){
   while(any){ any=false; for(const t of DRAFT_TEAMS){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
   return seq;
 }
+function buildDraftSeq2425(){
+  const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
+  const seq = [], rem = {};
+  for(const t of DRAFT_TEAMS_2425) rem[t] = Math.max(0, target - players.filter(p=>p.start2425===t).length);
+  let any = true;
+  while(any){ any=false; for(const t of DRAFT_TEAMS_2425){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
+  return seq;
+}
 function buildDraftSeq2526(){
   const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
   const seq = [], rem = {};
@@ -3167,9 +3272,9 @@ function simulateDrops2526(){
       if(numDropped >= maxDrops) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
-      const isValuable = isHighVal2526(p) || isProspect2526(p);
-      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
+      const isValuable = isHighVal2526(p) || isProspect2526(p);
+      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
       if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
@@ -3236,9 +3341,9 @@ function compareDrops2526(){
       if(numDropped >= maxDrops) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
-      const isValuable = isHighValV(p) || isProspectV(p);
-      if(isValuable && numDropped >= minDrops && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
+      const isValuable = isHighValV(p) || isProspectV(p);
+      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
       if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
@@ -3324,6 +3429,7 @@ function compareDrops2526(){
     return html;
   }).join('');
 
+  document.getElementById('compareDropsTitle').textContent='📊 Simulated vs Actual 25-26 Drops';
   document.getElementById('compareDropsBody').innerHTML = rows;
   document.getElementById('compareDropsModal').style.display = 'flex';
 }
@@ -3375,27 +3481,6 @@ async function syncStats2425(){
   finally { btn.disabled=false; btn.innerHTML='📊 NHL 24-25'; }
 }
 
-async function syncSignings2425(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('signings2425Btn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Fetching (~15s)…';
-  try {
-    toast('Fetching 24-25 cap hits from PuckPedia — this takes ~15 seconds…');
-    const d = await fetch('/signings-2425').then(r=>r.json());
-    if(d.error) throw new Error(d.error);
-    let matched=0, unmatched=0;
-    for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){ p.cap2425 = d.players[key].cap; matched++; }
-      else unmatched++;
-    }
-    lsSet(LS_PLAYERS, players);
-    render2425();
-    toast(`Signings 24-25 done! ${matched} cap hits set, ${unmatched} unmatched.`);
-    if(d.errors.length) console.warn('Signings 24-25 errors:', d.errors);
-  } catch(e){ toast('Signings 24-25 sync failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='✍ Signings 24-25'; }
-}
 
 function _apply2425Proj(field, lsKey, data){
   for(const p of players) p[field] = null;
@@ -3574,9 +3659,9 @@ function simulateDrops2425(){
       if(numDropped>=maxDrops) break;
       const pg=posGroup(p.pos);
       const posMinsMet=droppedF>=minDropF && droppedD>=minDropD;
-      const isValuable=isHighVal2425(p)||isProspect2425(p);
-      if(isValuable && numDropped>=minDrops && posMinsMet) break;
       const capOk=keptCap<=CAP_LIMIT_2425-numDropped*DRAFT_RESERVE_2425;
+      const isValuable=isHighVal2425(p)||isProspect2425(p);
+      if(isValuable && numDropped>=minDrops && posMinsMet && capOk) break;
       if(!isValuable && numDropped>=minDrops && keptPts+numDropped*avgFAPts>=ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts-=ppts2425blend(p); keptCap-=getCap2425(p); numDropped++;
@@ -3639,9 +3724,9 @@ function compareDrops2425(){
       if(numDropped>=maxDrops) break;
       const pg=posGroup(p.pos);
       const posMinsMet=droppedF>=minDropF && droppedD>=minDropD;
-      const isValuable=isHighValV(p)||isProspectV(p);
-      if(isValuable && numDropped>=minDrops && posMinsMet) break;
       const capOk=keptCap<=CAP_LIMIT_2425-numDropped*DRAFT_RESERVE_2425;
+      const isValuable=isHighValV(p)||isProspectV(p);
+      if(isValuable && numDropped>=minDrops && posMinsMet && capOk) break;
       if(!isValuable && numDropped>=minDrops && keptPts+numDropped*avgFAPtsV>=ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts-=ppts2425blend(p); keptCap-=getCap2425(p); numDropped++;
@@ -3717,6 +3802,7 @@ function compareDrops2425(){
     return html;
   }).join('');
 
+  document.getElementById('compareDropsTitle').textContent='📊 Simulated vs Actual 24-25 Drops';
   document.getElementById('compareDropsBody').innerHTML=rows;
   document.getElementById('compareDropsModal').style.display='flex';
 }
@@ -3821,7 +3907,6 @@ function render2425(){
     const pp=ppts2425blend(p);
     const cap=getCap2425(p);
     const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
-    const capMarkStr=p.cap2425===null&&p.cap>0?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Estimated from current contract">~</span>':'';
     const abpStr=(()=>{const n=abpMap2425.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
@@ -3830,7 +3915,7 @@ function render2425(){
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2324||'—')}</td>
       <td style="color:#185FA5">${esc(p.start2425||'—')}</td>
-      <td>${cap>0?capStr+capMarkStr:'—'}</td>
+      <td>${cap>0?`${capStr}${p.yrStr2425?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2425}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2425_nhl>0?p.proj2425_nhl:'—'}</td>
@@ -3874,6 +3959,9 @@ function updateStats2425(){
     const fN  = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN  = tp.filter(p=>posGroup(p.pos)==='D').length;
     const gN  = tp.filter(p=>posGroup(p.pos)==='G').length;
+    const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
+    const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
+    const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
     const projPts  = Math.round(tp.reduce((s,p)=>s+ppts2425blend(p),0));
     const actualPts = tp.reduce((s,p)=>s+(p.pts2425||0),0);
     const logo = teamLogos[t];
@@ -3886,9 +3974,9 @@ function updateStats2425(){
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span></div>
       <div class="team-card-pos">
-        <span title="${fN} forwards">F&thinsp;${fN}</span>
-        <span title="${dN} defense">D&thinsp;${dN}</span>
-        <span title="${gN} goalies">G&thinsp;${gN}</span>
+        <span title="${fRem} forward spots remaining (${fN} rostered)">F&thinsp;${fRem}</span>
+        <span title="${dRem} defense spots remaining (${dN} rostered)">D&thinsp;${dRem}</span>
+        <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
       <div style="font-size:10px;color:#6b7280;margin-top:3px;text-align:center">
         ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
@@ -4084,6 +4172,264 @@ function simulateMidseasonDraft2526(){
   }
 
   _renderMidseasonDraftModal(draftLog, teams, teamProjPts);
+}
+
+function closeDraftSimModal(){ document.getElementById('draftSimModal').style.display='none'; }
+
+function runDraftSim2425(){
+  if(!Object.keys(ACTUAL_DRAFT_2425).length){
+    toast('Populate ACTUAL_DRAFT_2425 first.'); return;
+  }
+  _runDraftSim({
+    season:       '24-25',
+    actualDraft:  ACTUAL_DRAFT_2425,
+    allTeams:     [...new Set(players.filter(p=>p.start2425).map(p=>p.start2425))].sort(),
+    buildSeq:     buildDraftSeq2425,
+    startField:   'start2425',
+    ppts:         p => ppts2425blend(p),
+    getCap:       p => getCap2425(p),
+    capLimit:     CAP_LIMIT_2425,
+    draftReserve: DRAFT_RESERVE_2425,
+    draftWeights,
+  });
+}
+
+function runDraftSim2526(){
+  if(!Object.keys(ACTUAL_DRAFT_2526).length){
+    toast('Populate ACTUAL_DRAFT_2526 first.'); return;
+  }
+  _runDraftSim({
+    season:       '25-26',
+    actualDraft:  ACTUAL_DRAFT_2526,
+    allTeams:     [...new Set(players.filter(p=>p.start2526).map(p=>p.start2526))].sort(),
+    buildSeq:     buildDraftSeq2526,
+    startField:   'start2526',
+    ppts:         p => ppts2526blend(p),
+    getCap:       p => getCap2526(p),
+    capLimit:     CAP_LIMIT_2526,
+    draftReserve: DRAFT_RESERVE_2526,
+    draftWeights,
+  });
+}
+
+function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights }){
+  const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
+  const pm = {F: draftWeights.wtF||1, D: draftWeights.wtD||1.4, G: draftWeights.wtG||1};
+
+  // Snapshot: track each player's current team assignment
+  const assigned = {}; // id → team or null
+  for(const p of players) assigned[p.id] = p[startField] || null;
+
+  // Track roster counts and cap per team (seeded from keepers)
+  const need = {}; // team → {F,D,G} remaining spots
+  const teamCap = {}; // team → running cap total
+  for(const t of allTeams){
+    const keepers = players.filter(p => assigned[p.id]===t);
+    need[t] = {
+      F: Math.max(0, ROSTER_MAX.F - keepers.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, ROSTER_MAX.D - keepers.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, ROSTER_MAX.G - keepers.filter(p=>posGroup(p.pos)==='G').length),
+    };
+    teamCap[t] = keepers.reduce((s,p) => s + getCap(p), 0);
+  }
+
+  // Build draft sequence from actual drops state
+  const seq = buildSeq();
+  const teamPickNum = {}; // team → picks made so far (0-indexed)
+
+  const simPicks = []; // [{round, team, player, pos, ppts, cap, mode}]
+
+  for(const team of seq){
+    const pickNum = (teamPickNum[team] = (teamPickNum[team]||0));
+    const round = pickNum + 1;
+    const mode = round === 1 ? 'value' : 'bestAvail';
+
+    // Remaining picks for this team after this one (for reserve calculation)
+    const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
+    // Max cap this pick can use: full remaining headroom minus reserve for future picks
+    const maxPickCap = capLimit - (teamCap[team]||0) - Math.max(0, spotsLeft - 1) * draftReserve;
+
+    // Available FAs this team can still draft (within cap and position need)
+    const fas = players.filter(p => {
+      if(assigned[p.id]) return false;
+      if(ppts(p) <= 0) return false;
+      if((getCap(p)||0) > maxPickCap) return false;
+      const pg = posGroup(p.pos);
+      return (need[team]?.[pg]||0) > 0;
+    });
+
+    if(!fas.length) { teamPickNum[team]++; continue; }
+
+    // Score and pick best
+    const scored = fas.map(p => {
+      const pg = posGroup(p.pos);
+      const pp = ppts(p);
+      const score = mode === 'value' ? pp * (pm[pg]||1) : pp;
+      return {p, score, pp};
+    }).sort((a,b) => b.score - a.score);
+
+    const pick = scored[0];
+    assigned[pick.p.id] = team;
+    const pg = posGroup(pick.p.pos);
+    if(need[team]) need[team][pg] = Math.max(0, (need[team][pg]||0) - 1);
+    teamCap[team] = (teamCap[team]||0) + (getCap(pick.p)||0);
+
+    simPicks.push({round, team, player: pick.p.name, pos: pg, ppts: pick.pp, cap: getCap(pick.p)||0, mode});
+    teamPickNum[team]++;
+  }
+
+  // Build actual picks sorted by PPTS desc per team (proxy for pick order)
+  const actualByTeam = {};
+  for(const [key, team] of Object.entries(actualDraft)){
+    const p = players.find(x => normName(x.name).toLowerCase() === key);
+    if(!actualByTeam[team]) actualByTeam[team] = [];
+    actualByTeam[team].push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0});
+  }
+  for(const t of Object.keys(actualByTeam)) actualByTeam[t].sort((a,b)=>b.ppts-a.ppts);
+
+  // Pair sim picks with actual picks by team pick number
+  const teamSimIdx = {};
+  const rows = [];
+  for(const sp of simPicks){
+    const simIdx = teamSimIdx[sp.team] = (teamSimIdx[sp.team]||0);
+    const actArr = actualByTeam[sp.team] || [];
+    const act = actArr[simIdx] || null;
+    rows.push({...sp, actName: act?.name||'—', actPos: act?.pos||'?', actPpts: act?.ppts||0});
+    teamSimIdx[sp.team]++;
+  }
+
+  // Render
+  document.getElementById('draftSimTitle').textContent = `📋 Simulated Draft vs Actual ${season}`;
+  const totalSimPpts  = rows.reduce((s,r)=>s+r.ppts,0);
+  const totalActPpts  = rows.reduce((s,r)=>s+r.actPpts,0);
+  const diff = totalSimPpts - totalActPpts;
+  const diffStr = (diff>=0?'+':'')+Math.round(diff);
+  const diffCol = diff>=0?'#16a34a':'#dc2626';
+
+  document.getElementById('draftSimSummary').innerHTML =
+    `${rows.length} picks simulated &nbsp;|&nbsp; `+
+    `Algo total proj: <strong>${Math.round(totalSimPpts)} pts</strong> &nbsp;|&nbsp; `+
+    `Actual total proj: <strong>${Math.round(totalActPpts)} pts</strong> &nbsp;|&nbsp; `+
+    `<span style="color:${diffCol};font-weight:600">Algo ${diffStr} pts vs actual</span><br>`+
+    `<span style="color:#9ca3af;font-size:11px">R1 = Value mode (position-weighted PPTS) · R2+ = Best Available (pure PPTS) · Actual picks sorted by proj pts as pick-order proxy</span>`;
+
+  // Group by round
+  const maxRound = Math.max(...rows.map(r=>r.round));
+  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
+  const badge = (pg,name) => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 4px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${esc(name)}`;
+
+  let html = '';
+  for(let r=1; r<=maxRound; r++){
+    const rRows = rows.filter(x=>x.round===r);
+    if(!rRows.length) continue;
+    const rSimPts  = rRows.reduce((s,x)=>s+x.ppts,0);
+    const rActPts  = rRows.reduce((s,x)=>s+x.actPpts,0);
+    const rDiff    = rSimPts - rActPts;
+    const rDiffStr = (rDiff>=0?'+':'')+Math.round(rDiff);
+    const rDiffCol = rDiff>=0?'#16a34a':'#dc2626';
+    const modeLabel = r===1?'<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Value</span>':'<span style="background:#f3f4f6;color:#6b7280;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Best Avail</span>';
+    html += `<div style="margin-bottom:1rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+    html += `<div style="padding:7px 12px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center">`;
+    html += `<span style="font-weight:600;font-size:13px">Round ${r} ${modeLabel}</span>`;
+    html += `<span style="font-size:12px;color:#6b7280">Algo ${Math.round(rSimPts)} pts · Actual ${Math.round(rActPts)} pts · <span style="color:${rDiffCol};font-weight:600">${rDiffStr}</span></span>`;
+    html += `</div>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+    html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb"><th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Team</th><th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Algo pick</th><th style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:500">Proj</th><th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Actual pick</th><th style="padding:5px 6px;text-align:right;color:#9ca3af;font-weight:500">Proj</th><th style="padding:5px 8px;text-align:right;font-weight:500">Δ</th></tr>`;
+    for(const row of rRows){
+      const d = row.ppts - row.actPpts;
+      const dc = d>5?'#16a34a':d<-5?'#dc2626':'#9ca3af';
+      const ds = (d>=0?'+':'')+Math.round(d);
+      html += `<tr style="border-bottom:1px solid #f3f4f6">`;
+      html += `<td style="padding:5px 10px;color:#374151;white-space:nowrap">${esc(row.team)}</td>`;
+      html += `<td style="padding:5px 10px;display:flex;gap:4px;align-items:center">${badge(row.pos,row.player)}</td>`;
+      html += `<td style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:600">${Math.round(row.ppts)}</td>`;
+      html += `<td style="padding:5px 10px;color:#9ca3af"><span style="display:inline-flex;gap:4px;align-items:center">${badge(row.actPos,row.actName)}</span></td>`;
+      html += `<td style="padding:5px 6px;text-align:right;color:#9ca3af">${Math.round(row.actPpts)}</td>`;
+      html += `<td style="padding:5px 8px;text-align:right;color:${dc};font-weight:600;font-size:11px">${ds}</td>`;
+      html += `</tr>`;
+    }
+    html += `</table></div>`;
+  }
+
+  // ── Team totals: position counts + cap ───────────────────────────────────
+  const capColor = c => c > capLimit ? '#dc2626' : c > capLimit * 0.97 ? '#d97706' : '#16a34a';
+
+  // Keeper totals per team
+  const keeperTotals = {};
+  for(const t of allTeams){
+    const ks = players.filter(p => p[startField] === t);
+    keeperTotals[t] = {
+      F: ks.filter(p=>posGroup(p.pos)==='F').length,
+      D: ks.filter(p=>posGroup(p.pos)==='D').length,
+      G: ks.filter(p=>posGroup(p.pos)==='G').length,
+      cap: ks.reduce((s,p)=>s+getCap(p),0),
+    };
+  }
+
+  // Algo draft totals per team (picks from simulation)
+  const algoDraftTotals = {};
+  for(const r of rows){
+    if(!algoDraftTotals[r.team]) algoDraftTotals[r.team] = {F:0,D:0,G:0,cap:0};
+    algoDraftTotals[r.team][r.pos]++;
+    algoDraftTotals[r.team].cap += r.cap;
+  }
+
+  // Actual draft totals per team (skip players already counted as keepers)
+  const keeperIds = new Set(players.filter(p=>p[startField]).map(p=>p.id));
+  const actDraftTotals = {};
+  for(const [key, team] of Object.entries(actualDraft)){
+    const p = players.find(x => normName(x.name).toLowerCase() === key);
+    if(!actDraftTotals[team]) actDraftTotals[team] = {F:0,D:0,G:0,cap:0};
+    if(p && keeperIds.has(p.id)) continue; // already in keeperTotals — skip
+    const pg = p ? posGroup(p.pos) : 'F';
+    actDraftTotals[team][pg]++;
+    actDraftTotals[team].cap += p ? getCap(p) : 0;
+  }
+
+  html += `<div style="margin-top:1rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+  html += `<div style="padding:7px 12px;background:#f8fafc;font-weight:600;font-size:13px">Team Totals (keepers + draft)</div>`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+  html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb">
+    <th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Team</th>
+    <th style="padding:5px 8px;text-align:center;color:#6366f1;font-weight:500" colspan="4">Algo roster</th>
+    <th style="padding:5px 8px;text-align:center;color:#9ca3af;font-weight:500" colspan="4">Actual roster</th>
+  </tr>
+  <tr style="background:#fafafa;border-bottom:1px solid #e5e7eb">
+    <th style="padding:3px 10px"></th>
+    <th style="padding:3px 6px;text-align:center;color:#6366f1;font-weight:500;font-size:10px">F</th>
+    <th style="padding:3px 6px;text-align:center;color:#6366f1;font-weight:500;font-size:10px">D</th>
+    <th style="padding:3px 6px;text-align:center;color:#6366f1;font-weight:500;font-size:10px">G</th>
+    <th style="padding:3px 10px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Cap</th>
+    <th style="padding:3px 6px;text-align:center;color:#9ca3af;font-weight:500;font-size:10px">F</th>
+    <th style="padding:3px 6px;text-align:center;color:#9ca3af;font-weight:500;font-size:10px">D</th>
+    <th style="padding:3px 6px;text-align:center;color:#9ca3af;font-weight:500;font-size:10px">G</th>
+    <th style="padding:3px 10px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Cap</th>
+  </tr>`;
+
+  for(const t of allTeams){
+    const k = keeperTotals[t]   || {F:0,D:0,G:0,cap:0};
+    const a = algoDraftTotals[t]|| {F:0,D:0,G:0,cap:0};
+    const x = actDraftTotals[t] || {F:0,D:0,G:0,cap:0};
+    const algoF=k.F+a.F, algoD=k.D+a.D, algoG=k.G+a.G, algoCap=k.cap+a.cap;
+    const actF=k.F+x.F,  actD=k.D+x.D,  actG=k.G+x.G,  actCap=k.cap+x.cap;
+    const posWarn = (v,max,col) => v>max?`<span style="color:#dc2626;font-weight:700">${v}</span>`:
+                                   v<max?`<span style="color:#9ca3af">${v}</span>`:`${v}`;
+    html += `<tr style="border-bottom:1px solid #f3f4f6">
+      <td style="padding:5px 10px;color:#374151;font-weight:500;white-space:nowrap">${esc(t)}</td>
+      <td style="padding:5px 6px;text-align:center">${posWarn(algoF,DRAFT_ROSTER_MAX.F,'#6366f1')}</td>
+      <td style="padding:5px 6px;text-align:center">${posWarn(algoD,DRAFT_ROSTER_MAX.D,'#6366f1')}</td>
+      <td style="padding:5px 6px;text-align:center">${posWarn(algoG,DRAFT_ROSTER_MAX.G,'#6366f1')}</td>
+      <td style="padding:5px 10px;text-align:right;font-weight:600;color:${capColor(algoCap)}">$${algoCap.toFixed(1)}M</td>
+      <td style="padding:5px 6px;text-align:center;color:#9ca3af">${posWarn(actF,DRAFT_ROSTER_MAX.F,'#9ca3af')}</td>
+      <td style="padding:5px 6px;text-align:center;color:#9ca3af">${posWarn(actD,DRAFT_ROSTER_MAX.D,'#9ca3af')}</td>
+      <td style="padding:5px 6px;text-align:center;color:#9ca3af">${posWarn(actG,DRAFT_ROSTER_MAX.G,'#9ca3af')}</td>
+      <td style="padding:5px 10px;text-align:right;font-weight:600;color:${capColor(actCap)}">$${actCap.toFixed(1)}M</td>
+    </tr>`;
+  }
+  html += `</table></div>`;
+
+  document.getElementById('draftSimBody').innerHTML = html;
+  document.getElementById('draftSimModal').style.display = 'flex';
 }
 
 function compareDrafts2526(){
@@ -4491,7 +4837,7 @@ function render2526(){
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2425||'—')}</td>
       <td style="color:#185FA5">${esc(p.start2526||'—')}</td>
-      <td>${(()=>{const c=getCap2526(p);return c>0?`$${c.toFixed(2)}M${p.cap2526===null&&p.cap>0?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="26-27 cap used as estimate">~</span>':''}`:''||'—';})()}</td>
+      <td>${(()=>{const c=getCap2526(p);return c>0?`$${c.toFixed(2)}M${p.yrStr2526?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2526}</div>`:''}`:''||'—';})()}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
@@ -4740,10 +5086,8 @@ function ppts2425blend(p){
   return 0;
 }
 
-// Returns the best available 25-26 cap hit: exact if known from PuckPedia (same contract),
-// otherwise falls back to current cap as an estimate.
-const getCap2526 = p => p.cap2526 != null ? p.cap2526 : (p.cap || 0);
-const getCap2425 = p => p.cap2425 != null ? p.cap2425 : (p.cap2526 != null ? p.cap2526 : (p.cap || 0));
+const getCap2526 = p => p.cap2526 ?? 0;
+const getCap2425 = p => p.cap2425 ?? 0;
 
 function computeABP2526(allPlayers){
   const fas = allPlayers.filter(p => !p.start2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0 &&

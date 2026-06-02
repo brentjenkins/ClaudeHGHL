@@ -605,13 +605,10 @@ def signings_2425():
     expiry covers at least the 2024-25 season. First occurrence per player
     (sign_date DESC) is their 24-25 cap hit.
     """
-    try:
-        import cloudscraper, urllib.parse
-    except ImportError:
-        return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
+    import urllib.parse
 
     try:
-        scraper = cloudscraper.create_scraper()
+        scraper = _make_puckpedia_scraper()
         all_players = {}
         errors = []
 
@@ -1142,6 +1139,23 @@ def athletic_projections():
 
 # ── PuckPedia signings scraper ────────────────────────────────────────────────
 
+def _make_puckpedia_scraper():
+    """Return a curl_cffi session that impersonates Chrome's TLS fingerprint.
+
+    cloudscraper fakes headers but uses Python's TLS stack, which Cloudflare
+    fingerprints and blocks. curl_cffi replicates Chrome's actual TLS/HTTP2
+    fingerprint at the libcurl level, which bypasses Cloudflare reliably.
+    """
+    from curl_cffi import requests as cffi_requests
+    session = cffi_requests.Session(impersonate="chrome124")
+    session.headers.update({
+        "Referer":         "https://puckpedia.com/contracts",
+        "Accept":          "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+    })
+    return session
+
+
 _POS_GROUP_MAP = {"G": "G", "D": "D"}  # anything else → "F"
 
 # PuckPedia uses legal/formal first names; NHL API and Yahoo use nicknames.
@@ -1169,13 +1183,9 @@ _FORMAL_TO_NICK = {
 
 @app.route("/signings")
 def signings():
-    try:
-        import cloudscraper, urllib.parse
-    except ImportError:
-        return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
-
+    import urllib.parse
     from datetime import date as _date
-    scraper = cloudscraper.create_scraper()
+    scraper = _make_puckpedia_scraper()
     all_players = {}
     errors = []
 
@@ -1302,12 +1312,8 @@ def signings_2526():
     Because sign_date is sorted DESC, the first occurrence per player is their
     most-recent pre-season contract — i.e. their 25-26 cap hit.
     """
-    try:
-        import cloudscraper, urllib.parse
-    except ImportError:
-        return jsonify({"error": "cloudscraper not installed. Run: pip install cloudscraper"}), 500
-
-    scraper = cloudscraper.create_scraper()
+    import urllib.parse
+    scraper = _make_puckpedia_scraper()
     all_players = {}
     errors = []
 
@@ -1382,6 +1388,241 @@ def signings_2526():
 
     print(f"Signings 25-26 done: {len(all_players)} players, {len(errors)} errors")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players), "errors": errors})
+
+
+@app.route("/signings-all")
+def signings_all():
+    """Return all contracts from 2014 onward, grouped by player key, for client-side season assignment.
+
+    The client determines the cap hit for each season by finding the most recently
+    signed contract that was active in that season:
+        cap2425 → start_yr <= 2024 AND exp >= "2024-2025"
+        cap2526 → start_yr <= 2025 AND exp >= "2025-2026"
+        cap     → start_yr <= 2026 AND exp >= "2026-2027"
+
+    start_yr is computed as  exp_year − max(term, 1) + 1.
+    When len = 0 (unknown term) the contract is treated as a 1-year deal so
+    start_yr = exp_year — this fixes the old bug where len=0 caused start_yr=0
+    and every contract passed the season filter.
+
+    Supports incremental mode: ?since=YYYY-MM-DD fetches only signings from that
+    date onward.  The client merges these into its cached store.
+    """
+    import urllib.parse
+    from datetime import date as _date
+
+    scraper = _make_puckpedia_scraper()
+
+    since_param = request.args.get("since")
+    DATE_FROM = since_param if since_param else "2014-01-01"
+    DATE_TO   = "2028-12-31"
+
+    q_base = {
+        "pageSize": 100,
+        "sortBy": "sign_date",
+        "sortDirection": "DESC",
+        "sign_date": [DATE_FROM, DATE_TO],
+    }
+
+    # player_key → list of contracts, ordered sign_date DESC (API order preserved)
+    all_contracts: dict = {}
+    errors = []
+    _logged_fields = False
+
+    def process_page(records):
+        nonlocal _logged_fields
+        for p in records:
+            if not _logged_fields:
+                print(f"  PuckPedia record fields: {sorted(p.keys())}")
+                _logged_fields = True
+            exp = p.get("exp", "")
+            if not exp:
+                continue
+            try:
+                exp_year = int(exp.split("-")[0])
+            except (ValueError, IndexError):
+                continue
+            term = int(p.get("len") or 0)
+            # term=0 → treat as 1-year deal so start_yr = exp_year (not 0)
+            start_yr = (exp_year - term + 1) if term > 0 else exp_year
+
+            full = f"{p.get('p_fn', '')} {p.get('p_ln', '')}".strip()
+            if not full:
+                continue
+            cap_raw = p.get("cap_hit") or 0
+            cap = round(float(cap_raw) / 1_000_000, 4)
+            pos = p.get("pos", "C")
+            pg  = _POS_GROUP_MAP.get(pos, "F")
+
+            key = f"{normalize_name(full).lower()}_{pg}"
+            first_lower = p.get("p_fn", "").lower()
+            nick = _FORMAL_TO_NICK.get(first_lower)
+            nick_key = (f"{normalize_name(nick + ' ' + p.get('p_ln', '')).lower()}_{pg}"
+                        if nick else None)
+
+            entry = {
+                "name":      full,
+                "pos":       pos,
+                "cap":       cap,
+                "sign_date": p.get("sign_date", ""),
+                "exp":       exp,
+                "start_yr":  start_yr,
+                "term":      term,
+                "nhl_id":    p.get("p_nhl_id", ""),
+                "team":      p.get("sign_team_code", ""),
+                "birthDate": p.get("birthdate", ""),
+            }
+
+            for k in (key, nick_key):
+                if k:
+                    all_contracts.setdefault(k, []).append(entry)
+
+    q_base["curPage"] = 1
+    resp = scraper.get(
+        "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+        timeout=20,
+    )
+    resp.raise_for_status()
+    first = resp.json()["data"]
+    total_count = first["meta"]["count"]
+    total_pages  = (total_count + 99) // 100
+    print(f"Signings all: {total_count} records, {total_pages} pages (from {DATE_FROM})")
+    process_page(first["p"])
+
+    for page in range(2, total_pages + 1):
+        try:
+            q_base["curPage"] = page
+            r = scraper.get(
+                "https://puckpedia.com/data/api_signings?q=" + urllib.parse.quote(json.dumps(q_base)),
+                timeout=20,
+            )
+            r.raise_for_status()
+            process_page(r.json()["data"]["p"])
+            print(f"  page {page}/{total_pages} ({len(all_contracts)} player keys)")
+            time.sleep(0.15)
+        except Exception as e:
+            errors.append(f"page {page}: {str(e)}")
+            print(f"  ✗ page {page}: {e}")
+
+    print(f"Signings all done: {len(all_contracts)} player keys, {len(errors)} errors")
+    return jsonify({
+        "ok":            True,
+        "contracts":     all_contracts,
+        "count":         len(all_contracts),
+        "fetched_through": _date.today().isoformat(),
+        "incremental":   since_param is not None,
+        "errors":        errors,
+    })
+
+
+def _name_to_puckpedia_slug(name: str) -> str:
+    """Convert a player name to a PuckPedia URL slug.
+
+    e.g. "Ryan Nugent-Hopkins" → "ryan-nugent-hopkins"
+         "Marc-André Fleury"   → "marc-andre-fleury"
+         "J.T. Miller"         → "jt-miller"
+    """
+    import re as _re
+    nfd = unicodedata.normalize("NFD", name)
+    ascii_only = nfd.encode("ascii", "ignore").decode("ascii")
+    slug = ascii_only.lower().replace("'", "").replace(".", "").replace(" ", "-")
+    return _re.sub(r"-+", "-", slug).strip("-")
+
+
+@app.route("/player-page-contracts", methods=["POST"])
+def player_page_contracts():
+    """Scrape PuckPedia player pages for historical contract data not in api_signings.
+
+    api_signings only returns currently-active contracts; this endpoint fills the
+    gap by parsing the Alpine.js tab_panels data embedded in each player page.
+
+    Request body: {"players": [{"name": "Leon Draisaitl", "pos": "C"}, ...]}
+    Response:     {"ok": true, "contracts": {player_key: [contract, ...]}}
+    Each contract: {name, pos, cap, exp, start_yr, term, sign_date:"", nhl_id:"", team:""}
+    """
+    import re as _re
+
+    req_players = request.get_json(force=True).get("players", [])
+    if not req_players:
+        return jsonify({"ok": True, "contracts": {}, "count": 0})
+
+    scraper = _make_puckpedia_scraper()
+    results = {}
+
+    for item in req_players:
+        name = item.get("name", "").strip()
+        pos  = item.get("pos", "C")
+        if not name:
+            continue
+
+        slug    = _name_to_puckpedia_slug(name)
+        pg      = _POS_GROUP_MAP.get(pos, "F")
+        key     = f"{normalize_name(name).lower()}_{pg}"
+        first_lower = name.split()[0].lower()
+        nick    = _FORMAL_TO_NICK.get(first_lower)
+        last    = " ".join(name.split()[1:])
+        nick_key = f"{normalize_name(nick + ' ' + last).lower()}_{pg}" if nick else None
+
+        try:
+            resp = scraper.get(f"https://puckpedia.com/player/{slug}", timeout=15)
+            if resp.status_code != 200:
+                print(f"  ✗ {name} ({slug}): HTTP {resp.status_code}")
+                time.sleep(0.2)
+                continue
+
+            m = _re.search(
+                r'id="player-contract-tab-panels".*?options:\s*(\[.*?\])\s*,\s*\n?\s*tabSelected',
+                resp.text, _re.DOTALL,
+            )
+            if not m:
+                print(f"  ✗ {name}: no contract tab panel found")
+                time.sleep(0.2)
+                continue
+
+            raw_opts = m.group(1).replace("\\/", "/")
+            options  = json.loads(raw_opts)
+            contracts = []
+            for o in options:
+                title   = o.get("title", "")
+                cap_str = o.get("cap_hit", "$0").replace("$", "").replace("M", "")
+                try:
+                    cap = round(float(cap_str), 4)
+                except ValueError:
+                    continue
+                length = int(o.get("length") or 0)
+                parts  = title.split("-")
+                try:
+                    start_yr = int(parts[0])
+                    end_yr   = int(parts[1]) if len(parts) > 1 else start_yr + length
+                except (ValueError, IndexError):
+                    continue
+                contracts.append({
+                    "name":      name,
+                    "pos":       pos,
+                    "cap":       cap,
+                    "sign_date": "",
+                    "exp":       f"{end_yr - 1}-{end_yr}",
+                    "start_yr":  start_yr,
+                    "term":      length,
+                    "nhl_id":    "",
+                    "team":      "",
+                    "birthDate": "",
+                })
+
+            if contracts:
+                results[key] = contracts
+                if nick_key and nick_key != key:
+                    results[nick_key] = contracts
+                print(f"  ✓ {name}: {len(contracts)} contracts (slug={slug})")
+            else:
+                print(f"  ✗ {name}: 0 contracts parsed")
+
+            time.sleep(0.2)
+        except Exception as e:
+            print(f"  ✗ {name}: {e}")
+
+    print(f"player-page-contracts done: {len(results)} player keys")
+    return jsonify({"ok": True, "contracts": results, "count": len(results)})
 
 
 @app.route("/injuries")
