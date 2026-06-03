@@ -192,10 +192,18 @@ tr:hover td{background:#fafaf8}
 .summary-player.departed .summary-player-pts{color:#dc2626}
 .summary-player.arrived .summary-player-pts{color:#16a34a}
 .summary-col-total{display:flex;justify-content:flex-end;font-size:12px;font-weight:700;padding:5px 0 0;border-top:1px solid #e5e7eb;margin-top:4px}
-.summary-stats-bar{display:flex;gap:1.5rem;font-size:12px;padding:.6rem .75rem;background:#f7f7f5;border-radius:8px;width:max-content}
+.summary-stats-bar{display:flex;flex-wrap:wrap;gap:10px;margin:.5rem 0}
 .summary-stat{display:flex;flex-direction:column;gap:2px}
 .summary-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af}
 .summary-stat-value{font-weight:700;font-size:14px}
+.ssb{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:9px 14px;display:flex;flex-direction:column;gap:5px;min-width:130px}
+.ssb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af}
+.ssb-row{display:flex;align-items:flex-end;gap:12px}
+.ssb-col{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ssb-val{font-size:22px;font-weight:700;line-height:1;color:#1a1a18}
+.ssb-year{font-size:10px;color:#9ca3af}
+.ssb-arrow{font-size:14px;color:#d1d5db;padding-bottom:16px}
+.ssb-delta{font-size:11px;font-weight:600;padding-bottom:16px}
 .summary-nav{display:flex;align-items:center;gap:10px;margin-bottom:.75rem}
 .summary-nav-team{font-size:14px;font-weight:600;flex:1;text-align:center}
 @keyframes summaryProg{from{width:100%}to{width:0%}}
@@ -6731,46 +6739,44 @@ function renderSummaryCard(teamIdx){
       <div style="flex:1;min-width:0">
         <div class="summary-team-name">${esc(team)}</div>
       </div>
-      <div style="text-align:right">
-        <div class="summary-rank-badge">#${rank2526} → PROJ #${projRank}</div>
-        <div class="summary-pts-total" style="margin-top:6px">${projPtsTotal} Proj Pts</div>
-      </div>
     </div>
     <div class="summary-stats-bar">
-      <div class="summary-stat">
-        <span class="summary-stat-label">25-26 Pts</span>
-        <span class="summary-stat-value" style="color:#555">${prevPtsTotal||'—'}</span>
+      <div class="ssb">
+        <div class="ssb-label">Points</div>
+        <div class="ssb-row">
+          <div class="ssb-col"><span class="ssb-val" style="color:#555">${prevPtsTotal||'—'}</span><span class="ssb-year">25-26</span></div>
+          <span class="ssb-arrow">→</span>
+          <div class="ssb-col"><span class="ssb-val" style="color:${dPts.color}">${projPtsTotal||'—'}</span><span class="ssb-year">26-27 <span style="color:#185FA5">*</span></span></div>
+          ${deltaPts!==0?`<span class="ssb-delta" style="color:${dPts.color}">${dPts.str}</span>`:''}
+        </div>
       </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">Proj Pts <span style="font-weight:400">(${dPts.str})</span></span>
-        <span class="summary-stat-value" style="color:${dPts.color}">${projPtsTotal||'—'}</span>
+      <div class="ssb">
+        <div class="ssb-label">Rank</div>
+        <div class="ssb-row">
+          <div class="ssb-col"><span class="ssb-val" style="color:#555">#${rank2526}</span><span class="ssb-year">25-26</span></div>
+          <span class="ssb-arrow">→</span>
+          <div class="ssb-col"><span class="ssb-val" style="color:${dRank.color}">#${projRank}</span><span class="ssb-year">26-27 <span style="color:#185FA5">*</span></span></div>
+          ${deltaRank!==0?`<span class="ssb-delta" style="color:${dRank.color}">${dRank.str}</span>`:''}
+        </div>
       </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">25-26 Rank</span>
-        <span class="summary-stat-value" style="color:#555">#${rank2526}</span>
+      <div class="ssb">
+        <div class="ssb-label">Avg Age</div>
+        <div class="ssb-row">
+          <div class="ssb-col"><span class="ssb-val" style="color:#555">${age2526!=null?age2526.toFixed(1):'—'}</span><span class="ssb-year">25-26</span></div>
+          <span class="ssb-arrow">→</span>
+          <div class="ssb-col"><span class="ssb-val" style="color:${dAge.color}">${age2627!=null?age2627.toFixed(1):'—'}</span><span class="ssb-year">26-27 <span style="color:#185FA5">*</span></span></div>
+          ${deltaAge!=null&&deltaAge!==0?`<span class="ssb-delta" style="color:${dAge.color}">${dAge.str}</span>`:''}
+        </div>
       </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">Proj Rank <span style="font-weight:400">(${dRank.str})</span></span>
-        <span class="summary-stat-value" style="color:${dRank.color}">#${projRank}</span>
+      <div class="ssb" style="min-width:auto">
+        <div class="ssb-label">PPTS / $M</div>
+        <span class="ssb-val" style="font-size:22px">${capUsed>0?(projPtsTotal/capUsed).toFixed(1):'—'}</span>
       </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">25-26 Avg Age</span>
-        <span class="summary-stat-value" style="color:#555">${age2526!=null?age2526.toFixed(1):'—'}</span>
+      <div class="ssb" style="min-width:auto">
+        <div class="ssb-label">Cap remaining</div>
+        <span class="ssb-val" style="font-size:22px;color:${capRemColor}">$${capRem.toFixed(1)}M</span>
       </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">Avg Age <span style="font-weight:400">(${dAge.str})</span></span>
-        <span class="summary-stat-value" style="color:${dAge.color}">${age2627!=null?age2627.toFixed(1):'—'}</span>
-      </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">PPTS / $M</span>
-        <span class="summary-stat-value">${capUsed > 0 ? (projPtsTotal / capUsed).toFixed(1) : '—'}</span>
-      </div>
-      <div class="summary-stat">
-        <span class="summary-stat-label">Cap remaining</span>
-        <span class="summary-stat-value" style="color:${capRemColor}">$${capRem.toFixed(1)}M</span>
-      </div>
-      ${dPts.color==='#16a34a' && dRank.color==='#16a34a' && dAge.color==='#16a34a'
-        ? '<div class="summary-stat" style="font-size:28px;align-self:center">🍆💦</div>' : ''}
+      ${dPts.color==='#16a34a'&&dRank.color==='#16a34a'&&dAge.color==='#16a34a'?'<div style="font-size:28px;align-self:center">🍆💦</div>':''}
     </div>
     <div class="summary-cols">
       <div class="summary-col">
