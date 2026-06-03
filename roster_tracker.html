@@ -3259,9 +3259,14 @@ function updateDraftIndicators(){
 }
 
 function renderBigBoard(){
-  const prior = draftMode2425 || draftMode2526;
-  document.getElementById('draftBoardPrior').style.display  = prior ? '' : 'none';
-  document.getElementById('draftBoard2627').style.display   = prior ? 'none' : '';
+  const anyDraft = draftMode || draftMode2425 || draftMode2526;
+  const priorDraft = draftMode2425 || draftMode2526;
+
+  // Team bubbles section: visible whenever any draft is active
+  document.getElementById('draftBoardPrior').style.display = anyDraft ? '' : 'none';
+  // 26-27 picks board: visible for 26-27 draft OR when no draft (fallback view)
+  document.getElementById('draftBoard2627').style.display  = !priorDraft ? '' : 'none';
+
   if(draftMode2425){
     updateStats2425();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
@@ -3271,6 +3276,10 @@ function renderBigBoard(){
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
     _renderBBPicksLog(draftState2526.picks);
   } else {
+    // 26-27 or no-draft: populate team bubbles from statCards, show picks board
+    updateStats();
+    document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards').innerHTML;
+    document.getElementById('bbPicksLog').innerHTML = '';
     renderDraftView();
   }
 }
