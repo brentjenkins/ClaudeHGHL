@@ -3268,55 +3268,95 @@ function renderBigBoard(){
   // 26-27 picks board: visible for 26-27 draft OR when no draft (fallback view)
   document.getElementById('draftBoard2627').style.display  = !priorDraft ? '' : 'none';
 
+  const stripTop5 = () => document.querySelectorAll('#bbTeamCards .draft-top5').forEach(el => el.remove());
+
   if(draftMode2425){
     updateStats2425();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
-    _renderBBPicksLog(draftState2425.picks);
+    stripTop5();
+    _renderBBDraftBoard(draftState2425.picks, buildDraftSeq2425(), 'start2425', getCap2425, CAP_LIMIT_2425);
   } else if(draftMode2526){
     updateStats2526();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
-    _renderBBPicksLog(draftState2526.picks);
+    stripTop5();
+    _renderBBDraftBoard(draftState2526.picks, buildDraftSeq2526(), 'start2526', getCap2526, CAP_LIMIT_2526);
   } else {
     // 26-27 or no-draft: populate team bubbles from statCards, show picks board
     updateStats();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards').innerHTML;
+    stripTop5();
     document.getElementById('bbPicksLog').innerHTML = '';
     renderDraftView();
   }
 }
 
-function _renderBBPicksLog(picks){
+function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit){
   const el = document.getElementById('bbPicksLog');
   if(!el) return;
-  if(!picks.length){ el.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:.5rem 0">No picks yet.</p>'; return; }
-  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
-  // Group by pick index per team → round
-  const teamPick = {};
-  const byRound = {};
-  for(const pk of picks){
-    if(!pk.player) continue; // pass
-    teamPick[pk.team] = (teamPick[pk.team]||0) + 1;
-    const r = teamPick[pk.team];
-    if(!byRound[r]) byRound[r] = [];
-    byRound[r].push(pk);
-  }
-  const maxR = Math.max(...Object.keys(byRound).map(Number));
-  let html = '';
-  for(let r = 1; r <= maxR; r++){
-    if(!byRound[r]?.length) continue;
-    html += `<div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Round ${r}</div>`;
-    html += `<div style="display:flex;flex-wrap:wrap;gap:4px">`;
-    for(const pk of byRound[r]){
-      const pg = posGroup(pk.pos||'F');
-      html += `<div style="display:flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:3px 7px;font-size:11px">`;
-      html += `<span style="font-size:9px;color:#9ca3af;white-space:nowrap">${esc(pk.team)}</span>`;
-      html += `<span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600">${pg}</span>`;
-      html += `<span style="font-weight:500">${esc(pk.player)}</span>`;
-      html += `</div>`;
+  const total = picks.length;
+  const startN = Math.max(0, total - 4);
+  const endN = startN + 8;
+  const posColors = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'};
+  const posText   = {F:'#1e40af',D:'#166534',G:'#92400e'};
+  let html = '', lastRound = null;
+
+  for(let n = startN; n <= endN; n++){
+    const team = picks[n]?.team ?? draftSeq[n];
+    if(!team) break;
+    const round = Math.floor(n / 9) + 1;
+    const pick = picks[n];
+    const isCurrent = n === total;
+    const showPlayer = pick && pick.player && n >= total - 4;
+    const isLastPick = n === total - 1 && total > 0;
+
+    if(round !== lastRound){
+      html += `<div class="draft-round-hdr">Round ${round}</div>`;
+      lastRound = round;
     }
-    html += `</div></div>`;
+
+    const logo = teamLogos[team];
+    const roster = players.filter(p => p[startField] === team);
+    const cap = roster.reduce((s,p) => s + getCap(p), 0);
+    const rem = capLimit - cap;
+    const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
+    const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
+    const fN = roster.filter(p=>posGroup(p.pos)==='F').length;
+    const dN = roster.filter(p=>posGroup(p.pos)==='D').length;
+    const gN = roster.filter(p=>posGroup(p.pos)==='G').length;
+    const fRem = Math.max(0,DRAFT_ROSTER_MAX.F-fN);
+    const dRem = Math.max(0,DRAFT_ROSTER_MAX.D-dN);
+    const gRem = Math.max(0,DRAFT_ROSTER_MAX.G-gN);
+    const pickedPG = showPlayer ? posGroup(pick.pos) : null;
+    const posHi = pg => pickedPG===pg
+      ? 'background:#185FA5;color:#fff;border-radius:4px;padding:1px 6px'
+      : 'background:#fff;border-radius:4px;padding:1px 6px;color:#1a1a18';
+
+    html += `<div class="draft-row${isCurrent?' draft-row-current':''}">
+      <div class="draft-row-pick">${n+1}</div>
+      <div class="draft-row-team">
+        ${logo?`<img src="${esc(logo)}" class="draft-row-logo" loading="lazy">`:'<div class="draft-row-logo"></div>'}
+        <span class="draft-row-name">${esc(team)}</span>
+      </div>
+      <div class="draft-row-cap">$${cap.toFixed(1)}M &bull; <span style="color:${remColor}">${remLabel}</span></div>
+      <div class="draft-row-pos">
+        <span style="${posHi('F')}">F&thinsp;${fRem}</span>
+        <span style="${posHi('D')}">D&thinsp;${dRem}</span>
+        <span style="${posHi('G')}">G&thinsp;${gRem}</span>
+      </div>
+      <div class="draft-row-player" style="display:flex;align-items:center;gap:10px">
+        ${showPlayer?`
+          <span style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(pick.player)}</span>
+          <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pick.pos)}</span>
+          <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:36px">${esc(pick.nhlTeam||'—')}</span>
+          <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:52px;text-align:right">${pick.cap>0?'$'+pick.cap.toFixed(1)+'M':'—'}</span>
+          <button class="btn-undo" onclick="undoLastPick()" style="${isLastPick?'':'visibility:hidden'}">↩ Undo</button>
+        `:''}
+      </div>
+    </div>`;
   }
-  el.innerHTML = html;
+
+  if(!html) html = '<p style="color:#9ca3af;font-size:13px;padding:.5rem 0">Draft not started.</p>';
+  el.innerHTML = `<div class="draft-col">${html}</div>`;
 }
 
 function _deactivateDraftMode(){
@@ -4846,7 +4886,7 @@ function updateStats2425(){
     const picks=[...lastAllScored2425].filter(p=>need.has(posGroup(p.pos))&&getCap2425(p)<=maxCap)
       .sort((a,b)=>draftSubMode2425==='value'?b._ds2425-a._ds2425:b._ds2425Normal-a._ds2425Normal).slice(0,5);
     if(!picks.length) return '';
-    return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
+    return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
       <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2425==='value'?'Value':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2425[pg]};color:${posCol2425[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2425blend(p))}</span></div>`;}).join('')}
     </div>`;
@@ -5822,7 +5862,7 @@ function updateStats2526(){
     const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
       .sort((a,b)=>draftSubMode2526==='value'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
     if(!picks.length) return '';
-    return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
+    return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
       <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2526==='value'?'Value':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
     </div>`;
@@ -6194,7 +6234,7 @@ function renderDraftView(){
       : 'background:#fff;border-radius:4px;padding:1px 6px;color:#1a1a18';
 
     html += `<div class="draft-row${isCurrent ? ' draft-row-current' : ''}">
-      <div class="draft-row-pick">${teamIdx + 1}</div>
+      <div class="draft-row-pick">${n + 1}</div>
       <div class="draft-row-team">
         ${logo ? `<img src="${esc(logo)}" class="draft-row-logo" loading="lazy">` : '<div class="draft-row-logo"></div>'}
         <span class="draft-row-name">${esc(team)}</span>
@@ -6455,7 +6495,7 @@ function updateStats(){
     const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
       .sort((a,b)=>draftSubMode==='value'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
     if(!picks.length) return '';
-    return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
+    return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
       <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode==='value'?'Value':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
     </div>`;
