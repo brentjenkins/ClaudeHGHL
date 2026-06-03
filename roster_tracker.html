@@ -215,6 +215,7 @@ tr:hover td{background:#fafaf8}
 <body>
 
 <div class="view-tabs" style="align-items:center">
+  <button class="view-tab" id="tab-draft" onclick="openBigBoard()">Big Board</button>
   <button class="view-tab" onclick="setView('roster2425')">24-25 Players</button>
   <button class="view-tab" onclick="setView('roster2526')">25-26 Players</button>
   <button class="view-tab active" onclick="setView('roster')">26-27 Players</button>
@@ -222,7 +223,6 @@ tr:hover td{background:#fafaf8}
   <button class="view-tab" onclick="setView('xactions2526')">25-26 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2627')">26-27 Xactions</button>
   <button class="view-tab" onclick="setView('signings')">PP Signings</button>
-  <button class="view-tab" id="tab-draft" onclick="setView('draft')">26-27 Big Board</button>
   <button class="view-tab" onclick="setView('summary')">26-27 Team Summary</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
   <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
@@ -419,6 +419,7 @@ tr:hover td{background:#fafaf8}
 </div><!-- /view-roster2526 -->
 
 <div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
+  <div id="bigBoardTitle" style="font-size:16px;font-weight:700;margin-bottom:.5rem">Big Board</div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;max-width:1100px">
     <div style="display:flex;align-items:center;gap:10px">
       <div style="font-size:12px;color:#888" id="draftOnClock"></div>
@@ -3225,9 +3226,57 @@ function setDraftFocus(t){
   render();
 }
 
+// ── Big Board helpers ─────────────────────────────────────────────────────────
+
+function openBigBoard(){
+  if(draftMode2425){ setView('roster2425'); return; }
+  if(draftMode2526){ setView('roster2526'); return; }
+  setView('draft');
+}
+
+function updateBigBoardTab(){
+  const tab = document.getElementById('tab-draft');
+  const title = document.getElementById('bigBoardTitle');
+  const label = draftMode2425 ? '24-25 Big Board' : draftMode2526 ? '25-26 Big Board' : draftMode ? '26-27 Big Board' : 'Big Board';
+  if(tab) tab.textContent = label;
+  if(title) title.textContent = label;
+}
+
+function _deactivateDraftMode(){
+  if(!draftMode) return;
+  draftMode = false; draftFocusTeam = null;
+  const btn = document.getElementById('draftModeBtn');
+  if(btn){ btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe'; }
+  const ctrl = document.getElementById('draftSubModeCtrl');
+  if(ctrl) ctrl.style.display = 'none';
+  stopDraftTimer();
+}
+function _deactivateDraftMode2425(){
+  if(!draftMode2425) return;
+  draftMode2425 = false; draftFocusTeam2425 = null;
+  const btn = document.getElementById('draftMode2425Btn');
+  if(btn){ btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe'; }
+  const ctrl = document.getElementById('draftSubModeCtrl2425');
+  if(ctrl) ctrl.style.display = 'none';
+  const th = document.getElementById('th-score2425'); if(th) th.style.display='none';
+  const tg = document.getElementById('th-group-last-2425'); if(tg) tg.colSpan=1;
+}
+function _deactivateDraftMode2526(){
+  if(!draftMode2526) return;
+  draftMode2526 = false; draftFocusTeam2526 = null;
+  const btn = document.getElementById('draftMode2526Btn');
+  if(btn){ btn.style.background='#e0e7ff'; btn.style.color='#6366f1'; btn.style.borderColor='#c7d2fe'; }
+  const ctrl = document.getElementById('draftSubModeCtrl2526');
+  if(ctrl) ctrl.style.display = 'none';
+  const th = document.getElementById('th-score2526'); if(th) th.style.display='none';
+  const tg = document.getElementById('th-group-last-2526'); if(tg) tg.colSpan=1;
+}
+
 function toggleDraftMode(){
+  if(!draftMode){ _deactivateDraftMode2425(); _deactivateDraftMode2526(); }
   draftMode = !draftMode;
   draftFocusTeam = null;
+  updateBigBoardTab();
   const btn = document.getElementById('draftModeBtn');
   if(draftMode){
     btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1';
@@ -3704,8 +3753,10 @@ function setDraftFocus2425(t){
   render2425();
 }
 function toggleDraftMode2425(){
+  if(!draftMode2425){ _deactivateDraftMode(); _deactivateDraftMode2526(); }
   draftMode2425 = !draftMode2425;
   draftFocusTeam2425 = null;
+  updateBigBoardTab();
   const btn = document.getElementById('draftMode2425Btn');
   btn.style.background = draftMode2425 ? '#6366f1' : '#e0e7ff';
   btn.style.color = draftMode2425 ? '#fff' : '#6366f1';
@@ -3723,8 +3774,10 @@ function setDraftSubMode2425(mode){
 }
 
 function toggleDraftMode2526(){
+  if(!draftMode2526){ _deactivateDraftMode(); _deactivateDraftMode2425(); }
   draftMode2526 = !draftMode2526;
   draftFocusTeam2526 = null;
+  updateBigBoardTab();
   const btn = document.getElementById('draftMode2526Btn');
   btn.style.background = draftMode2526 ? '#6366f1' : '#e0e7ff';
   btn.style.color = draftMode2526 ? '#fff' : '#6366f1';
@@ -5924,7 +5977,7 @@ function setView(v){
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings'){ syncSettings(); }
-  const views = ['roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','draft','summary','settings'];
+  const views = ['draft','roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
   });
