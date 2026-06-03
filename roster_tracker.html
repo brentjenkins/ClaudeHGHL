@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HGHL 2026-27 Draft</title>
+<title>2026-27 Draft</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:100%}
@@ -214,14 +214,14 @@ tr:hover td{background:#fafaf8}
 <body>
 
 <div class="view-tabs" style="align-items:center">
-  <button class="view-tab" onclick="setView('roster2425')">HGHL 24-25 Players</button>
-  <button class="view-tab" onclick="setView('roster2526')">HGHL 25-26 Players</button>
-  <button class="view-tab active" onclick="setView('roster')">HGHL 26-27 Players</button>
+  <button class="view-tab" onclick="setView('roster2425')">24-25 Players</button>
+  <button class="view-tab" onclick="setView('roster2526')">25-26 Players</button>
+  <button class="view-tab active" onclick="setView('roster')">26-27 Players</button>
   <button class="view-tab" onclick="setView('xactions2425')">24-25 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2526')">25-26 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2627')">26-27 Xactions</button>
-  <button class="view-tab" id="tab-draft" onclick="setView('draft')">HGHL 26-27 Draft</button>
-  <button class="view-tab" onclick="setView('summary')">HGHL 26-27 Team Summary</button>
+  <button class="view-tab" id="tab-draft" onclick="setView('draft')">26-27 Draft</button>
+  <button class="view-tab" onclick="setView('summary')">26-27 Team Summary</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
   <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
     <div class="proxy-dot pulse" id="proxyDot"></div>
@@ -330,7 +330,7 @@ tr:hover td{background:#fafaf8}
       <input type="file" id="athletic2526FileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic2526(this)">
       <button class="btn btn-athletic" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="opacity:.75">📰 ATH 25-26</button>
       <input type="file" id="dfo2526FileInput" accept=".csv" style="display:none" onchange="syncDFO2526(this)">
-      <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = HGHL pts)">🏒 DFO 25-26</button>
+      <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = pts)">🏒 DFO 25-26</button>
       <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)">📈 ESPN 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -1579,7 +1579,7 @@ async function fetchHistoricalCaps(){
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Fetching…';
 
-  // Target all players who were on a 24-25 HGHL roster — ensures complete cap2425 coverage
+  // Target all players who were on a 24-25 roster — ensures complete cap2425 coverage
   const predropKeys = new Set(Object.keys(PREDROP_ROSTER_2425));
   const targets = players.filter(p => predropKeys.has(normName(p.name).toLowerCase()) && !p.capManual);
   if(!targets.length){
@@ -2533,7 +2533,7 @@ const ELC_MANDATORY_DROPS_2627 = new Set([]);
 const ACTUAL_ROSTER_2627 = {};
 
 // Actual pre-draft 25-26 rosters (after drops, before draft picks).
-// Keys = normName(name).toLowerCase() — absent players had no HGHL roster spot going into the draft.
+// Keys = normName(name).toLowerCase() — absent players had no roster spot going into the draft.
 // Ivan Demidov absent: dropped due to mid-season pickup rule; re-drafted with BLB's 1st pick.
 const ACTUAL_ROSTER_2526 = {
   // Blue Line Bangers
@@ -3897,7 +3897,7 @@ function closeCompareDraftsModal(){
   document.getElementById('compareDraftsModal').style.display = 'none';
 }
 
-// ── HGHL 24-25 Players view ───────────────────────────────────────────────────
+// ── 24-25 Players view ───────────────────────────────────────────────────
 
 function setSortCol2425(col){
   if(sortCol2425===col) sortDir2425*=-1; else { sortCol2425=col; sortDir2425=-1; }
