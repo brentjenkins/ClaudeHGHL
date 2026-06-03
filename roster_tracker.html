@@ -216,14 +216,14 @@ tr:hover td{background:#fafaf8}
 
 <div class="view-tabs" style="align-items:center">
   <button class="view-tab" id="tab-draft" onclick="openBigBoard()">Big Board</button>
-  <button class="view-tab" onclick="setView('roster2425')">24-25 Players</button>
-  <button class="view-tab" onclick="setView('roster2526')">25-26 Players</button>
-  <button class="view-tab active" onclick="setView('roster')">26-27 Players</button>
+  <button class="view-tab" id="tab-roster2425" onclick="setView('roster2425')">24-25 Players</button>
+  <button class="view-tab" id="tab-roster2526" onclick="setView('roster2526')">25-26 Players</button>
+  <button class="view-tab active" id="tab-roster" onclick="setView('roster')">26-27 Players</button>
   <button class="view-tab" onclick="setView('xactions2425')">24-25 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2526')">25-26 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2627')">26-27 Xactions</button>
   <button class="view-tab" onclick="setView('signings')">PP Signings</button>
-  <button class="view-tab" onclick="setView('summary')">26-27 Team Summary</button>
+  <button class="view-tab" onclick="setView('summary')">Team Summaries</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
   <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
     <div class="proxy-dot pulse" id="proxyDot"></div>
@@ -420,39 +420,49 @@ tr:hover td{background:#fafaf8}
 
 <div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
   <div id="bigBoardTitle" style="font-size:16px;font-weight:700;margin-bottom:.5rem">Big Board</div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;max-width:1100px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-size:12px;color:#888" id="draftOnClock"></div>
-      <span id="draftTimer" style="font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;letter-spacing:.03em;min-width:3.5ch;display:none"></span>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
-        <input type="checkbox" id="draftAnimToggle" onchange="setDraftAnims(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
-        Animations
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
-        <input type="checkbox" id="draftTickerToggle" onchange="setTickerEnabled(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
-        Ticker
-      </label>
-      <span id="draftViewCtrl" style="border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-        <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
-        <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
-      </span>
-    </div>
+
+  <!-- Prior-year board (24-25 or 25-26 when that year is drafting) -->
+  <div id="draftBoardPrior" style="display:none">
+    <div class="stats-grid" id="bbTeamCards" style="margin-bottom:1rem"></div>
+    <div id="bbPicksLog"></div>
   </div>
-  <div id="draftBoardFull" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem;max-width:1100px"></div>
-  <div id="draftCompactWrap" style="display:flex;gap:20px;align-items:flex-start">
-    <div style="flex:1;min-width:0"><div class="draft-col" id="draftColumn"></div></div>
-    <div id="draftStandings" style="width:290px;flex-shrink:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;position:sticky;top:8px"></div>
-  </div>
-  <div class="draft-entry">
-    <div style="display:flex;gap:8px">
-      <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
-             oninput="renderDraftSearch()"
-             style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
-      <button class="btn btn-indigo" onclick="simulateBestPick()" style="height:36px;white-space:nowrap">⚡ Best Pick</button>
+
+  <!-- 26-27 board content -->
+  <div id="draftBoard2627">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;max-width:1100px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:12px;color:#888" id="draftOnClock"></div>
+        <span id="draftTimer" style="font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;letter-spacing:.03em;min-width:3.5ch;display:none"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
+          <input type="checkbox" id="draftAnimToggle" onchange="setDraftAnims(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
+          Animations
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
+          <input type="checkbox" id="draftTickerToggle" onchange="setTickerEnabled(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
+          Ticker
+        </label>
+        <span id="draftViewCtrl" style="border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
+          <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
+          <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
+        </span>
+      </div>
     </div>
-    <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
+    <div id="draftBoardFull" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem;max-width:1100px"></div>
+    <div id="draftCompactWrap" style="display:flex;gap:20px;align-items:flex-start">
+      <div style="flex:1;min-width:0"><div class="draft-col" id="draftColumn"></div></div>
+      <div id="draftStandings" style="width:290px;flex-shrink:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;position:sticky;top:8px"></div>
+    </div>
+    <div class="draft-entry">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="draftSearch" placeholder="Search free agents to draft…"
+               oninput="renderDraftSearch()"
+               style="flex:1;height:36px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px">
+        <button class="btn btn-indigo" onclick="simulateBestPick()" style="height:36px;white-space:nowrap">⚡ Best Pick</button>
+      </div>
+      <div id="draftResults" style="display:none;border:1px solid #eee;border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;background:#fff"></div>
+    </div>
   </div>
 </div>
 
@@ -3229,17 +3239,74 @@ function setDraftFocus(t){
 // ── Big Board helpers ─────────────────────────────────────────────────────────
 
 function openBigBoard(){
-  if(draftMode2425){ setView('roster2425'); return; }
-  if(draftMode2526){ setView('roster2526'); return; }
   setView('draft');
 }
 
 function updateBigBoardTab(){
-  const tab = document.getElementById('tab-draft');
   const title = document.getElementById('bigBoardTitle');
   const year = draftMode2425 ? '24-25' : draftMode2526 ? '25-26' : draftMode ? '26-27' : null;
-  if(tab) tab.textContent = 'Big Board';
   if(title) title.textContent = year ? `${year} Big Board` : 'Big Board';
+  updateDraftIndicators();
+}
+
+function updateDraftIndicators(){
+  const t25 = document.getElementById('tab-roster2425');
+  const t26 = document.getElementById('tab-roster2526');
+  const t27 = document.getElementById('tab-roster');
+  if(t25) t25.textContent = '24-25 Players' + (draftMode2425 ? ' 📋' : '');
+  if(t26) t26.textContent = '25-26 Players' + (draftMode2526 ? ' 📋' : '');
+  if(t27) t27.textContent = '26-27 Players' + (draftMode   ? ' 📋' : '');
+}
+
+function renderBigBoard(){
+  const prior = draftMode2425 || draftMode2526;
+  document.getElementById('draftBoardPrior').style.display  = prior ? '' : 'none';
+  document.getElementById('draftBoard2627').style.display   = prior ? 'none' : '';
+  if(draftMode2425){
+    updateStats2425();
+    document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
+    _renderBBPicksLog(draftState2425.picks);
+  } else if(draftMode2526){
+    updateStats2526();
+    document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
+    _renderBBPicksLog(draftState2526.picks);
+  } else {
+    renderDraftView();
+  }
+}
+
+function _renderBBPicksLog(picks){
+  const el = document.getElementById('bbPicksLog');
+  if(!el) return;
+  if(!picks.length){ el.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:.5rem 0">No picks yet.</p>'; return; }
+  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
+  // Group by pick index per team → round
+  const teamPick = {};
+  const byRound = {};
+  for(const pk of picks){
+    if(!pk.player) continue; // pass
+    teamPick[pk.team] = (teamPick[pk.team]||0) + 1;
+    const r = teamPick[pk.team];
+    if(!byRound[r]) byRound[r] = [];
+    byRound[r].push(pk);
+  }
+  const maxR = Math.max(...Object.keys(byRound).map(Number));
+  let html = '';
+  for(let r = 1; r <= maxR; r++){
+    if(!byRound[r]?.length) continue;
+    html += `<div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Round ${r}</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:4px">`;
+    for(const pk of byRound[r]){
+      const pg = posGroup(pk.pos||'F');
+      html += `<div style="display:flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:3px 7px;font-size:11px">`;
+      html += `<span style="font-size:9px;color:#9ca3af;white-space:nowrap">${esc(pk.team)}</span>`;
+      html += `<span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600">${pg}</span>`;
+      html += `<span style="font-weight:500">${esc(pk.player)}</span>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+  el.innerHTML = html;
 }
 
 function _deactivateDraftMode(){
@@ -3808,6 +3875,33 @@ function quickDraft2526(id){
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2526, draftState2526);
   render2526();
+  if(currentView==='draft') renderBigBoard();
+}
+
+function passCurrentPick(){
+  const onClock = buildDraftSeq()[draftState.picks.length];
+  if(!onClock) return;
+  draftState.picks.push({team:onClock, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
+  saveDraft();
+  renderDraftView();
+}
+
+function passCurrentPick2425(){
+  const onClock = buildDraftSeq2425()[draftState2425.picks.length];
+  if(!onClock) return;
+  draftState2425.picks.push({team:onClock, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
+  lsSet(LS_DRAFT_2425, draftState2425);
+  render2425();
+  if(currentView==='draft') renderBigBoard();
+}
+
+function passCurrentPick2526(){
+  const onClock = buildDraftSeq2526()[draftState2526.picks.length];
+  if(!onClock) return;
+  draftState2526.picks.push({team:onClock, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
+  lsSet(LS_DRAFT_2526, draftState2526);
+  render2526();
+  if(currentView==='draft') renderBigBoard();
 }
 
 function quickDraft2425(id){
@@ -3820,6 +3914,7 @@ function quickDraft2425(id){
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2425, draftState2425);
   render2425();
+  if(currentView==='draft') renderBigBoard();
 }
 
 function dropPlayer2526(id){
@@ -4747,13 +4842,36 @@ function updateStats2425(){
     </div>`;
   };
 
-  const leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
-    <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
-    <div class="team-card-cap" style="color:#d1d5db">—</div>
-    <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
-  </div>`;
-
   const onClockTeam2425 = draftMode2425 ? (buildDraftSeq2425()[draftState2425.picks.length] ?? null) : null;
+
+  let leagueCard;
+  if(draftMode2425){
+    const pBadge2425=(r,need,avail,maxP)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';return`<span title="need ${need}/avail ${avail}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
+    const lnF=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2425===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
+    const lnD=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2425===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
+    const lnG=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2425===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
+    const allU2425=players.filter(p=>!p.start2425&&ppts2425blend(p)>=abpMinPts);
+    const avF=allU2425.filter(p=>posGroup(p.pos)==='F').length,avD=allU2425.filter(p=>posGroup(p.pos)==='D').length,avG=allU2425.filter(p=>posGroup(p.pos)==='G').length;
+    const rawP={F:lnF/Math.max(1,avF),D:lnD/Math.max(1,avD),G:lnG/Math.max(1,avG)};
+    const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
+    const pr2425={F:rawP.F/maxP,D:rawP.D/maxP,G:rawP.G/maxP};
+    const pr=lastPressure2425||pr2425;
+    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+      <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
+      <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
+      <div class="team-card-pos" style="gap:6px">
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>F&thinsp;${lnF}</span>${pBadge2425(pr.F,lnF,avF,maxP)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>D&thinsp;${lnD}</span>${pBadge2425(pr.D,lnD,avD,maxP)}</span>
+        <span style="display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;padding:0"><span>G&thinsp;${lnG}</span>${pBadge2425(pr.G,lnG,avG,maxP)}</span>
+      </div>
+    </div>`;
+  } else {
+    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+      <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
+      <div class="team-card-cap" style="color:#d1d5db">—</div>
+      <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
+    </div>`;
+  }
 
   document.getElementById('statCards2425').innerHTML = leagueCard + allTeams.map(t=>{
     const tp  = players.filter(p=>p.start2425===t);
@@ -4774,11 +4892,13 @@ function updateStats2425(){
     const cpp = picks > 0 ? rem / picks : 0;
     const cppStr = picks > 0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
     const isFocused2425 = draftMode2425 && draftFocusTeam2425 === t;
-    return `<div class="team-card" ${draftMode2425?`onclick="setDraftFocus2425('${esc(t)}')" style="cursor:pointer;${isFocused2425?'outline:2px solid #6366f1;outline-offset:-2px;':''}"`:''}">
+    const isOnClock2425 = t === onClockTeam2425;
+    const isFull2425 = draftMode2425 && fRem===0 && dRem===0 && gRem===0;
+    return `<div class="team-card" ${draftMode2425?`onclick="setDraftFocus2425('${esc(t)}')" style="cursor:pointer;${isFocused2425?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull2425&&!isOnClock2425?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${isFocused2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':t===onClockTeam2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':''}
+        ${isFocused2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':isFull2425?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
@@ -4791,6 +4911,7 @@ function updateStats2425(){
         ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
       </div>
       ${top5Html2425(fRem,dRem,gRem,rem)}
+      ${isOnClock2425&&draftMode2425?`<div style="padding:4px 8px 6px;text-align:center"><button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick2425()" style="font-size:10px;height:24px;padding:0 10px">Pass</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -5713,17 +5834,20 @@ function updateStats2526(){
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
     const cppStr = picks>0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
     const isFocused2526 = draftMode2526 && draftFocusTeam2526 === t;
-    return `<div class="team-card" ${draftMode2526?`onclick="setDraftFocus2526('${esc(t)}')" style="cursor:pointer;${isFocused2526?'outline:2px solid #6366f1;outline-offset:-2px;':''}"`:''}">
+    const isOnClock2526 = t === onClock && draftMode2526;
+    const isFull2526 = draftMode2526 && fRem===0 && dRem===0 && gRem===0;
+    return `<div class="team-card" ${draftMode2526?`onclick="setDraftFocus2526('${esc(t)}')" style="cursor:pointer;${isFocused2526?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull2526&&!isOnClock2526?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${isFocused2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':t===onClock&&draftMode2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
+        ${isFocused2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':isFull2526?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
       ${top5Html2526(fRem,dRem,gRem,rem)}
+      ${isOnClock2526?`<div style="padding:4px 8px 6px;text-align:center"><button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick2526()" style="font-size:10px;height:24px;padding:0 10px">Pass</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -5960,7 +6084,7 @@ function updateDraftTab(){
 }
 
 function setView(v){
-  if(v === 'draft' && !dropsSimulated){ toast('Run Simulate Drops first.'); return; }
+  if(v === 'draft' && !draftMode && !draftMode2425 && !draftMode2526 && !dropsSimulated){ toast('Run Simulate Drops first.'); return; }
   currentView = v;
   document.getElementById('view-roster2425').style.display    = v==='roster2425'    ? '' : 'none';
   document.getElementById('view-roster2526').style.display    = v==='roster2526'    ? '' : 'none';
@@ -5992,7 +6116,7 @@ function setView(v){
     if(tog) tog.checked = draftAnimsEnabled;
     const ttog = document.getElementById('draftTickerToggle');
     if(ttog) ttog.checked = tickerEnabled;
-    renderDraftView();
+    renderBigBoard();
   }
   if(v==='summary'){
     startSummaryRotation();
@@ -6343,17 +6467,20 @@ function updateStats(){
     const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
     const cppStr = picks > 0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
     const isFocused = draftMode && draftFocusTeam === t;
-    return `<div class="team-card" ${draftMode?`onclick="setDraftFocus('${esc(t)}')" style="cursor:pointer;${isFocused?'outline:2px solid #6366f1;outline-offset:-2px;':''}"`:''}">
+    const isOnClock = t === onClock && draftMode;
+    const isFull27 = draftMode && fRem===0 && dRem===0 && gRem===0;
+    return `<div class="team-card" ${draftMode?`onclick="setDraftFocus('${esc(t)}')" style="cursor:pointer;${isFocused?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull27&&!isOnClock?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
-        ${isFocused?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':t===onClock&&draftMode?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':''}
+        ${isFocused?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':isFull27?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
       ${top5Html(fRem,dRem,gRem,rem)}
+      ${isOnClock?`<div style="padding:4px 8px 6px;text-align:center"><button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick()" style="font-size:10px;height:24px;padding:0 10px">Pass</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -6474,7 +6601,8 @@ function buildProjRanking(){
 }
 
 function renderSummaryCard(teamIdx){
-  const team     = DRAFT_TEAMS[teamIdx];
+  const teams = _activeSummaryTeams();
+  const team  = teams[teamIdx];
   const logo     = teamLogos[team];
   const rank2526 = DRAFT_STANDINGS[team].rank;
 
@@ -6547,7 +6675,7 @@ function renderSummaryCard(teamIdx){
   };
 
   document.getElementById('summaryNavLabel').textContent =
-    `${teamIdx+1} of ${DRAFT_TEAMS.length}  —  ${team}`;
+    `${teamIdx+1} of ${_activeSummaryTeams().length}  —  ${team}`;
 
   document.getElementById('summaryCard').innerHTML = `
     <div class="summary-hdr">
@@ -6631,8 +6759,15 @@ function summaryStartProgress(){
   bar.classList.add('running');
 }
 
+function _activeSummaryTeams(){
+  if(draftMode2425) return DRAFT_TEAMS_2425;
+  if(draftMode2526) return DRAFT_TEAMS_2526;
+  return DRAFT_TEAMS;
+}
+
 function summaryShowIdx(idx){
-  _summaryIdx = ((idx % DRAFT_TEAMS.length) + DRAFT_TEAMS.length) % DRAFT_TEAMS.length;
+  const teams = _activeSummaryTeams();
+  _summaryIdx = ((idx % teams.length) + teams.length) % teams.length;
   renderSummaryCard(_summaryIdx);
   if(!_summaryPaused) summaryStartProgress();
 }
@@ -6646,11 +6781,19 @@ function summaryStep(dir){
 }
 
 function startSummaryRotation(){
+  const teams = _activeSummaryTeams();
   _summaryPaused = false;
   document.getElementById('summaryPauseBtn').textContent = '⏸ Pause';
+  // Start at on-clock team in draft order if a draft is active
+  if(draftMode2425 || draftMode2526){
+    const seq = draftMode2425 ? buildDraftSeq2425() : buildDraftSeq2526();
+    const state = draftMode2425 ? draftState2425 : draftState2526;
+    const onClock = seq[state.picks.length];
+    if(onClock){ const i = teams.indexOf(onClock); if(i>=0) _summaryIdx = i; }
+  }
   summaryShowIdx(_summaryIdx);
   _summaryTimer = setInterval(() => {
-    _summaryIdx = (_summaryIdx + 1) % DRAFT_TEAMS.length;
+    _summaryIdx = (_summaryIdx + 1) % teams.length;
     summaryShowIdx(_summaryIdx);
   }, SUMMARY_DURATION);
 }
