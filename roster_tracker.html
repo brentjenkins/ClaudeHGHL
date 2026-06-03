@@ -12,6 +12,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 #view-roster{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 #view-draft,#view-summary{flex:1;overflow-y:auto;min-height:0}
 #view-xactions2425,#view-xactions2526,#view-xactions2627{flex:1;overflow-y:auto;min-height:0;padding:.5rem 0}
+#view-signings{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
 .title{font-size:22px;font-weight:600}
 .subtitle{font-size:13px;color:#888;margin-top:2px}
@@ -220,6 +221,7 @@ tr:hover td{background:#fafaf8}
   <button class="view-tab" onclick="setView('xactions2425')">24-25 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2526')">25-26 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2627')">26-27 Xactions</button>
+  <button class="view-tab" onclick="setView('signings')">PP Signings</button>
   <button class="view-tab" id="tab-draft" onclick="setView('draft')">26-27 Big Board</button>
   <button class="view-tab" onclick="setView('summary')">26-27 Team Summary</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
@@ -601,6 +603,54 @@ tr:hover td{background:#fafaf8}
     </div>
   </div>
   <div id="xactionsBody2627" style="max-width:900px"></div>
+</div>
+
+<!-- PP Signings view -->
+<div id="view-signings" style="display:none">
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:700">PP Signings</span>
+    <span id="signingsCount" style="font-size:12px;color:#9ca3af"></span>
+  </div>
+</div>
+<div class="controls" style="margin-bottom:.5rem">
+  <input type="text" id="signingsSearch" placeholder="Search name or team…" oninput="renderSignings()">
+  <select id="signingsPos" onchange="renderSignings()">
+    <option value="">All positions</option>
+    <option value="F">Forwards</option>
+    <option value="D">Defense</option>
+    <option value="G">Goalies</option>
+  </select>
+  <select id="signingsSeason" onchange="renderSignings()">
+    <option value="2627">Active 26-27</option>
+    <option value="2526">Active 25-26</option>
+    <option value="2425">Active 24-25</option>
+    <option value="all">All contracts</option>
+  </select>
+  <select id="signingsHGHL" onchange="renderSignings()">
+    <option value="">All HGHL teams</option>
+    <option value="__rostered__">Rostered (26-27)</option>
+    <option value="__fa__">Free agents (26-27)</option>
+  </select>
+</div>
+<div class="tbl-wrap">
+<table id="signingsTable">
+<thead>
+<tr>
+  <th onclick="setSigningsSort('name')">Player <span id="ssort-name"></span></th>
+  <th onclick="setSigningsSort('pos')">Pos <span id="ssort-pos"></span></th>
+  <th onclick="setSigningsSort('team')">NHL <span id="ssort-team"></span></th>
+  <th onclick="setSigningsSort('hghl')">HGHL <span id="ssort-hghl"></span></th>
+  <th onclick="setSigningsSort('cap')" style="text-align:right">Cap Hit <span id="ssort-cap"></span></th>
+  <th onclick="setSigningsSort('term')" style="text-align:right">Term <span id="ssort-term"></span></th>
+  <th onclick="setSigningsSort('start_yr')">Start <span id="ssort-start_yr"></span></th>
+  <th onclick="setSigningsSort('exp')">Exp <span id="ssort-exp"></span></th>
+  <th onclick="setSigningsSort('sign_date')">Signed <span id="ssort-sign_date"></span></th>
+</tr>
+</thead>
+<tbody id="signingsTbody"></tbody>
+</table>
+</div>
 </div>
 
 <!-- Edit/Add modal -->
@@ -986,6 +1036,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
+let sortColSignings = 'cap', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
@@ -3496,6 +3547,108 @@ function _renderXactionsView(xactions, preseasonDate, suppDate, bodyId, statusId
 }
 
 function renderXactions2425(){ _renderXactionsView(xactions2425, draftDatePreseason2425, draftDateSupplemental2425, 'xactionsBody2425', 'xactionsStatus2425'); }
+
+// ── PP Signings ───────────────────────────────────────────────────────────────
+
+function setSigningsSort(col){
+  if(sortColSignings === col) sortDirSignings *= -1;
+  else { sortColSignings = col; sortDirSignings = col === 'cap' ? -1 : 1; }
+  renderSignings();
+}
+
+function renderSignings(){
+  const raw = lsGet(LS_SIGNINGS_RAW);
+  const tbody = document.getElementById('signingsTbody');
+  if(!tbody) return;
+  if(!raw){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem">No signings loaded — click ✍ Signings in the 26-27 Players view.</td></tr>';
+    return;
+  }
+
+  const q       = (document.getElementById('signingsSearch')?.value || '').toLowerCase();
+  const posF    = document.getElementById('signingsPos')?.value || '';
+  const season  = document.getElementById('signingsSeason')?.value || '2627';
+  const hghlF   = document.getElementById('signingsHGHL')?.value || '';
+
+  // Build HGHL team lookup from players[]
+  const hghlMap = {}; // name_pg → {team26, team25, team24}
+  for(const p of players){
+    const k = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+    hghlMap[k] = {team26: p.start2627||'', team25: p.start2526||'', team24: p.start2425||''};
+  }
+
+  // Season filter helpers
+  const seasonFilter = c => {
+    if(season === '2627') return c.start_yr <= 2026 && c.exp >= '2026-2027';
+    if(season === '2526') return c.start_yr <= 2025 && c.exp >= '2025-2026';
+    if(season === '2425') return c.start_yr <= 2024 && c.exp >= '2024-2025';
+    return true; // all
+  };
+
+  // Flatten: one row per qualifying contract
+  // For specific seasons, only the first (most recent) qualifying contract per player
+  const seen = new Set();
+  const rows = [];
+  for(const [key, contracts] of Object.entries(raw)){
+    for(const c of contracts){
+      if(!seasonFilter(c)) continue;
+      const rowKey = season === 'all' ? `${key}_${c.sign_date}` : key;
+      if(seen.has(rowKey)) continue;
+      seen.add(rowKey);
+      const pg = key.split('_').pop();
+      const hghl = hghlMap[key] || {};
+      const hghlTeam = season==='2526' ? (hghl.team25||'') : season==='2425' ? (hghl.team24||'') : (hghl.team26||'');
+      rows.push({...c, pg, key, hghlTeam});
+    }
+  }
+
+  // Filters
+  let filtered = rows.filter(r => {
+    if(posF && r.pg !== posF) return false;
+    if(q && !r.name.toLowerCase().includes(q) && !(r.team||'').toLowerCase().includes(q) && !(r.hghlTeam||'').toLowerCase().includes(q)) return false;
+    if(hghlF === '__rostered__' && !r.hghlTeam) return false;
+    if(hghlF === '__fa__' && r.hghlTeam) return false;
+    if(hghlF && hghlF !== '__rostered__' && hghlF !== '__fa__' && r.hghlTeam !== hghlF) return false;
+    return true;
+  });
+
+  // Sort
+  const col = sortColSignings;
+  filtered.sort((a,b) => {
+    let av = col==='cap'?a.cap:col==='term'?a.term:col==='start_yr'?a.start_yr:col==='hghl'?a.hghlTeam:(a[col]||'');
+    let bv = col==='cap'?b.cap:col==='term'?b.term:col==='start_yr'?b.start_yr:col==='hghl'?b.hghlTeam:(b[col]||'');
+    if(typeof av === 'number') return sortDirSignings*(av-bv);
+    return sortDirSignings*(av>bv?1:av<bv?-1:0);
+  });
+
+  // Update sort indicators
+  ['name','pos','team','hghl','cap','term','start_yr','exp','sign_date'].forEach(c => {
+    const el = document.getElementById(`ssort-${c}`);
+    if(el) el.textContent = c===sortColSignings ? (sortDirSignings>0?'▲':'▼') : '';
+  });
+
+  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
+  const badge = pg => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">${pg==='F'?'F':pg}</span>`;
+
+  tbody.innerHTML = filtered.length ? filtered.map(r => {
+    const capStr = r.cap > 0 ? `$${r.cap.toFixed(2)}M` : '—';
+    const expShort = r.exp ? r.exp.replace(/^(\d{4})-\d{4}$/, (_, y) => `'${String(+y-1).slice(2)}-'${y.slice(2)}`) : '—';
+    return `<tr>
+      <td style="font-weight:500">${esc(r.name)}</td>
+      <td>${badge(r.pg)}</td>
+      <td>${esc(r.team||'—')}</td>
+      <td style="color:${r.hghlTeam?'#185FA5':'#d1d5db'}">${esc(r.hghlTeam||'—')}</td>
+      <td style="text-align:right;font-weight:600;color:#1a1a18">${capStr}</td>
+      <td style="text-align:right;color:#6b7280">${r.term||'?'}yr</td>
+      <td style="color:#9ca3af">${r.start_yr||'—'}</td>
+      <td style="color:#9ca3af">${expShort}</td>
+      <td style="color:#9ca3af;font-size:11px">${r.sign_date||'—'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem">No contracts match</td></tr>';
+
+  const el = document.getElementById('signingsCount');
+  if(el) el.textContent = `${filtered.length} contract${filtered.length!==1?'s':''}`;
+}
 function renderXactions2526(){ _renderXactionsView(xactions2526, draftDatePreseason2526, draftDateSupplemental2526, 'xactionsBody2526', 'xactionsStatus2526'); }
 function renderXactions2627(){ _renderXactionsView(xactions2627, draftDatePreseason2627, draftDateSupplemental2627, 'xactionsBody2627', 'xactionsStatus2627'); }
 
@@ -5643,6 +5796,7 @@ function setView(v){
   document.getElementById('view-xactions2425').style.display  = v==='xactions2425'  ? '' : 'none';
   document.getElementById('view-xactions2526').style.display  = v==='xactions2526'  ? '' : 'none';
   document.getElementById('view-xactions2627').style.display  = v==='xactions2627'  ? '' : 'none';
+  document.getElementById('view-signings').style.display      = v==='signings'      ? '' : 'none';
   document.getElementById('view-draft').style.display         = v==='draft'         ? '' : 'none';
   document.getElementById('view-summary').style.display       = v==='summary'       ? '' : 'none';
   document.getElementById('view-settings').style.display      = v==='settings'      ? '' : 'none';
@@ -5651,7 +5805,7 @@ function setView(v){
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings'){ syncSettings(); }
-  const views = ['roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','draft','summary','settings'];
+  const views = ['roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
   });
@@ -5660,6 +5814,7 @@ function setView(v){
   if(v==='xactions2425') renderXactions2425();
   if(v==='xactions2526') renderXactions2526();
   if(v==='xactions2627') renderXactions2627();
+  if(v==='signings') renderSignings();
   if(v==='draft'){
     const tog = document.getElementById('draftAnimToggle');
     if(tog) tog.checked = draftAnimsEnabled;
