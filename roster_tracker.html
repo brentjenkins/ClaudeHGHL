@@ -419,7 +419,7 @@ tr:hover td{background:#fafaf8}
 </div><!-- /view-roster2526 -->
 
 <div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
-  <div id="bigBoardTitle" style="font-size:16px;font-weight:700;margin-bottom:.5rem">Big Board</div>
+  <div id="bigBoardTitle" style="font-size:32px;font-weight:700;margin-bottom:.75rem">Big Board</div>
 
   <!-- Prior-year board (24-25 or 25-26 when that year is drafting) -->
   <div id="draftBoardPrior" style="display:none">
@@ -3246,7 +3246,7 @@ function openBigBoard(){
 function updateBigBoardTab(){
   const title = document.getElementById('bigBoardTitle');
   const year = draftMode2425 ? '24-25' : draftMode2526 ? '25-26' : draftMode ? '26-27' : null;
-  if(title) title.textContent = year ? `${year} Big Board` : 'Big Board';
+  if(title) title.textContent = year ? `${year} HGHL Draft` : 'Big Board';
   updateDraftIndicators();
 }
 
