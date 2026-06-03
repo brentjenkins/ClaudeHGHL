@@ -4666,6 +4666,22 @@ function updateStats2425(){
   });
   if(!allTeams.length){ document.getElementById('statCards2425').innerHTML=''; return; }
 
+  const posBg2425={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2425={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const top5Html2425=(fRem,dRem,gRem,rem)=>{
+    if(!draftMode2425||!lastAllScored2425) return '';
+    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
+    if(!need.size) return '';
+    const spotsLeft=fRem+dRem+gRem;
+    const maxCap=rem-(spotsLeft-1)*0.9;
+    const picks=[...lastAllScored2425].filter(p=>need.has(posGroup(p.pos))&&getCap2425(p)<=maxCap)
+      .sort((a,b)=>draftSubMode2425==='value'?b._ds2425-a._ds2425:b._ds2425Normal-a._ds2425Normal).slice(0,5);
+    if(!picks.length) return '';
+    return `<div style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2425==='value'?'Value':'Best Avail'}</div>
+      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2425[pg]};color:${posCol2425[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2425blend(p))}</span></div>`;}).join('')}
+    </div>`;
+  };
+
   const leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
     <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
     <div class="team-card-cap" style="color:#d1d5db">—</div>
@@ -4707,6 +4723,7 @@ function updateStats2425(){
         ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
         ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
       </div>
+      ${top5Html2425(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
