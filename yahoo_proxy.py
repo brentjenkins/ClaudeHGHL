@@ -544,7 +544,14 @@ def yahoo_xactions():
     """Return all add/drop transactions for a league, paginated.
 
     ?league_key=  defaults to current LEAGUE_KEY.
-    Returns [{timestamp, date, team, player, type: 'add'|'drop'}] sorted by date.
+    Returns [{timestamp, date, team, player, pos, type: 'add'|'drop'}] sorted by date.
+
+    Structure (confirmed via API + Apps Script reference):
+    - Call with no type filter — type=add,drop returns []
+    - Only process outer type == "add/drop" (combined waiver moves); pure drops are
+      preseason-only and show up with different structure, handled separately below
+    - transaction_data is list [{...}] for adds, dict {...} for drops
+    - Team name is in destination_team_name / source_team_name
     """
     import datetime as _dt
     league_key = request.args.get("league_key", LEAGUE_KEY)
@@ -552,91 +559,71 @@ def yahoo_xactions():
     if not token:
         return jsonify({"error": "Not authenticated."}), 401
     try:
-        team_names = _get_league_team_names(league_key, token)
         all_tx = []
         start, batch = 0, 100
 
         while True:
             data = yahoo_get(
-                f"/league/{league_key}/transactions;type=add,drop;count={batch};start={start}", token
+                f"/league/{league_key}/transactions;count={batch};start={start}", token
             )
             tx_raw = data["fantasy_content"]["league"][1].get("transactions", {})
 
-            # Yahoo returns {} / {"count":0} for no results, a numbered dict for results,
-            # or [] (empty list) when the league has no accessible transactions.
             if isinstance(tx_raw, list):
-                if not tx_raw:
-                    break
-                tx_items = tx_raw
-                returned = len(tx_raw)
-            else:
-                returned = int(tx_raw.get("count", 0))
-                tx_items = [tx_raw[k] for k in tx_raw if k != "count"]
+                break  # [] means no transactions accessible for this league
+            returned = int(tx_raw.get("count", 0))
+            if returned == 0:
+                break
 
-            for item in tx_items:
-                # item is either {"transaction": [...]} or the transaction list directly
-                if isinstance(item, list):
-                    tx = item
-                elif isinstance(item, dict):
-                    tx = item.get("transaction")
-                else:
-                    continue
+            for k in [k for k in tx_raw if k != "count"]:
+                tx = tx_raw[k].get("transaction") if isinstance(tx_raw[k], dict) else None
                 if not tx or len(tx) < 2:
                     continue
 
-                meta0 = tx[0] if isinstance(tx[0], dict) else {}
-                ts = int(meta0.get("timestamp", 0))
+                meta = tx[0] if isinstance(tx[0], dict) else {}
+                tx_type = meta.get("type", "")
+                ts = int(meta.get("timestamp", 0))
                 date_str = _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d") if ts else ""
 
-                tx1 = tx[1]
-                players_raw = tx1.get("players", {}) if isinstance(tx1, dict) else {}
-
-                for j in [k for k in players_raw if k != "count"]:
-                    pj = players_raw[j]
-                    if isinstance(pj, dict):
-                        pp = pj.get("player")
-                    elif isinstance(pj, list):
-                        pp = pj
-                    else:
-                        continue
+                players_raw = tx[1].get("players", {}) if isinstance(tx[1], dict) else {}
+                for j in sorted(k for k in players_raw if k != "count"):
+                    pp = players_raw[j].get("player") if isinstance(players_raw[j], dict) else None
                     if not pp or len(pp) < 2:
                         continue
 
-                    pmeta = pp[0] if isinstance(pp[0], list) else ([pp[0]] if isinstance(pp[0], dict) else [])
-                    pname = ""
+                    # pp[0] = list of meta dicts: player_key, player_id, name{full,first,...}, display_position, ...
+                    pmeta = pp[0] if isinstance(pp[0], list) else []
+                    pname = pos = ""
                     for m in pmeta:
                         if not isinstance(m, dict):
                             continue
-                        if "full_name" in m:
-                            pname = m["full_name"]; break
                         if "name" in m:
                             nm = m["name"]
-                            pname = nm.get("full", "") if isinstance(nm, dict) else str(nm); break
+                            pname = nm.get("full", "") if isinstance(nm, dict) else str(nm)
+                        if "display_position" in m:
+                            pos = m["display_position"]
 
-                    pp1 = pp[1]
-                    if isinstance(pp1, dict):
-                        tx_data = pp1.get("transaction_data", {})
-                    elif isinstance(pp1, list):
-                        tx_data = pp1[0].get("transaction_data", {}) if pp1 and isinstance(pp1[0], dict) else {}
-                    else:
-                        continue
-
-                    td = tx_data[0] if isinstance(tx_data, list) and tx_data else (tx_data if isinstance(tx_data, dict) else {})
+                    # pp[1] = {"transaction_data": list-or-dict}
+                    pp1 = pp[1] if isinstance(pp[1], dict) else {}
+                    raw_td = pp1.get("transaction_data", {})
+                    td = raw_td[0] if isinstance(raw_td, list) and raw_td else raw_td
                     if not isinstance(td, dict):
                         continue
+
                     ptype = td.get("type", "")
                     if ptype == "add":
-                        team_key = td.get("destination_team_key", "")
+                        team = td.get("destination_team_name", td.get("destination_team_key", ""))
                     elif ptype == "drop":
-                        team_key = td.get("source_team_key", "")
+                        team = td.get("source_team_name", td.get("source_team_key", ""))
                     else:
                         continue
-                    if pname:
+
+                    if pname and team:
                         all_tx.append({
                             "timestamp": ts,
                             "date":      date_str,
-                            "team":      team_names.get(team_key, team_key),
+                            "team":      team,
                             "player":    pname,
+                            "pos":       pos,
                             "type":      ptype,
                         })
 

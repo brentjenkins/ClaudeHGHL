@@ -3451,7 +3451,7 @@ function _renderXactionsView(xactions, preseasonDate, suppDate, bodyId, statusId
         lastTeam = r.team;
         html += `<tr style="border-bottom:1px solid #f7f7f6">`;
         html += `<td style="padding:4px 12px;color:#374151;white-space:nowrap">${teamLabel}</td>`;
-        html += `<td style="padding:4px 10px;color:#1a1a18">${esc(r.player)}</td>`;
+        html += `<td style="padding:4px 10px;color:#1a1a18">${esc(r.player)}${r.pos?` <span style="font-size:10px;color:#9ca3af">${esc(r.pos)}</span>`:''}</td>`;
         html += `<td style="padding:4px 8px;text-align:center"><span style="background:${typeBg};color:${typeColor};border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">${r.type}</span></td>`;
         html += `<td style="padding:4px 12px;text-align:right;color:#9ca3af">${r.date}</td>`;
         html += `</tr>`;
