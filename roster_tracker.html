@@ -1056,6 +1056,7 @@ let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
+let _summaryIdx = 0, _summaryTimer = null, _summaryPaused = false;
 let draftMode2425 = false, draftSubMode2425 = 'value';
 let draftFocusTeam2425 = null, lastAllScored2425 = null, lastPressure2425 = null;
 let draftViewMode = 'compact';
@@ -6596,9 +6597,6 @@ window.addEventListener('storage', e => {
 });
 
 // ── Draft Summary view ────────────────────────────────────────────
-let _summaryIdx    = 0;
-let _summaryTimer  = null;
-let _summaryPaused = false;
 const SUMMARY_DURATION = 10000; // ms per team
 
 function buildProjRanking(){
