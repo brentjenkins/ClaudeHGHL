@@ -3125,30 +3125,25 @@ function resetDraft(){
 }
 
 // Build the full round-robin pick sequence for each view, skipping teams that are already full.
-function buildDraftSeq(){
+// Build the full round-robin pick sequence.
+// Excludes players picked during this draft session from the keeper count so the
+// sequence stays stable as picks are made — seq[draftState.picks.length] always
+// gives the correct next team regardless of how many picks have been applied.
+function _buildSeq(teams, startField, state){
   const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
+  const picked = new Set((state?.picks||[]).map(pk => normName(pk.player).toLowerCase()));
   const seq = [], rem = {};
-  for(const t of DRAFT_TEAMS) rem[t] = Math.max(0, target - players.filter(p=>p.start2627===t).length);
+  for(const t of teams){
+    const keepers = players.filter(p => p[startField]===t && !picked.has(normName(p.name).toLowerCase())).length;
+    rem[t] = Math.max(0, target - keepers);
+  }
   let any = true;
-  while(any){ any=false; for(const t of DRAFT_TEAMS){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
+  while(any){ any=false; for(const t of teams){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
   return seq;
 }
-function buildDraftSeq2425(){
-  const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
-  const seq = [], rem = {};
-  for(const t of DRAFT_TEAMS_2425) rem[t] = Math.max(0, target - players.filter(p=>p.start2425===t).length);
-  let any = true;
-  while(any){ any=false; for(const t of DRAFT_TEAMS_2425){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
-  return seq;
-}
-function buildDraftSeq2526(){
-  const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
-  const seq = [], rem = {};
-  for(const t of DRAFT_TEAMS_2526) rem[t] = Math.max(0, target - players.filter(p=>p.start2526===t).length);
-  let any = true;
-  while(any){ any=false; for(const t of DRAFT_TEAMS_2526){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
-  return seq;
-}
+function buildDraftSeq(){    return _buildSeq(DRAFT_TEAMS,      'start2627', draftState);      }
+function buildDraftSeq2425(){ return _buildSeq(DRAFT_TEAMS_2425, 'start2425', draftState2425); }
+function buildDraftSeq2526(){ return _buildSeq(DRAFT_TEAMS_2526, 'start2526', draftState2526); }
 
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   animDismissed = false;
