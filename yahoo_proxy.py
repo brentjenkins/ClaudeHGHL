@@ -510,25 +510,33 @@ def yahoo_drops():
 
 @app.route("/yahoo-xactions-debug")
 def yahoo_xactions_debug():
-    """Return raw Yahoo transaction response (first 5) for structure inspection."""
-    import datetime as _dt
+    """Return raw Yahoo transaction response (first 5) for structure inspection.
+    Tries several query variants to find which returns data."""
     league_key = request.args.get("league_key", LEAGUE_KEY)
     token = get_valid_token()
     if not token:
         return jsonify({"error": "Not authenticated."}), 401
-    try:
-        data = yahoo_get(
-            f"/league/{league_key}/transactions;type=add,drop;count=5;start=0", token
-        )
-        league1 = data["fantasy_content"]["league"][1]
-        return jsonify({
-            "league1_type": type(league1).__name__,
-            "league1_keys": list(league1.keys()) if isinstance(league1, dict) else str(league1)[:500],
-            "raw": league1,
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    results = {}
+    variants = [
+        ("add,drop typed",    f"/league/{league_key}/transactions;type=add,drop;count=5;start=0"),
+        ("no type filter",    f"/league/{league_key}/transactions;count=5;start=0"),
+        ("add only",          f"/league/{league_key}/transactions;type=add;count=5;start=0"),
+        ("drop only",         f"/league/{league_key}/transactions;type=drop;count=5;start=0"),
+    ]
+    for label, url in variants:
+        try:
+            data = yahoo_get(url, token)
+            league1 = data["fantasy_content"]["league"][1]
+            tx = league1.get("transactions", "MISSING") if isinstance(league1, dict) else f"league1 is {type(league1).__name__}"
+            results[label] = {
+                "url": url,
+                "transactions_type": type(tx).__name__,
+                "transactions_len_or_keys": len(tx) if isinstance(tx, (list, dict)) else str(tx),
+                "sample": tx if not isinstance(tx, (list, dict)) else (list(tx.items())[:2] if isinstance(tx, dict) else tx[:2]),
+            }
+        except Exception as e:
+            results[label] = {"error": str(e)}
+    return jsonify(results)
 
 
 @app.route("/yahoo-xactions")
@@ -552,12 +560,21 @@ def yahoo_xactions():
             data = yahoo_get(
                 f"/league/{league_key}/transactions;type=add,drop;count={batch};start={start}", token
             )
-            tx_raw   = data["fantasy_content"]["league"][1].get("transactions", {})
-            returned = int(tx_raw.get("count", 0))
+            tx_raw = data["fantasy_content"]["league"][1].get("transactions", {})
 
-            for i in [k for k in tx_raw if k != "count"]:
-                item = tx_raw[i]
-                # Yahoo returns either {"transaction": [...]} or the list directly
+            # Yahoo returns {} / {"count":0} for no results, a numbered dict for results,
+            # or [] (empty list) when the league has no accessible transactions.
+            if isinstance(tx_raw, list):
+                if not tx_raw:
+                    break
+                tx_items = tx_raw
+                returned = len(tx_raw)
+            else:
+                returned = int(tx_raw.get("count", 0))
+                tx_items = [tx_raw[k] for k in tx_raw if k != "count"]
+
+            for item in tx_items:
+                # item is either {"transaction": [...]} or the transaction list directly
                 if isinstance(item, list):
                     tx = item
                 elif isinstance(item, dict):
@@ -576,7 +593,6 @@ def yahoo_xactions():
 
                 for j in [k for k in players_raw if k != "count"]:
                     pj = players_raw[j]
-                    # players_raw[j] is {"player": [...]} or the list directly
                     if isinstance(pj, dict):
                         pp = pj.get("player")
                     elif isinstance(pj, list):
@@ -601,7 +617,6 @@ def yahoo_xactions():
                     if isinstance(pp1, dict):
                         tx_data = pp1.get("transaction_data", {})
                     elif isinstance(pp1, list):
-                        # sometimes pp[1] is [{"transaction_data": {...}}]
                         tx_data = pp1[0].get("transaction_data", {}) if pp1 and isinstance(pp1[0], dict) else {}
                     else:
                         continue
