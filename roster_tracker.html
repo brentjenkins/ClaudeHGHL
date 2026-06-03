@@ -4674,7 +4674,7 @@ function runDraftSim2627(){
 // ACTUAL_DRAFT_*. My team's pool is restricted to: players I actually drafted
 // OR players nobody drafted — excluding players taken by other teams.
 
-function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim, elcMax, renderFn }){
+function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, actualPts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim, elcMax, renderFn }){
   const myTeam = myHGHLTeam.trim();
   if(!myTeam){ toast('Set "My HGHL Team" in Settings → Draft first.'); return; }
   if(!allTeams.includes(myTeam)){ toast(`"${myTeam}" not found in ${season} rosters — check spelling in Settings.`); return; }
@@ -4760,7 +4760,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     const pg = posGroup(pick.p.pos);
     need[myTeam][pg] = Math.max(0, (need[myTeam][pg]||0) - 1);
     teamCap[myTeam] = (teamCap[myTeam]||0) + (getCap(pick.p)||0);
-    myPicks.push({round, player: pick.p.name, pos: pg, ppts: pick.pp, cap: getCap(pick.p)||0, mode});
+    myPicks.push({round, player: pick.p.name, pos: pg, ppts: pick.pp, apts: actualPts(pick.p)||0, cap: getCap(pick.p)||0, mode});
   }
 
   // Apply my picks to player data
@@ -4775,7 +4775,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   for(const [key, team] of Object.entries(actualDraft)){
     if(team !== myTeam) continue;
     const p = players.find(x => normName(x.name).toLowerCase() === key);
-    myActualPicks.push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0});
+    myActualPicks.push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0, apts: p?actualPts(p):0});
   }
 
   // Render modal
@@ -4790,29 +4790,48 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   const diff = algoTotal - actTotal;
   const diffCol = diff>=0?'#16a34a':'#dc2626';
 
+  const algoActualTotal = myPicks.reduce((s,r)=>s+(r.apts||0), 0);
+  const actActualTotal  = myActualPicks.reduce((s,r)=>s+(r.apts||0), 0);
+  const diffActual = algoActualTotal - actActualTotal;
+  const diffActualCol = diffActual>=0?'#16a34a':'#dc2626';
+
   document.getElementById('draftSimTitle').textContent = `⬆ My Algo Draft — ${myTeam} (${season})`;
   document.getElementById('draftSimSummary').innerHTML =
-    `${myPicks.length} picks &nbsp;|&nbsp; Algo: <strong>${Math.round(algoTotal)} pts</strong> &nbsp;|&nbsp; Actual: <strong>${Math.round(actTotal)} pts</strong> &nbsp;|&nbsp; `+
-    `<span style="color:${diffCol};font-weight:600">${diff>=0?'+':''}${Math.round(diff)} pts</span><br>`+
+    `${myPicks.length} picks &nbsp;|&nbsp; `+
+    `Algo: <strong>${Math.round(algoTotal)} proj</strong> · <strong>${Math.round(algoActualTotal)} actual</strong> &nbsp;|&nbsp; `+
+    `Actual: <strong>${Math.round(actTotal)} proj</strong> · <strong>${Math.round(actActualTotal)} actual</strong> &nbsp;|&nbsp; `+
+    `<span style="color:${diffCol};font-weight:600">${diff>=0?'+':''}${Math.round(diff)} proj</span> &nbsp; `+
+    `<span style="color:${diffActualCol};font-weight:600">${diffActual>=0?'+':''}${Math.round(diffActual)} actual</span><br>`+
     `<span style="color:#9ca3af;font-size:11px">Pool: your actual picks + undrafted FAs — excludes other teams' picks &nbsp;·&nbsp; `+
     `${draftValueRounds>0?`R1${draftValueRounds>1?`–R${draftValueRounds}`:''}=Value`:'All rounds=Best Avail'} then Best Available</span>`;
 
   let html = '';
   for(let i=0; i<myPicks.length; i++){
-    const sp = myPicks[i], ap = myActualPicks[i] || {name:'—',pos:'?',ppts:0};
-    const d = sp.ppts - ap.ppts;
-    const dc = d>5?'#16a34a':d<-5?'#dc2626':'#9ca3af';
-    const ds = (d>=0?'+':'')+Math.round(d);
+    const sp = myPicks[i], ap = myActualPicks[i] || {name:'—',pos:'?',ppts:0,apts:0};
+    const dProj = sp.ppts - ap.ppts;
+    const dAct  = (sp.apts||0) - (ap.apts||0);
+    const dcAct = dAct>5?'#16a34a':dAct<-5?'#dc2626':'#9ca3af';
+    const dsAct = (dAct>=0?'+':'')+Math.round(dAct);
     html += `<div style="margin-bottom:.4rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
     html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-    if(i===0) html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb"><th style="padding:5px 10px;color:#9ca3af;font-weight:500;width:40px">Pick</th><th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Algo</th><th style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:500">Proj</th><th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Actual</th><th style="padding:5px 6px;text-align:right;color:#9ca3af;font-weight:500">Proj</th><th style="padding:5px 8px;text-align:right;font-weight:500">Δ</th></tr>`;
+    if(i===0) html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb">`+
+      `<th style="padding:5px 10px;color:#9ca3af;font-weight:500;width:40px">Pick</th>`+
+      `<th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Algo</th>`+
+      `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Proj</th>`+
+      `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Act</th>`+
+      `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Actual pick</th>`+
+      `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Proj</th>`+
+      `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Act</th>`+
+      `<th style="padding:5px 8px;text-align:right;font-weight:500;font-size:10px">Δ Act</th></tr>`;
     html += `<tr style="border-bottom:1px solid #f3f4f6">`;
     html += `<td style="padding:5px 10px;color:#9ca3af;font-weight:500">${i+1} ${modeTag(sp.round)}</td>`;
     html += `<td style="padding:5px 10px;display:flex;gap:4px;align-items:center">${badge(sp.pos,sp.player)}</td>`;
-    html += `<td style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:600">${Math.round(sp.ppts)}</td>`;
+    html += `<td style="padding:5px 4px;text-align:right;color:#6366f1">${Math.round(sp.ppts)}</td>`;
+    html += `<td style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:600">${sp.apts||0}</td>`;
     html += `<td style="padding:5px 10px;color:#9ca3af"><span style="display:inline-flex;gap:4px;align-items:center">${badge(ap.pos,ap.name)}</span></td>`;
-    html += `<td style="padding:5px 6px;text-align:right;color:#9ca3af">${Math.round(ap.ppts)}</td>`;
-    html += `<td style="padding:5px 8px;text-align:right;color:${dc};font-weight:600;font-size:11px">${ds}</td>`;
+    html += `<td style="padding:5px 4px;text-align:right;color:#9ca3af">${Math.round(ap.ppts)}</td>`;
+    html += `<td style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:600">${ap.apts||0}</td>`;
+    html += `<td style="padding:5px 8px;text-align:right;color:${dcAct};font-weight:600;font-size:11px">${dsAct}</td>`;
     html += `</tr></table></div>`;
   }
 
@@ -4826,7 +4845,7 @@ function runMyAlgoDraft2425(){
     season: '24-25', actualDraft: ACTUAL_DRAFT_2425,
     allTeams: [...new Set(players.filter(p=>p.start2425).map(p=>p.start2425))].sort(),
     buildSeq: buildDraftSeq2425, startField: 'start2425',
-    ppts: p => ppts2425blend(p), getCap: p => getCap2425(p),
+    ppts: p => ppts2425blend(p), actualPts: p => p.pts2425||0, getCap: p => getCap2425(p),
     capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
     draftWeights, calcAgeForSim: calcAge2425, elcMax: ELC_MAX_2425,
     renderFn: render2425,
@@ -4839,7 +4858,7 @@ function runMyAlgoDraft2526(){
     season: '25-26', actualDraft: ACTUAL_DRAFT_2526,
     allTeams: [...new Set(players.filter(p=>p.start2526).map(p=>p.start2526))].sort(),
     buildSeq: buildDraftSeq2526, startField: 'start2526',
-    ppts: p => ppts2526blend(p), getCap: p => getCap2526(p),
+    ppts: p => ppts2526blend(p), actualPts: p => p.pts2526||0, getCap: p => getCap2526(p),
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
     draftWeights, calcAgeForSim: calcAge2526, elcMax: ELC_MAX_2526,
     renderFn: render2526,
