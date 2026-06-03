@@ -4670,6 +4670,8 @@ function runDraftSim2425(){
     capLimit:     CAP_LIMIT_2425,
     draftReserve: DRAFT_RESERVE_2425,
     draftWeights,
+    calcAgeForSim: calcAge2425,
+    elcMax:        ELC_MAX_2425,
     applyChanges: true,
     renderFn:     render2425,
   });
@@ -4690,12 +4692,14 @@ function runDraftSim2526(){
     capLimit:     CAP_LIMIT_2526,
     draftReserve: DRAFT_RESERVE_2526,
     draftWeights,
+    calcAgeForSim: calcAge2526,
+    elcMax:        ELC_MAX_2526,
     applyChanges: true,
     renderFn:     render2526,
   });
 }
 
-function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, applyChanges = false, renderFn = null }){
+function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
   const pm = {F: draftWeights.wtF||1, D: draftWeights.wtD||1.4, G: draftWeights.wtG||1};
 
@@ -4749,7 +4753,15 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     const scored = fas.map(p => {
       const pg = posGroup(p.pos);
       const pp = ppts(p);
-      const score = mode === 'value' ? pp * (pm[pg]||1) : pp;
+      let score;
+      if(mode === 'value'){
+        const age = calcAgeForSim(p) ?? 99;
+        const cap = getCap(p) || 0;
+        const prospect = (age <= 23 && cap <= elcMax) ? Math.max(0, 24 - age) * draftWeights.wtProspect : 0;
+        score = pp * (pm[pg]||1) + prospect;
+      } else {
+        score = pp;
+      }
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
 
@@ -4809,7 +4821,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     if(!actualByTeam[team]) actualByTeam[team] = [];
     actualByTeam[team].push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0});
   }
-  for(const t of Object.keys(actualByTeam)) actualByTeam[t].sort((a,b)=>b.ppts-a.ppts);
+  // Preserve insertion order from ACTUAL_DRAFT — that IS the draft order
 
   // Pair sim picks with actual picks by team pick number
   const teamSimIdx = {};
