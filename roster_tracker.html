@@ -3237,9 +3237,9 @@ function openBigBoard(){
 function updateBigBoardTab(){
   const tab = document.getElementById('tab-draft');
   const title = document.getElementById('bigBoardTitle');
-  const label = draftMode2425 ? '24-25 Big Board' : draftMode2526 ? '25-26 Big Board' : draftMode ? '26-27 Big Board' : 'Big Board';
-  if(tab) tab.textContent = label;
-  if(title) title.textContent = label;
+  const year = draftMode2425 ? '24-25' : draftMode2526 ? '25-26' : draftMode ? '26-27' : null;
+  if(tab) tab.textContent = 'Big Board';
+  if(title) title.textContent = year ? `${year} Big Board` : 'Big Board';
 }
 
 function _deactivateDraftMode(){
