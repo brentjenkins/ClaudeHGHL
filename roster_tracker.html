@@ -787,7 +787,17 @@ tr:hover td{background:#fafaf8}
       </div>
       <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">My HGHL Team <span style="color:#6b7280">(for My Algo Draft)</span></span>
-        <input type="text" id="s-myHGHLTeam" placeholder="e.g. Bossy Posse" onchange="updateSetting('myHGHLTeam',this.value.trim())" style="max-width:220px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font-size:13px">
+        <select id="s-myHGHLTeam" onchange="updateSetting('myHGHLTeam',this.value)" style="max-width:220px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;background:#fff">
+          <option>Bossy Posse</option>
+          <option>Blue Line Bangers</option>
+          <option>Damage Inc.</option>
+          <option>Dumb and Goalie To</option>
+          <option>Killer Whales</option>
+          <option>Motor City Wings</option>
+          <option selected>Muller Time!</option>
+          <option>Pernicious Puckers</option>
+          <option>Silence of the Lamb</option>
+        </select>
       </div>
     </div>
   </div>
