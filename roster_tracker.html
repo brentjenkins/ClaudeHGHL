@@ -3143,7 +3143,7 @@ function resetDraft(){
 // gives the correct next team regardless of how many picks have been applied.
 function _buildSeq(teams, startField, state){
   const target = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
-  const picked = new Set((state?.picks||[]).map(pk => normName(pk.player).toLowerCase()));
+  const picked = new Set((state?.picks||[]).filter(pk => pk.player).map(pk => normName(pk.player).toLowerCase()));
   const seq = [], rem = {};
   for(const t of teams){
     const keepers = players.filter(p => p[startField]===t && !picked.has(normName(p.name).toLowerCase())).length;
