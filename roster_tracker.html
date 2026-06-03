@@ -11,6 +11,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 #view-roster2425,#view-roster2526{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 #view-roster{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 #view-draft,#view-summary{flex:1;overflow-y:auto;min-height:0}
+#view-xactions2425,#view-xactions2526,#view-xactions2627{flex:1;overflow-y:auto;min-height:0;padding:.5rem 0}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
 .title{font-size:22px;font-weight:600}
 .subtitle{font-size:13px;color:#888;margin-top:2px}
@@ -216,6 +217,9 @@ tr:hover td{background:#fafaf8}
   <button class="view-tab" onclick="setView('roster2425')">HGHL 24-25 Players</button>
   <button class="view-tab" onclick="setView('roster2526')">HGHL 25-26 Players</button>
   <button class="view-tab active" onclick="setView('roster')">HGHL 26-27 Players</button>
+  <button class="view-tab" onclick="setView('xactions2425')">24-25 Xactions</button>
+  <button class="view-tab" onclick="setView('xactions2526')">25-26 Xactions</button>
+  <button class="view-tab" onclick="setView('xactions2627')">26-27 Xactions</button>
   <button class="view-tab" id="tab-draft" onclick="setView('draft')">HGHL 26-27 Draft</button>
   <button class="view-tab" onclick="setView('summary')">HGHL 26-27 Team Summary</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
@@ -234,6 +238,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-yahoo" id="rosters2324Btn" onclick="sync2324Rosters()" title="Pull end-of-23-24 rosters from Yahoo (league 427.l.1827) to set end2324" style="opacity:.75">⬇ Yahoo 23-24</button>
       <button class="btn btn-puckpedia" id="histCapsBtn" onclick="fetchHistoricalCaps()" title="Scrape PuckPedia player pages to fill missing 24-25 cap hits (players who signed new deals)" style="opacity:.75">📜 Historical Caps</button>
       <button class="btn btn-nhl" id="stats2425Btn" onclick="syncStats2425()" title="Pull 2024-25 actual NHL stats">📊 NHL 24-25</button>
+      <button class="btn btn-yahoo" onclick="loadXactions2425()" title="Fetch all 24-25 add/drop transactions from Yahoo and open the 24-25 Xactions view" style="opacity:.75">🗒 Yahoo Xactions</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">24-25<br>Projections</span>
@@ -249,11 +254,9 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-red-outline" onclick="resetSim2425()" title="Load pre-drop 24-25 rosters from PREDROP_ROSTER_2425">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2425();compareDrops2425()" title="Simulate drops then compare against actual 24-25 drops">⚡ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">Load Actual Drops</button>
-      <button class="btn btn-yahoo" id="yahooDropsBtn2425" onclick="loadYahooDrops2425()" title="" style="opacity:.75">⬇ Yahoo Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2425()">★ Rank Players</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
-      <button class="btn btn-yahoo" onclick="loadYahooDraft2425()" title="Pull 24-25 draft picks from Yahoo and apply to player state" style="opacity:.75">⬇ Yahoo Draft</button>
     </div>
   </div>
 </div>
@@ -320,6 +323,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-yahoo" id="sync2425Btn" onclick="sync2425Rosters()" title="Pull end-of-2024-25 rosters from Yahoo (league 453.l.52799) to record who was on each team last season" style="opacity:.75">⬇ Yahoo 24-25</button>
       <button class="btn btn-nhl" id="statsBtn2526" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
+      <button class="btn btn-yahoo" onclick="loadXactions2526()" title="Fetch all 25-26 add/drop transactions from Yahoo and open the 25-26 Xactions view" style="opacity:.75">🗒 Yahoo Xactions</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">25-26<br>Projections</span>
@@ -334,13 +338,11 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2526();compareDrops2526()" title="Simulate drops then compare against actual 25-26 drops">⚡ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual Drops</button>
-      <button class="btn btn-yahoo" id="yahooDropsBtn2526" onclick="loadYahooDrops2526()" title="" style="opacity:.75">⬇ Yahoo Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
       <button class="btn btn-blue-outline" onclick="compareDrafts2526()" title="Compare algorithm's simulated draft picks against actual 25-26 draft picks">📋 Compare Drafts</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
-      <button class="btn btn-yahoo" onclick="loadYahooDraft2526()" title="Pull 25-26 draft picks from Yahoo and apply to player state" style="opacity:.75">⬇ Yahoo Draft</button>
       <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft2526()" title="Simulate January mid-season draft on 25-26 rosters — requires MIDSEASON_STANDINGS_2526">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
@@ -461,11 +463,13 @@ tr:hover td{background:#fafaf8}
 <div class="header">
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync<br>3rd Party Data</span>
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-puckpedia signings-all-btn" id="signingsBtn" onclick="syncSigningsAll(event)" title="Fetch all contracts from PuckPedia (~30s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
+      <button class="btn btn-nhl" id="statsBtn2627" onclick="syncStats2627()" title="Pull 2026-27 actual season stats — available once the season starts (Oct 2026)" style="opacity:.4" disabled>📊 NHL 26-27</button>
+      <button class="btn btn-yahoo" onclick="loadXactions2627()" title="Fetch all 26-27 add/drop transactions from Yahoo and open the 26-27 Xactions view" style="opacity:.75">🗒 Yahoo Xactions</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">26-27<br>Projections</span>
@@ -478,6 +482,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft()">Reset</button>
       <button class="btn btn-indigo" onclick="simulateDrops()">⬇ Simulate Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">Load Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
@@ -564,6 +569,40 @@ tr:hover td{background:#fafaf8}
 </div>
 
 </div><!-- /view-roster -->
+
+<!-- Xactions views -->
+<div id="view-xactions2425" style="display:none">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px;font-weight:700">24-25 Transactions</span>
+      <button class="btn btn-yahoo" onclick="loadXactions2425()" style="opacity:.75">⬇ Fetch from Yahoo</button>
+      <span id="xactionsStatus2425" style="font-size:11px;color:#9ca3af"></span>
+    </div>
+  </div>
+  <div id="xactionsBody2425" style="max-width:900px"></div>
+</div>
+
+<div id="view-xactions2526" style="display:none">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px;font-weight:700">25-26 Transactions</span>
+      <button class="btn btn-yahoo" onclick="loadXactions2526()" style="opacity:.75">⬇ Fetch from Yahoo</button>
+      <span id="xactionsStatus2526" style="font-size:11px;color:#9ca3af"></span>
+    </div>
+  </div>
+  <div id="xactionsBody2526" style="max-width:900px"></div>
+</div>
+
+<div id="view-xactions2627" style="display:none">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px;font-weight:700">26-27 Transactions</span>
+      <button class="btn btn-yahoo" onclick="loadXactions2627()" style="opacity:.75">⬇ Fetch from Yahoo</button>
+      <span id="xactionsStatus2627" style="font-size:11px;color:#9ca3af"></span>
+    </div>
+  </div>
+  <div id="xactionsBody2627" style="max-width:900px"></div>
+</div>
 
 <!-- Edit/Add modal -->
 <div class="modal-bg" id="modal" style="display:none">
@@ -910,6 +949,7 @@ const LS_PLAYERS = 'nhl_players_v3';
 const YAHOO_LEAGUE_KEY_2324 = '427.l.1827';
 const YAHOO_LEAGUE_KEY_2425 = '453.l.52799';
 const YAHOO_LEAGUE_KEY_2526 = '465.l.97882';
+let   YAHOO_LEAGUE_KEY_2627 = ''; // set once the 26-27 Yahoo league is created
 const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
@@ -927,8 +967,12 @@ const LS_DFO2425       = 'hghl_dfo_2425';
 const LS_ATHLETIC2425  = 'hghl_athletic_2425';
 const LS_NHL2425       = 'hghl_nhl_2425';
 const LS_STATS2425     = 'hghl_stats_2425';
+const LS_XACTIONS_2425 = 'hghl_xactions_2425';
+const LS_XACTIONS_2526 = 'hghl_xactions_2526';
+const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
+let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let draftViewMode = 'compact';
@@ -945,6 +989,8 @@ let draftDatePreseason2425    = '2024-10-05';
 let draftDateSupplemental2425 = '2025-01-04';
 let draftDatePreseason2526    = '2025-09-27';
 let draftDateSupplemental2526 = '2026-01-10';
+let draftDatePreseason2627    = '2026-10-01';
+let draftDateSupplemental2627 = '2027-01-10';
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
 const ELC_MAX_2627 = 1.025; // ELC max cap hit 2026-27
@@ -1167,6 +1213,9 @@ function load(){
   transactions   = lsGet(LS_TX)      || [];
   teamLogos      = lsGet(LS_LOGOS)   || {};
   dropsSimulated = lsGet(LS_DROPS)   || false;
+  xactions2425   = lsGet(LS_XACTIONS_2425) || [];
+  xactions2526   = lsGet(LS_XACTIONS_2526) || [];
+  xactions2627   = lsGet(LS_XACTIONS_2627) || [];
   // migrate: stamp end2526 from start2627 if not yet set
   let migrated = false;
   for(const p of players){
@@ -2480,6 +2529,9 @@ const ELC_MANDATORY_DROPS_2526 = new Set(['ivan demidov']);
 // Players who must be dropped for 26-27: ELC signed after the 25-26 trade deadline (Mar 6, 2026).
 const ELC_MANDATORY_DROPS_2627 = new Set([]);
 
+// Actual pre-draft 26-27 rosters (after drops, before draft picks). Populated once managers submit.
+const ACTUAL_ROSTER_2627 = {};
+
 // Actual pre-draft 25-26 rosters (after drops, before draft picks).
 // Keys = normName(name).toLowerCase() — absent players had no HGHL roster spot going into the draft.
 // Ivan Demidov absent: dropped due to mid-season pickup rule; re-drafted with BLB's 1st pick.
@@ -3274,12 +3326,154 @@ function addDays(dateStr, n){
   return d.toISOString().slice(0, 10);
 }
 
-function updateYahooDropBtnTooltips(){
-  const b24 = document.getElementById('yahooDropsBtn2425');
-  const b25 = document.getElementById('yahooDropsBtn2526');
-  if(b24) b24.title = `Pull pre-season drops from Yahoo (before ${addDays(draftDatePreseason2425, 2)})`;
-  if(b25) b25.title = `Pull pre-season drops from Yahoo (before ${addDays(draftDatePreseason2526, 2)})`;
+function updateYahooDropBtnTooltips(){ /* buttons removed — no-op */ }
+
+// ── Yahoo Transactions ────────────────────────────────────────────────────────
+
+function xactionPeriod(dateStr, preseasonDate, suppDate){
+  const d = new Date(dateStr);
+  const preEnd   = new Date(addDays(preseasonDate, 4));
+  const suppStart = new Date(addDays(suppDate, -7));
+  const suppEnd   = new Date(addDays(suppDate, 7));
+  if(d <= preEnd)    return 'Preseason';
+  if(d < suppStart)  return 'First Half';
+  if(d <= suppEnd)   return 'Supplemental';
+  return 'Second Half';
 }
+
+async function _fetchYahooXactions(leagueKey, statusElId){
+  if(!proxyOk){ toast('Start the proxy first.'); return null; }
+  const statusEl = document.getElementById(statusElId);
+  if(statusEl) statusEl.textContent = 'Fetching…';
+  try {
+    const d = await fetch(`/yahoo-xactions?league_key=${leagueKey}`).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    if(statusEl) statusEl.textContent = `${d.count} transactions loaded`;
+    return d.transactions;
+  } catch(e){
+    toast('Fetch failed: '+e.message);
+    if(statusEl) statusEl.textContent = 'Error: '+e.message;
+    return null;
+  }
+}
+
+async function loadXactions2425(){
+  const data = await _fetchYahooXactions(YAHOO_LEAGUE_KEY_2425, 'xactionsStatus2425');
+  if(!data) return;
+  xactions2425 = data;
+  lsSet(LS_XACTIONS_2425, xactions2425);
+  setView('xactions2425');
+}
+async function loadXactions2526(){
+  const data = await _fetchYahooXactions(YAHOO_LEAGUE_KEY_2526, 'xactionsStatus2526');
+  if(!data) return;
+  xactions2526 = data;
+  lsSet(LS_XACTIONS_2526, xactions2526);
+  setView('xactions2526');
+}
+async function loadXactions2627(){
+  if(!YAHOO_LEAGUE_KEY_2627){ toast('Set YAHOO_LEAGUE_KEY_2627 once the 26-27 league is created.'); return; }
+  const data = await _fetchYahooXactions(YAHOO_LEAGUE_KEY_2627, 'xactionsStatus2627');
+  if(!data) return;
+  xactions2627 = data;
+  lsSet(LS_XACTIONS_2627, xactions2627);
+  setView('xactions2627');
+}
+
+function _renderXactionsView(xactions, preseasonDate, suppDate, bodyId, statusId){
+  const body = document.getElementById(bodyId);
+  if(!body) return;
+
+  if(!xactions.length){
+    body.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:1rem 0">No transactions loaded — click ⬇ Fetch from Yahoo.</p>';
+    return;
+  }
+
+  const statusEl = document.getElementById(statusId);
+  if(statusEl && !statusEl.textContent) statusEl.textContent = `${xactions.length} transactions`;
+
+  const PERIODS = ['Preseason','First Half','Supplemental','Second Half'];
+  const periodDates = {
+    'Preseason':    `before ${addDays(preseasonDate, 4)}`,
+    'First Half':   `${addDays(preseasonDate, 5)} – ${addDays(suppDate, -8)}`,
+    'Supplemental': `${addDays(suppDate, -7)} – ${addDays(suppDate, 7)}`,
+    'Second Half':  `after ${addDays(suppDate, 7)}`,
+  };
+
+  // Group by period, then by team
+  const byPeriod = {};
+  for(const p of PERIODS) byPeriod[p] = [];
+  for(const tx of xactions){
+    const period = xactionPeriod(tx.date, preseasonDate, suppDate);
+    byPeriod[period].push(tx);
+  }
+
+  let html = '';
+  for(const period of PERIODS){
+    const rows = byPeriod[period];
+    const adds  = rows.filter(r=>r.type==='add').length;
+    const drops = rows.filter(r=>r.type==='drop').length;
+
+    // Sort by team then date
+    rows.sort((a,b) => a.team.localeCompare(b.team) || a.date.localeCompare(b.date));
+
+    // Count moves per team for this period
+    const teamCounts = {};
+    for(const r of rows){
+      if(!teamCounts[r.team]) teamCounts[r.team] = {add:0,drop:0};
+      teamCounts[r.team][r.type]++;
+    }
+
+    html += `<div style="margin-bottom:1.5rem;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">`;
+    html += `<div style="padding:8px 14px;background:#f8fafc;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5e7eb">`;
+    html += `<span style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em">${period}</span>`;
+    html += `<span style="font-size:11px;color:#9ca3af">${periodDates[period]}</span>`;
+    html += `<span style="margin-left:auto;font-size:12px;color:#6b7280">${drops} drops · ${adds} adds`;
+    if(rows.length) html += ` · ${Object.keys(teamCounts).length} teams`;
+    html += `</span></div>`;
+
+    if(!rows.length){
+      html += `<p style="padding:10px 14px;font-size:12px;color:#d1d5db;margin:0">No transactions</p>`;
+    } else {
+      html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+      html += `<tr style="background:#fafafa;border-bottom:1px solid #f0f0ee">`;
+      html += `<th style="padding:5px 12px;text-align:left;color:#9ca3af;font-weight:500;width:22%">Team</th>`;
+      html += `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Player</th>`;
+      html += `<th style="padding:5px 8px;text-align:center;color:#9ca3af;font-weight:500;width:60px">Type</th>`;
+      html += `<th style="padding:5px 12px;text-align:right;color:#9ca3af;font-weight:500;width:90px">Date</th>`;
+      html += `</tr>`;
+      let lastTeam = '';
+      for(const r of rows){
+        const isAdd  = r.type === 'add';
+        const typeColor = isAdd ? '#16a34a' : '#dc2626';
+        const typeBg    = isAdd ? '#f0fdf4' : '#fef2f2';
+        const teamLabel = r.team !== lastTeam ? esc(r.team) : '<span style="color:#d1d5db">″</span>';
+        lastTeam = r.team;
+        html += `<tr style="border-bottom:1px solid #f7f7f6">`;
+        html += `<td style="padding:4px 12px;color:#374151;white-space:nowrap">${teamLabel}</td>`;
+        html += `<td style="padding:4px 10px;color:#1a1a18">${esc(r.player)}</td>`;
+        html += `<td style="padding:4px 8px;text-align:center"><span style="background:${typeBg};color:${typeColor};border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">${r.type}</span></td>`;
+        html += `<td style="padding:4px 12px;text-align:right;color:#9ca3af">${r.date}</td>`;
+        html += `</tr>`;
+      }
+      html += `</table>`;
+
+      // Per-team move summary row
+      html += `<div style="padding:6px 12px;background:#f8fafc;border-top:1px solid #e5e7eb;display:flex;flex-wrap:wrap;gap:6px">`;
+      for(const [team, cnt] of Object.entries(teamCounts).sort((a,b)=>a[0].localeCompare(b[0]))){
+        const over = (period==='First Half'||period==='Second Half') && (cnt.add>2||cnt.drop>2);
+        html += `<span style="font-size:10px;border:1px solid #e5e7eb;border-radius:5px;padding:2px 7px;color:${over?'#dc2626':'#374151'};${over?'font-weight:600':''}">${esc(team)} ${cnt.drop}↓${cnt.add}↑</span>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  body.innerHTML = html;
+}
+
+function renderXactions2425(){ _renderXactionsView(xactions2425, draftDatePreseason2425, draftDateSupplemental2425, 'xactionsBody2425', 'xactionsStatus2425'); }
+function renderXactions2526(){ _renderXactionsView(xactions2526, draftDatePreseason2526, draftDateSupplemental2526, 'xactionsBody2526', 'xactionsStatus2526'); }
+function renderXactions2627(){ _renderXactionsView(xactions2627, draftDatePreseason2627, draftDateSupplemental2627, 'xactionsBody2627', 'xactionsStatus2627'); }
 
 
 function quickDraft(id){
@@ -3371,6 +3565,52 @@ function resetDraft2526(){
   lsSet(LS_DRAFT_2526, draftState2526);
   if(draftMode2526) toggleDraftMode2526();
   else render2526();
+}
+
+async function syncStats2627(){
+  if(new Date() < new Date('2026-10-01')){
+    toast('NHL 26-27 season hasn\'t started yet — available October 2026.'); return;
+  }
+  const btn = document.getElementById('statsBtn2627');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Syncing…';
+  try {
+    const d = await fetch('/stats-2627').then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched = 0, unmatched = 0;
+    for(const p of players){
+      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+      if(d.players[key]){
+        p.pts2627 = d.players[key].fpts;
+        p.gp2627  = d.players[key].gp;
+        matched++;
+      } else { unmatched++; }
+    }
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`26-27 stats synced — ${matched} players updated, ${unmatched} unmatched.`);
+  } catch(e){ toast('Stats sync failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='📊 NHL 26-27'; }
+}
+
+function loadActualRoster2627(){
+  if(!Object.keys(ACTUAL_ROSTER_2627).length){ toast('ACTUAL_ROSTER_2627 is empty — populate it first.'); return; }
+  if(!confirm('Load actual 26-27 pre-draft rosters? This overwrites the current 26-27 simulation.')) return;
+  let matched = 0, unmatched = 0;
+  for(const p of players){
+    const key = normName(p.name).toLowerCase();
+    if(key in ACTUAL_ROSTER_2627){
+      p.start2627 = ACTUAL_ROSTER_2627[key];
+      matched++;
+    } else {
+      p.start2627 = null;
+      unmatched++;
+    }
+  }
+  draftState = {picks:[]};
+  lsSet(LS_PLAYERS, players);
+  lsSet(LS_DRAFT, draftState);
+  render();
+  toast(`Loaded actual 26-27 pre-draft rosters — ${players.filter(p=>p.start2627).length} rostered, ${matched} matched.`);
 }
 
 function loadActualRoster2526(){
@@ -5165,23 +5405,29 @@ function updateDraftTab(){
 function setView(v){
   if(v === 'draft' && !dropsSimulated){ toast('Run Simulate Drops first.'); return; }
   currentView = v;
-  document.getElementById('view-roster2425').style.display = v==='roster2425' ? '' : 'none';
-  document.getElementById('view-roster2526').style.display = v==='roster2526' ? '' : 'none';
-  document.getElementById('view-roster').style.display  = v==='roster'  ? '' : 'none';
-  document.getElementById('view-draft').style.display   = v==='draft'   ? '' : 'none';
-  document.getElementById('view-summary').style.display = v==='summary' ? '' : 'none';
-  document.getElementById('view-settings').style.display = v==='settings' ? '' : 'none';
+  document.getElementById('view-roster2425').style.display    = v==='roster2425'    ? '' : 'none';
+  document.getElementById('view-roster2526').style.display    = v==='roster2526'    ? '' : 'none';
+  document.getElementById('view-roster').style.display        = v==='roster'        ? '' : 'none';
+  document.getElementById('view-xactions2425').style.display  = v==='xactions2425'  ? '' : 'none';
+  document.getElementById('view-xactions2526').style.display  = v==='xactions2526'  ? '' : 'none';
+  document.getElementById('view-xactions2627').style.display  = v==='xactions2627'  ? '' : 'none';
+  document.getElementById('view-draft').style.display         = v==='draft'         ? '' : 'none';
+  document.getElementById('view-summary').style.display       = v==='summary'       ? '' : 'none';
+  document.getElementById('view-settings').style.display      = v==='settings'      ? '' : 'none';
   if(v==='roster'||v==='roster2526'||v==='roster2425'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings'){ syncSettings(); }
-  const views = ['roster2425','roster2526','roster','draft','summary','settings'];
+  const views = ['roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','draft','summary','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
   });
   if(v==='roster2425') render2425();
   if(v==='roster2526') render2526();
+  if(v==='xactions2425') renderXactions2425();
+  if(v==='xactions2526') renderXactions2526();
+  if(v==='xactions2627') renderXactions2627();
   if(v==='draft'){
     const tog = document.getElementById('draftAnimToggle');
     if(tog) tog.checked = draftAnimsEnabled;

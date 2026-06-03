@@ -508,6 +508,76 @@ def yahoo_drops():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/yahoo-xactions")
+def yahoo_xactions():
+    """Return all add/drop transactions for a league, paginated.
+
+    ?league_key=  defaults to current LEAGUE_KEY.
+    Returns [{timestamp, date, team, player, type: 'add'|'drop'}] sorted by date.
+    """
+    import datetime as _dt
+    league_key = request.args.get("league_key", LEAGUE_KEY)
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        team_names = _get_league_team_names(league_key, token)
+        all_tx = []
+        start, batch = 0, 100
+
+        while True:
+            data = yahoo_get(
+                f"/league/{league_key}/transactions;type=add,drop;count={batch};start={start}", token
+            )
+            tx_raw   = data["fantasy_content"]["league"][1].get("transactions", {})
+            returned = int(tx_raw.get("count", 0))
+
+            for i in [k for k in tx_raw if k != "count"]:
+                tx = tx_raw[i].get("transaction")
+                if not tx or len(tx) < 2:
+                    continue
+                ts = int(tx[0].get("timestamp", 0))
+                date_str = _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d") if ts else ""
+                players_raw = tx[1].get("players", {})
+
+                for j in [k for k in players_raw if k != "count"]:
+                    pp = players_raw[j].get("player")
+                    if not pp or len(pp) < 2:
+                        continue
+                    meta = pp[0]
+                    pname = next((m.get("full_name") or m.get("name", {}).get("full", "")
+                                  for m in meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
+                    tx_data = pp[1].get("transaction_data", {})
+                    td = tx_data[0] if isinstance(tx_data, list) and tx_data else (tx_data if isinstance(tx_data, dict) else {})
+                    ptype = td.get("type", "")
+                    if ptype == "add":
+                        team_key = td.get("destination_team_key", "")
+                    elif ptype == "drop":
+                        team_key = td.get("source_team_key", "")
+                    else:
+                        continue
+                    if pname:
+                        all_tx.append({
+                            "timestamp": ts,
+                            "date":      date_str,
+                            "team":      team_names.get(team_key, team_key),
+                            "player":    pname,
+                            "type":      ptype,
+                        })
+
+            if returned < batch:
+                break
+            start += batch
+            time.sleep(0.1)
+
+        all_tx.sort(key=lambda x: x["timestamp"])
+        print(f"  xactions: {len(all_tx)} for {league_key}")
+        return jsonify({"ok": True, "transactions": all_tx, "count": len(all_tx)})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/transactions")
 def transactions():
     token = get_valid_token()
@@ -692,6 +762,59 @@ def season_stats():
         print(f"  ✗ goalies: {e}")
 
     print(f"Stats done: {len(stats)} players, {len(errors)} errors")
+    return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
+
+
+@app.route("/stats-2627")
+def season_stats_2627():
+    """Returns 2026-27 regular-season fantasy points for all NHL players."""
+    stats = {}
+    errors = []
+    cayenne = "seasonId=20262027%20and%20gameTypeId=2"
+
+    try:
+        start, page_size, fetched = 0, 100, []
+        while True:
+            url = f"{_NHL_STATS_BASE}/skater/summary?limit={page_size}&start={start}&cayenneExp={cayenne}"
+            page = requests.get(url, timeout=30).json()
+            batch = page.get("data", [])
+            fetched.extend(batch)
+            if len(fetched) >= page.get("total", 0) or not batch:
+                break
+            start += page_size
+        for s in fetched:
+            full = s.get("skaterFullName", "").strip()
+            if not full:
+                continue
+            pos = _POS_MAP.get(s.get("positionCode", ""), "C")
+            key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
+            fpts = s.get("goals", 0) + s.get("assists", 0)
+            stats[key] = {
+                "name": full, "fpts": fpts,
+                "goals": s.get("goals", 0), "assists": s.get("assists", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+            }
+    except Exception as e:
+        errors.append(f"skaters: {e}")
+
+    try:
+        url = f"{_NHL_STATS_BASE}/goalie/summary?limit=200&cayenneExp={cayenne}"
+        data = requests.get(url, timeout=30).json()
+        for g in data.get("data", []):
+            full = g.get("goalieFullName", "").strip()
+            if not full:
+                continue
+            key = f"{normalize_name(full).lower()}_G"
+            wins = g.get("wins", 0)
+            sos  = g.get("shutouts", 0)
+            stats[key] = {
+                "name": full, "fpts": wins * 2 + sos * 3,
+                "wins": wins, "shutouts": sos,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+            }
+    except Exception as e:
+        errors.append(f"goalies: {e}")
+
     return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
 
 
