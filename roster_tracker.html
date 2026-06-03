@@ -4896,10 +4896,10 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   // ── Team totals: position counts + cap ───────────────────────────────────
   const capColor = c => c > capLimit ? '#dc2626' : c > capLimit * 0.97 ? '#d97706' : '#16a34a';
 
-  // Keeper totals per team
+  // Keeper totals per team — use initialAssigned (pre-draft snapshot, not post-apply state)
   const keeperTotals = {};
   for(const t of allTeams){
-    const ks = players.filter(p => p[startField] === t);
+    const ks = players.filter(p => initialAssigned[p.id] === t);
     keeperTotals[t] = {
       F: ks.filter(p=>posGroup(p.pos)==='F').length,
       D: ks.filter(p=>posGroup(p.pos)==='D').length,
@@ -4916,8 +4916,8 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     algoDraftTotals[r.team].cap += r.cap;
   }
 
-  // Actual draft totals per team (skip players already counted as keepers)
-  const keeperIds = new Set(players.filter(p=>p[startField]).map(p=>p.id));
+  // Actual draft totals per team — use initialAssigned to identify pre-draft keepers to skip
+  const keeperIds = new Set(Object.entries(initialAssigned).filter(([,t])=>!!t).map(([id])=>Number(id)));
   const actDraftTotals = {};
   for(const [key, team] of Object.entries(actualDraft)){
     const p = players.find(x => normName(x.name).toLowerCase() === key);
