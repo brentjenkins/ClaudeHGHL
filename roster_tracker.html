@@ -2935,7 +2935,7 @@ function renderStandings(){
   const display = anim ? {...ptsByTeam, [anim.team]: anim.fromPts} : ptsByTeam;
   const sorted = [...DRAFT_TEAMS].sort((a,b)=>display[b]-display[a]);
   el.innerHTML =
-    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 10px 4px;border-bottom:1px solid #f0f0ee">League Standings</div>`+
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 10px 4px;border-bottom:1px solid #f0f0ee">Projected League Standings</div>`+
     sorted.map((t,i)=>_standingsRowHtml(t, i+1, display[t], anim&&t===anim.team)).join('');
   if(!anim || anim.toPts<=anim.fromPts) return;
   const animRow = Array.from(el.querySelectorAll('.srow')).find(r=>r.dataset.team===anim.team);
