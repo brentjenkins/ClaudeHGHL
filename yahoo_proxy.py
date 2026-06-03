@@ -352,6 +352,162 @@ def rosters_2425():
         return jsonify({"error": str(e)}), 500
 
 
+def _get_league_team_names(league_key, token):
+    """Return {team_key: team_name} for a league."""
+    data = yahoo_get(f"/league/{league_key}/teams", token)
+    teams_raw = data["fantasy_content"]["league"][1]["teams"]
+    result = {}
+    for k in [x for x in teams_raw if x != "count"]:
+        row = teams_raw[k]["team"][0]
+        tkey  = next((m["team_key"] for m in row if isinstance(m, dict) and "team_key" in m), None)
+        tname = next((m["name"]     for m in row if isinstance(m, dict) and "name"     in m), f"Team {k}")
+        if tkey:
+            result[tkey] = tname
+    return result
+
+
+@app.route("/yahoo-draftresults")
+def yahoo_draftresults():
+    """Return all pre-season draft picks for a league, with player names resolved.
+
+    ?league_key=  defaults to current LEAGUE_KEY.
+    Calls /draftresults then batch-fetches player metadata.
+    """
+    league_key = request.args.get("league_key", LEAGUE_KEY)
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        team_names = _get_league_team_names(league_key, token)
+
+        data = yahoo_get(f"/league/{league_key}/draftresults", token)
+        dr   = data["fantasy_content"]["league"][1]["draftresults"]
+        count = int(dr.get("count", 0))
+
+        raw_picks   = []
+        player_keys = []
+        for i in range(count):
+            pick = dr.get(str(i), {}).get("draft_pick", {})
+            if pick:
+                raw_picks.append(pick)
+                if pick.get("player_key"):
+                    player_keys.append(pick["player_key"])
+
+        # Resolve player names in batches of 25
+        player_info = {}
+        for i in range(0, len(player_keys), 25):
+            batch = ",".join(player_keys[i:i + 25])
+            try:
+                pd = yahoo_get(f"/players;player_keys={batch};out=metadata", token)
+                pr = pd["fantasy_content"]["players"]
+                for j in range(int(pr.get("count", 0))):
+                    p = pr.get(str(j), {}).get("player", [])
+                    if not p:
+                        continue
+                    meta = p[0]
+                    pkey  = next((m["player_key"] for m in meta if isinstance(m, dict) and "player_key" in m), None)
+                    pname = next((m.get("full_name") or m.get("name", {}).get("full", "")
+                                  for m in meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
+                    ppos  = next((m.get("display_position", "")
+                                  for m in meta if isinstance(m, dict) and "display_position" in m), "")
+                    if pkey:
+                        player_info[pkey] = {"name": pname, "pos": ppos}
+            except Exception as e:
+                print(f"  draftresults player batch error: {e}")
+            time.sleep(0.1)
+
+        picks = [
+            {
+                "round":  int(p.get("round", 0)),
+                "pick":   int(p.get("pick",  0)),
+                "team":   team_names.get(p.get("team_key", ""), p.get("team_key", "")),
+                "player": player_info.get(p.get("player_key", ""), {}).get("name", p.get("player_key", "")),
+                "pos":    player_info.get(p.get("player_key", ""), {}).get("pos", "?"),
+            }
+            for p in raw_picks
+        ]
+        picks.sort(key=lambda x: x["pick"])
+        print(f"  draftresults: {len(picks)} picks for {league_key}")
+        return jsonify({"ok": True, "picks": picks, "count": len(picks)})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/yahoo-drops")
+def yahoo_drops():
+    """Return drop transactions for a league.
+
+    ?league_key=  defaults to current LEAGUE_KEY.
+    ?before=YYYY-MM-DD  only returns drops before this date (use to isolate
+                        pre-draft drops from in-season drops).
+    Paginates through all transactions of type=drop.
+    """
+    import datetime as _dt
+    league_key = request.args.get("league_key", LEAGUE_KEY)
+    before_str = request.args.get("before")
+    before_ts  = None
+    if before_str:
+        try:
+            before_ts = _dt.datetime.strptime(before_str, "%Y-%m-%d").timestamp()
+        except ValueError:
+            pass
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        team_names = _get_league_team_names(league_key, token)
+        all_drops  = []
+        start, batch = 0, 100
+
+        while True:
+            data = yahoo_get(
+                f"/league/{league_key}/transactions;type=drop;count={batch};start={start}", token
+            )
+            tx_raw   = data["fantasy_content"]["league"][1].get("transactions", {})
+            returned = int(tx_raw.get("count", 0))
+
+            for i in [k for k in tx_raw if k != "count"]:
+                tx = tx_raw[i].get("transaction")
+                if not tx or len(tx) < 2:
+                    continue
+                ts = int(tx[0].get("timestamp", 0))
+                players_raw = tx[1].get("players", {})
+                for j in [k for k in players_raw if k != "count"]:
+                    pp = players_raw[j].get("player")
+                    if not pp or len(pp) < 2:
+                        continue
+                    meta = pp[0]
+                    pname = next((m.get("full_name") or m.get("name", {}).get("full", "")
+                                  for m in meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
+                    tx_data = pp[1].get("transaction_data", {})
+                    src_key = ""
+                    if isinstance(tx_data, list) and tx_data:
+                        src_key = tx_data[0].get("source_team_key", "")
+                    elif isinstance(tx_data, dict):
+                        src_key = tx_data.get("source_team_key", "")
+                    if pname:
+                        all_drops.append({
+                            "timestamp": ts,
+                            "team":   team_names.get(src_key, src_key),
+                            "player": pname,
+                        })
+
+            if returned < batch:
+                break
+            start += batch
+            time.sleep(0.1)
+
+        all_drops.sort(key=lambda x: x["timestamp"])
+        if before_ts:
+            all_drops = [d for d in all_drops if d["timestamp"] < before_ts]
+        print(f"  drops: {len(all_drops)} for {league_key}{f' before {before_str}' if before_str else ''}")
+        return jsonify({"ok": True, "drops": all_drops, "count": len(all_drops)})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/transactions")
 def transactions():
     token = get_valid_token()

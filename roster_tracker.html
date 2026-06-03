@@ -247,12 +247,13 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2425()" title="Load pre-drop 24-25 rosters from PREDROP_ROSTER_2425">Reset</button>
-      <button class="btn btn-indigo" onclick="simulateDrops2425()">⬇ Simulate Drops</button>
-      <button class="btn btn-blue-outline" onclick="compareDrops2425()" title="Compare algorithm's simulated drops against actual 24-25 drops">📊 Compare Drops</button>
+      <button class="btn btn-blue-outline" onclick="simulateDrops2425();compareDrops2425()" title="Simulate drops then compare against actual 24-25 drops">⚡ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">Load Actual Drops</button>
+      <button class="btn btn-yahoo" id="yahooDropsBtn2425" onclick="loadYahooDrops2425()" title="" style="opacity:.75">⬇ Yahoo Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2425()">★ Rank Players</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
+      <button class="btn btn-yahoo" onclick="loadYahooDraft2425()" title="Pull 24-25 draft picks from Yahoo and apply to player state" style="opacity:.75">⬇ Yahoo Draft</button>
     </div>
   </div>
 </div>
@@ -307,6 +308,9 @@ tr:hover td{background:#fafaf8}
 <tbody id="tbody2425"></tbody>
 </table>
 </div>
+<div style="font-size:12px;color:#9ca3af;margin-top:.6rem;display:flex;align-items:center;gap:10px">
+  <span id="rowCount2425"></span>
+</div>
 </div><!-- /view-roster2425 -->
 
 <div id="view-roster2526" style="display:none">
@@ -328,14 +332,15 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
-      <button class="btn btn-indigo" onclick="simulateDrops2526()">⬇ Simulate Drops</button>
-      <button class="btn btn-blue-outline" onclick="compareDrops2526()" title="Compare algorithm's simulated drops against actual 25-26 drops">📊 Compare Drops</button>
+      <button class="btn btn-blue-outline" onclick="simulateDrops2526();compareDrops2526()" title="Simulate drops then compare against actual 25-26 drops">⚡ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Load Actual Drops</button>
+      <button class="btn btn-yahoo" id="yahooDropsBtn2526" onclick="loadYahooDrops2526()" title="" style="opacity:.75">⬇ Yahoo Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
       <button class="btn btn-blue-outline" onclick="compareDrafts2526()" title="Compare algorithm's simulated draft picks against actual 25-26 draft picks">📋 Compare Drafts</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
+      <button class="btn btn-yahoo" onclick="loadYahooDraft2526()" title="Pull 25-26 draft picks from Yahoo and apply to player state" style="opacity:.75">⬇ Yahoo Draft</button>
       <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft2526()" title="Simulate January mid-season draft on 25-26 rosters — requires MIDSEASON_STANDINGS_2526">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
@@ -476,6 +481,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
+      <button class="btn btn-blue-outline" onclick="runDraftSim2627()" title="Simulate draft from current rosters and apply picks">⚡ Simulate Draft</button>
       <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft()" title="Simulate January mid-season draft — 5 rounds, reverse projected standings">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
@@ -634,10 +640,40 @@ tr:hover td{background:#fafaf8}
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.075M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$1.125M</div>
 
-      <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Yahoo League Key</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Yahoo <span class="section-line"></span><span class="section-desc">Yahoo Fantasy league keys and draft dates. Draft dates determine the drop/add window for Yahoo transaction fetches (date + 2 days).</span></div>
+    <div style="display:grid;grid-template-columns:72px repeat(6,1fr);gap:6px;align-items:center;font-size:12px">
+      <div></div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">23–24</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">24–25</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">25–26</div>
+      <div style="text-align:center;color:#185FA5;font-size:10px;font-weight:600">26–27</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">27–28</div>
+      <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">28–29</div>
+
+      <div style="font-size:11px;color:#9ca3af;white-space:nowrap">League Key</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:10px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;letter-spacing:-.3px">427.l.1827</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:10px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;letter-spacing:-.3px">453.l.52799</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:10px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;letter-spacing:-.3px">465.l.97882</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+
+      <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Preseason Draft</div>
+      <input type="date" id="s-draftDatePreseason2324" value="2023-10-23" onchange="updateSetting('draftDatePreseason2324',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
+      <input type="date" id="s-draftDatePreseason2425" value="2024-10-05" onchange="updateSetting('draftDatePreseason2425',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
+      <input type="date" id="s-draftDatePreseason2526" value="2025-09-27" onchange="updateSetting('draftDatePreseason2526',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+
+      <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Supplemental Draft</div>
+      <input type="date" id="s-draftDateSupplemental2324" value="2024-01-06" onchange="updateSetting('draftDateSupplemental2324',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
+      <input type="date" id="s-draftDateSupplemental2425" value="2025-01-04" onchange="updateSetting('draftDateSupplemental2425',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
+      <input type="date" id="s-draftDateSupplemental2526" value="2026-01-10" onchange="updateSetting('draftDateSupplemental2526',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
@@ -645,7 +681,7 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Drops <span class="section-line"></span><span class="section-desc">Per-position curves classify players as above/below average for their cap. Below-curve players drop first by deficit; at/above-curve players are protected. Stops once minDrops is met and projected pts reach the target.</span></div>
+    <div class="section-label">Drops <span class="section-line"></span><span class="section-desc">Per-position curves classify players as above/below average for their cap. Below-curve players drop first by deficit; at/above-curve players are protected. Stops once min drops is met and projected pts reach the target.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
         <input type="checkbox" id="s-useActuals" checked onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
@@ -659,13 +695,23 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Min D drops per team</span>
         <input type="number" id="s-minDropD" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropD',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
+      <div style="grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding-top:4px">Preseason</div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
-        <input type="number" id="s-minDrops" value="5" min="1" max="20" step="1" onchange="updateSetting('minDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="s-minDropsPreseason" value="5" min="0" max="20" step="1" onchange="updateSetting('minDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
-        <input type="number" id="s-maxDrops" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDrops',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="s-maxDropsPreseason" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding-top:4px">Supplemental</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
+        <input type="number" id="s-minDropsSupp" value="0" min="0" max="10" step="1" onchange="updateSetting('minDropsSupp',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
+        <input type="number" id="s-maxDropsSupp" value="5" min="0" max="10" step="1" onchange="updateSetting('maxDropsSupp',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
@@ -696,6 +742,10 @@ tr:hover td{background:#fafaf8}
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤ELC max) ×</span>
         <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af">Simulate Draft value rounds</span>
+        <input type="number" id="s-draftValueRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftValueRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
@@ -856,6 +906,10 @@ const NHL_LOGOS = {
   LA:'https://assets.nhle.com/logos/nhl/svg/LAK_light.svg',
 };
 const LS_PLAYERS = 'nhl_players_v3';
+// Yahoo league keys — must match yahoo_proxy.py
+const YAHOO_LEAGUE_KEY_2324 = '427.l.1827';
+const YAHOO_LEAGUE_KEY_2425 = '453.l.52799';
+const YAHOO_LEAGUE_KEY_2526 = '465.l.97882';
 const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
 const LS_STATS   = 'hghl_stats_2526';
@@ -880,8 +934,17 @@ let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllS
 let draftViewMode = 'compact';
 let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
-let minDrops = 5, maxDrops = 20, ptsTarget = 1200, curveMinPts = 15;
+let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
+let draftValueRounds = 1;
+let ptsTarget = 1200, curveMinPts = 15;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
+// Draft dates — used to calculate the drop/add window (date + 2 days) for Yahoo transaction fetches
+let draftDatePreseason2324    = '2023-10-23';
+let draftDateSupplemental2324 = '2024-01-06';
+let draftDatePreseason2425    = '2024-10-05';
+let draftDateSupplemental2425 = '2025-01-04';
+let draftDatePreseason2526    = '2025-09-27';
+let draftDateSupplemental2526 = '2026-01-10';
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
 const ELC_MAX_2627 = 1.025; // ELC max cap hit 2026-27
@@ -1073,14 +1136,14 @@ function simulateDrops(){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDrops) break;
+      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
       const isValuable = isHighVal(p) || isProspect(p);
       // High-value / prospect players are protected only once the team is under cap
-      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
+      if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
+      if(!isValuable && numDropped >= minDropsPreseason && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= (p.pts || 0);
       keptCap -= (p.cap || 0);
@@ -1902,13 +1965,13 @@ function computeDrops(allPlayers){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDrops) break;
+      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
       const isValuable = isHighVal(p) || isProspect(p);
-      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
+      if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
+      if(!isValuable && numDropped >= minDropsPreseason && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropIds.add(p.id);
       keptPts -= (p.pts || 0);
       keptCap -= (p.cap || 0);
@@ -2105,8 +2168,7 @@ function render(){
     </tr>`;
   }).join('')):`<tr><td colspan="18" class="empty">No players found</td></tr>`;
 
-  const yahooN=players.filter(p=>(p.source||'manual')==='yahoo').length;
-  document.getElementById('rowCount').textContent=`Showing ${rows.length} of ${players.length} players (${yahooN} from Yahoo)`;
+  document.getElementById('rowCount').textContent=`${rows.length} player${rows.length!==1?'s':''}`;
   updateStats();
 }
 
@@ -2134,6 +2196,13 @@ const DRAFT_TEAMS = Object.entries(DRAFT_STANDINGS)
   .map(([name]) => name);
 
 const DRAFT_ROSTER_MAX = {F: 12, D: 6, G: 2};  // target spots per position per team
+
+// Players excluded from all draft simulations (normName_posGroup keys).
+// Used for players GMs never realistically draft regardless of projected pts.
+const DRAFT_NEVER = new Set([
+  'elias pettersson_D',  // ANA — low fantasy value, never picked
+  'sebastian aho_D',     // SEA — wrong Aho; KW hold Sebastian Aho F (CAR)
+]);
 
 // 2024-25 final standings — determines 25-26 draft order (rank 9 picks first)
 const DRAFT_STANDINGS_2425 = {
@@ -2282,11 +2351,12 @@ const ACTUAL_ROSTER_2425 = {
   'pavel zacha':'Bossy Posse','juraj slafkovsky':'Bossy Posse','nick perbix':'Bossy Posse',
   'trevor zegras':'Bossy Posse','evan bouchard':'Bossy Posse','david jiricek':'Bossy Posse',
   'cam york':'Bossy Posse','simon nemec':'Bossy Posse','juuse saros':'Bossy Posse',
-  // Dumb and Goalie To (12 keepers — dropped: Matthews, Zuccarello, Mittelstadt, Sanheim, Reilly, Thrun)
+  // Dumb and Goalie To (13 keepers — dropped: Matthews, Mittelstadt, Sanheim, Reilly, Thrun)
   'brandon hagel':'Dumb and Goalie To','pavel buchnevich':'Dumb and Goalie To','jj peterka':'Dumb and Goalie To',
   'daniel sprong':'Dumb and Goalie To','david pastrnak':'Dumb and Goalie To','jonathan drouin':'Dumb and Goalie To',
   'artemi panarin':'Dumb and Goalie To','jack quinn':'Dumb and Goalie To','cale makar':'Dumb and Goalie To',
   'thomas harley':'Dumb and Goalie To','bowen byram':'Dumb and Goalie To','stuart skinner':'Dumb and Goalie To',
+  'mats zuccarello':'Dumb and Goalie To',
   'ukkopekka luukkonen':'Dumb and Goalie To','thomas novak':'Dumb and Goalie To',
   // Killer Whales (11 keepers — dropped: Svechnikov, Aho, Farabee, Ehlers, Hronek, Liljegren, Fox, Demko, Talbot)
   'jack hughes':'Killer Whales','seth jarvis':'Killer Whales','quinton byfield':'Killer Whales',
@@ -2319,7 +2389,76 @@ const ACTUAL_ROSTER_2425 = {
 };
 
 // Actual 24-25 draft picks. Keys = normName.toLowerCase(), values = team.
-const ACTUAL_DRAFT_2425 = {};
+const ACTUAL_DRAFT_2425 = {
+  // Blue Line Bangers (9 picks)
+  'macklin celebrini':'Blue Line Bangers',
+  'mackenzie weegar':'Blue Line Bangers',
+  'nico hischier':'Blue Line Bangers',
+  'gustav forsling':'Blue Line Bangers',
+  'elias pettersson':'Blue Line Bangers',   // F (VAN)
+  'nick schmaltz':'Blue Line Bangers',
+  'michael kesselring':'Blue Line Bangers',
+  'juuso valimaki':'Blue Line Bangers',
+  'dylan cozens':'Blue Line Bangers',
+  // Muller Time! (6 picks)
+  'matvei michkov':'Muller Time!',
+  'shea theodore':'Muller Time!',
+  'denton mateychuk':'Muller Time!',
+  'auston matthews':'Muller Time!',
+  'jj moser':'Muller Time!',
+  'justin barron':'Muller Time!',
+  // Silence of the Lamb (7 picks)
+  'cutter gauthier':'Silence of the Lamb',
+  'charlie lindgren':'Silence of the Lamb',
+  'samuel ersson':'Silence of the Lamb',
+  'roman josi':'Silence of the Lamb',
+  'kris letang':'Silence of the Lamb',
+  'joel eriksson ek':'Silence of the Lamb',
+  'mike reilly':'Silence of the Lamb',
+  // Bossy Posse (5 picks)
+  'joseph woll':'Bossy Posse',
+  'adam fox':'Bossy Posse',
+  'william nylander':'Bossy Posse',
+  'shane wright':'Bossy Posse',
+  'nick perbix':'Bossy Posse',
+  // Killer Whales (8 picks)
+  'will smith':'Killer Whales',
+  'jacob markstrom':'Killer Whales',
+  'dustin wolf':'Killer Whales',
+  'miro heiskanen':'Killer Whales',
+  'braden schneider':'Killer Whales',
+  'ty emberson':'Killer Whales',
+  'nazem kadri':'Killer Whales',
+  'fabian zetterlund':'Killer Whales',
+  // Pernicious Puckers (8 picks)
+  'lane hutson':'Pernicious Puckers',
+  'simon edvinsson':'Pernicious Puckers',
+  'tim stutzle':'Pernicious Puckers',
+  'nick suzuki':'Pernicious Puckers',
+  'arturs silovs':'Pernicious Puckers',
+  'filip gustavsson':'Pernicious Puckers',
+  'victor olofsson':'Pernicious Puckers',
+  'rutger mcgroarty':'Pernicious Puckers',
+  // Damage Inc. (5 picks)
+  'adam boqvist':'Damage Inc.',
+  'henry thrun':'Damage Inc.',
+  'mathew barzal':'Damage Inc.',
+  'jordan kyrou':'Damage Inc.',
+  'dylan strome':'Damage Inc.',
+  // Motor City Wings (6 picks)
+  'olen zellweger':'Motor City Wings',
+  'mason lohrei':'Motor City Wings',
+  'ridly greig':'Motor City Wings',
+  'jake walman':'Motor City Wings',
+  'teuvo teravainen':'Motor City Wings',
+  'alex lyon':'Motor City Wings',
+  // Dumb and Goalie To (5 picks)
+  'seamus casey':'Dumb and Goalie To',
+  'jeff skinner':'Dumb and Goalie To',
+  'josh doan':'Dumb and Goalie To',
+  'jakob chychrun':'Dumb and Goalie To',
+  'oliver ekmanlarsson':'Dumb and Goalie To',
+};
 
 // 24-25 mid-season draft (All-Star break). Worst→best pick order.
 const MIDSEASON_STANDINGS_2425 = [];
@@ -3079,12 +3218,22 @@ function syncSettings(){
   set('s-wtSourceConf', W.wtSourceConf);
   set('s-wtPressure', W.wtPressure);
   set('s-wtScarcity', W.wtScarcity);
-  set('s-minDrops', minDrops); set('s-maxDrops', maxDrops); set('s-ptsTarget', ptsTarget);
+  set('s-draftValueRounds', draftValueRounds);
+  set('s-minDropsPreseason', minDropsPreseason); set('s-maxDropsPreseason', maxDropsPreseason);
+  set('s-minDropsSupp', minDropsSupp); set('s-maxDropsSupp', maxDropsSupp);
+  set('s-ptsTarget', ptsTarget);
   set('s-minDropF', minDropF); set('s-minDropD', minDropD);
   set('s-curveMinPts', curveMinPts);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
+  set('s-draftDatePreseason2324',    draftDatePreseason2324);
+  set('s-draftDateSupplemental2324', draftDateSupplemental2324);
+  set('s-draftDatePreseason2425',    draftDatePreseason2425);
+  set('s-draftDateSupplemental2425', draftDateSupplemental2425);
+  set('s-draftDatePreseason2526',    draftDatePreseason2526);
+  set('s-draftDateSupplemental2526', draftDateSupplemental2526);
+  updateYahooDropBtnTooltips();
 }
 function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
@@ -3096,8 +3245,11 @@ function updateDraftWeight(key, val){
   if(draftMode2526) render2526();
 }
 function updateSetting(key, val){
-  if(key === 'minDrops')     minDrops = val;
-  else if(key === 'maxDrops')     maxDrops = val;
+  if(key === 'draftValueRounds')     draftValueRounds = val;
+  else if(key === 'minDropsPreseason')     minDropsPreseason = val;
+  else if(key === 'maxDropsPreseason') maxDropsPreseason = val;
+  else if(key === 'minDropsSupp')      minDropsSupp = val;
+  else if(key === 'maxDropsSupp')      maxDropsSupp = val;
   else if(key === 'minDropF')     minDropF = val;
   else if(key === 'minDropD')     minDropD = val;
   else if(key === 'ptsTarget')    ptsTarget = val;
@@ -3107,7 +3259,26 @@ function updateSetting(key, val){
   else if(key === 'abpMinGP')     abpMinGP = val;
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
-  else if(key === 'curveMinPts')  { curveMinPts = val; }
+  else if(key === 'curveMinPts')           { curveMinPts = val; }
+  else if(key === 'draftDatePreseason2324')    { draftDatePreseason2324    = val; }
+  else if(key === 'draftDateSupplemental2324') { draftDateSupplemental2324 = val; }
+  else if(key === 'draftDatePreseason2425')    { draftDatePreseason2425    = val; updateYahooDropBtnTooltips(); }
+  else if(key === 'draftDateSupplemental2425') { draftDateSupplemental2425 = val; }
+  else if(key === 'draftDatePreseason2526')    { draftDatePreseason2526    = val; updateYahooDropBtnTooltips(); }
+  else if(key === 'draftDateSupplemental2526') { draftDateSupplemental2526 = val; }
+}
+
+function addDays(dateStr, n){
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function updateYahooDropBtnTooltips(){
+  const b24 = document.getElementById('yahooDropsBtn2425');
+  const b25 = document.getElementById('yahooDropsBtn2526');
+  if(b24) b24.title = `Pull pre-season drops from Yahoo (before ${addDays(draftDatePreseason2425, 2)})`;
+  if(b25) b25.title = `Pull pre-season drops from Yahoo (before ${addDays(draftDatePreseason2526, 2)})`;
 }
 
 
@@ -3223,6 +3394,50 @@ function loadActualRoster2526(){
   toast(`Loaded actual 25-26 pre-draft rosters — ${rostered} players rostered, ${matched} matched.`);
 }
 
+async function _applyYahooDraft(leagueKey, startField, renderFn){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  try {
+    toast('Fetching draft picks from Yahoo…');
+    const d = await fetch(`/yahoo-draftresults?league_key=${leagueKey}`).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let applied=0; const unmatched=[];
+    for(const pick of d.picks){
+      const key = normName(pick.player).toLowerCase();
+      const p = players.find(x => normName(x.name).toLowerCase() === key);
+      if(p){ p[startField] = pick.team; applied++; }
+      else unmatched.push(`${pick.player} (${pick.team} R${pick.round})`);
+    }
+    lsSet(LS_PLAYERS, players); renderFn();
+    if(unmatched.length) console.warn('Yahoo draft unmatched:', unmatched);
+    toast(`Draft loaded: ${applied} picks applied. ${unmatched.length} unmatched — see console.`);
+  } catch(e){ toast('Yahoo draft fetch failed: '+e.message); }
+}
+
+async function _applyYahooDrops(leagueKey, before, startField, renderFn){
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  try {
+    toast('Fetching pre-season drops from Yahoo…');
+    const url = `/yahoo-drops?league_key=${leagueKey}` + (before ? `&before=${before}` : '');
+    const d = await fetch(url).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let applied=0; const unmatched=[];
+    for(const drop of d.drops){
+      const key = normName(drop.player).toLowerCase();
+      const p = players.find(x => normName(x.name).toLowerCase() === key);
+      if(p){ p[startField] = null; applied++; }
+      else unmatched.push(drop.player);
+    }
+    lsSet(LS_PLAYERS, players); renderFn();
+    if(unmatched.length) console.warn('Yahoo drops unmatched:', unmatched);
+    toast(`Drops loaded: ${applied} players dropped. ${unmatched.length} unmatched — see console.`);
+  } catch(e){ toast('Yahoo drops fetch failed: '+e.message); }
+}
+
+const loadYahooDrops2526  = () => _applyYahooDrops(YAHOO_LEAGUE_KEY_2526, addDays(draftDatePreseason2526, 2),    'start2526', render2526);
+const loadYahooDraft2526  = () => _applyYahooDraft(YAHOO_LEAGUE_KEY_2526, 'start2526', render2526);
+const loadYahooDrops2425  = () => _applyYahooDrops(YAHOO_LEAGUE_KEY_2425, addDays(draftDatePreseason2425, 2),    'start2425', render2425);
+const loadYahooDraft2425  = () => _applyYahooDraft(YAHOO_LEAGUE_KEY_2425, 'start2425', render2425);
+
 function simulateDrops2526(){
   const teams = [...new Set(players.map(p=>p.start2526).filter(Boolean))];
   if(!teams.length){ toast('Reset 25-26 first to seed rosters.'); return; }
@@ -3242,7 +3457,7 @@ function simulateDrops2526(){
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+ppts2526blend(p), 0) / faPool.length : 40;
 
   // Prospects (age≤23, cap≤ELC_MAX_2526) protected — sorted last so they're only dropped if forced
-  const isProspect2526 = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
+  const isProspect2526 = p => (calcAge2526(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
   const deficit2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPos2526 = {};
   for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPos2526[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
@@ -3269,13 +3484,13 @@ function simulateDrops2526(){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDrops) break;
+      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
       const isValuable = isHighVal2526(p) || isProspect2526(p);
-      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
+      if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
+      if(!isValuable && numDropped >= minDropsPreseason && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
       keptCap -= getCap2526(p);
@@ -3311,7 +3526,7 @@ function compareDrops2526(){
                     .sort((a,b) => ppts2526blend(b) - ppts2526blend(a)).slice(0, 30);
   const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p) => s+ppts2526blend(p), 0) / faPoolV.length : 40;
 
-  const isProspectV = p => (calcAge(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
+  const isProspectV = p => (calcAge2526(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
   const deficitV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPosV = {};
   for(const pg of ['F','D','G']){ const fas=vp.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPosV[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
@@ -3338,13 +3553,13 @@ function compareDrops2526(){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDrops) break;
+      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
       const isValuable = isHighValV(p) || isProspectV(p);
-      if(isValuable && numDropped >= minDrops && posMinsMet && capOk) break;
-      if(!isValuable && numDropped >= minDrops && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk && posMinsMet) break;
+      if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
+      if(!isValuable && numDropped >= minDropsPreseason && keptPts + numDropped * avgFAPtsV >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts2526blend(p);
       keptCap -= getCap2526(p);
@@ -3633,7 +3848,7 @@ function simulateDrops2425(){
                         .sort((a,b)=>ppts2425blend(b)-ppts2425blend(a)).slice(0,30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p)=>s+ppts2425blend(p),0)/faPool.length : 40;
 
-  const isProspect2425 = p => (calcAge(p)??99)<=23 && getCap2425(p)<=ELC_MAX_2425;
+  const isProspect2425 = p => (calcAge2425(p)??99)<=23 && getCap2425(p)<=ELC_MAX_2425;
   const deficit2425 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPos = {};
   for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2425&&posGroup(x.pos)===pg&&ppts2425blend(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>ppts2425blend(x))):0; }
@@ -3656,13 +3871,13 @@ function simulateDrops2425(){
     let droppedD=mandatory.filter(p=>posGroup(p.pos)==='D').length;
 
     for(const p of candidates){
-      if(numDropped>=maxDrops) break;
+      if(numDropped>=maxDropsPreseason) break;
       const pg=posGroup(p.pos);
       const posMinsMet=droppedF>=minDropF && droppedD>=minDropD;
       const capOk=keptCap<=CAP_LIMIT_2425-numDropped*DRAFT_RESERVE_2425;
       const isValuable=isHighVal2425(p)||isProspect2425(p);
-      if(isValuable && numDropped>=minDrops && posMinsMet && capOk) break;
-      if(!isValuable && numDropped>=minDrops && keptPts+numDropped*avgFAPts>=ptsTarget && capOk && posMinsMet) break;
+      if(isValuable && numDropped>=minDropsPreseason && posMinsMet && capOk) break;
+      if(!isValuable && numDropped>=minDropsPreseason && keptPts+numDropped*avgFAPts>=ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts-=ppts2425blend(p); keptCap-=getCap2425(p); numDropped++;
       if(pg==='F') droppedF++; else if(pg==='D') droppedD++;
@@ -3698,7 +3913,7 @@ function compareDrops2425(){
                     .sort((a,b)=>ppts2425blend(b)-ppts2425blend(a)).slice(0,30);
   const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p)=>s+ppts2425blend(p),0)/faPoolV.length : 40;
 
-  const isProspectV = p=>(calcAge(p)??99)<=23 && getCap2425(p)<=ELC_MAX_2425;
+  const isProspectV = p=>(calcAge2425(p)??99)<=23 && getCap2425(p)<=ELC_MAX_2425;
   const deficitV = p=>{ const fn=curveFnsV[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPosV={};
   for(const pg of ['F','D','G']){ const fas=vp.filter(x=>!x.start2425&&posGroup(x.pos)===pg&&ppts2425blend(x)>0); bestFAByPosV[pg]=fas.length?Math.max(...fas.map(x=>ppts2425blend(x))):0; }
@@ -3721,13 +3936,13 @@ function compareDrops2425(){
     let droppedD=mandatory.filter(p=>posGroup(p.pos)==='D').length;
 
     for(const p of candidates){
-      if(numDropped>=maxDrops) break;
+      if(numDropped>=maxDropsPreseason) break;
       const pg=posGroup(p.pos);
       const posMinsMet=droppedF>=minDropF && droppedD>=minDropD;
       const capOk=keptCap<=CAP_LIMIT_2425-numDropped*DRAFT_RESERVE_2425;
       const isValuable=isHighValV(p)||isProspectV(p);
-      if(isValuable && numDropped>=minDrops && posMinsMet && capOk) break;
-      if(!isValuable && numDropped>=minDrops && keptPts+numDropped*avgFAPtsV>=ptsTarget && capOk && posMinsMet) break;
+      if(isValuable && numDropped>=minDropsPreseason && posMinsMet && capOk) break;
+      if(!isValuable && numDropped>=minDropsPreseason && keptPts+numDropped*avgFAPtsV>=ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts-=ppts2425blend(p); keptCap-=getCap2425(p); numDropped++;
       if(pg==='F') droppedF++; else if(pg==='D') droppedD++;
@@ -3854,7 +4069,7 @@ function render2425(){
 
   rows.sort((a,b)=>{
     let av,bv;
-    if(sortCol2425==='age'){ av=calcAge(a)??-1; bv=calcAge(b)??-1; }
+    if(sortCol2425==='age'){ av=calcAge2425(a)??-1; bv=calcAge2425(b)??-1; }
     else if(sortCol2425==='abp2425'){ av=abpMap2425.get(a.id)??-1; bv=abpMap2425.get(b.id)??-1; }
     else if(sortCol2425==='rank2425'){ av=a.rank2425??99999; bv=b.rank2425??99999; }
     else if(sortCol2425==='curvedelta2425'){ av=curveDelta2425(a)??-Infinity; bv=curveDelta2425(b)??-Infinity; }
@@ -3911,7 +4126,7 @@ function render2425(){
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
-      <td>${calcAge(p)??'—'}</td>
+      <td>${calcAge2425(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2324||'—')}</td>
       <td style="color:#185FA5">${esc(p.start2425||'—')}</td>
@@ -3934,6 +4149,8 @@ function render2425(){
     </tr>`;
   }).join('') : '<tr><td colspan="19" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
+  const rc2425 = document.getElementById('rowCount2425');
+  if(rc2425) rc2425.textContent = `${rows.length} player${rows.length!==1?'s':''}`;
   updateStats2425();
 }
 
@@ -3967,12 +4184,15 @@ function updateStats2425(){
     const logo = teamLogos[t];
     const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
+    const picks = fRem + dRem + gRem;
+    const cpp = picks > 0 ? rem / picks : 0;
+    const cppStr = picks > 0 ? ` · $${cpp.toFixed(1)}M/pick` : '';
     return `<div class="team-card">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
       </div>
-      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span></div>
+      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
       <div class="team-card-pos">
         <span title="${fRem} forward spots remaining (${fN} rostered)">F&thinsp;${fRem}</span>
         <span title="${dRem} defense spots remaining (${dN} rostered)">D&thinsp;${dRem}</span>
@@ -4075,7 +4295,7 @@ function simulateMidseasonDraft(){
   const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
 
   const draftLog = [];
-  for(let round = 1; round <= 5; round++){
+  for(let round = 1; round <= maxDropsSupp; round++){
     const roundPicks = [];
     for(const team of draftOrder){
       const roster = snap.filter(p => p.start2627 === team);
@@ -4131,7 +4351,7 @@ function simulateMidseasonDraft2526(){
   const val     = p => ppts2526blend(p);
   const getCap  = p => getCap2526(p);
   const deficit = p => { const fn=cf[posGroup(p.pos)]; const pp=val(p),c=getCap(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const isProsp = p => (calcAge(p)??99) <= 23 && getCap(p) <= ELC_MAX_2526;
+  const isProsp = p => (calcAge2526(p)??99) <= 23 && getCap(p) <= ELC_MAX_2526;
   const bestFAByPos = {};
   for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
   const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
@@ -4139,7 +4359,7 @@ function simulateMidseasonDraft2526(){
   const teamProjPts = Object.fromEntries(teams.map(t=>[t, snap.filter(p=>p.start2526===t).reduce((s,p)=>s+val(p),0)]));
 
   const draftLog = [];
-  for(let round = 1; round <= 5; round++){
+  for(let round = 1; round <= maxDropsSupp; round++){
     const roundPicks = [];
     for(const team of teams){
       const roster = snap.filter(p => p.start2526 === team);
@@ -4176,6 +4396,25 @@ function simulateMidseasonDraft2526(){
 
 function closeDraftSimModal(){ document.getElementById('draftSimModal').style.display='none'; }
 
+function runDraftSim2627(){
+  const teams = [...new Set(players.filter(p=>p.start2627).map(p=>p.start2627))].sort();
+  if(!teams.length){ toast('Run Simulate Drops first to seed rosters.'); return; }
+  _runDraftSim({
+    season:       '26-27',
+    actualDraft:  {},
+    allTeams:     teams,
+    buildSeq:     buildDraftSeq,
+    startField:   'start2627',
+    ppts:         p => p.pts || 0,
+    getCap:       p => p.cap || 0,
+    capLimit:     CAP_LIMIT,
+    draftReserve: DRAFT_RESERVE_2627,
+    draftWeights,
+    applyChanges: true,
+    renderFn:     render,
+  });
+}
+
 function runDraftSim2425(){
   if(!Object.keys(ACTUAL_DRAFT_2425).length){
     toast('Populate ACTUAL_DRAFT_2425 first.'); return;
@@ -4191,6 +4430,8 @@ function runDraftSim2425(){
     capLimit:     CAP_LIMIT_2425,
     draftReserve: DRAFT_RESERVE_2425,
     draftWeights,
+    applyChanges: true,
+    renderFn:     render2425,
   });
 }
 
@@ -4209,16 +4450,19 @@ function runDraftSim2526(){
     capLimit:     CAP_LIMIT_2526,
     draftReserve: DRAFT_RESERVE_2526,
     draftWeights,
+    applyChanges: true,
+    renderFn:     render2526,
   });
 }
 
-function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights }){
+function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, applyChanges = false, renderFn = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
   const pm = {F: draftWeights.wtF||1, D: draftWeights.wtD||1.4, G: draftWeights.wtG||1};
 
   // Snapshot: track each player's current team assignment
   const assigned = {}; // id → team or null
   for(const p of players) assigned[p.id] = p[startField] || null;
+  const initialAssigned = {...assigned};
 
   // Track roster counts and cap per team (seeded from keepers)
   const need = {}; // team → {F,D,G} remaining spots
@@ -4242,7 +4486,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   for(const team of seq){
     const pickNum = (teamPickNum[team] = (teamPickNum[team]||0));
     const round = pickNum + 1;
-    const mode = round === 1 ? 'value' : 'bestAvail';
+    const mode = round <= draftValueRounds ? 'value' : 'bestAvail';
 
     // Remaining picks for this team after this one (for reserve calculation)
     const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
@@ -4255,6 +4499,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
       if(ppts(p) <= 0) return false;
       if((getCap(p)||0) > maxPickCap) return false;
       const pg = posGroup(p.pos);
+      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
       return (need[team]?.[pg]||0) > 0;
     });
 
@@ -4276,6 +4521,45 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
 
     simPicks.push({round, team, player: pick.p.name, pos: pg, ppts: pick.pp, cap: getCap(pick.p)||0, mode});
     teamPickNum[team]++;
+  }
+
+  // Apply sim picks to player data
+  if(applyChanges){
+    for(const p of players){
+      if(!initialAssigned[p.id] && assigned[p.id]) p[startField] = assigned[p.id];
+    }
+    lsSet(LS_PLAYERS, players);
+    if(renderFn) renderFn();
+  }
+
+  const hasActual = Object.keys(actualDraft).length > 0;
+  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
+  const badge = (pg,name) => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 4px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${esc(name)}`;
+  const modeTag = r => r<=draftValueRounds
+    ? '<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Value</span>'
+    : '<span style="background:#f3f4f6;color:#6b7280;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Best Avail</span>';
+  const modeFooter = `<span style="color:#9ca3af;font-size:11px">${draftValueRounds>0?`R1${draftValueRounds>1?`–R${draftValueRounds}`:''}  = Value mode · R${draftValueRounds+1}+ = Best Available`:'All rounds = Best Available'}</span>`;
+
+  if(!hasActual){
+    const simPts = simPicks.reduce((s,r)=>s+r.ppts, 0);
+    document.getElementById('draftSimTitle').textContent = `📋 Simulated Draft ${season}`;
+    document.getElementById('draftSimSummary').innerHTML =
+      `${simPicks.length} picks · Algo total proj: <strong>${Math.round(simPts)} pts</strong><br>${modeFooter}`;
+    const maxR = simPicks.length ? Math.max(...simPicks.map(r=>r.round)) : 0;
+    let html = '';
+    for(let r=1; r<=maxR; r++){
+      const rRows = simPicks.filter(x=>x.round===r);
+      if(!rRows.length) continue;
+      const rPts = rRows.reduce((s,x)=>s+x.ppts, 0);
+      html += `<div style="margin-bottom:1rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+      html += `<div style="padding:7px 12px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:13px">Round ${r} ${modeTag(r)}</span><span style="font-size:12px;color:#6b7280">${Math.round(rPts)} pts</span></div>`;
+      html += `<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:#fafafa;border-bottom:1px solid #e5e7eb"><th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Team</th><th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Pick</th><th style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:500">Proj</th><th style="padding:5px 8px;text-align:right;color:#9ca3af;font-weight:500">Cap</th></tr>`;
+      for(const row of rRows) html += `<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:5px 10px;color:#374151;white-space:nowrap">${esc(row.team)}</td><td style="padding:5px 10px;display:flex;gap:4px;align-items:center">${badge(row.pos,row.player)}</td><td style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:600">${Math.round(row.ppts)}</td><td style="padding:5px 8px;text-align:right;color:#9ca3af">$${row.cap.toFixed(2)}M</td></tr>`;
+      html += `</table></div>`;
+    }
+    document.getElementById('draftSimBody').innerHTML = html;
+    document.getElementById('draftSimModal').style.display = 'flex';
+    return;
   }
 
   // Build actual picks sorted by PPTS desc per team (proxy for pick order)
@@ -4311,12 +4595,10 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     `Algo total proj: <strong>${Math.round(totalSimPpts)} pts</strong> &nbsp;|&nbsp; `+
     `Actual total proj: <strong>${Math.round(totalActPpts)} pts</strong> &nbsp;|&nbsp; `+
     `<span style="color:${diffCol};font-weight:600">Algo ${diffStr} pts vs actual</span><br>`+
-    `<span style="color:#9ca3af;font-size:11px">R1 = Value mode (position-weighted PPTS) · R2+ = Best Available (pure PPTS) · Actual picks sorted by proj pts as pick-order proxy</span>`;
+    `<span style="color:#9ca3af;font-size:11px">${draftValueRounds>0?`R1${draftValueRounds>1?`–R${draftValueRounds}`:''}  = Value mode · R${draftValueRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks sorted by proj pts as pick-order proxy</span>`;
 
   // Group by round
   const maxRound = Math.max(...rows.map(r=>r.round));
-  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
-  const badge = (pg,name) => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 4px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${esc(name)}`;
 
   let html = '';
   for(let r=1; r<=maxRound; r++){
@@ -4327,7 +4609,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     const rDiff    = rSimPts - rActPts;
     const rDiffStr = (rDiff>=0?'+':'')+Math.round(rDiff);
     const rDiffCol = rDiff>=0?'#16a34a':'#dc2626';
-    const modeLabel = r===1?'<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Value</span>':'<span style="background:#f3f4f6;color:#6b7280;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Best Avail</span>';
+    const modeLabel = modeTag(r);
     html += `<div style="margin-bottom:1rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
     html += `<div style="padding:7px 12px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center">`;
     html += `<span style="font-weight:600;font-size:13px">Round ${r} ${modeLabel}</span>`;
@@ -4549,7 +4831,7 @@ function rankPlayers2526(){
     const pg = posGroup(p.pos);
     const pp = ppts2526blend(p);
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
-    const ageS = calcAge(p) ?? 99;
+    const ageS = calcAge2526(p) ?? 99;
     const youth = Math.max(0, 35-ageS);
     const prospectS = (ageS <= 23 && getCap2526(p) <= ELC_MAX_2526) ? Math.max(0, 24 - ageS) * draftWeights.wtProspect : 0;
     const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
@@ -4692,7 +4974,7 @@ function render2526(){
     let av,bv;
     if(sortCol2526==='ppts2526blend'){ av=ppts2526blend(a); bv=ppts2526blend(b); }
     else if(sortCol2526==='ptsperm2526'){ av=ppm2526(a); bv=ppm2526(b); }
-    else if(sortCol2526==='age'){ av=calcAge(a)??-1; bv=calcAge(b)??-1; }
+    else if(sortCol2526==='age'){ av=calcAge2526(a)??-1; bv=calcAge2526(b)??-1; }
     else if(sortCol2526==='abp2526'){ av=abpMap2526.get(a.id)??-1; bv=abpMap2526.get(b.id)??-1; }
     else if(sortCol2526==='rank2526'){ av=a.rank2526??99999; bv=b.rank2526??99999; }
     else if(sortCol2526==='curvedelta2526'){ av=curveDelta2526(a)??-Infinity; bv=curveDelta2526(b)??-Infinity; }
@@ -4743,14 +5025,14 @@ function render2526(){
         const pp=ppts2526blend(p);
         const scV=sc(abpMap2526.get(p.id)??99);
         const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
-        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const youthRaw=Math.max(0,35-(calcAge2526(p)??35));
         const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2526[pg]-1));
         const tPPTS=pp*(pm[pg]??1)*pressMult2526;
         const tSc=scV*draftWeights.wtScarcity;
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
-        const ageRaw=calcAge(p)??99;
+        const ageRaw=calcAge2526(p)??99;
         const tProspect=(ageRaw<=23&&getCap2526(p)<=ELC_MAX_2627)?Math.max(0,24-ageRaw)*draftWeights.wtProspect:0;
         const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
@@ -4765,7 +5047,7 @@ function render2526(){
         const pp=ppts2526blend(p);
         const scV=sc(abpMap2526.get(p.id)??99);
         const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
-        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const youthRaw=Math.max(0,35-(calcAge2526(p)??35));
         const pressRaw2526=pressure2526[pg];
         const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw2526-1));
         const tPPTS=pp*(pm[pg]??1)*pressMult2526;
@@ -4773,7 +5055,7 @@ function render2526(){
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYrs=yrsRaw*draftWeights.wtYrs;
         const tYouth=youthRaw*draftWeights.wtAge;
-        const ageRaw2526=calcAge(p)??99;
+        const ageRaw2526=calcAge2526(p)??99;
         const tProspect2526=(ageRaw2526<=23&&getCap2526(p)<=ELC_MAX_2627)?Math.max(0,24-ageRaw2526)*draftWeights.wtProspect:0;
         const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
@@ -4833,7 +5115,7 @@ function render2526(){
         ${p.injuryStatus?`<span class="badge badge-inj" title="${esc(p.injuryDetail||p.injuryStatus)}">INJ</span>`:''}
       </div></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
-      <td>${calcAge(p)??'—'}</td>
+      <td>${calcAge2526(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2425||'—')}</td>
       <td style="color:#185FA5">${esc(p.start2526||'—')}</td>
@@ -5132,6 +5414,16 @@ const calcAge = p => {
      (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
   return age;
 };
+const calcAgeAt = (p, dateStr) => {
+  if(!p.birthDate) return null;
+  const ref = new Date(dateStr), dob = new Date(p.birthDate);
+  let age = ref.getFullYear() - dob.getFullYear();
+  if(ref.getMonth() < dob.getMonth() ||
+     (ref.getMonth() === dob.getMonth() && ref.getDate() < dob.getDate())) age--;
+  return age;
+};
+const calcAge2526 = p => calcAgeAt(p, draftDatePreseason2526);
+const calcAge2425 = p => calcAgeAt(p, draftDatePreseason2425);
 
 const contractYearStr = p => {
   if(!p.contractTerm || !p.expYear) return '';
@@ -5349,6 +5641,7 @@ function toast(msg){
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
 updateSigningsBtn();
+updateYahooDropBtnTooltips();
 updateDraftTab();
 
 window.addEventListener('storage', e => {
