@@ -6134,7 +6134,6 @@ function updateDraftTab(){
 }
 
 function setView(v){
-  if(v === 'draft' && !draftMode && !draftMode2425 && !draftMode2526 && !dropsSimulated){ toast('Run Simulate Drops first.'); return; }
   currentView = v;
   document.getElementById('view-roster2425').style.display    = v==='roster2425'    ? '' : 'none';
   document.getElementById('view-roster2526').style.display    = v==='roster2526'    ? '' : 'none';
