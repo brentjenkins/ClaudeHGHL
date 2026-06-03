@@ -533,22 +533,59 @@ def yahoo_xactions():
             returned = int(tx_raw.get("count", 0))
 
             for i in [k for k in tx_raw if k != "count"]:
-                tx = tx_raw[i].get("transaction")
+                item = tx_raw[i]
+                # Yahoo returns either {"transaction": [...]} or the list directly
+                if isinstance(item, list):
+                    tx = item
+                elif isinstance(item, dict):
+                    tx = item.get("transaction")
+                else:
+                    continue
                 if not tx or len(tx) < 2:
                     continue
-                ts = int(tx[0].get("timestamp", 0))
+
+                meta0 = tx[0] if isinstance(tx[0], dict) else {}
+                ts = int(meta0.get("timestamp", 0))
                 date_str = _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d") if ts else ""
-                players_raw = tx[1].get("players", {})
+
+                tx1 = tx[1]
+                players_raw = tx1.get("players", {}) if isinstance(tx1, dict) else {}
 
                 for j in [k for k in players_raw if k != "count"]:
-                    pp = players_raw[j].get("player")
+                    pj = players_raw[j]
+                    # players_raw[j] is {"player": [...]} or the list directly
+                    if isinstance(pj, dict):
+                        pp = pj.get("player")
+                    elif isinstance(pj, list):
+                        pp = pj
+                    else:
+                        continue
                     if not pp or len(pp) < 2:
                         continue
-                    meta = pp[0]
-                    pname = next((m.get("full_name") or m.get("name", {}).get("full", "")
-                                  for m in meta if isinstance(m, dict) and ("full_name" in m or "name" in m)), "")
-                    tx_data = pp[1].get("transaction_data", {})
+
+                    pmeta = pp[0] if isinstance(pp[0], list) else ([pp[0]] if isinstance(pp[0], dict) else [])
+                    pname = ""
+                    for m in pmeta:
+                        if not isinstance(m, dict):
+                            continue
+                        if "full_name" in m:
+                            pname = m["full_name"]; break
+                        if "name" in m:
+                            nm = m["name"]
+                            pname = nm.get("full", "") if isinstance(nm, dict) else str(nm); break
+
+                    pp1 = pp[1]
+                    if isinstance(pp1, dict):
+                        tx_data = pp1.get("transaction_data", {})
+                    elif isinstance(pp1, list):
+                        # sometimes pp[1] is [{"transaction_data": {...}}]
+                        tx_data = pp1[0].get("transaction_data", {}) if pp1 and isinstance(pp1[0], dict) else {}
+                    else:
+                        continue
+
                     td = tx_data[0] if isinstance(tx_data, list) and tx_data else (tx_data if isinstance(tx_data, dict) else {})
+                    if not isinstance(td, dict):
+                        continue
                     ptype = td.get("type", "")
                     if ptype == "add":
                         team_key = td.get("destination_team_key", "")
