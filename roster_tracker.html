@@ -253,7 +253,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2425()" title="Load pre-drop 24-25 rosters from PREDROP_ROSTER_2425">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2425();compareDrops2425()" title="Simulate drops then compare against actual 24-25 drops">⚡ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">✅ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2425()">★ Rank Players</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⚡ Simulate Draft</button>
@@ -337,7 +337,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2526();compareDrops2526()" title="Simulate drops then compare against actual 25-26 drops">⚡ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">✅ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
@@ -482,7 +482,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft()">Reset</button>
       <button class="btn btn-indigo" onclick="simulateDrops()">⬇ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">✅ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
@@ -4080,7 +4080,7 @@ function rankPlayers2425(){
 
 function simulateDrops2425(){
   if(!players.some(p=>p.start2425)){
-    toast('Load a roster into start2425 first (Reset or Actual Drops).');
+    toast('Load a roster into start2425 first (Reset or ✅ Actual Drops).');
     return;
   }
   const teams = [...new Set(players.map(p=>p.start2425).filter(Boolean))];
