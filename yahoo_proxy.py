@@ -508,6 +508,29 @@ def yahoo_drops():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/yahoo-xactions-debug")
+def yahoo_xactions_debug():
+    """Return raw Yahoo transaction response (first 5) for structure inspection."""
+    import datetime as _dt
+    league_key = request.args.get("league_key", LEAGUE_KEY)
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        data = yahoo_get(
+            f"/league/{league_key}/transactions;type=add,drop;count=5;start=0", token
+        )
+        league1 = data["fantasy_content"]["league"][1]
+        return jsonify({
+            "league1_type": type(league1).__name__,
+            "league1_keys": list(league1.keys()) if isinstance(league1, dict) else str(league1)[:500],
+            "raw": league1,
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/yahoo-xactions")
 def yahoo_xactions():
     """Return all add/drop transactions for a league, paginated.
