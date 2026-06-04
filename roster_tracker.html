@@ -1064,6 +1064,17 @@ let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
 
+// Prospect age thresholds (Athletic definition): under 23 for F/D, under 25 for G.
+const PROSPECT_MAX_AGE = {F: 22, D: 22, G: 24};
+
+// Returns prospect bonus score (0 if not a prospect).
+function prospectBonus(age, pg, capHit, elcMax, wtProspect){
+  if(age == null || age >= 99) return 0;
+  const maxAge = PROSPECT_MAX_AGE[pg] ?? 22;
+  if(age > maxAge || capHit > elcMax) return 0;
+  return Math.max(0, maxAge + 1 - age) * wtProspect;
+}
+
 // Peak age by position — production rises until these ages, then declines.
 const PEAK_AGE_BY_POS = {F: 26, D: 28, G: 29};
 
@@ -1195,7 +1206,7 @@ function rankPlayers(){
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (p.pts / p.cap) * W.wtPPTSM;
       const scoreD = peakTrajectoryScore(age, posGroup(p.pos), p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtAge;
-      const scoreE = (age <= 22 && p.cap <= ELC_MAX_2627) ? Math.max(0, 23 - age) * W.wtProspect : 0;
+      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, W.wtProspect);
       const scoreF = Math.max(0, srcN - 1) * W.wtSourceConf;
       return { p, score: scoreA + scoreB + scoreD + scoreE + scoreF };
     })
@@ -1269,7 +1280,7 @@ function simulateDrops(){
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
   // Prospects (age≤22, cap≤ELC_MAX_2627) protected — sorted last so they're only dropped if forced
-  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
+  const isProspect = p => { const a=calcAge(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && (p.cap||0)<=ELC_MAX_2627; };
   // deficit > 0: player is below their position curve; sort desc = most inefficient first
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   // Best FA pts by position — protect any rostered player who scores more than every FA at their position
@@ -2109,7 +2120,7 @@ function computeDrops(allPlayers){
                            .sort((a,b) => b.pts - a.pts).slice(0, 30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
 
-  const isProspect = p => (calcAge(p) ?? 99) <= 22 && (p.cap||0) <= ELC_MAX_2627;
+  const isProspect = p => { const a=calcAge(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && (p.cap||0)<=ELC_MAX_2627; };
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   const bestFAByPos = {};
   for(const pg of ['F','D','G']){ const fas=allPlayers.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
@@ -2249,7 +2260,7 @@ function render(){
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=(ageRaw<=22&&(p.cap||0)<=ELC_MAX_2627)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
+        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect);
         const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf;
@@ -2270,7 +2281,7 @@ function render(){
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=(ageRaw<=22&&(p.cap||0)<=ELC_MAX_2627)?Math.max(0,23-ageRaw)*draftWeights.wtProspect:0;
+        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect);
         const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf;
@@ -3249,7 +3260,7 @@ function simulateBestPick(){
       const age2    = calcAge(p) ?? 99;
       const yrs2    = p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0;
       const youth   = peakTrajectoryScore(age2 < 99 ? age2 : null, posGroup(p.pos), yrs2) * draftWeights.wtAge;
-      const prospect2 = (age2 <= 22 && (p.cap||0) <= ELC_MAX_2627) ? Math.max(0, 23 - age2) * draftWeights.wtProspect : 0;
+      const prospect2 = prospectBonus(age2 < 99 ? age2 : null, posGroup(p.pos), p.cap||0, ELC_MAX_2627, draftWeights.wtProspect);
       const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
       const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
       return adjPts + ptsPerM + youth + prospect2 + conf2;
@@ -4291,7 +4302,7 @@ function simulateDrops2526(){
   const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+ppts2526blend(p), 0) / faPool.length : 40;
 
   // Prospects (age≤23, cap≤ELC_MAX_2526) protected — sorted last so they're only dropped if forced
-  const isProspect2526 = p => (calcAge2526(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
+  const isProspect2526 = p => { const a=calcAge2526(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2526(p)<=ELC_MAX_2526; };
   const deficit2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPos2526 = {};
   for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPos2526[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
@@ -4360,7 +4371,7 @@ function compareDrops2526(){
                     .sort((a,b) => ppts2526blend(b) - ppts2526blend(a)).slice(0, 30);
   const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p) => s+ppts2526blend(p), 0) / faPoolV.length : 40;
 
-  const isProspectV = p => (calcAge2526(p) ?? 99) <= 23 && getCap2526(p) <= ELC_MAX_2526;
+  const isProspectV = p => { const a=calcAge2526(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2526(p)<=ELC_MAX_2526; };
   const deficitV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPosV = {};
   for(const pg of ['F','D','G']){ const fas=vp.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPosV[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
@@ -4682,7 +4693,7 @@ function simulateDrops2425(){
                         .sort((a,b)=>ppts2425blend(b)-ppts2425blend(a)).slice(0,30);
   const avgFAPts = faPool.length ? faPool.reduce((s,p)=>s+ppts2425blend(p),0)/faPool.length : 40;
 
-  const isProspect2425 = p => (calcAge2425(p)??99)<=23 && getCap2425(p)<=ELC_MAX_2425;
+  const isProspect2425 = p => { const a=calcAge2425(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2425(p)<=ELC_MAX_2425; };
   const deficit2425 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPos = {};
   for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2425&&posGroup(x.pos)===pg&&ppts2425blend(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>ppts2425blend(x))):0; }
@@ -4747,7 +4758,7 @@ function compareDrops2425(){
                     .sort((a,b)=>ppts2425blend(b)-ppts2425blend(a)).slice(0,30);
   const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p)=>s+ppts2425blend(p),0)/faPoolV.length : 40;
 
-  const isProspectV = p=>(calcAge2425(p)??99)<=23 && getCap2425(p)<=ELC_MAX_2425;
+  const isProspectV = p => { const a=calcAge2425(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2425(p)<=ELC_MAX_2425; };
   const deficitV = p=>{ const fn=curveFnsV[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPosV={};
   for(const pg of ['F','D','G']){ const fas=vp.filter(x=>!x.start2425&&posGroup(x.pos)===pg&&ppts2425blend(x)>0); bestFAByPosV[pg]=fas.length?Math.max(...fas.map(x=>ppts2425blend(x))):0; }
@@ -4959,7 +4970,7 @@ function render2425(){
       const tPPTSM=(pp>0&&getCap2425(p)>0)?pp/getCap2425(p)*draftWeights.wtPPTSM:0;
       const tYouth=youthRaw*draftWeights.wtAge;
       const ageRaw2425=calcAge2425(p)??99;
-      const tProspect2425=(ageRaw2425<=23&&getCap2425(p)<=ELC_MAX_2425)?Math.max(0,24-ageRaw2425)*draftWeights.wtProspect:0;
+      const tProspect2425=prospectBonus(ageRaw2425,pg,getCap2425(p),ELC_MAX_2425,draftWeights.wtProspect);
       const srcN=(p.proj2425_athletic>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_nhl>0?1:0);
       const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
       const _ds2425=tPPTS+tSc+tPPTSM+tYouth+tProspect2425+tConf;
@@ -5251,7 +5262,7 @@ function simulateMidseasonDraft(){
   const val      = p => p.pts || 0;
   const getCap   = p => p.cap || 0;
   const deficit  = p => { const fn=cf[posGroup(p.pos)]; return (val(p)>0&&getCap(p)>0&&fn) ? fn(getCap(p))-val(p) : Infinity; };
-  const isProsp  = p => (calcAge(p)??99) <= 22 && getCap(p) <= ELC_MAX_2627;
+  const isProsp  = p => { const a=calcAge(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap(p)<=ELC_MAX_2627; };
   const bestFAByPos = {};
   for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
   const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
@@ -5313,7 +5324,7 @@ function simulateMidseasonDraft2526(){
   const val     = p => ppts2526blend(p);
   const getCap  = p => getCap2526(p);
   const deficit = p => { const fn=cf[posGroup(p.pos)]; const pp=val(p),c=getCap(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const isProsp = p => (calcAge2526(p)??99) <= 23 && getCap(p) <= ELC_MAX_2526;
+  const isProsp = p => { const a=calcAge2526(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap(p)<=ELC_MAX_2526; };
   const bestFAByPos = {};
   for(const pg of ['F','D','G']){ const fas=snap.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&val(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(val)):0; }
   const isHighVal = p => { const fn=cf[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?val(p)-fn(getCap(p))>=0:val(p)>=DROP_VALUE_FLOOR)||val(p)>(bestFAByPos[pg]||0); };
@@ -5455,7 +5466,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
       if(mode === 'value'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
-        const prospect = (age <= 23 && cap <= elcMax) ? Math.max(0, 24-age) * draftWeights.wtProspect : 0;
+        const prospect = prospectBonus(age, pg, cap, elcMax, draftWeights.wtProspect);
         score = pp * (pm[pg]||1) + prospect;
       } else {
         score = pp;
@@ -5675,7 +5686,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
       if(mode === 'value'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
-        const prospect = (age <= 23 && cap <= elcMax) ? Math.max(0, 24 - age) * draftWeights.wtProspect : 0;
+        const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect);
         score = pp * (pm[pg]||1) + prospect;
       } else {
         score = pp;
@@ -6003,7 +6014,7 @@ function rankPlayers2526(){
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
     const ageS = calcAge2526(p) ?? 99;
     const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
-    const prospectS = (ageS <= 23 && getCap2526(p) <= ELC_MAX_2526) ? Math.max(0, 24 - ageS) * draftWeights.wtProspect : 0;
+    const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, draftWeights.wtProspect);
     const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
     const confS = Math.max(0, srcNS - 1) * draftWeights.wtSourceConf;
     p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + youth*draftWeights.wtAge + prospectS + confS;
@@ -6212,7 +6223,7 @@ function render2526(){
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge2526(p)??99;
-        const tProspect=(ageRaw<=23&&getCap2526(p)<=ELC_MAX_2627)?Math.max(0,24-ageRaw)*draftWeights.wtProspect:0;
+        const tProspect=prospectBonus(ageRaw,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect);
         const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const _ds2526=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf;
@@ -6234,7 +6245,7 @@ function render2526(){
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw2526=calcAge2526(p)??99;
-        const tProspect2526=(ageRaw2526<=23&&getCap2526(p)<=ELC_MAX_2627)?Math.max(0,24-ageRaw2526)*draftWeights.wtProspect:0;
+        const tProspect2526=prospectBonus(ageRaw2526,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect);
         const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
         const _ds2526=tPPTS+tSc+tPPTSM+tYouth+tProspect2526+tConf2526;
