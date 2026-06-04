@@ -3277,11 +3277,12 @@ function renderBigBoard(){
   // 26-27 board wrapper always visible — contains on-clock header, compact/full, standings
   document.getElementById('draftBoard2627').style.display = '';
 
-  // For prior years: hide the 26-27-specific picks column and search box
+  // For prior years: use draftColumn (left of standings) for picks; hide full grid and search
   const colWrap   = document.getElementById('draftColumn')?.parentElement;
   const boardFull = document.getElementById('draftBoardFull');
   const draftEntry = document.querySelector('#draftBoard2627 .draft-entry');
-  if(colWrap)    colWrap.style.display    = priorDraft ? 'none' : '';
+  // Always show colWrap so picks sit left of standings in the flex row
+  if(colWrap)    colWrap.style.display    = '';
   if(boardFull && priorDraft) boardFull.style.display = 'none';
   if(draftEntry) draftEntry.style.display = priorDraft ? 'none' : '';
 
@@ -3301,7 +3302,8 @@ function renderBigBoard(){
     updateStats2425();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
     stripTop5();
-    _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425);
+    _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425, 'draftColumn');
+    document.getElementById('bbPicksLog').innerHTML = '';
   } else if(draftMode2526){
     const seq = buildDraftSeq2526();
     const total = draftState2526.picks.length;
@@ -3313,7 +3315,8 @@ function renderBigBoard(){
     updateStats2526();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
     stripTop5();
-    _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526);
+    _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526, 'draftColumn');
+    document.getElementById('bbPicksLog').innerHTML = '';
   } else {
     // 26-27 or no-draft: renderDraftView populates on-clock, draftColumn, draftStandings
     updateStats();
@@ -3337,8 +3340,8 @@ function _renderBBStandings(startField, teams, pptsF){
     sorted.map((t,i) => _standingsRowHtml(t, i+1, ptsByTeam[t], false)).join('');
 }
 
-function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit){
-  const el = document.getElementById('bbPicksLog');
+function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targetId = 'bbPicksLog'){
+  const el = document.getElementById(targetId);
   if(!el) return;
   const total = picks.length;
   const startN = Math.max(0, total - 4);
