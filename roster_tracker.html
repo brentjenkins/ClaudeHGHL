@@ -5068,7 +5068,10 @@ function _curveDeltaLabel(delta){
 }
 
 function updateStats2425(){
-  const allTeams = [...new Set(players.map(p=>p.start2425).filter(Boolean))].sort((a,b)=>{
+  const _oc2425 = draftMode2425 ? (buildDraftSeq2425()[draftState2425.picks.length] ?? null) : null;
+  const _set2425 = new Set(players.map(p=>p.start2425).filter(Boolean));
+  if(_oc2425) _set2425.add(_oc2425);
+  const allTeams = [..._set2425].sort((a,b)=>{
     const ai=DRAFT_TEAMS_2425.indexOf(a), bi=DRAFT_TEAMS_2425.indexOf(b);
     if(ai===-1&&bi===-1) return a.localeCompare(b);
     if(ai===-1) return 1; if(bi===-1) return -1;
@@ -6018,14 +6021,16 @@ function rankPlayers2526(){
 }
 
 function updateStats2526(){
-  const allTeams = [...new Set(players.map(p=>p.start2526).filter(Boolean))].sort((a,b)=>{
+  const onClock = buildDraftSeq2526()[draftState2526.picks.length] ?? null;
+  const _set2526 = new Set(players.map(p=>p.start2526).filter(Boolean));
+  if(onClock) _set2526.add(onClock);
+  const allTeams = [..._set2526].sort((a,b)=>{
     const ai=DRAFT_TEAMS_2526.indexOf(a), bi=DRAFT_TEAMS_2526.indexOf(b);
     if(ai===-1&&bi===-1) return a.localeCompare(b);
     if(ai===-1) return 1; if(bi===-1) return -1;
     return ai-bi;
   });
   if(!allTeams.length){ document.getElementById('statCards2526').innerHTML=''; return; }
-  const onClock = buildDraftSeq2526()[draftState2526.picks.length] ?? null;
 
   const pBadge2526=(r,need,avail,maxP)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';const raw=(need/Math.max(1,avail)).toFixed(3);const tip=`need ${need} / avail ${avail} · raw ratio ${raw} · max ${(maxP||0).toFixed(3)} → norm ${r.toFixed(2)}`;return`<span title="${tip}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
   let leagueCard;
@@ -6652,16 +6657,17 @@ function filterToTeam(team, pos){
 }
 
 function updateStats(){
-  const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))]
-    .sort((a,b)=>{
-      const ai = DRAFT_TEAMS.indexOf(a), bi = DRAFT_TEAMS.indexOf(b);
-      if(ai===-1 && bi===-1) return a.localeCompare(b);
-      if(ai===-1) return 1;
-      if(bi===-1) return -1;
-      return ai - bi;
-    });
-  if(!teams.length){ document.getElementById('statCards').innerHTML=''; return; }
   const onClock = buildDraftSeq()[draftState.picks.length] ?? null;
+  const teamsSet = new Set(players.map(p=>p.start2627).filter(Boolean));
+  if(onClock) teamsSet.add(onClock); // always show on-clock team even if roster is empty
+  const teams = [...teamsSet].sort((a,b)=>{
+    const ai = DRAFT_TEAMS.indexOf(a), bi = DRAFT_TEAMS.indexOf(b);
+    if(ai===-1 && bi===-1) return a.localeCompare(b);
+    if(ai===-1) return 1;
+    if(bi===-1) return -1;
+    return ai - bi;
+  });
+  if(!teams.length){ document.getElementById('statCards').innerHTML=''; return; }
 
   const pBadge=(r,need,avail,maxP)=>{const bg=r<0.3?'#dcfce7':r<0.6?'#f3f4f6':r<0.85?'#fef3c7':'#fee2e2';const col=r<0.3?'#15803d':r<0.6?'#6b7280':r<0.85?'#92400e':'#991b1b';const raw=(need/Math.max(1,avail)).toFixed(3);const tip=`need ${need} / avail ${avail} · raw ratio ${raw} · max ${(maxP||0).toFixed(3)} → norm ${r.toFixed(2)}`;return`<span title="${tip}" style="background:${bg};color:${col};border-radius:3px;padding:0 3px;font-size:9px;font-weight:700;cursor:default">${r.toFixed(2)}</span>`;};
   let leagueCard;
