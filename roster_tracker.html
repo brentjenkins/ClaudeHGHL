@@ -3272,31 +3272,66 @@ function renderBigBoard(){
   const anyDraft = draftMode || draftMode2425 || draftMode2526;
   const priorDraft = draftMode2425 || draftMode2526;
 
-  // Team bubbles section: visible whenever any draft is active
+  // Team bubbles: visible whenever a draft is active
   document.getElementById('draftBoardPrior').style.display = anyDraft ? '' : 'none';
-  // 26-27 picks board: visible for 26-27 draft OR when no draft (fallback view)
-  document.getElementById('draftBoard2627').style.display  = !priorDraft ? '' : 'none';
+  // 26-27 board wrapper always visible — contains on-clock header, compact/full, standings
+  document.getElementById('draftBoard2627').style.display = '';
+
+  // For prior years: hide the 26-27-specific picks column and search box
+  const colWrap   = document.getElementById('draftColumn')?.parentElement;
+  const boardFull = document.getElementById('draftBoardFull');
+  const draftEntry = document.querySelector('#draftBoard2627 .draft-entry');
+  if(colWrap)    colWrap.style.display    = priorDraft ? 'none' : '';
+  if(boardFull && priorDraft) boardFull.style.display = 'none';
+  if(draftEntry) draftEntry.style.display = priorDraft ? 'none' : '';
 
   const stripTop5 = () => document.querySelectorAll('#bbTeamCards .draft-top5').forEach(el => el.remove());
 
   if(draftMode2425){
+    const seq = buildDraftSeq2425();
+    const total = draftState2425.picks.length;
+    const onClock = seq[total] ?? null;
+    document.getElementById('draftOnClock').textContent = onClock
+      ? `Round ${Math.floor(total/9)+1} — On the clock: ${onClock} — Pick ${total+1}`
+      : 'Draft complete';
+    _renderBBStandings('start2425', DRAFT_TEAMS_2425, p => ppts2425blend(p));
     updateStats2425();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
     stripTop5();
-    _renderBBDraftBoard(draftState2425.picks, buildDraftSeq2425(), 'start2425', getCap2425, CAP_LIMIT_2425);
+    _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425);
   } else if(draftMode2526){
+    const seq = buildDraftSeq2526();
+    const total = draftState2526.picks.length;
+    const onClock = seq[total] ?? null;
+    document.getElementById('draftOnClock').textContent = onClock
+      ? `Round ${Math.floor(total/9)+1} — On the clock: ${onClock} — Pick ${total+1}`
+      : 'Draft complete';
+    _renderBBStandings('start2526', DRAFT_TEAMS_2526, p => ppts2526blend(p));
     updateStats2526();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
     stripTop5();
-    _renderBBDraftBoard(draftState2526.picks, buildDraftSeq2526(), 'start2526', getCap2526, CAP_LIMIT_2526);
+    _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526);
   } else {
-    // 26-27 or no-draft: populate team bubbles from statCards, show picks board
+    // 26-27 or no-draft: renderDraftView populates on-clock, draftColumn, draftStandings
     updateStats();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards').innerHTML;
     stripTop5();
     document.getElementById('bbPicksLog').innerHTML = '';
     renderDraftView();
   }
+}
+
+function _renderBBStandings(startField, teams, pptsF){
+  const el = document.getElementById('draftStandings');
+  if(!el) return;
+  const ptsByTeam = {};
+  for(const t of teams) ptsByTeam[t] = 0;
+  for(const p of players) if(p[startField] && ptsByTeam.hasOwnProperty(p[startField]))
+    ptsByTeam[p[startField]] += pptsF(p);
+  const sorted = [...teams].sort((a,b) => ptsByTeam[b]-ptsByTeam[a]);
+  el.innerHTML =
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 10px 4px;border-bottom:1px solid #f0f0ee">Projected League Standings</div>` +
+    sorted.map((t,i) => _standingsRowHtml(t, i+1, ptsByTeam[t], false)).join('');
 }
 
 function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit){
