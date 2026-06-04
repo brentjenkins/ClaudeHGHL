@@ -842,7 +842,9 @@ tr:hover td{background:#fafaf8}
         <input type="number" id="s-curveMinPts" value="15" min="0" max="50" step="1" onchange="updateSetting('curveMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div></div>
-      <div></div>
+      <div style="grid-column:1/-1;margin-top:6px">
+        <canvas id="curveChart" height="220" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;background:#fafafa;display:block"></canvas>
+      </div>
     </div>
   </div>
 
@@ -3632,7 +3634,7 @@ function updateSetting(key, val){
   else if(key === 'abpMinGP')     abpMinGP = val;
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
-  else if(key === 'curveMinPts')           { curveMinPts = val; }
+  else if(key === 'curveMinPts')           { curveMinPts = val; renderCurveChart(); }
   else if(key === 'draftDatePreseason2324')    { draftDatePreseason2324    = val; }
   else if(key === 'draftDateSupplemental2324') { draftDateSupplemental2324 = val; }
   else if(key === 'draftDatePreseason2425')    { draftDatePreseason2425    = val; updateYahooDropBtnTooltips(); }
@@ -3793,6 +3795,112 @@ function _renderXactionsView(xactions, preseasonDate, suppDate, bodyId, statusId
 }
 
 function renderXactions2425(){ _renderXactionsView(xactions2425, draftDatePreseason2425, draftDateSupplemental2425, 'xactionsBody2425', 'xactionsStatus2425'); }
+
+function renderCurveChart(){
+  const canvas = document.getElementById('curveChart');
+  if(!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth || 520;
+  const H = 220;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const PAD = {top:20, right:16, bottom:34, left:40};
+  const iW = W - PAD.left - PAD.right;
+  const iH = H - PAD.top  - PAD.bottom;
+
+  const pool = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
+
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0, 0, W, H);
+
+  if(!pool.length){
+    ctx.fillStyle = '#9ca3af'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Load 26-27 players to see the efficiency curve', W/2, H/2);
+    return;
+  }
+
+  const curveFns = {
+    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap,y:p.pts}))),
+    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
+    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap,y:p.pts}))),
+  };
+
+  const allCaps = pool.map(p=>p.cap), allPts = pool.map(p=>p.pts);
+  const maxCap = Math.max(...allCaps) * 1.08;
+  const maxPts = Math.max(...allPts) * 1.1;
+
+  const tx = c => PAD.left + (c / maxCap) * iW;
+  const ty = p => PAD.top  + (1 - p / maxPts) * iH;
+
+  // grid
+  ctx.strokeStyle = '#f0f0ee'; ctx.lineWidth = 1;
+  for(let i=1; i<=4; i++){
+    const y = PAD.top + (i/5)*iH;
+    ctx.beginPath(); ctx.moveTo(PAD.left,y); ctx.lineTo(W-PAD.right,y); ctx.stroke();
+  }
+
+  // threshold line
+  const thY = ty(curveMinPts);
+  if(thY > PAD.top && thY < H - PAD.bottom){
+    ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(PAD.left,thY); ctx.lineTo(W-PAD.right,thY); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='#d97706'; ctx.font='9px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`min ${curveMinPts}`, PAD.left+3, thY-3);
+  }
+
+  // dots
+  const dotFill = {F:'#bfdbfe',D:'#bbf7d0',G:'#fef08a'};
+  const dotStroke = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
+  for(const p of pool){
+    const pg=posGroup(p.pos);
+    ctx.beginPath(); ctx.arc(tx(p.cap), ty(p.pts), 3, 0, Math.PI*2);
+    ctx.fillStyle=dotFill[pg]||'#e5e7eb'; ctx.fill();
+    ctx.strokeStyle=dotStroke[pg]||'#9ca3af'; ctx.lineWidth=0.8; ctx.stroke();
+  }
+
+  // curve lines
+  const lineCol = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
+  const STEPS = 120;
+  for(const [pg, fn] of Object.entries(curveFns)){
+    if(!fn) continue;
+    ctx.beginPath(); ctx.strokeStyle=lineCol[pg]; ctx.lineWidth=2.5;
+    let first=true;
+    for(let i=0; i<=STEPS; i++){
+      const c = (i/STEPS)*maxCap;
+      const p = fn(c);
+      if(p < 0 || p > maxPts*1.3) continue;
+      const x=tx(c), y=ty(Math.min(p,maxPts));
+      if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left,PAD.top); ctx.lineTo(PAD.left,H-PAD.bottom);
+  ctx.lineTo(W-PAD.right,H-PAD.bottom); ctx.stroke();
+
+  ctx.fillStyle='#9ca3af'; ctx.font='10px sans-serif';
+  ctx.textAlign='right'; ctx.fillText(Math.round(maxPts), PAD.left-4, PAD.top+4);
+  ctx.textAlign='center'; ctx.fillText('Cap $M →', PAD.left+iW/2, H-4);
+  ctx.textAlign='left'; ctx.fillText('$'+maxCap.toFixed(1)+'M', W-PAD.right, H-PAD.bottom+12);
+
+  // legend
+  const items=[['F',lineCol.F],['D',lineCol.D],['G',lineCol.G]];
+  let lx=PAD.left;
+  for(const [pg,col] of items){
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(lx,PAD.top+8); ctx.lineTo(lx+14,PAD.top+8); ctx.stroke();
+    ctx.fillStyle=col; ctx.font='10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(pg, lx+17, PAD.top+12);
+    lx+=36;
+  }
+}
 
 // ── PP Signings ───────────────────────────────────────────────────────────────
 
@@ -6251,7 +6359,7 @@ function setView(v){
   if(v!=='summary') stopSummaryRotation();
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
-  if(v==='settings'){ syncSettings(); }
+  if(v==='settings'){ syncSettings(); setTimeout(renderCurveChart, 0); }
   const views = ['draft','summary','roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
