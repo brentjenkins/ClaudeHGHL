@@ -170,7 +170,7 @@ tr:hover td{background:#fafaf8}
   50%    {opacity:.85;transform:translateX(-50%) scale(1.04)}
 }
 /* ── Draft Summary view ──────────────────────────────────────────── */
-#view-summary{max-width:1100px}
+#view-summary{max-width:1400px}
 .summary-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.75rem 2rem;min-height:480px;display:flex;flex-direction:column;gap:1.25rem}
 .summary-hdr{display:flex;align-items:center;gap:14px}
 .summary-logo{width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
@@ -225,6 +225,7 @@ tr:hover td{background:#fafaf8}
 
 <div class="view-tabs" style="align-items:center">
   <button class="view-tab" id="tab-draft" onclick="openBigBoard()">Big Board</button>
+  <button class="view-tab" onclick="setView('summary')">Team Summaries</button>
   <button class="view-tab" id="tab-roster2425" onclick="setView('roster2425')">24-25 Players</button>
   <button class="view-tab" id="tab-roster2526" onclick="setView('roster2526')">25-26 Players</button>
   <button class="view-tab active" id="tab-roster" onclick="setView('roster')">26-27 Players</button>
@@ -232,7 +233,6 @@ tr:hover td{background:#fafaf8}
   <button class="view-tab" onclick="setView('xactions2526')">25-26 Xactions</button>
   <button class="view-tab" onclick="setView('xactions2627')">26-27 Xactions</button>
   <button class="view-tab" onclick="setView('signings')">PP Signings</button>
-  <button class="view-tab" onclick="setView('summary')">Team Summaries</button>
   <button class="view-tab" onclick="setView('settings')">⚙ Settings</button>
   <div class="proxy-bar" id="proxyBar" style="margin-left:auto;margin-bottom:2px">
     <div class="proxy-dot pulse" id="proxyDot"></div>
@@ -6222,7 +6222,7 @@ function setView(v){
   if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
   if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings'){ syncSettings(); }
-  const views = ['draft','roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','summary','settings'];
+  const views = ['draft','summary','roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
     t.classList.toggle('active', views[i] === v);
   });
@@ -6726,148 +6726,110 @@ function buildProjRanking(){
 function renderSummaryCard(teamIdx){
   const teams = _activeSummaryTeams();
   const team  = teams[teamIdx];
-  const logo     = teamLogos[team];
-  const rank2526 = DRAFT_STANDINGS[team].rank;
+  const logo  = teamLogos[team];
 
-  const projRanking = buildProjRanking();
-  const projRank    = projRanking.indexOf(team) + 1;
+  // Year-specific config
+  let prevField, currField, pptsF, prevActPtsF, prevRankFn, getCapY, capLimitY, prevYr, currYr;
+  if(draftMode2425){
+    prevField='end2324';   currField='start2425';
+    pptsF=p=>ppts2425blend(p);  prevActPtsF=null;
+    prevRankFn=null;
+    getCapY=p=>getCap2425(p);   capLimitY=CAP_LIMIT_2425;
+    prevYr='23-24';  currYr='24-25';
+  } else if(draftMode2526){
+    prevField='start2425'; currField='start2526';
+    pptsF=p=>ppts2526blend(p);  prevActPtsF=p=>p.pts2425||0;
+    prevRankFn=t=>DRAFT_STANDINGS_2425[t]||'?';
+    getCapY=p=>getCap2526(p);   capLimitY=CAP_LIMIT_2526;
+    prevYr='24-25';  currYr='25-26';
+  } else {
+    prevField='end2526';   currField='start2627';
+    pptsF=p=>p.pts||0;          prevActPtsF=p=>p.pts2526||0;
+    prevRankFn=t=>DRAFT_STANDINGS[t]?.rank||'?';
+    getCapY=p=>p.cap||0;        capLimitY=CAP_LIMIT;
+    prevYr='25-26';  currYr='26-27';
+  }
 
-  const roster2526 = players.filter(p => p.end2526 === team);
-  const roster2627 = players.filter(p => p.start2627  === team);
+  // Projected ranking for this year
+  const ptsByTeam={};
+  for(const t of teams) ptsByTeam[t]=0;
+  for(const p of players) if(p[currField]&&ptsByTeam.hasOwnProperty(p[currField])) ptsByTeam[p[currField]]+=pptsF(p);
+  const projRank=[...teams].sort((a,b)=>ptsByTeam[b]-ptsByTeam[a]).indexOf(team)+1;
+  const prevRank=prevRankFn?prevRankFn(team):null;
 
-  const departed = players
-    .filter(p => p.end2526 === team && p.start2627 !== team)
-    .sort((a,b) => (b.pts||0)-(a.pts||0));
-  const arrived = players
-    .filter(p => p.start2627 === team && p.end2526 !== team)
-    .sort((a,b) => (b.pts||0)-(a.pts||0));
-  const returning = players
-    .filter(p => p.end2526 === team && p.start2627 === team)
-    .sort((a,b) => (b.pts||0)-(a.pts||0));
+  // Rosters
+  const rosterPrev=players.filter(p=>p[prevField]===team);
+  const rosterCurr=players.filter(p=>p[currField]===team);
+  const departed =players.filter(p=>p[prevField]===team&&p[currField]!==team).sort((a,b)=>pptsF(b)-pptsF(a));
+  const arrived  =players.filter(p=>p[currField]===team&&p[prevField]!==team).sort((a,b)=>pptsF(b)-pptsF(a));
+  const returning=players.filter(p=>p[prevField]===team&&p[currField]===team).sort((a,b)=>pptsF(b)-pptsF(a));
 
-  // Totals
-  const deptPts    = departed.reduce((s,p)   => s+(p.pts||0), 0);
-  const arrPts     = arrived.reduce((s,p)    => s+(p.pts||0), 0);
-  const retPts     = returning.reduce((s,p)  => s+(p.pts||0), 0);
-  const projPtsTotal = roster2627.reduce((s,p) => s+(p.pts||0), 0);
-  const capUsed      = roster2627.reduce((s,p) => s+(p.cap||0), 0);
-  const capRem       = CAP_LIMIT - capUsed;
-  const capRemColor  = capRem < 5 ? '#dc2626' : capRem < 15 ? '#d97706' : '#16a34a';
-  const prevPtsTotal = roster2526.reduce((s,p) => s+(p.pts2526||0), 0);
-  const deltaPts = projPtsTotal - prevPtsTotal;
+  const projPtsTotal=Math.round(rosterCurr.reduce((s,p)=>s+pptsF(p),0));
+  const prevPtsTotal=prevActPtsF?Math.round(rosterPrev.reduce((s,p)=>s+prevActPtsF(p),0)):null;
+  const deptPts=Math.round(departed.reduce((s,p)=>s+pptsF(p),0));
+  const arrPts =Math.round(arrived.reduce((s,p)=>s+pptsF(p),0));
+  const retPts =Math.round(returning.reduce((s,p)=>s+pptsF(p),0));
+  const capUsed=rosterCurr.reduce((s,p)=>s+getCapY(p),0);
+  const capRem=capLimitY-capUsed;
+  const capRemColor=capRem<5?'#dc2626':capRem<15?'#d97706':'#16a34a';
+  const deltaPts=prevPtsTotal!=null?projPtsTotal-prevPtsTotal:null;
+  const deltaRank=(prevRank!=null&&typeof prevRank==='number')?prevRank-projRank:null;
 
-  // Average age helpers
-  const avgAge = roster => {
-    const ages = roster.map(p => calcAge(p)).filter(a => a != null);
-    return ages.length ? ages.reduce((s,a) => s+a, 0) / ages.length : null;
+  const avgAge=roster=>{const a=roster.map(p=>calcAge(p)).filter(a=>a!=null);return a.length?a.reduce((s,v)=>s+v,0)/a.length:null;};
+  const agePrev=avgAge(rosterPrev), ageCurr=avgAge(rosterCurr);
+  const deltaAge=(agePrev!=null&&ageCurr!=null)?ageCurr-agePrev:null;
+
+  const fmtDelta=(val,dec,low)=>{
+    if(val==null)return{str:'—',color:'#9ca3af'};
+    const better=low?val<0:val>0, worse=low?val>0:val<0;
+    return{str:(val>0?'+':'')+val.toFixed(dec),color:better?'#16a34a':worse?'#dc2626':'#9ca3af'};
   };
-  const age2526 = avgAge(roster2526);
-  const age2627 = avgAge(roster2627);
-  const deltaAge = (age2526 != null && age2627 != null) ? age2627 - age2526 : null;
+  const dPts=fmtDelta(deltaPts,0,false),dAge=fmtDelta(deltaAge,1,true),dRank=fmtDelta(deltaRank,0,false);
 
-  // Rank change
-  const deltaRank = rank2526 - projRank; // positive = improved
-
-  const fmtDelta = (val, decimals, lowerBetter) => {
-    if(val == null) return {str:'—', color:'#9ca3af'};
-    const better = lowerBetter ? val < 0 : val > 0;
-    const worse  = lowerBetter ? val > 0 : val < 0;
-    const str = (val > 0 ? '+' : '') + val.toFixed(decimals);
-    const color = better ? '#16a34a' : worse ? '#dc2626' : '#9ca3af';
-    return {str, color};
-  };
-
-  const dPts  = fmtDelta(deltaPts,  0, false);
-  const dAge  = fmtDelta(deltaAge,  1, true);
-  const dRank = fmtDelta(deltaRank, 0, false);
-
-  const playerRow = (p, cls) => `
-    <div class="summary-player ${cls}">
-      <span class="summary-player-name">${esc(p.name)}</span>
-      <span class="summary-player-pos">${posGroup(p.pos)}</span>
-      <span class="summary-player-team">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:14px;height:14px;object-fit:contain" loading="lazy">`:''}${esc(p.team||'—')}</span>
-      <span class="summary-player-pts">${p.pts||'—'}</span>
-    </div>`;
-
-  const colHdrs = `<div class="summary-col-colhdrs">
-    <span>Player</span><span>Pos</span><span>NHL Team</span><span>PPTS</span>
+  const playerRow=(p,cls)=>`<div class="summary-player ${cls}">
+    <span class="summary-player-name">${esc(p.name)}</span>
+    <span class="summary-player-pos">${posGroup(p.pos)}</span>
+    <span class="summary-player-team">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:14px;height:14px;object-fit:contain" loading="lazy">`:''}${esc(p.team||'—')}</span>
+    <span class="summary-player-pts">${Math.round(pptsF(p))||'—'}</span>
   </div>`;
-  const colTotal = (pts, cls) => {
-    const color = cls==='departed'?'#dc2626':cls==='arrived'?'#16a34a':'#185FA5';
-    return pts > 0 ? `<div class="summary-col-total" style="color:${color}">${pts}</div>` : '';
-  };
+  const colHdrs=`<div class="summary-col-colhdrs"><span>Player</span><span>Pos</span><span>NHL Team</span><span>PPTS</span></div>`;
+  const colTotal=(pts,cls)=>{const color=cls==='departed'?'#dc2626':cls==='arrived'?'#16a34a':'#185FA5';return pts>0?`<div class="summary-col-total" style="color:${color}">${pts}</div>`:''};
 
-  document.getElementById('summaryNavLabel').textContent =
-    `${teamIdx+1} of ${_activeSummaryTeams().length}  —  ${team}`;
+  const pairBubble=(label,prevVal,currVal,prevColor,currColor,delta,dColor)=>`<div class="ssb">
+    <div class="ssb-label">${label}</div>
+    <div class="ssb-row">
+      ${prevVal!=null?`<div class="ssb-col"><span class="ssb-val" style="color:${prevColor||'#555'}">${prevVal}</span><span class="ssb-year">${prevYr}</span></div><span class="ssb-arrow">→</span>`:''}
+      <div class="ssb-col"><span class="ssb-val" style="color:${currColor}">${currVal}</span><span class="ssb-year">${currYr} <span style="color:#185FA5">*</span></span></div>
+      ${delta?`<span class="ssb-delta" style="color:${dColor}">${delta}</span>`:''}
+    </div>
+  </div>`;
 
-  document.getElementById('summaryCard').innerHTML = `
+  document.getElementById('summaryNavLabel').textContent=`${teamIdx+1} of ${teams.length}  —  ${team}`;
+  document.getElementById('summaryCard').innerHTML=`
     <div class="summary-hdr">
-      ${logo
-        ? `<img src="${esc(logo)}" class="summary-logo" loading="lazy">`
-        : '<div class="summary-logo"></div>'}
-      <div style="flex:1;min-width:0">
-        <div class="summary-team-name">${esc(team)}</div>
-      </div>
+      ${logo?`<img src="${esc(logo)}" class="summary-logo" loading="lazy">`:'<div class="summary-logo"></div>'}
+      <div style="flex:1;min-width:0"><div class="summary-team-name">${esc(team)}</div></div>
     </div>
     <div class="summary-stats-bar">
-      <div class="ssb">
-        <div class="ssb-label">Points</div>
-        <div class="ssb-row">
-          <div class="ssb-col"><span class="ssb-val" style="color:#555">${prevPtsTotal||'—'}</span><span class="ssb-year">25-26</span></div>
-          <span class="ssb-arrow">→</span>
-          <div class="ssb-col"><span class="ssb-val" style="color:${dPts.color}">${projPtsTotal||'—'}</span><span class="ssb-year">26-27 <span style="color:#185FA5">*</span></span></div>
-          ${deltaPts!==0?`<span class="ssb-delta" style="color:${dPts.color}">${dPts.str}</span>`:''}
-        </div>
-      </div>
-      <div class="ssb">
-        <div class="ssb-label">Rank</div>
-        <div class="ssb-row">
-          <div class="ssb-col"><span class="ssb-val" style="color:#555">#${rank2526}</span><span class="ssb-year">25-26</span></div>
-          <span class="ssb-arrow">→</span>
-          <div class="ssb-col"><span class="ssb-val" style="color:${dRank.color}">#${projRank}</span><span class="ssb-year">26-27 <span style="color:#185FA5">*</span></span></div>
-          ${deltaRank!==0?`<span class="ssb-delta" style="color:${dRank.color}">${dRank.str}</span>`:''}
-        </div>
-      </div>
-      <div class="ssb">
-        <div class="ssb-label">Avg Age</div>
-        <div class="ssb-row">
-          <div class="ssb-col"><span class="ssb-val" style="color:#555">${age2526!=null?age2526.toFixed(1):'—'}</span><span class="ssb-year">25-26</span></div>
-          <span class="ssb-arrow">→</span>
-          <div class="ssb-col"><span class="ssb-val" style="color:${dAge.color}">${age2627!=null?age2627.toFixed(1):'—'}</span><span class="ssb-year">26-27 <span style="color:#185FA5">*</span></span></div>
-          ${deltaAge!=null&&deltaAge!==0?`<span class="ssb-delta" style="color:${dAge.color}">${dAge.str}</span>`:''}
-        </div>
-      </div>
-      <div class="ssb" style="min-width:auto">
-        <div class="ssb-label">PPTS / $M</div>
-        <span class="ssb-val" style="font-size:22px">${capUsed>0?(projPtsTotal/capUsed).toFixed(1):'—'}</span>
-      </div>
-      <div class="ssb" style="min-width:auto">
-        <div class="ssb-label">Cap remaining</div>
-        <span class="ssb-val" style="font-size:22px;color:${capRemColor}">$${capRem.toFixed(1)}M</span>
-      </div>
+      ${pairBubble('Points',prevPtsTotal,projPtsTotal,'#555',dPts.color,deltaPts!=null&&deltaPts!==0?dPts.str:null,dPts.color)}
+      ${prevRank!=null?pairBubble('Rank','#'+prevRank,'#'+projRank,'#555',dRank.color,deltaRank!=null&&deltaRank!==0?dRank.str:null,dRank.color):''}
+      ${agePrev!=null?pairBubble('Avg Age',agePrev.toFixed(1),ageCurr!=null?ageCurr.toFixed(1):'—','#555',dAge.color,deltaAge!=null&&deltaAge!==0?dAge.str:null,dAge.color):''}
+      <div class="ssb" style="min-width:auto"><div class="ssb-label">PPTS / $M</div><span class="ssb-val" style="font-size:22px">${capUsed>0?(projPtsTotal/capUsed).toFixed(1):'—'}</span></div>
+      <div class="ssb" style="min-width:auto"><div class="ssb-label">Cap remaining</div><span class="ssb-val" style="font-size:22px;color:${capRemColor}">$${capRem.toFixed(1)}M</span></div>
       ${dPts.color==='#16a34a'&&dRank.color==='#16a34a'&&dAge.color==='#16a34a'?'<div style="font-size:28px;align-self:center">🍆💦</div>':''}
     </div>
     <div class="summary-cols">
       <div class="summary-col">
-        <h3 class="returning-hdr">Returning (${returning.length})</h3>
-        ${colHdrs}
-        ${returning.length
-          ? returning.map(p => playerRow(p,'returning')).join('') + colTotal(retPts,'returning')
-          : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
+        <h3 class="returning-hdr">Returning (${returning.length})</h3>${colHdrs}
+        ${returning.length?returning.map(p=>playerRow(p,'returning')).join('')+colTotal(retPts,'returning'):'<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
       <div class="summary-col">
-        <h3 class="departed-hdr">Outgoing (${departed.length})</h3>
-        ${colHdrs}
-        ${departed.length
-          ? departed.map(p => playerRow(p,'departed')).join('') + colTotal(deptPts,'departed')
-          : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
+        <h3 class="departed-hdr">Outgoing (${departed.length})</h3>${colHdrs}
+        ${departed.length?departed.map(p=>playerRow(p,'departed')).join('')+colTotal(deptPts,'departed'):'<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
       <div class="summary-col">
-        <h3 class="arrived-hdr">Incoming (${arrived.length})</h3>
-        ${colHdrs}
-        ${arrived.length
-          ? arrived.map(p => playerRow(p,'arrived')).join('') + colTotal(arrPts,'arrived')
-          : '<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
+        <h3 class="arrived-hdr">Incoming (${arrived.length})</h3>${colHdrs}
+        ${arrived.length?arrived.map(p=>playerRow(p,'arrived')).join('')+colTotal(arrPts,'arrived'):'<div style="font-size:12px;color:#9ca3af;padding:4px 0">None</div>'}
       </div>
     </div>`;
 }
