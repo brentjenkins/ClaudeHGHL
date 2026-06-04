@@ -4058,7 +4058,15 @@ function setDraftFocus2425(t){
   render2425();
 }
 function toggleDraftMode2425(){
-  if(!draftMode2425){ _deactivateDraftMode(); _deactivateDraftMode2526(); }
+  if(!draftMode2425){
+    _deactivateDraftMode(); _deactivateDraftMode2526();
+    // Guard: if all roster spots already filled (e.g. after Simulate Draft),
+    // the sequence is empty and nothing will work.
+    if(!buildDraftSeq2425().length){
+      toast('No open roster spots — load ↓ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      return;
+    }
+  }
   draftMode2425 = !draftMode2425;
   draftFocusTeam2425 = null;
   updateBigBoardTab();
@@ -4079,7 +4087,13 @@ function setDraftSubMode2425(mode){
 }
 
 function toggleDraftMode2526(){
-  if(!draftMode2526){ _deactivateDraftMode(); _deactivateDraftMode2425(); }
+  if(!draftMode2526){
+    _deactivateDraftMode(); _deactivateDraftMode2425();
+    if(!buildDraftSeq2526().length){
+      toast('No open roster spots — load ↓ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      return;
+    }
+  }
   draftMode2526 = !draftMode2526;
   draftFocusTeam2526 = null;
   updateBigBoardTab();
@@ -4106,7 +4120,7 @@ function setDraftSubMode2526(mode){
 function quickDraft2526(id){
   draftFocusTeam2526 = null;
   const onClock = buildDraftSeq2526()[draftState2526.picks.length];
-  if(!onClock) return;
+  if(!onClock){ toast('Draft complete or no open spots — load Actual Drops first.'); return; }
   const p = players.find(x=>x.id===id); if(!p) return;
   p.start2526 = onClock;
   draftState2526.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:getCap2526(p), projPts:ppts2526blend(p)});
@@ -4145,7 +4159,7 @@ function passCurrentPick2526(){
 function quickDraft2425(id){
   draftFocusTeam2425 = null;
   const onClock = buildDraftSeq2425()[draftState2425.picks.length];
-  if(!onClock) return;
+  if(!onClock){ toast('Draft complete or no open spots — load Actual Drops first.'); return; }
   const p = players.find(x=>x.id===id); if(!p) return;
   p.start2425 = onClock;
   draftState2425.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:getCap2425(p), projPts:ppts2425blend(p)});
