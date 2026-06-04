@@ -5459,17 +5459,27 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
 
     if(!fas.length) continue;
 
+    // Dynamic position pressure (same as _runDraftSim)
+    const leagueNeedM = {F:0, D:0, G:0};
+    for(const t of allTeams){ leagueNeedM.F+=(need[t]?.F||0); leagueNeedM.D+=(need[t]?.D||0); leagueNeedM.G+=(need[t]?.G||0); }
+    const availM = {F:0, D:0, G:0};
+    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0){ const g=posGroup(p.pos); if(g in availM) availM[g]++; } }
+    const rawPM = { F:leagueNeedM.F/Math.max(1,availM.F), D:leagueNeedM.D/Math.max(1,availM.D), G:leagueNeedM.G/Math.max(1,availM.G) };
+    const maxPM = Math.max(rawPM.F, rawPM.D, rawPM.G, 0.0001);
+    const simPressureM = { F:rawPM.F/maxPM, D:rawPM.D/maxPM, G:rawPM.G/maxPM };
+
     const scored = fas.map(p => {
       const pg = posGroup(p.pos);
       const pp = ppts(p);
+      const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressureM[pg]||0) - 1));
       let score;
       if(mode === 'value'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
         const prospect = prospectBonus(age, pg, cap, elcMax, draftWeights.wtProspect);
-        score = pp * (pm[pg]||1) + prospect;
+        score = pp * (pm[pg]||1) * pressMult + prospect;
       } else {
-        score = pp;
+        score = pp * pressMult;
       }
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
@@ -5678,18 +5688,29 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
 
     if(!fas.length) { teamPickNum[team]++; continue; }
 
+    // Dynamic position pressure: league-wide need vs available supply per position.
+    // Recomputed each pick so pressure rises as scarce positions get taken.
+    const leagueNeed = {F:0, D:0, G:0};
+    for(const t of allTeams){ leagueNeed.F+=(need[t]?.F||0); leagueNeed.D+=(need[t]?.D||0); leagueNeed.G+=(need[t]?.G||0); }
+    const avail = {F:0, D:0, G:0};
+    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0){ const g=posGroup(p.pos); if(g in avail) avail[g]++; } }
+    const rawP = { F:leagueNeed.F/Math.max(1,avail.F), D:leagueNeed.D/Math.max(1,avail.D), G:leagueNeed.G/Math.max(1,avail.G) };
+    const maxP = Math.max(rawP.F, rawP.D, rawP.G, 0.0001);
+    const simPressure = { F:rawP.F/maxP, D:rawP.D/maxP, G:rawP.G/maxP };
+
     // Score and pick best
     const scored = fas.map(p => {
       const pg = posGroup(p.pos);
       const pp = ppts(p);
+      const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressure[pg]||0) - 1));
       let score;
       if(mode === 'value'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
         const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect);
-        score = pp * (pm[pg]||1) + prospect;
+        score = pp * (pm[pg]||1) * pressMult + prospect;
       } else {
-        score = pp;
+        score = pp * pressMult;
       }
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
