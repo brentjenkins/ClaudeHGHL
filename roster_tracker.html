@@ -898,7 +898,7 @@ tr:hover td{background:#fafaf8}
         <input type="number" id="s-wtYrs" value="2" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtYrs',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Youth bonus (35−age) ×</span>
+        <span style="font-size:11px;color:#9ca3af">Peak trajectory × <span style="font-weight:400;color:#d1d5db">(prox to peak + ascending yrs in contract)</span></span>
         <input type="number" id="s-wtAge" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtAge',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
@@ -1064,6 +1064,29 @@ let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'p
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtYrs: 2, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3 };
+
+// Peak age by position — production rises until these ages, then declines.
+const PEAK_AGE_BY_POS = {F: 26, D: 28, G: 29};
+
+// Peak trajectory score replaces the old "35 − age" youth bonus.
+// Two components:
+//   1. Peak proximity — bell curve centred on positional peak; gentler pre-peak
+//      slope (youth is uncertain), steeper post-peak drop (declining output).
+//   2. Ascending years locked in — bonus for each remaining contract year that
+//      falls before the player's peak (the Caufield/Suzuki/Hutson factor).
+// Multiply result by draftWeights.wtAge.
+function peakTrajectoryScore(age, pg, contractYrsRemaining){
+  if(age == null || age >= 99) return 0;
+  const peakAge = PEAK_AGE_BY_POS[pg] || 27;
+  const toPeak  = peakAge - age;                          // positive = pre-peak
+  const prox    = toPeak >= 0
+    ? Math.max(0, 10 - toPeak * 0.8)                     // pre-peak: gradual discount for very young
+    : Math.max(0, 10 + toPeak * 1.5);                    // post-peak: steeper decline
+  const ascYrs  = contractYrsRemaining != null
+    ? Math.max(0, Math.min(contractYrsRemaining, toPeak)) // contract years covering ascent
+    : 0;
+  return prox + ascYrs * 1.5;
+}
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let _summaryIdx = 0, _summaryTimer = null, _summaryPaused = false;
 let draftMode2425 = false, draftSubMode2425 = 'value';
@@ -1171,7 +1194,7 @@ function rankPlayers(){
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (p.pts / p.cap) * W.wtPPTSM;
       const scoreC = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtYrs;
-      const scoreD = Math.max(0, 35 - age) * W.wtAge;
+      const scoreD = peakTrajectoryScore(age, posGroup(p.pos), p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtAge;
       const scoreE = (age <= 22 && p.cap <= ELC_MAX_2627) ? Math.max(0, 23 - age) * W.wtProspect : 0;
       const scoreF = Math.max(0, srcN - 1) * W.wtSourceConf;
       return { p, score: scoreA + scoreB + scoreC + scoreD + scoreE + scoreF };
@@ -2219,7 +2242,7 @@ function render(){
         const pg=posGroup(p.pos);
         const scV=sc(abpMap.get(p.id)??99);
         const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
-        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const youthRaw=peakTrajectoryScore(calcAge(p),pg,yrsRaw);
         const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure[pg]-1));
         const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult;
         const tSc=sc(abpMap.get(p.id)??99)*draftWeights.wtScarcity;
@@ -2240,7 +2263,7 @@ function render(){
         const pg=posGroup(p.pos);
         const scV=sc(abpMap.get(p.id)??99);
         const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
-        const youthRaw=Math.max(0,35-(calcAge(p)??35));
+        const youthRaw=peakTrajectoryScore(calcAge(p),pg,yrsRaw);
         const pressRaw=pressure[pg];
         const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw-1));
         const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult;
@@ -2306,7 +2329,7 @@ function render(){
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nPeak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───────\nTotal: ${p._ds.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2627
@@ -3227,7 +3250,8 @@ function simulateBestPick(){
       const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
       const yrs     = (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * draftWeights.wtYrs;
       const age2    = calcAge(p) ?? 99;
-      const youth   = Math.max(0, 35 - age2) * draftWeights.wtAge;
+      const yrs2    = p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0;
+      const youth   = peakTrajectoryScore(age2 < 99 ? age2 : null, posGroup(p.pos), yrs2) * draftWeights.wtAge;
       const prospect2 = (age2 <= 22 && (p.cap||0) <= ELC_MAX_2627) ? Math.max(0, 23 - age2) * draftWeights.wtProspect : 0;
       const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
       const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
@@ -4825,7 +4849,7 @@ function render2425(){
       const pg=posGroup(p.pos); const pp=ppts2425blend(p);
       const scV=sc(abpMap2425.get(p.id)??99);
       const yrsRaw=p.expYear>=2025?p.expYear-2025+1:0;
-      const youthRaw=Math.max(0,35-(calcAge2425(p)??35));
+      const youthRaw=peakTrajectoryScore(calcAge2425(p),pg,yrsRaw);
       const pressMult2425=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2425[pg]-1));
       const tPPTS=pp*(pm[pg]??1)*pressMult2425;
       const tSc=scV*draftWeights.wtScarcity;
@@ -4908,7 +4932,7 @@ function render2425(){
           ? `<button class="drop-btn" onclick="dropSim2425(${p.id})">Drop</button>`
           : draftMode2425 ? `<button class="btn-draft" onclick="quickDraft2425(${p.id})">Draft</button>` : ''}
       </td>
-      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2425>0?`\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───\nTotal: ${p._ds2425.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1">—</td>':'')}
+      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nPeak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2425>0?`\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}`:''}\nSources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n───\nTotal: ${p._ds2425.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1">—</td>':'')}
     </tr>`;
   }).join('')) : '<tr><td colspan="19" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>';
 
@@ -5873,7 +5897,7 @@ function rankPlayers2526(){
     const pp = ppts2526blend(p);
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
     const ageS = calcAge2526(p) ?? 99;
-    const youth = Math.max(0, 35-ageS);
+    const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
     const prospectS = (ageS <= 23 && getCap2526(p) <= ELC_MAX_2526) ? Math.max(0, 24 - ageS) * draftWeights.wtProspect : 0;
     const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
     const confS = Math.max(0, srcNS - 1) * draftWeights.wtSourceConf;
@@ -6074,7 +6098,7 @@ function render2526(){
         const pp=ppts2526blend(p);
         const scV=sc(abpMap2526.get(p.id)??99);
         const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
-        const youthRaw=Math.max(0,35-(calcAge2526(p)??35));
+        const youthRaw=peakTrajectoryScore(calcAge2526(p),pg,yrsRaw);
         const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2526[pg]-1));
         const tPPTS=pp*(pm[pg]??1)*pressMult2526;
         const tSc=scV*draftWeights.wtScarcity;
@@ -6096,7 +6120,7 @@ function render2526(){
         const pp=ppts2526blend(p);
         const scV=sc(abpMap2526.get(p.id)??99);
         const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
-        const youthRaw=Math.max(0,35-(calcAge2526(p)??35));
+        const youthRaw=peakTrajectoryScore(calcAge2526(p),pg,yrsRaw);
         const pressRaw2526=pressure2526[pg];
         const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw2526-1));
         const tPPTS=pp*(pm[pg]??1)*pressMult2526;
@@ -6180,7 +6204,7 @@ function render2526(){
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nYouth(${b.youthRaw})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`PPTS×pos×press: ${b.tPPTS.toFixed(1)} (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\nScarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\nYrs(${b.yrsRaw})×${draftWeights.wtYrs}: ${b.tYrs.toFixed(1)}\nPeak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}`:''}\nSources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n───\nTotal: ${p._ds2526.toFixed(1)}`;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${p._ds2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
