@@ -3285,7 +3285,10 @@ function renderBigBoard(){
   if(boardFull && priorDraft) boardFull.style.display = 'none';
   if(draftEntry) draftEntry.style.display = priorDraft ? 'none' : '';
 
-  const stripTop5 = () => document.querySelectorAll('#bbTeamCards .draft-top5').forEach(el => el.remove());
+  const stripTop5 = () => {
+    document.querySelectorAll('#bbTeamCards .draft-top5').forEach(el => el.remove());
+    document.querySelectorAll('#bbTeamCards .team-curve-delta').forEach(el => el.remove());
+  };
 
   if(draftMode2425){
     const seq = buildDraftSeq2425();
@@ -4926,7 +4929,7 @@ function _makeTeamCurveDeltaFn(startField, pptsF, getCapF){
 function _curveDeltaLabel(delta){
   const color = delta>10?'#16a34a':delta<-10?'#dc2626':'#9ca3af';
   const str = (delta>=0?'+':'')+Math.round(delta);
-  return `<div style="font-size:10px;text-align:center;color:${color};margin-top:2px">△ ${str} vs curve</div>`;
+  return `<div class="team-curve-delta" style="font-size:10px;text-align:center;color:${color};margin-top:2px">△ ${str} vs curve</div>`;
 }
 
 function updateStats2425(){
