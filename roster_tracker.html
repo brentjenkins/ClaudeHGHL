@@ -169,7 +169,7 @@ tr:hover td{background:#fafaf8}
   50%    {opacity:.85;transform:translateX(-50%) scale(1.04)}
 }
 /* ── Draft Summary view ──────────────────────────────────────────── */
-#view-summary{max-width:860px}
+#view-summary{max-width:1100px}
 .summary-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.75rem 2rem;min-height:480px;display:flex;flex-direction:column;gap:1.25rem}
 .summary-hdr{display:flex;align-items:center;gap:14px}
 .summary-logo{width:64px;height:64px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
@@ -192,7 +192,7 @@ tr:hover td{background:#fafaf8}
 .summary-player.departed .summary-player-pts{color:#dc2626}
 .summary-player.arrived .summary-player-pts{color:#16a34a}
 .summary-col-total{display:flex;justify-content:flex-end;font-size:12px;font-weight:700;padding:5px 0 0;border-top:1px solid #e5e7eb;margin-top:4px}
-.summary-stats-bar{display:flex;flex-wrap:wrap;gap:10px;margin:.5rem 0}
+.summary-stats-bar{display:flex;flex-wrap:nowrap;gap:10px;margin:.5rem 0;overflow-x:auto}
 .summary-stat{display:flex;flex-direction:column;gap:2px}
 .summary-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af}
 .summary-stat-value{font-weight:700;font-size:14px}
@@ -4875,6 +4875,24 @@ function render2425(){
   updateStats2425();
 }
 
+// Returns a function t → total curve delta (pts above/below per-pos quadratic) for a team's roster.
+function _makeTeamCurveDeltaFn(startField, pptsF, getCapF){
+  const rp = players.filter(p=>p[startField]&&pptsF(p)>=curveMinPts&&getCapF(p)>0);
+  const cf = {
+    F: fitQuadratic(rp.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCapF(p),y:pptsF(p)}))),
+    D: fitQuadratic(rp.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCapF(p),y:pptsF(p)}))),
+    G: fitQuadratic(rp.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCapF(p),y:pptsF(p)}))),
+  };
+  return t => players.filter(p=>p[startField]===t&&pptsF(p)>0&&getCapF(p)>0)
+    .reduce((s,p)=>{ const fn=cf[posGroup(p.pos)],pp=pptsF(p),c=getCapF(p); return s+(fn&&pp>0&&c>0?pp-fn(c):0); }, 0);
+}
+
+function _curveDeltaLabel(delta){
+  const color = delta>10?'#16a34a':delta<-10?'#dc2626':'#9ca3af';
+  const str = (delta>=0?'+':'')+Math.round(delta);
+  return `<div style="font-size:10px;text-align:center;color:${color};margin-top:2px">△ ${str} vs curve</div>`;
+}
+
 function updateStats2425(){
   const allTeams = [...new Set(players.map(p=>p.start2425).filter(Boolean))].sort((a,b)=>{
     const ai=DRAFT_TEAMS_2425.indexOf(a), bi=DRAFT_TEAMS_2425.indexOf(b);
@@ -4931,6 +4949,8 @@ function updateStats2425(){
     </div>`;
   }
 
+  const teamCurveDelta2425 = _makeTeamCurveDeltaFn('start2425', ppts2425blend, getCap2425);
+
   document.getElementById('statCards2425').innerHTML = leagueCard + allTeams.map(t=>{
     const tp  = players.filter(p=>p.start2425===t);
     const cap = tp.reduce((s,p)=>s+getCap2425(p),0);
@@ -4958,7 +4978,10 @@ function updateStats2425(){
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
         ${isFocused2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':isFull2425?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
-      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
+      <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
+        <span><span style="color:${remColor}">${remLabel}</span>${cppStr}</span>
+        ${isOnClock2425&&draftMode2425?`<button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick2425()" style="font-size:10px;height:22px;padding:0 8px;margin-left:6px">Pass</button>`:''}
+      </div>
       <div class="team-card-pos">
         <span title="${fRem} forward spots remaining (${fN} rostered)">F&thinsp;${fRem}</span>
         <span title="${dRem} defense spots remaining (${dN} rostered)">D&thinsp;${dRem}</span>
@@ -4968,8 +4991,8 @@ function updateStats2425(){
         ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
         ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
       </div>
+      ${_curveDeltaLabel(teamCurveDelta2425(t))}
       ${top5Html2425(fRem,dRem,gRem,rem)}
-      ${isOnClock2425&&draftMode2425?`<div style="padding:4px 8px 6px;text-align:center"><button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick2425()" style="font-size:10px;height:24px;padding:0 10px">Pass</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -5875,6 +5898,8 @@ function updateStats2526(){
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
     </div>`;
   };
+  const teamCurveDelta2526 = _makeTeamCurveDeltaFn('start2526', ppts2526blend, getCap2526);
+
   document.getElementById('statCards2526').innerHTML = leagueCard + allTeams.map(t=>{
     const tp = players.filter(p=>p.start2526===t);
     const cap = tp.reduce((s,p)=>s+getCap2526(p),0);
@@ -5900,12 +5925,15 @@ function updateStats2526(){
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
         ${isFocused2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':isFull2526?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
-      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
+      <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
+        <span><span style="color:${remColor}">${remLabel}</span>${cppStr}</span>
+        ${isOnClock2526?`<button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick2526()" style="font-size:10px;height:22px;padding:0 8px;margin-left:6px">Pass</button>`:''}
+      </div>
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
+      ${_curveDeltaLabel(teamCurveDelta2526(t))}
       ${top5Html2526(fRem,dRem,gRem,rem)}
-      ${isOnClock2526?`<div style="padding:4px 8px 6px;text-align:center"><button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick2526()" style="font-size:10px;height:24px;padding:0 10px">Pass</button></div>`:''}
     </div>`;
   }).join('');
 }
@@ -6507,6 +6535,8 @@ function updateStats(){
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
     </div>`;
   };
+  const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.pts||0, p=>p.cap||0);
+
   document.getElementById('statCards').innerHTML = leagueCard + teams.map(t => {
     const tp = players.filter(p=>p.start2627===t);
     const cap = tp.reduce((s,p)=>s+(p.cap||0), 0);
@@ -6532,12 +6562,15 @@ function updateStats(){
         <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
         ${isFocused?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':isFull27?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
-      <div class="team-card-cap"><span style="color:${remColor}">${remLabel}</span>${cppStr}</div>
+      <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
+        <span><span style="color:${remColor}">${remLabel}</span>${cppStr}</span>
+        ${isOnClock?`<button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick()" style="font-size:10px;height:22px;padding:0 8px;margin-left:6px">Pass</button>`:''}
+      </div>
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
+      ${_curveDeltaLabel(teamCurveDelta(t))}
       ${top5Html(fRem,dRem,gRem,rem)}
-      ${isOnClock?`<div style="padding:4px 8px 6px;text-align:center"><button class="btn btn-red-outline" onclick="event.stopPropagation();passCurrentPick()" style="font-size:10px;height:24px;padding:0 10px">Pass</button></div>`:''}
     </div>`;
   }).join('');
 }
