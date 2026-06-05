@@ -849,16 +849,95 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Position pressure boosts scores for scarce positions (high demand vs available supply). Value mode prospect bonus adds weight to young cheap players (age ≤ 22, cap ≤ ELC max) in Value Mode ordering only.</span></div>
+    <div class="section-label">Scoring <span class="section-line"></span><span class="section-desc">Rank Scoring drives the Rank column and draft board ordering. Draft Scoring layers on live-draft bonuses.</span></div>
+
+    <!-- Rank Scoring -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:6px">Rank Scoring</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:12px">Score = <strong>Production</strong> + <strong>Contract</strong></div>
+      <div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px">
+
+        <!-- Production bubble -->
+        <div style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:12px 16px;flex:1;min-width:220px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1d4ed8;margin-bottom:10px">Production</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+            <div>
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">Position multiplier</div>
+              <div style="display:flex;gap:10px">
+                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Forward baseline — 1.0 is standard">Forward<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="High-scoring D are rarer/more valuable — default 1.4">Defense<input type="number" id="s-multD" value="1.4" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Goalie baseline">Goalie<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px;color:#9ca3af;font-weight:300">×</span>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af">Source confidence (per extra source)</span>
+                <input type="number" id="s-wtSourceConf" value="5" min="0" max="50" step="1" onchange="updateDraftWeight('wtSourceConf',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:32px 6px;font-size:22px;color:#9ca3af;font-weight:300;align-self:center">+</div>
+
+        <!-- Contract bubble -->
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;flex:1;min-width:280px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#15803d;margin-bottom:10px">Contract</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+            <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px">
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af">PPTS/$M ×</span>
+                <input type="number" id="s-wtPPTSM" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtPPTSM',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+              </div>
+              <span style="color:#9ca3af;padding-bottom:6px">+</span>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af" title="Proximity to position peak age + ascending contract years">Peak traj ×</span>
+                <input type="number" id="s-wtAge" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtAge',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+              </div>
+              <span style="color:#9ca3af;padding-bottom:6px">+</span>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af" title="ABP scarcity tiers — fewer better options = higher score">Scarcity ×</span>
+                <input type="number" id="s-wtScarcity" value="10" min="0" max="100" step="1" onchange="updateDraftWeight('wtScarcity',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding-top:8px;border-top:1px solid #bbf7d0">
+              <span style="color:#9ca3af;padding-bottom:6px">+</span>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af" title="Bonus for pts above curve — 0 at ELC, ramps to full at threshold">△ Curve bonus ×</span>
+                <input type="number" id="s-wtDeltaCurve" value="1.0" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af">full at cap &gt; $<span style="color:#1a1a18">X</span>M</span>
+                <input type="number" id="s-deltaCurveThreshold" value="4.0" min="1" max="10" step="0.5" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Draft Scoring -->
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:6px">Draft Scoring</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:10px">Draft Score = Rank Score × position pressure + prospect bonus. Pressure rises as scarce positions get drafted.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
+          <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤ELC max) ×</span>
+          <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Simulation and My Algo Draft settings.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Position pressure weight</span>
-        <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤ELC max) ×</span>
-        <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Simulate Draft value rounds</span>
         <input type="number" id="s-draftValueRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftValueRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -876,45 +955,6 @@ tr:hover td{background:#fafaf8}
           <option>Pernicious Puckers</option>
           <option>Silence of the Lamb</option>
         </select>
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <div class="section-label">Rank <span class="section-line"></span><span class="section-desc">Weighted score for the Rank column and Value Mode: PPTS × position multiplier + scarcity + contract yrs + youth + source confidence. Position multipliers do not affect drops — drops use per-position efficiency curves.</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Position multiplier</span>
-        <div style="display:flex;gap:12px">
-          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Forward<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
-          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Defense<input type="number" id="s-multD" value="1.4" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
-          <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">Goalie<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center;color:#1a1a18"></label>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">PPTS/$M weight ×</span>
-        <input type="number" id="s-wtPPTSM" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtPPTSM',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Peak trajectory × <span style="font-weight:400;color:#d1d5db">(prox to peak + ascending yrs in contract)</span></span>
-        <input type="number" id="s-wtAge" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtAge',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Source confidence (per extra source) ×</span>
-        <input type="number" id="s-wtSourceConf" value="5" min="0" max="50" step="1" onchange="updateDraftWeight('wtSourceConf',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Scarcity (ABP tiers) ×</span>
-        <input type="number" id="s-wtScarcity" value="10" min="0" max="100" step="1" onchange="updateDraftWeight('wtScarcity',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">△ Curve bonus × <span style="font-weight:400;color:#d1d5db">(0 for ELC, ramps to full above threshold)</span></span>
-        <input type="number" id="s-wtDeltaCurve" value="1.0" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">△ Curve ramp threshold ($M)</span>
-        <input type="number" id="s-deltaCurveThreshold" value="4.0" min="1" max="10" step="0.5" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
