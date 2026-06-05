@@ -829,7 +829,7 @@ tr:hover td{background:#fafaf8}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
-        <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <input type="number" id="s-ptsTarget" value="1150" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
   </div>
@@ -903,11 +903,11 @@ tr:hover td{background:#fafaf8}
               <span style="color:#9ca3af;padding-bottom:6px">+</span>
               <div style="display:flex;flex-direction:column;gap:3px">
                 <span style="font-size:11px;color:#9ca3af" title="Bonus for pts above curve — 0 at ELC, ramps to full at threshold">△ Curve bonus ×</span>
-                <input type="number" id="s-wtDeltaCurve" value="1.0" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <input type="number" id="s-wtDeltaCurve" value="4.0" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
               <div style="display:flex;flex-direction:column;gap:3px">
-                <span style="font-size:11px;color:#9ca3af">full at cap &gt; $<span style="color:#1a1a18">X</span>M</span>
-                <input type="number" id="s-deltaCurveThreshold" value="4.0" min="1" max="10" step="0.5" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <span style="font-size:11px;color:#9ca3af">full at cap &gt; <span style="color:#1a1a18">X</span> × ELC max</span>
+                <input type="number" id="s-deltaCurveThreshold" value="2.0" min="1.1" max="5" step="0.1" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
             </div>
           </div>
@@ -1108,16 +1108,18 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 1.0, deltaCurveThreshold: 4.0 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 2.0 };
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve,
 // ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
 // Below-curve gets no penalty (floor 0) — tPPTSM/tSc already handle that.
+// threshold is a multiplier of elcMax (default 2.0 = 2× ELC).
+// Ramp: 0 at cap=elcMax, 1 at cap=threshold×elcMax.
 function _deltaCurveBonus(pts, cap, curveFn, elcMax, threshold, wt){
   if(!curveFn || pts <= 0 || cap <= 0 || wt <= 0) return 0;
   const delta = pts - curveFn(cap);
   if(delta <= 0) return 0;
-  const ramp = Math.min(1, Math.max(0, (cap - elcMax) / Math.max(0.01, threshold - elcMax)));
+  const ramp = Math.min(1, Math.max(0, (cap / elcMax - 1) / Math.max(0.01, threshold - 1)));
   return delta * ramp * wt;
 }
 
@@ -1166,7 +1168,7 @@ let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
 let draftValueRounds = 1;
 let myHGHLTeam = 'Muller Time!';
-let ptsTarget = 1200, curveMinPts = 15;
+let ptsTarget = 1150, curveMinPts = 15;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 // Draft dates — used to calculate the drop/add window (date + 2 days) for Yahoo transaction fetches
 let draftDatePreseason2324    = '2023-10-23';
@@ -3680,8 +3682,8 @@ function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
   if(draftWeights.wtSourceConf === undefined) draftWeights.wtSourceConf = 5;
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
-  if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 1.0;
-  if(draftWeights.deltaCurveThreshold === undefined) draftWeights.deltaCurveThreshold = 4.0;
+  if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 4.0;
+  if(draftWeights.deltaCurveThreshold === undefined) draftWeights.deltaCurveThreshold = 2.0;
   draftWeights[key] = val;
   syncSettings();
   if(draftMode) render();
