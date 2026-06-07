@@ -85,8 +85,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-draft:hover{background:#4f46e5;border-color:#4f46e5}
 .btn-undo{flex-shrink:0;height:26px;font-size:12px;padding:0 10px;background:none;border:1px solid #d1d5db;border-radius:6px;color:#555;cursor:pointer;white-space:nowrap}
 .btn-undo:hover{background:#f7f7f5;border-color:#9ca3af;color:#1a1a18}
-#draftSubValueBtn:hover,#draftSubBestBtn:hover,
-#draftSubValueBtn2526:hover,#draftSubBestBtn2526:hover,
+#draftSubProspectBtn:hover,#draftSubBestBtn:hover,
+#draftSubProspectBtn2526:hover,#draftSubBestBtn2526:hover,
 #draftViewCompactBtn:hover,#draftViewFullBtn:hover{filter:brightness(.9)}
 .tbl-wrap{overflow-x:auto;overflow-y:auto;border:1px solid #eee;border-radius:10px;flex:1;min-height:0}
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -268,7 +268,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-indigo" onclick="rankPlayers2425()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftMode2425Btn" onclick="toggleDraftMode2425()">⚡ Draft Mode</button>
       <span id="draftSubModeCtrl2425" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-        <button id="draftSubValueBtn2425" onclick="setDraftSubMode2425('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
+        <button id="draftSubProspectBtn2425" onclick="setDraftSubMode2425('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn2425" onclick="setDraftSubMode2425('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
@@ -362,7 +362,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-indigo-light" onclick="runMyAlgoDraft2526()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
       <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft2526()" title="Simulate January mid-season draft on 25-26 rosters — requires MIDSEASON_STANDINGS_2526">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-        <button id="draftSubValueBtn2526" onclick="setDraftSubMode2526('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
+        <button id="draftSubProspectBtn2526" onclick="setDraftSubMode2526('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
     </div>
@@ -516,7 +516,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-blue-outline" onclick="runDraftSim2627()" title="Simulate draft from current rosters and apply picks">⬆ Simulate Draft</button>
       <button class="btn btn-blue-outline" onclick="simulateMidseasonDraft()" title="Simulate January mid-season draft — 5 rounds, reverse projected standings">🔄 Mid-Season Draft</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-        <button id="draftSubValueBtn" onclick="setDraftSubMode('value')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Value</button>
+        <button id="draftSubProspectBtn" onclick="setDraftSubMode('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn" onclick="setDraftSubMode('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
     </div>
@@ -926,7 +926,7 @@ tr:hover td{background:#fafaf8}
           <input type="number" id="s-wtPressure" value="0.3" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtPressure',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Value mode</span> Prospect bonus (age≤22, cap≤ELC max) ×</span>
+          <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Prospect mode</span> Prospect bonus (age≤22, cap≤ELC max) ×</span>
           <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
         </div>
       </div>
@@ -937,8 +937,8 @@ tr:hover td{background:#fafaf8}
     <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Simulation and My Algo Draft settings.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Simulate Draft value rounds</span>
-        <input type="number" id="s-draftValueRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftValueRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <span style="font-size:11px;color:#9ca3af">Simulate Draft Prospect rounds</span>
+        <input type="number" id="s-draftProspectRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftProspectRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
       <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">My HGHL Team <span style="color:#6b7280">(for My Algo Draft)</span></span>
@@ -1105,7 +1105,7 @@ const LS_XACTIONS_2425 = 'hghl_xactions_2425';
 const LS_XACTIONS_2526 = 'hghl_xactions_2526';
 const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 
-let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'value';
+let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 2.0 };
@@ -1123,8 +1123,8 @@ function _deltaCurveBonus(pts, cap, curveFn, elcMax, threshold, wt){
   return delta * ramp * wt;
 }
 
-// Prospect age thresholds (Athletic definition): under 23 for F/D, under 25 for G.
-const PROSPECT_MAX_AGE = {F: 22, D: 22, G: 24};
+// Prospect age thresholds (Athletic definition): under 23 for F, under 24 for D, under 25 for G.
+const PROSPECT_MAX_AGE = {F: 22, D: 23, G: 24};
 
 // Returns prospect bonus score (0 if not a prospect).
 function prospectBonus(age, pg, capHit, elcMax, wtProspect){
@@ -1160,13 +1160,13 @@ function peakTrajectoryScore(age, pg, contractYrsRemaining){
 }
 let lastPressure = null, lastPressure2526 = null, lastAllScored = null, lastAllScored2526 = null;
 let _summaryIdx = 0, _summaryTimer = null, _summaryPaused = false;
-let draftMode2425 = false, draftSubMode2425 = 'value';
+let draftMode2425 = false, draftSubMode2425 = 'prospect';
 let draftFocusTeam2425 = null, lastAllScored2425 = null, lastPressure2425 = null;
 let draftViewMode = 'compact';
 let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
-let draftValueRounds = 1;
+let draftProspectRounds = 1;
 let myHGHLTeam = 'Muller Time!';
 let ptsTarget = 1150, curveMinPts = 15;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
@@ -2349,12 +2349,12 @@ function render(){
         const _dsNormal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
         return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf,tDelta,pressRaw,pressMult}});
       });
-    rows = draftSubMode==='value'
+    rows = draftSubMode==='prospect'
       ? allScored.sort((a,b)=>b._ds-a._ds)
       : allScored.sort((a,b)=>b._dsNormal-a._dsNormal);
   }
 
-  const draftModeLabel = draftFocusTeam ? `Viewing: ${draftFocusTeam}` : draftSubMode==='value' ? 'Value Mode' : 'Best Available';
+  const draftModeLabel = draftFocusTeam ? `Viewing: ${draftFocusTeam}` : draftSubMode==='prospect' ? 'Prospect mode' : 'Best Available';
   const draftSectionHdr = draftMode ? `<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel)}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody');
@@ -2948,7 +2948,7 @@ const LS_DRAFT_2425 = 'hghl_draft_2425';
 let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let draftState2526 = {picks: []};
 let draftState2425 = {picks: []};
-let draftMode2526 = false, draftModeTop2526 = 50, draftSubMode2526 = 'value';
+let draftMode2526 = false, draftModeTop2526 = 50, draftSubMode2526 = 'prospect';
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let sortCol2425 = 'ppts2425blend', sortDir2425 = -1;
 let animDismissed = false;
@@ -3557,8 +3557,8 @@ function toggleDraftMode(){
 
 function setDraftSubMode(mode){
   draftSubMode = mode;
-  document.getElementById('draftSubValueBtn').style.background = mode==='value' ? '#6366f1' : '#e0e7ff';
-  document.getElementById('draftSubValueBtn').style.color = mode==='value' ? '#fff' : '#6366f1';
+  document.getElementById('draftSubProspectBtn').style.background = mode==='prospect' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubProspectBtn').style.color = mode==='prospect' ? '#fff' : '#6366f1';
   document.getElementById('draftSubBestBtn').style.background = mode==='bestAvail' ? '#6366f1' : '#e0e7ff';
   document.getElementById('draftSubBestBtn').style.color = mode==='bestAvail' ? '#fff' : '#6366f1';
   if(draftMode) render();
@@ -3660,7 +3660,7 @@ function syncSettings(){
   set('s-wtScarcity', W.wtScarcity);
   set('s-wtDeltaCurve', W.wtDeltaCurve);
   set('s-deltaCurveThreshold', W.deltaCurveThreshold);
-  set('s-draftValueRounds', draftValueRounds);
+  set('s-draftProspectRounds', draftProspectRounds);
   set('s-myHGHLTeam', myHGHLTeam);
   set('s-minDropsPreseason', minDropsPreseason); set('s-maxDropsPreseason', maxDropsPreseason);
   set('s-minDropsSupp', minDropsSupp); set('s-maxDropsSupp', maxDropsSupp);
@@ -3691,7 +3691,7 @@ function updateDraftWeight(key, val){
 }
 function updateSetting(key, val){
   if(key === 'myHGHLTeam')           myHGHLTeam = val;
-  else if(key === 'draftValueRounds') draftValueRounds = val;
+  else if(key === 'draftProspectRounds') draftProspectRounds = val;
   else if(key === 'minDropsPreseason')     minDropsPreseason = val;
   else if(key === 'maxDropsPreseason') maxDropsPreseason = val;
   else if(key === 'minDropsSupp')      minDropsSupp = val;
@@ -4144,8 +4144,8 @@ function toggleDraftMode2425(){
 }
 function setDraftSubMode2425(mode){
   draftSubMode2425 = mode;
-  document.getElementById('draftSubValueBtn2425').style.background = mode==='value' ? '#6366f1' : '#e0e7ff';
-  document.getElementById('draftSubValueBtn2425').style.color = mode==='value' ? '#fff' : '#6366f1';
+  document.getElementById('draftSubProspectBtn2425').style.background = mode==='prospect' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubProspectBtn2425').style.color = mode==='prospect' ? '#fff' : '#6366f1';
   document.getElementById('draftSubBestBtn2425').style.background = mode==='bestAvail' ? '#6366f1' : '#e0e7ff';
   document.getElementById('draftSubBestBtn2425').style.color = mode==='bestAvail' ? '#fff' : '#6366f1';
   if(draftMode2425) render2425();
@@ -4174,8 +4174,8 @@ function toggleDraftMode2526(){
 
 function setDraftSubMode2526(mode){
   draftSubMode2526 = mode;
-  document.getElementById('draftSubValueBtn2526').style.background = mode==='value' ? '#6366f1' : '#e0e7ff';
-  document.getElementById('draftSubValueBtn2526').style.color = mode==='value' ? '#fff' : '#6366f1';
+  document.getElementById('draftSubProspectBtn2526').style.background = mode==='prospect' ? '#6366f1' : '#e0e7ff';
+  document.getElementById('draftSubProspectBtn2526').style.color = mode==='prospect' ? '#fff' : '#6366f1';
   document.getElementById('draftSubBestBtn2526').style.background = mode==='bestAvail' ? '#6366f1' : '#e0e7ff';
   document.getElementById('draftSubBestBtn2526').style.color = mode==='bestAvail' ? '#fff' : '#6366f1';
   if(draftMode2526) render2526();
@@ -5057,11 +5057,11 @@ function render2425(){
       const _ds2425Normal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
       return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2425,tProspect2425,srcN,tConf,pressRaw2425:pressure2425[pg],pressMult2425}});
     });
-    rows = draftSubMode2425==='value'
+    rows = draftSubMode2425==='prospect'
       ? lastAllScored2425.filter(p=>!viewTeam2425||(need2425&&need2425[posGroup(p.pos)]>0)).sort((a,b)=>b._ds2425-a._ds2425)
       : lastAllScored2425.filter(p=>!viewTeam2425||(need2425&&need2425[posGroup(p.pos)]>0)).sort((a,b)=>b._ds2425Normal-a._ds2425Normal);
     if(!draftMode2425||fp) rows=rows.filter(r=>!fp||posGroup(r.pos)===fp);
-    const draftModeLabel2425=draftFocusTeam2425?`Viewing: ${draftFocusTeam2425}`:draftSubMode2425==='value'?'Value Mode':'Best Available';
+    const draftModeLabel2425=draftFocusTeam2425?`Viewing: ${draftFocusTeam2425}`:draftSubMode2425==='prospect'?'Prospect mode':'Best Available';
     var draftSectionHdr2425=`<tr><td colspan="20" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2425)}</td></tr>`;
   } else {
     var draftSectionHdr2425='';
@@ -5172,10 +5172,10 @@ function updateStats2425(){
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
     const picks=[...lastAllScored2425].filter(p=>need.has(posGroup(p.pos))&&getCap2425(p)<=maxCap)
-      .sort((a,b)=>draftSubMode2425==='value'?b._ds2425-a._ds2425:b._ds2425Normal-a._ds2425Normal).slice(0,5);
+      .sort((a,b)=>draftSubMode2425==='prospect'?b._ds2425-a._ds2425:b._ds2425Normal-a._ds2425Normal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2425==='value'?'Value':'Best Avail'}</div>
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2425==='prospect'?'prospect':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2425[pg]};color:${posCol2425[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2425blend(p))}</span></div>`;}).join('')}
     </div>`;
   };
@@ -5522,7 +5522,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     if(team !== myTeam) continue;
 
     const round = pickNum + 1;
-    const mode = round <= draftValueRounds ? 'value' : 'bestAvail';
+    const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
     const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
     if(spotsLeft <= 0) continue;
     const maxPickCap = capLimit - (teamCap[team]||0) - Math.max(0, spotsLeft-1) * draftReserve;
@@ -5553,7 +5553,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
       const pp = ppts(p);
       const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressureM[pg]||0) - 1));
       let score;
-      if(mode === 'value'){
+      if(mode === 'prospect'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
         const prospect = prospectBonus(age, pg, cap, elcMax, draftWeights.wtProspect);
@@ -5590,8 +5590,8 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   // Render modal
   const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
   const badge = (pg,name) => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 4px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${esc(name)}`;
-  const modeTag = r => r<=draftValueRounds
-    ? '<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Value</span>'
+  const modeTag = r => r<=draftProspectRounds
+    ? '<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Prospect</span>'
     : '<span style="background:#f3f4f6;color:#6b7280;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Best Avail</span>';
 
   const algoTotal = myPicks.reduce((s,r)=>s+r.ppts, 0);
@@ -5612,7 +5612,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     `<span style="color:${diffCol};font-weight:600">${diff>=0?'+':''}${Math.round(diff)} proj</span> &nbsp; `+
     `<span style="color:${diffActualCol};font-weight:600">${diffActual>=0?'+':''}${Math.round(diffActual)} actual</span><br>`+
     `<span style="color:#9ca3af;font-size:11px">Pool: your actual picks + undrafted FAs — excludes other teams' picks &nbsp;·&nbsp; `+
-    `${draftValueRounds>0?`R1${draftValueRounds>1?`–R${draftValueRounds}`:''}=Value`:'All rounds=Best Avail'} then Best Available</span>`;
+    `${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}=Prospect`:'All rounds=Best Avail'} then Best Available</span>`;
 
   let html = '';
   for(let i=0; i<myPicks.length; i++){
@@ -5749,7 +5749,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   for(const team of seq){
     const pickNum = (teamPickNum[team] = (teamPickNum[team]||0));
     const round = pickNum + 1;
-    const mode = round <= draftValueRounds ? 'value' : 'bestAvail';
+    const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
 
     // Remaining picks for this team after this one (for reserve calculation)
     const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
@@ -5784,7 +5784,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
       const pp = ppts(p);
       const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressure[pg]||0) - 1));
       let score;
-      if(mode === 'value'){
+      if(mode === 'prospect'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
         const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect);
@@ -5817,10 +5817,10 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   const hasActual = Object.keys(actualDraft).length > 0;
   const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
   const badge = (pg,name) => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 4px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${esc(name)}`;
-  const modeTag = r => r<=draftValueRounds
-    ? '<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Value</span>'
+  const modeTag = r => r<=draftProspectRounds
+    ? '<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Prospect</span>'
     : '<span style="background:#f3f4f6;color:#6b7280;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Best Avail</span>';
-  const modeFooter = `<span style="color:#9ca3af;font-size:11px">${draftValueRounds>0?`R1${draftValueRounds>1?`–R${draftValueRounds}`:''}  = Value mode · R${draftValueRounds+1}+ = Best Available`:'All rounds = Best Available'}</span>`;
+  const modeFooter = `<span style="color:#9ca3af;font-size:11px">${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}  = Prospect mode · R${draftProspectRounds+1}+ = Best Available`:'All rounds = Best Available'}</span>`;
 
   if(!hasActual){
     const simPts = simPicks.reduce((s,r)=>s+r.ppts, 0);
@@ -5877,7 +5877,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     `Algo total proj: <strong>${Math.round(totalSimPpts)} pts</strong> &nbsp;|&nbsp; `+
     `Actual total proj: <strong>${Math.round(totalActPpts)} pts</strong> &nbsp;|&nbsp; `+
     `<span style="color:${diffCol};font-weight:600">Algo ${diffStr} pts vs actual</span><br>`+
-    `<span style="color:#9ca3af;font-size:11px">${draftValueRounds>0?`R1${draftValueRounds>1?`–R${draftValueRounds}`:''}  = Value mode · R${draftValueRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks sorted by proj pts as pick-order proxy</span>`;
+    `<span style="color:#9ca3af;font-size:11px">${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}  = Prospect mode · R${draftProspectRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks sorted by proj pts as pick-order proxy</span>`;
 
   // Group by round
   const maxRound = Math.max(...rows.map(r=>r.round));
@@ -6176,10 +6176,10 @@ function updateStats2526(){
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
     const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
-      .sort((a,b)=>draftSubMode2526==='value'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
+      .sort((a,b)=>draftSubMode2526==='prospect'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2526==='value'?'Value':'Best Avail'}</div>
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2526==='prospect'?'prospect':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
     </div>`;
   };
@@ -6355,7 +6355,7 @@ function render2526(){
         const _ds2526Normal=tPPTS+tSc+tPPTSM+tYouth+tConf2526+tDelta2526;
         return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526,tDelta:tDelta2526,pressRaw2526,pressMult2526}});
       });
-    rows = draftSubMode2526==='value'
+    rows = draftSubMode2526==='prospect'
       ? allScored2526.sort((a,b)=>b._ds2526-a._ds2526)
       : allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal);
   }
@@ -6385,7 +6385,7 @@ function render2526(){
   ft2526El.innerHTML='<option value="">All 25-26 teams</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option>${esc(t)}</option>`).join('');
   ft2526El.value=prev2526;
 
-  const draftModeLabel2526 = draftFocusTeam2526 ? `Viewing: ${draftFocusTeam2526}` : draftSubMode2526==='value' ? 'Value Mode' : 'Best Available';
+  const draftModeLabel2526 = draftFocusTeam2526 ? `Viewing: ${draftFocusTeam2526}` : draftSubMode2526==='prospect' ? 'Prospect mode' : 'Best Available';
   const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="21" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2526)}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody2526');
@@ -6814,10 +6814,10 @@ function updateStats(){
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
     const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
-      .sort((a,b)=>draftSubMode==='value'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
+      .sort((a,b)=>draftSubMode==='prospect'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode==='value'?'Value':'Best Avail'}</div>
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode==='prospect'?'prospect':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
     </div>`;
   };

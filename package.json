@@ -1,0 +1,25 @@
+{
+  "name": "claudehghl",
+  "version": "1.0.0",
+  "description": "This project attempts to use Claude to create a fantasy hockey roster tracker.  It will replace the Google Sheet I create by hand each season.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brentjenkins/ClaudeHGHL.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/brentjenkins/ClaudeHGHL/issues"
+  },
+  "homepage": "https://github.com/brentjenkins/ClaudeHGHL#readme",
+  "dependencies": {
+    "level": "^10.0.0",
+    "playwright": "^1.60.0"
+  }
+}
