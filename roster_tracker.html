@@ -2461,7 +2461,7 @@ const FINAL_STANDINGS_2324 = {
 };
 
 // 2024-25 final standings — determines 25-26 draft order (rank 9 picks first)
-const DRAFT_STANDINGS_2425 = {
+const FINAL_STANDINGS_2425 = {
   'Motor City Wings':    {rank:1, pts:1152},
   'Pernicious Puckers':  {rank:2, pts:1107},
   'Damage Inc.':         {rank:3, pts:1083},
@@ -2472,7 +2472,7 @@ const DRAFT_STANDINGS_2425 = {
   'Muller Time!':        {rank:8, pts:1007},
   'Blue Line Bangers':   {rank:9, pts:998},
 };
-const DRAFT_TEAMS_2526 = Object.entries(DRAFT_STANDINGS_2425)
+const DRAFT_TEAMS_2526 = Object.entries(FINAL_STANDINGS_2425)
   .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
 
 // ── 24-25 season constants ────────────────────────────────────────────────────
@@ -7041,8 +7041,8 @@ function renderSummaryCard(teamIdx){
     prevYr='23-24';  currYr='24-25';
   } else if(draftMode2526){
     prevField='start2425'; currField='start2526';
-    pptsF=p=>ppts2526blend(p);  prevStandings=DRAFT_STANDINGS_2425;
-    prevRankFn=t=>DRAFT_STANDINGS_2425[t]?.rank||'?';
+    pptsF=p=>ppts2526blend(p);  prevStandings=FINAL_STANDINGS_2425;
+    prevRankFn=t=>FINAL_STANDINGS_2425[t]?.rank||'?';
     getCapY=p=>getCap2526(p);   capLimitY=CAP_LIMIT_2526;
     prevYr='24-25';  currYr='25-26';
   } else {
