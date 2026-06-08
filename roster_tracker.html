@@ -928,7 +928,7 @@ tr:hover td{background:#fafaf8}
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Prospect mode</span> Prospect bonus (F≤22, D≤23, G≤24, cap≤ELC max) ×</span>
-          <input type="number" id="s-wtProspect" value="18" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          <input type="number" id="s-wtProspect" value="8" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
         </div>
       </div>
     </div>
@@ -1109,7 +1109,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 18, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 2.0 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 8, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 2.0 };
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve,
 // ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
@@ -1128,11 +1128,16 @@ function _deltaCurveBonus(pts, cap, curveFn, elcMax, threshold, wt){
 const PROSPECT_MAX_AGE = {F: 22, D: 23, G: 24};
 
 // Returns prospect bonus score (0 if not a prospect).
-function prospectBonus(age, pg, capHit, elcMax, wtProspect){
+// pts and curveFn weight the bonus by projected performance — high-ceiling
+// prospects score much higher than fringe ELC players at the same age.
+function prospectBonus(age, pg, capHit, elcMax, wtProspect, pts=0, curveFn=null){
   if(age == null || age >= 99) return 0;
   const maxAge = PROSPECT_MAX_AGE[pg] ?? 22;
   if(age > maxAge || capHit > elcMax) return 0;
-  return Math.max(0, maxAge + 1 - age) * wtProspect;
+  const ageScore = maxAge + 1 - age;
+  const normPts = curveFn ? Math.max(1, curveFn(elcMax)) : ({F:50, D:40, G:20}[pg] ?? 40);
+  const ptsRatio = pts > 0 ? pts / normPts : 0;
+  return Math.max(0, ageScore * ptsRatio * wtProspect);
 }
 
 // Peak age by position — production rises until these ages, then declines.
@@ -1266,7 +1271,7 @@ function rankPlayers(){
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (p.pts / p.cap) * W.wtPPTSM;
       const scoreD = peakTrajectoryScore(age, posGroup(p.pos), p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtAge;
-      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, W.wtProspect);
+      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, W.wtProspect, p.pts||0);
       const scoreF = Math.max(0, srcN - 1) * W.wtSourceConf;
       return { p, score: scoreA + scoreB + scoreD + scoreE + scoreF };
     })
@@ -2320,7 +2325,7 @@ function render(){
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect);
+        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect,p.pts||0,curveFns2627[pg]);
         const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const tDelta=_deltaCurveBonus(p.pts||0,p.cap||0,curveFns2627[pg],ELC_MAX_2627,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
@@ -2342,7 +2347,7 @@ function render(){
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
-        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect);
+        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect,p.pts||0,curveFns2627[pg]);
         const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const tDelta=_deltaCurveBonus(p.pts||0,p.cap||0,curveFns2627[pg],ELC_MAX_2627,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
@@ -3355,7 +3360,7 @@ function simulateBestPick(){
       const age2    = calcAge(p) ?? 99;
       const yrs2    = p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0;
       const youth   = peakTrajectoryScore(age2 < 99 ? age2 : null, posGroup(p.pos), yrs2) * draftWeights.wtAge;
-      const prospect2 = prospectBonus(age2 < 99 ? age2 : null, posGroup(p.pos), p.cap||0, ELC_MAX_2627, draftWeights.wtProspect);
+      const prospect2 = prospectBonus(age2 < 99 ? age2 : null, posGroup(p.pos), p.cap||0, ELC_MAX_2627, draftWeights.wtProspect, p.pts||0);
       const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0);
       const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
       return adjPts + ptsPerM + youth + prospect2 + conf2;
@@ -3713,7 +3718,7 @@ function syncSettings(){
   updateYahooDropBtnTooltips();
 }
 function updateDraftWeight(key, val){
-  if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
+  if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 8;
   if(draftWeights.wtSourceConf === undefined) draftWeights.wtSourceConf = 5;
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
   if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 4.0;
@@ -5103,7 +5108,7 @@ function render2425(){
       const tPPTSM=(pp>0&&getCap2425(p)>0)?pp/getCap2425(p)*draftWeights.wtPPTSM:0;
       const tYouth=youthRaw*draftWeights.wtAge;
       const ageRaw2425=calcAge2425(p)??99;
-      const tProspect2425=prospectBonus(ageRaw2425,pg,getCap2425(p),ELC_MAX_2425,draftWeights.wtProspect);
+      const tProspect2425=prospectBonus(ageRaw2425,pg,getCap2425(p),ELC_MAX_2425,draftWeights.wtProspect,pp,curveFns2425[pg]);
       const srcN=(p.proj2425_athletic>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_nhl>0?1:0);
       const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
       const tDelta=_deltaCurveBonus(pp,getCap2425(p),curveFns2425[pg],ELC_MAX_2425,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
@@ -5610,7 +5615,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
       if(mode === 'prospect'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
-        const prospect = prospectBonus(age, pg, cap, elcMax, draftWeights.wtProspect);
+        const prospect = prospectBonus(age, pg, cap, elcMax, draftWeights.wtProspect, pp);
         score = pp * (pm[pg]||1) * pressMult + prospect;
       } else {
         score = pp * pressMult;
@@ -5841,7 +5846,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
       if(mode === 'prospect'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
-        const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect);
+        const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp);
         score = pp * (pm[pg]||1) * pressMult + prospect;
       } else {
         score = pp * pressMult;
@@ -6169,7 +6174,7 @@ function rankPlayers2526(){
     const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
     const ageS = calcAge2526(p) ?? 99;
     const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
-    const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, draftWeights.wtProspect);
+    const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, draftWeights.wtProspect, pp);
     const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
     const confS = Math.max(0, srcNS - 1) * draftWeights.wtSourceConf;
     p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + youth*draftWeights.wtAge + prospectS + confS;
@@ -6378,7 +6383,7 @@ function render2526(){
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge2526(p)??99;
-        const tProspect=prospectBonus(ageRaw,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect);
+        const tProspect=prospectBonus(ageRaw,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect,pp,curveFns2526[pg]);
         const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const tDelta=_deltaCurveBonus(pp,getCap2526(p),curveFns2526[pg],ELC_MAX_2526,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
@@ -6401,7 +6406,7 @@ function render2526(){
         const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw2526=calcAge2526(p)??99;
-        const tProspect2526=prospectBonus(ageRaw2526,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect);
+        const tProspect2526=prospectBonus(ageRaw2526,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect,pp,curveFns2526[pg]);
         const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
         const tDelta2526=_deltaCurveBonus(pp,getCap2526(p),curveFns2526[pg],ELC_MAX_2526,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
