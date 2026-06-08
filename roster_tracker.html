@@ -3299,6 +3299,24 @@ function undoLastPick(){
   renderDraftView();
   updateDraftTab();
 }
+function undoLastPick2526(){
+  if(!draftState2526.picks.length) return;
+  const last = draftState2526.picks[draftState2526.picks.length-1];
+  if(last.player){ const p=players.find(x=>normName(x.name).toLowerCase()===normName(last.player).toLowerCase()); if(p) p.start2526=null; lsSet(LS_PLAYERS,players); }
+  draftState2526.picks.pop();
+  lsSet(LS_DRAFT_2526, draftState2526);
+  render2526();
+  renderBigBoard();
+}
+function undoLastPick2425(){
+  if(!draftState2425.picks.length) return;
+  const last = draftState2425.picks[draftState2425.picks.length-1];
+  if(last.player){ const p=players.find(x=>normName(x.name).toLowerCase()===normName(last.player).toLowerCase()); if(p) p.start2425=null; lsSet(LS_PLAYERS,players); }
+  draftState2425.picks.pop();
+  lsSet(LS_DRAFT_2425, draftState2425);
+  render2425();
+  renderBigBoard();
+}
 
 function simulateBestPick(){
   const team = buildDraftSeq()[draftState.picks.length];
@@ -3410,7 +3428,7 @@ function renderBigBoard(){
     updateStats2425();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
     stripTop5();
-    _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425, 'draftColumn');
+    _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425, 'draftColumn', 'undoLastPick2425()');
     document.getElementById('bbPicksLog').innerHTML = '';
   } else if(draftMode2526){
     const seq = buildDraftSeq2526();
@@ -3423,7 +3441,7 @@ function renderBigBoard(){
     updateStats2526();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
     stripTop5();
-    _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526, 'draftColumn');
+    _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526, 'draftColumn', 'undoLastPick2526()');
     document.getElementById('bbPicksLog').innerHTML = '';
   } else {
     // 26-27 or no-draft: renderDraftView populates on-clock, draftColumn, draftStandings
@@ -3448,7 +3466,7 @@ function _renderBBStandings(startField, teams, pptsF){
     sorted.map((t,i) => _standingsRowHtml(t, i+1, ptsByTeam[t], false)).join('');
 }
 
-function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targetId = 'bbPicksLog'){
+function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targetId = 'bbPicksLog', undoFnName = 'undoLastPick()'){
   const el = document.getElementById(targetId);
   if(!el) return;
   const total = picks.length;
@@ -3507,7 +3525,7 @@ function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targ
           <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pick.pos)}</span>
           <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:36px">${esc(pick.nhlTeam||'—')}</span>
           <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:52px;text-align:right">${pick.cap>0?'$'+pick.cap.toFixed(1)+'M':'—'}</span>
-          <button class="btn-undo" onclick="undoLastPick()" style="${isLastPick?'':'visibility:hidden'}">↩ Undo</button>
+          <button class="btn-undo" onclick="${undoFnName}" style="${isLastPick?'':'visibility:hidden'}">↩ Undo</button>
         `:''}
       </div>
     </div>`;
@@ -3599,7 +3617,7 @@ function setDraftView(mode, doRender=true){
   document.getElementById('draftViewCompactBtn').style.color    = isF ? '#6366f1' : '#fff';
   document.getElementById('draftViewFullBtn').style.background  = isF ? '#6366f1' : '#e0e7ff';
   document.getElementById('draftViewFullBtn').style.color       = isF ? '#fff'    : '#6366f1';
-  if(doRender) renderDraftView();
+  if(doRender){ if(draftMode2425||draftMode2526) renderBigBoard(); else renderDraftView(); }
 }
 
 function buildDraftBoardHTML(draftStateObj, teamsList){
