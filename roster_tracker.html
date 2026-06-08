@@ -1370,9 +1370,9 @@ function simulateDrops(){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
+      if(numDropped >= maxDropsPreseason && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
       const isValuable = isHighVal(p) || isProspect(p);
       // High-value / prospect players are protected only once the team is under cap
@@ -2209,9 +2209,9 @@ function computeDrops(allPlayers){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
+      if(numDropped >= maxDropsPreseason && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
       const isValuable = isHighVal(p) || isProspect(p);
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
@@ -4442,9 +4442,9 @@ function simulateDrops2526(){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
+      if(numDropped >= maxDropsPreseason && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
       const isValuable = isHighVal2526(p) || isProspect2526(p);
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
@@ -4511,9 +4511,9 @@ function compareDrops2526(){
     let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
 
     for(const p of candidates){
-      if(numDropped >= maxDropsPreseason) break;
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
+      if(numDropped >= maxDropsPreseason && posMinsMet) break;
       const capOk = keptCap <= CAP_LIMIT_2526 - numDropped * DRAFT_RESERVE_2526;
       const isValuable = isHighValV(p) || isProspectV(p);
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
@@ -4840,9 +4840,9 @@ function simulateDrops2425(){
     let droppedD=mandatory.filter(p=>posGroup(p.pos)==='D').length;
 
     for(const p of candidates){
-      if(numDropped>=maxDropsPreseason) break;
       const pg=posGroup(p.pos);
       const posMinsMet=droppedF>=minDropF && droppedD>=minDropD;
+      if(numDropped>=maxDropsPreseason && posMinsMet) break;
       const capOk=keptCap<=CAP_LIMIT_2425-numDropped*DRAFT_RESERVE_2425;
       const isValuable=isHighVal2425(p)||isProspect2425(p);
       if(isValuable && numDropped>=minDropsPreseason && posMinsMet && capOk) break;
@@ -4905,9 +4905,9 @@ function compareDrops2425(){
     let droppedD=mandatory.filter(p=>posGroup(p.pos)==='D').length;
 
     for(const p of candidates){
-      if(numDropped>=maxDropsPreseason) break;
       const pg=posGroup(p.pos);
       const posMinsMet=droppedF>=minDropF && droppedD>=minDropD;
+      if(numDropped>=maxDropsPreseason && posMinsMet) break;
       const capOk=keptCap<=CAP_LIMIT_2425-numDropped*DRAFT_RESERVE_2425;
       const isValuable=isHighValV(p)||isProspectV(p);
       if(isValuable && numDropped>=minDropsPreseason && posMinsMet && capOk) break;
