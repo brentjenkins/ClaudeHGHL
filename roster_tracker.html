@@ -1127,6 +1127,14 @@ function _deltaCurveBonus(pts, cap, curveFn, elcMax, threshold, wt){
 // Prospect age thresholds (Athletic definition): under 23 for F, under 24 for D, under 25 for G.
 const PROSPECT_MAX_AGE = {F: 22, D: 23, G: 24};
 
+// Returns the curve baseline for a player: ELC_EXPECTED_PTS for ELC-cap players,
+// curveFn(cap) for everyone else. Used by all △ display functions so the column
+// reflects the same expectation as the prospect bonus.
+function _curveBaseline(pg, cap, elcMax, curveFn){
+  if(cap > 0 && cap <= elcMax) return ELC_EXPECTED_PTS[pg] ?? 40;
+  return (curveFn && cap > 0) ? curveFn(cap) : null;
+}
+
 // Realistic pts expectation from an ELC-cap player — used to normalise the
 // prospect bonus so 25pt D / 43pt F / 35pt G counts as "meeting expectations".
 // Deliberately below the efficiency curve (fit on $3-12M players) because
@@ -2270,13 +2278,15 @@ function render(){
   };
   const curveDelta = p => {
     if(!(p.pts > 0 && p.cap > 0)) return null;
-    const fn = curveFns2627[posGroup(p.pos)];
-    return fn ? p.pts - fn(p.cap) : null;
+    const pg = posGroup(p.pos);
+    const base = _curveBaseline(pg, p.cap, ELC_MAX_2627, curveFns2627[pg]);
+    return base != null ? p.pts - base : null;
   };
   const curveDeltaActual = p => {
     if(!((p.pts2526||0) > 0 && p.cap > 0)) return null;
-    const fn = curveFns2627[posGroup(p.pos)];
-    return fn ? p.pts2526 - fn(p.cap) : null;
+    const pg = posGroup(p.pos);
+    const base = _curveBaseline(pg, p.cap, ELC_MAX_2627, curveFns2627[pg]);
+    return base != null ? p.pts2526 - base : null;
   };
   rows.sort((a,b)=>{
     let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='rank'?(a.rank??99999):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):(a[sortCol]??'');
@@ -4548,7 +4558,7 @@ function compareDrops2526(){
     D: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
     G: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
   };
-  const labelDelta2526 = p => { const fn=curveFnsPostDrop[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?pp-fn(c):null; };
+  const labelDelta2526 = p => { const pg=posGroup(p.pos),pp=ppts2526blend(p),c=getCap2526(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2526,curveFnsPostDrop[pg]); return base!=null?pp-base:null; };
 
   // Compare virtual results to ACTUAL_ROSTER_2526
   // A player is "actually kept" if they appear in ACTUAL_ROSTER_2526 for this team.
@@ -4943,7 +4953,7 @@ function compareDrops2425(){
     D: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
     G: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
   };
-  const labelDelta2425 = p => { const fn=curveFnsPostDrop2425[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?pp-fn(c):null; };
+  const labelDelta2425 = p => { const pg=posGroup(p.pos),pp=ppts2425blend(p),c=getCap2425(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2425,curveFnsPostDrop2425[pg]); return base!=null?pp-base:null; };
 
   const teamResults=[];
   let totalCorrect=0, totalAll=0;
@@ -5033,11 +5043,13 @@ function render2425(){
   };
   const curveDelta2425 = p=>{
     const pp=ppts2425blend(p),c=getCap2425(p); if(!(pp>0&&c>0)) return null;
-    const fn=curveFns2425[posGroup(p.pos)]; return fn?pp-fn(c):null;
+    const pg=posGroup(p.pos); const base=_curveBaseline(pg,c,ELC_MAX_2425,curveFns2425[pg]);
+    return base!=null?pp-base:null;
   };
   const curveDeltaActual2425 = p=>{
     const ap=p.pts2425||0,c=getCap2425(p); if(!(ap>0&&c>0)) return null;
-    const fn=curveFns2425[posGroup(p.pos)]; return fn?ap-fn(c):null;
+    const pg=posGroup(p.pos); const base=_curveBaseline(pg,c,ELC_MAX_2425,curveFns2425[pg]);
+    return base!=null?ap-base:null;
   };
 
   // ABP for 24-25
@@ -6311,14 +6323,16 @@ function render2526(){
   const curveDelta2526 = p => {
     const pp=ppts2526blend(p), c=getCap2526(p);
     if(!(pp>0 && c>0)) return null;
-    const fn = curveFns2526[posGroup(p.pos)];
-    return fn ? pp - fn(c) : null;
+    const pg = posGroup(p.pos);
+    const base = _curveBaseline(pg, c, ELC_MAX_2526, curveFns2526[pg]);
+    return base != null ? pp - base : null;
   };
   const curveDeltaActual2526 = p => {
     const ap=p.pts2526||0, c=getCap2526(p);
     if(!(ap>0 && c>0)) return null;
-    const fn = curveFns2526[posGroup(p.pos)];
-    return fn ? ap - fn(c) : null;
+    const pg = posGroup(p.pos);
+    const base = _curveBaseline(pg, c, ELC_MAX_2526, curveFns2526[pg]);
+    return base != null ? ap - base : null;
   };
 
   let rows = players.filter(p=>{
