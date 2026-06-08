@@ -908,7 +908,7 @@ tr:hover td{background:#fafaf8}
               </div>
               <div style="display:flex;flex-direction:column;gap:3px">
                 <span style="font-size:11px;color:#9ca3af">full at cap &gt; <span style="color:#1a1a18">X</span> × ELC max</span>
-                <input type="number" id="s-deltaCurveThreshold" value="2.0" min="1.1" max="5" step="0.1" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <input type="number" id="s-deltaCurveThreshold" value="1.5" min="1.1" max="5" step="0.1" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
             </div>
           </div>
@@ -1109,7 +1109,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 8, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 2.0 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 8, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5 };
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve,
 // ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
