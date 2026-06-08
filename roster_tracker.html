@@ -2447,16 +2447,33 @@ const DRAFT_NEVER = new Set([
   'sebastian aho_D',     // SEA — wrong Aho; KW hold Sebastian Aho F (CAR)
 ]);
 
+// 2023-24 final standings — determines 24-25 draft order (rank 9 picks first)
+const FINAL_STANDINGS_2324 = {
+  'Dumb and Goalie To':  {rank:1, pts:1224},
+  'Motor City Wings':    {rank:2, pts:1152},
+  'Damage Inc.':         {rank:3, pts:1137},
+  'Pernicious Puckers':  {rank:4, pts:1104},
+  'Killer Whales':       {rank:5, pts:1065},
+  'Bossy Posse':         {rank:6, pts:1064},
+  'Silence of the Lamb': {rank:7, pts:1049},
+  'Muller Time!':        {rank:8, pts:1037},
+  'Blue Line Bangers':   {rank:9, pts:907},
+};
+
 // 2024-25 final standings — determines 25-26 draft order (rank 9 picks first)
 const DRAFT_STANDINGS_2425 = {
-  'Motor City Wings': 1, 'Pernicious Puckers': 2, 'Damage Inc.': 3,
-  'Bossy Posse': 4, 'Dumb and Goalie To': 5, 'Killer Whales': 6,
-  'Silence of the Lamb': 7, 'Muller Time!': 8, 'Blue Line Bangers': 9,
+  'Motor City Wings':    {rank:1, pts:1152},
+  'Pernicious Puckers':  {rank:2, pts:1107},
+  'Damage Inc.':         {rank:3, pts:1083},
+  'Bossy Posse':         {rank:4, pts:1053},
+  'Dumb and Goalie To':  {rank:5, pts:1034},
+  'Killer Whales':       {rank:6, pts:1022},
+  'Silence of the Lamb': {rank:7, pts:1010},
+  'Muller Time!':        {rank:8, pts:1007},
+  'Blue Line Bangers':   {rank:9, pts:998},
 };
 const DRAFT_TEAMS_2526 = Object.entries(DRAFT_STANDINGS_2425)
-  .sort((a,b) => b[1] - a[1]).map(([name]) => name);
-// [Blue Line Bangers, Muller Time!, Silence of the Lamb, Killer Whales,
-//  Dumb and Goalie To, Bossy Posse, Damage Inc., Pernicious Puckers, Motor City Wings]
+  .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
 
 // ── 24-25 season constants ────────────────────────────────────────────────────
 let CAP_LIMIT_2324 = 83.5;
@@ -2466,10 +2483,8 @@ const ELC_MAX_2425 = 0.975;
 const DRAFT_RESERVE_2425 = 1.5 * (ELC_MAX_2425 - 0.175);
 
 // 24-25 draft pick order (determined by 23-24 standings — worst team picks first).
-const DRAFT_TEAMS_2425 = [
-  'Blue Line Bangers', 'Muller Time!', 'Silence of the Lamb', 'Bossy Posse',
-  'Killer Whales', 'Pernicious Puckers', 'Damage Inc.', 'Motor City Wings', 'Dumb and Goalie To',
-];
+const DRAFT_TEAMS_2425 = Object.entries(FINAL_STANDINGS_2324)
+  .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
 
 // 23-24 final rosters — pre-drop starting state for 24-25 simulation. Keys = normName.toLowerCase().
 const PREDROP_ROSTER_2425 = {
@@ -6981,22 +6996,22 @@ function renderSummaryCard(teamIdx){
   const logo  = teamLogos[team];
 
   // Year-specific config
-  let prevField, currField, pptsF, prevActPtsF, prevRankFn, getCapY, capLimitY, prevYr, currYr;
+  let prevField, currField, pptsF, prevStandings, prevRankFn, getCapY, capLimitY, prevYr, currYr;
   if(draftMode2425){
     prevField='end2324';   currField='start2425';
-    pptsF=p=>ppts2425blend(p);  prevActPtsF=null;
-    prevRankFn=null;
+    pptsF=p=>ppts2425blend(p);  prevStandings=FINAL_STANDINGS_2324;
+    prevRankFn=t=>FINAL_STANDINGS_2324[t]?.rank||'?';
     getCapY=p=>getCap2425(p);   capLimitY=CAP_LIMIT_2425;
     prevYr='23-24';  currYr='24-25';
   } else if(draftMode2526){
     prevField='start2425'; currField='start2526';
-    pptsF=p=>ppts2526blend(p);  prevActPtsF=p=>p.pts2425||0;
-    prevRankFn=t=>DRAFT_STANDINGS_2425[t]||'?';
+    pptsF=p=>ppts2526blend(p);  prevStandings=DRAFT_STANDINGS_2425;
+    prevRankFn=t=>DRAFT_STANDINGS_2425[t]?.rank||'?';
     getCapY=p=>getCap2526(p);   capLimitY=CAP_LIMIT_2526;
     prevYr='24-25';  currYr='25-26';
   } else {
     prevField='end2526';   currField='start2627';
-    pptsF=p=>p.pts||0;          prevActPtsF=p=>p.pts2526||0;
+    pptsF=p=>p.pts||0;          prevStandings=DRAFT_STANDINGS;
     prevRankFn=t=>DRAFT_STANDINGS[t]?.rank||'?';
     getCapY=p=>p.cap||0;        capLimitY=CAP_LIMIT;
     prevYr='25-26';  currYr='26-27';
@@ -7017,7 +7032,7 @@ function renderSummaryCard(teamIdx){
   const returning=players.filter(p=>p[prevField]===team&&p[currField]===team).sort((a,b)=>pptsF(b)-pptsF(a));
 
   const projPtsTotal=Math.round(rosterCurr.reduce((s,p)=>s+pptsF(p),0));
-  const prevPtsTotal=prevActPtsF?Math.round(rosterPrev.reduce((s,p)=>s+prevActPtsF(p),0)):null;
+  const prevPtsTotal=prevStandings?prevStandings[team]?.pts??null:null;
   const deptPts=Math.round(departed.reduce((s,p)=>s+pptsF(p),0));
   const arrPts =Math.round(arrived.reduce((s,p)=>s+pptsF(p),0));
   const retPts =Math.round(returning.reduce((s,p)=>s+pptsF(p),0));
