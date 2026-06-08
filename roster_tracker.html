@@ -911,6 +911,16 @@ tr:hover td{background:#fafaf8}
                 <input type="number" id="s-deltaCurveThreshold" value="1.5" min="1.1" max="5" step="0.1" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
             </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding-top:8px;border-top:1px solid #bbf7d0">
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:11px;color:#9ca3af">ELC expected pts (△ baseline &amp; prospect norm) F / D / G</span>
+                <div style="display:flex;gap:6px">
+                  <input type="number" id="s-elcExpF" value="35" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpF',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                  <input type="number" id="s-elcExpD" value="25" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                  <input type="number" id="s-elcExpG" value="35" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpG',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -929,14 +939,6 @@ tr:hover td{background:#fafaf8}
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Prospect mode</span> Prospect bonus (F≤22, D≤23, G≤24, cap≤ELC max) ×</span>
           <input type="number" id="s-wtProspect" value="12" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-        </div>
-        <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
-          <span style="font-size:11px;color:#9ca3af">ELC pts expectation — △ baseline &amp; prospect norm for cap≤ELC max &nbsp;<span style="color:#9ca3af;font-weight:600">F &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; G</span></span>
-          <div style="display:flex;gap:6px">
-            <input type="number" id="s-elcExpF" value="45" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpF',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-            <input type="number" id="s-elcExpD" value="20" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-            <input type="number" id="s-elcExpG" value="35" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-          </div>
         </div>
       </div>
     </div>
@@ -1117,7 +1119,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 45, elcExpD: 20, elcExpG: 35 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35 };
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve,
 // ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
@@ -3745,8 +3747,8 @@ function updateDraftWeight(key, val){
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
   if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 4.0;
   if(draftWeights.deltaCurveThreshold === undefined) draftWeights.deltaCurveThreshold = 2.0;
-  if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 45;
-  if(draftWeights.elcExpD === undefined) draftWeights.elcExpD = 20;
+  if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 35;
+  if(draftWeights.elcExpD === undefined) draftWeights.elcExpD = 25;
   if(draftWeights.elcExpG === undefined) draftWeights.elcExpG = 35;
   draftWeights[key] = val;
   syncSettings();
