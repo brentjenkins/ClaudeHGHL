@@ -4509,6 +4509,15 @@ function compareDrops2526(){
     dropList.forEach(p => { p.start2526 = null; });
   }
 
+  // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
+  const keptPoolV = vp.filter(p => p.start2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
+  const curveFnsPostDrop = {
+    F: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+    D: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+    G: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+  };
+  const labelDelta2526 = p => { const fn=curveFnsPostDrop[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?pp-fn(c):null; };
+
   // Compare virtual results to ACTUAL_ROSTER_2526
   // A player is "actually kept" if they appear in ACTUAL_ROSTER_2526 for this team.
   // A player is "sim kept" if their virtual start2526 is still set.
@@ -4525,7 +4534,7 @@ function compareDrops2526(){
       const simKept = p.start2526 !== null;
       const pp = ppts2526blend(p).toFixed(1);
       const cap = getCap2526(p).toFixed(2);
-      const delta = -deficitV(p); const defStr = (!isFinite(delta)?'∞':(delta>=0?'+':'')+delta.toFixed(1));
+      const delta = labelDelta2526(p); const defStr = (delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
       const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
 
       if(!simKept && !actuallyKept){
@@ -4891,6 +4900,15 @@ function compareDrops2425(){
     dropList.forEach(p=>{ p.start2425=null; });
   }
 
+  // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
+  const keptPoolV2425 = vp.filter(p => p.start2425 && ppts2425blend(p) >= curveMinPts && getCap2425(p) > 0);
+  const curveFnsPostDrop2425 = {
+    F: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
+    D: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
+    G: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
+  };
+  const labelDelta2425 = p => { const fn=curveFnsPostDrop2425[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?pp-fn(c):null; };
+
   const teamResults=[];
   let totalCorrect=0, totalAll=0;
 
@@ -4904,7 +4922,7 @@ function compareDrops2425(){
       const simKept=p.start2425!==null;
       const pp=ppts2425blend(p).toFixed(1);
       const cap=getCap2425(p).toFixed(2);
-      const delta=-deficitV(p); const defStr=(!isFinite(delta)?'∞':(delta>=0?'+':'')+delta.toFixed(1));
+      const delta=labelDelta2425(p); const defStr=(delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
       const label=`${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
 
       if(!simKept && !actuallyKept){
