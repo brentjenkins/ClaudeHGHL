@@ -2285,7 +2285,7 @@ function render(){
   });
 
   document.getElementById('th-score').style.display = draftMode ? '' : 'none';
-  const onClockTeam = buildDraftSeq()[draftState.picks.length] ?? null;
+  const onClockTeam = buildDraftSeq2627()[draftState2627.picks.length] ?? null;
   let pressureHdr = '';
   if(draftMode){
     const viewTeam = draftFocusTeam || onClockTeam;
@@ -2294,12 +2294,12 @@ function render(){
     const dN2=viewRoster.filter(p=>posGroup(p.pos)==='D').length;
     const gN2=viewRoster.filter(p=>posGroup(p.pos)==='G').length;
     const need={F:Math.max(0,DRAFT_ROSTER_MAX.F-fN2),D:Math.max(0,DRAFT_ROSTER_MAX.D-dN2),G:Math.max(0,DRAFT_ROSTER_MAX.G-gN2)};
-    const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
+    const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
     // league-wide positional pressure: demand/supply ratio per position
     const leagueNeed={F:0,D:0,G:0};
-    for(const t of DRAFT_TEAMS){
+    for(const t of DRAFT_TEAMS_2627){
       const r=players.filter(p=>p.start2627===t);
       leagueNeed.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
       leagueNeed.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
@@ -2426,21 +2426,21 @@ let CAP_LIMIT_2526 = 95.5;
 const NHL_SEASON_YEAR = 2026;
 
 // 2025-26 final standings — determines draft order (rank 9 picks first)
-const DRAFT_STANDINGS = {
-  'Bossy Posse':         {rank:1, pts:1157, ptsChange:+5,  ptsBack:0,   moves:14},
-  'Pernicious Puckers':  {rank:2, pts:1136, ptsChange: 0,  ptsBack:21,  moves:8},
-  'Motor City Wings':    {rank:3, pts:1134, ptsChange:+7,  ptsBack:23,  moves:9},
-  'Silence of the Lamb': {rank:4, pts:1105, ptsChange:+12, ptsBack:52,  moves:9},
-  'Damage Inc.':         {rank:5, pts:1091, ptsChange:+8,  ptsBack:66,  moves:9},
-  'Blue Line Bangers':   {rank:6, pts:1058, ptsChange:+9,  ptsBack:99,  moves:16},
-  'Muller Time!':        {rank:7, pts:1055, ptsChange:+4,  ptsBack:102, moves:8},
-  'Dumb and Goalie To':  {rank:8, pts:1040, ptsChange:+2,  ptsBack:117, moves:10},
-  'Killer Whales':       {rank:9, pts:909,  ptsChange:+12, ptsBack:248, moves:10},
+const FINAL_STANDINGS_2526 = {
+  'Bossy Posse':         {rank:1, pts:1157},
+  'Pernicious Puckers':  {rank:2, pts:1136},
+  'Motor City Wings':    {rank:3, pts:1134},
+  'Silence of the Lamb': {rank:4, pts:1105},
+  'Damage Inc.':         {rank:5, pts:1091},
+  'Blue Line Bangers':   {rank:6, pts:1058},
+  'Muller Time!':        {rank:7, pts:1055},
+  'Dumb and Goalie To':  {rank:8, pts:1040},
+  'Killer Whales':       {rank:9, pts:909},
 };
 
 
 // Draft order array: rank 9 first (worst team picks first)
-const DRAFT_TEAMS = Object.entries(DRAFT_STANDINGS)
+const DRAFT_TEAMS_2627 = Object.entries(FINAL_STANDINGS_2526)
   .sort((a,b) => b[1].rank - a[1].rank)
   .map(([name]) => name);
 
@@ -2963,10 +2963,10 @@ const ACTUAL_MIDSEASON_DRAFT_2526 = [
   // DGT, DI, SOTL, MT!, PP passed in round 5
 ];
 
-const LS_DRAFT = 'hghl_draft_2627';
+const LS_DRAFT_2627 = 'hghl_draft_2627';
 const LS_DRAFT_2526 = 'hghl_draft_2526';
 const LS_DRAFT_2425 = 'hghl_draft_2425';
-let draftState = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
+let draftState2627 = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let draftState2526 = {picks: []};
 let draftState2425 = {picks: []};
 let draftMode2526 = false, draftModeTop2526 = 50, draftSubMode2526 = 'prospect';
@@ -3033,7 +3033,7 @@ function stopDraftTimer(){
 // ── Draft standings panel ─────────────────────────────────────────
 function _standingsPts(){
   const pts = {};
-  for(const t of DRAFT_TEAMS) pts[t] = 0;
+  for(const t of DRAFT_TEAMS_2627) pts[t] = 0;
   for(const p of players){
     if(p.start2627 && pts.hasOwnProperty(p.start2627))
       pts[p.start2627] = (pts[p.start2627]||0) + (p.pts||0);
@@ -3056,7 +3056,7 @@ function renderStandings(){
   const ptsByTeam = _standingsPts();
   const anim = _standingsAnim;
   const display = anim ? {...ptsByTeam, [anim.team]: anim.fromPts} : ptsByTeam;
-  const sorted = [...DRAFT_TEAMS].sort((a,b)=>display[b]-display[a]);
+  const sorted = [...DRAFT_TEAMS_2627].sort((a,b)=>display[b]-display[a]);
   el.innerHTML =
     `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 10px 4px;border-bottom:1px solid #f0f0ee">Projected League Standings</div>`+
     sorted.map((t,i)=>_standingsRowHtml(t, i+1, display[t], anim&&t===anim.team)).join('');
@@ -3078,7 +3078,7 @@ function reorderStandings(el, ptsByTeam){
   const rows = el.querySelectorAll('.srow');
   const tops = {};
   rows.forEach(r=>{ tops[r.dataset.team]=r.getBoundingClientRect().top; });
-  const sorted = [...DRAFT_TEAMS].sort((a,b)=>ptsByTeam[b]-ptsByTeam[a]);
+  const sorted = [...DRAFT_TEAMS_2627].sort((a,b)=>ptsByTeam[b]-ptsByTeam[a]);
   const header = el.querySelector('div:not(.srow)').outerHTML;
   el.innerHTML = header + sorted.map((t,i)=>_standingsRowHtml(t,i+1,ptsByTeam[t],false)).join('');
   el.querySelectorAll('.srow').forEach(r=>{
@@ -3242,14 +3242,14 @@ function showMullerOverlay(show){
 }
 
 function loadDraft(){
-  draftState = lsGet(LS_DRAFT) || {picks: []};
+  draftState2627 = lsGet(LS_DRAFT_2627) || {picks: []};
   draftState2526 = lsGet(LS_DRAFT_2526) || {picks: []};
   draftState2425 = lsGet(LS_DRAFT_2425) || {picks: []};
 }
-function saveDraft(){ lsSet(LS_DRAFT, draftState); }
+function saveDraft(){ lsSet(LS_DRAFT_2627, draftState2627); }
 function resetDraft(){
   if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 and clears draft picks.')) return;
-  draftState = {picks:[]};
+  draftState2627 = {picks:[]};
   saveDraft();
   for(const p of players) p.start2627 = p.end2526 || '';
   dropsSimulated = false;
@@ -3276,17 +3276,17 @@ function _buildSeq(teams, startField, state){
   while(any){ any=false; for(const t of teams){ if(rem[t]>0){seq.push(t);rem[t]--;any=true;} } }
   return seq;
 }
-function buildDraftSeq(){    return _buildSeq(DRAFT_TEAMS,      'start2627', draftState);      }
+function buildDraftSeq2627(){ return _buildSeq(DRAFT_TEAMS_2627, 'start2627', draftState2627); }
 function buildDraftSeq2425(){ return _buildSeq(DRAFT_TEAMS_2425, 'start2425', draftState2425); }
 function buildDraftSeq2526(){ return _buildSeq(DRAFT_TEAMS_2526, 'start2526', draftState2526); }
 
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   animDismissed = false;
   draftFocusTeam = null;
-  const team = buildDraftSeq()[draftState.picks.length];
+  const team = buildDraftSeq2627()[draftState2627.picks.length];
   const toPts = players.filter(p=>p.start2627===team).reduce((s,p)=>s+(p.pts||0),0);
   _standingsAnim = {team, fromPts: toPts-(projPts||0), toPts};
-  draftState.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
+  draftState2627.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   saveDraft();
   document.getElementById('draftSearch').value = '';
   document.getElementById('draftResults').style.display = 'none';
@@ -3296,10 +3296,10 @@ function makeDraftPick(player, pos, nhlTeam, cap, projPts){
 }
 
 function undoLastPick(){
-  if(!draftState.picks.length) return;
+  if(!draftState2627.picks.length) return;
   if(_standingsRAF){ cancelAnimationFrame(_standingsRAF); _standingsRAF=null; }
   _standingsAnim = null;
-  draftState.picks.pop();
+  draftState2627.picks.pop();
   saveDraft();
   resetDraftTimer();
   renderDraftView();
@@ -3325,9 +3325,9 @@ function undoLastPick2425(){
 }
 
 function simulateBestPick(){
-  const team = buildDraftSeq()[draftState.picks.length];
+  const team = buildDraftSeq2627()[draftState2627.picks.length];
   if(!team) return;
-  const teamPicks = draftState.picks.filter(p => p.team === team);
+  const teamPicks = draftState2627.picks.filter(p => p.team === team);
   const fN = teamPicks.filter(p => posGroup(p.pos) === 'F').length;
   const dN = teamPicks.filter(p => posGroup(p.pos) === 'D').length;
   const gN = teamPicks.filter(p => posGroup(p.pos) === 'G').length;
@@ -3337,7 +3337,7 @@ function simulateBestPick(){
     G: Math.max(0, DRAFT_ROSTER_MAX.G - gN),
   };
 
-  const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
+  const drafted = new Set(draftState2627.picks.map(p => normName(p.player).toLowerCase()));
   const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
   const abpMap  = computeABP(players);
   const scarcity = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
@@ -4235,9 +4235,9 @@ function quickDraft2526(id){
 }
 
 function passCurrentPick(){
-  const onClock = buildDraftSeq()[draftState.picks.length];
+  const onClock = buildDraftSeq2627()[draftState2627.picks.length];
   if(!onClock) return;
-  draftState.picks.push({team:onClock, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
+  draftState2627.picks.push({team:onClock, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
   saveDraft();
   renderDraftView();
 }
@@ -4329,9 +4329,9 @@ function loadActualRoster2627(){
       unmatched++;
     }
   }
-  draftState = {picks:[]};
+  draftState2627 = {picks:[]};
   lsSet(LS_PLAYERS, players);
-  lsSet(LS_DRAFT, draftState);
+  lsSet(LS_DRAFT_2627, draftState2627);
   render();
   toast(`Loaded actual 26-27 pre-draft rosters — ${players.filter(p=>p.start2627).length} rostered, ${matched} matched.`);
 }
@@ -5521,7 +5521,7 @@ function runDraftSim2627(){
     season:       '26-27',
     actualDraft:  {},
     allTeams:     teams,
-    buildSeq:     buildDraftSeq,
+    buildSeq:     buildDraftSeq2627,
     startField:   'start2627',
     ppts:         p => p.pts || 0,
     getCap:       p => p.cap || 0,
@@ -6506,9 +6506,9 @@ function updateDraftTab(){
   const btn = document.getElementById('tab-draft');
   if(!btn) return;
   const ROSTER_TOTAL = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
-  const allFull = dropsSimulated && DRAFT_TEAMS.every(t => {
+  const allFull = dropsSimulated && DRAFT_TEAMS_2627.every(t => {
     const retained = players.filter(p => p.start2627 === t).length;
-    const picked   = draftState.picks.filter(p => p.team === t).length;
+    const picked   = draftState2627.picks.filter(p => p.team === t).length;
     return retained + picked >= ROSTER_TOTAL;
   });
   const blocked = !dropsSimulated || allFull;
@@ -6555,21 +6555,21 @@ function setView(v){
   }
   if(v==='summary'){
     startSummaryRotation();
-    const onClock = buildDraftSeq()[draftState.picks.length] ?? null;
-    const pastRound1 = draftState.picks.length >= 9;
+    const onClock = buildDraftSeq2627()[draftState2627.picks.length] ?? null;
+    const pastRound1 = draftState2627.picks.length >= 9;
     if(pastRound1 && !animDismissed && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
     showMullerOverlay(pastRound1 && !animDismissed && onClock === 'Muller Time!');
   }
 }
 
 function renderDraftView(){
-  const picks    = draftState.picks;
+  const picks    = draftState2627.picks;
   const total    = picks.length;
   const posColors = {F:'#dbeafe', D:'#dcfce7', G:'#fef3c7'};
   const posText   = {F:'#1e40af', D:'#166534', G:'#92400e'};
   const curRound = Math.floor(total / 9) + 1;
 
-  const draftSeq = buildDraftSeq();
+  const draftSeq = buildDraftSeq2627();
   const onClock = draftSeq[total] ?? null;
   const pastRound1 = total >= 9;
   if(pastRound1 && !animDismissed && draftAnimsEnabled && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
@@ -6647,7 +6647,7 @@ function renderDraftView(){
   const wrap = document.getElementById('draftCompactWrap');
   if(draftViewMode === 'full'){
     boardFull.style.display = 'block';
-    boardFull.innerHTML = buildDraftBoardHTML(draftState, DRAFT_TEAMS);
+    boardFull.innerHTML = buildDraftBoardHTML(draftState2627, DRAFT_TEAMS_2627);
     wrap.style.display = 'none';
   } else {
     boardFull.style.display = 'none';
@@ -6664,12 +6664,12 @@ function renderDraftView(){
   } else {
     if((currentView==='draft'||currentView==='summary') && tickerEnabled) tickerEl.style.display = 'block';
     const ptsByTeam = {};
-    for(const t of DRAFT_TEAMS) ptsByTeam[t] = 0;
+    for(const t of DRAFT_TEAMS_2627) ptsByTeam[t] = 0;
     for(const p of players){
       if(p.start2627 && ptsByTeam.hasOwnProperty(p.start2627))
         ptsByTeam[p.start2627] += (p.pts||0);
     }
-    const ranked = [...DRAFT_TEAMS].sort((a,b) => ptsByTeam[b] - ptsByTeam[a]);
+    const ranked = [...DRAFT_TEAMS_2627].sort((a,b) => ptsByTeam[b] - ptsByTeam[a]);
     const tickerHeader = `<span class="ticker-item" style="color:#60a5fa;font-weight:700;letter-spacing:.04em">Team Rankings based on Projected Points for 2026-27</span>`;
     const tickerContent = tickerHeader + ranked.map((t,i) => {
       const logo = teamLogos[t];
@@ -6693,7 +6693,7 @@ function renderDraftSearch(){
   const res = document.getElementById('draftResults');
   if(!q){ res.style.display='none'; return; }
 
-  const drafted = new Set(draftState.picks.map(p => normName(p.player).toLowerCase()));
+  const drafted = new Set(draftState2627.picks.map(p => normName(p.player).toLowerCase()));
   const fa = players
     .filter(p => !p.start2627 && normName(p.name).toLowerCase().includes(q) && !drafted.has(normName(p.name).toLowerCase()))
     .sort((a,b) => (b.pts2526||0)-(a.pts2526||0))
@@ -6828,11 +6828,11 @@ function filterToTeam(team, pos){
 }
 
 function updateStats(){
-  const onClock = buildDraftSeq()[draftState.picks.length] ?? null;
+  const onClock = buildDraftSeq2627()[draftState2627.picks.length] ?? null;
   const teamsSet = new Set(players.map(p=>p.start2627).filter(Boolean));
   if(onClock) teamsSet.add(onClock); // always show on-clock team even if roster is empty
   const teams = [...teamsSet].sort((a,b)=>{
-    const ai = DRAFT_TEAMS.indexOf(a), bi = DRAFT_TEAMS.indexOf(b);
+    const ai = DRAFT_TEAMS_2627.indexOf(a), bi = DRAFT_TEAMS_2627.indexOf(b);
     if(ai===-1 && bi===-1) return a.localeCompare(b);
     if(ai===-1) return 1;
     if(bi===-1) return -1;
@@ -6846,7 +6846,7 @@ function updateStats(){
     const lnF=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
     const lnD=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
     const lnG=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
-    const drafted=new Set(draftState.picks.map(p=>normName(p.player).toLowerCase()));
+    const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
     const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
     const avF=allUndrafted.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted.filter(p=>posGroup(p.pos)==='D').length;
@@ -7018,10 +7018,10 @@ updateYahooDropBtnTooltips();
 updateDraftTab();
 
 window.addEventListener('storage', e => {
-  const watched = [LS_PLAYERS, LS_DRAFT, LS_DRAFT_2526];
+  const watched = [LS_PLAYERS, LS_DRAFT_2627, LS_DRAFT_2526];
   if(!watched.includes(e.key) || e.newValue === null) return;
   if(e.key === LS_PLAYERS)    players       = JSON.parse(e.newValue) || [];
-  if(e.key === LS_DRAFT)      draftState    = JSON.parse(e.newValue) || {picks:[]};
+  if(e.key === LS_DRAFT_2627)      draftState2627    = JSON.parse(e.newValue) || {picks:[]};
   if(e.key === LS_DRAFT_2526) draftState2526= JSON.parse(e.newValue) || {picks:[]};
   const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
   if(tab === '2526') render2526(); else render();
@@ -7032,10 +7032,10 @@ const SUMMARY_DURATION = 10000; // ms per team
 
 function buildProjRanking(){
   const totals = {};
-  for(const t of DRAFT_TEAMS) totals[t] = 0;
+  for(const t of DRAFT_TEAMS_2627) totals[t] = 0;
   for(const p of players) if(p.start2627 && totals.hasOwnProperty(p.start2627))
     totals[p.start2627] += (p.pts||0);
-  return [...DRAFT_TEAMS].sort((a,b) => totals[b]-totals[a]);
+  return [...DRAFT_TEAMS_2627].sort((a,b) => totals[b]-totals[a]);
 }
 
 function renderSummaryCard(teamIdx){
@@ -7059,8 +7059,8 @@ function renderSummaryCard(teamIdx){
     prevYr='24-25';  currYr='25-26';
   } else {
     prevField='end2526';   currField='start2627';
-    pptsF=p=>p.pts||0;          prevStandings=DRAFT_STANDINGS;
-    prevRankFn=t=>DRAFT_STANDINGS[t]?.rank||'?';
+    pptsF=p=>p.pts||0;          prevStandings=FINAL_STANDINGS_2526;
+    prevRankFn=t=>FINAL_STANDINGS_2526[t]?.rank||'?';
     getCapY=p=>p.cap||0;        capLimitY=CAP_LIMIT;
     prevYr='25-26';  currYr='26-27';
   }
@@ -7160,7 +7160,7 @@ function summaryStartProgress(){
 function _activeSummaryTeams(){
   if(draftMode2425) return DRAFT_TEAMS_2425;
   if(draftMode2526) return DRAFT_TEAMS_2526;
-  return DRAFT_TEAMS;
+  return DRAFT_TEAMS_2627;
 }
 
 function summaryShowIdx(idx){
