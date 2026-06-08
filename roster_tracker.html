@@ -930,6 +930,14 @@ tr:hover td{background:#fafaf8}
           <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Prospect mode</span> Prospect bonus (F≤22, D≤23, G≤24, cap≤ELC max) ×</span>
           <input type="number" id="s-wtProspect" value="12" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
         </div>
+        <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:11px;color:#9ca3af">ELC pts expectation — △ baseline &amp; prospect norm for cap≤ELC max &nbsp;<span style="color:#9ca3af;font-weight:600">F &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; G</span></span>
+          <div style="display:flex;gap:6px">
+            <input type="number" id="s-elcExpF" value="45" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpF',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+            <input type="number" id="s-elcExpD" value="20" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpD',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+            <input type="number" id="s-elcExpG" value="35" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpG',+this.value)" style="width:64px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1109,7 +1117,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5 };
+let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 45, elcExpD: 20, elcExpG: 35 };
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve,
 // ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
@@ -1127,19 +1135,16 @@ function _deltaCurveBonus(pts, cap, curveFn, elcMax, threshold, wt){
 // Prospect age thresholds (Athletic definition): under 23 for F, under 24 for D, under 25 for G.
 const PROSPECT_MAX_AGE = {F: 22, D: 23, G: 24};
 
-// Returns the curve baseline for a player: ELC_EXPECTED_PTS for ELC-cap players,
+// Returns the ELC expected pts for a position from live draftWeights settings.
+function _elcExp(pg){ return ({F: draftWeights.elcExpF, D: draftWeights.elcExpD, G: draftWeights.elcExpG}[pg] ?? 40); }
+
+// Returns the curve baseline for a player: ELC expected pts for ELC-cap players,
 // curveFn(cap) for everyone else. Used by all △ display functions so the column
 // reflects the same expectation as the prospect bonus.
 function _curveBaseline(pg, cap, elcMax, curveFn){
-  if(cap > 0 && cap <= elcMax) return ELC_EXPECTED_PTS[pg] ?? 40;
+  if(cap > 0 && cap <= elcMax) return _elcExp(pg);
   return (curveFn && cap > 0) ? curveFn(cap) : null;
 }
-
-// Realistic pts expectation from an ELC-cap player — used to normalise the
-// prospect bonus so 25pt D / 43pt F / 35pt G counts as "meeting expectations".
-// Deliberately below the efficiency curve (fit on $3-12M players) because
-// ELC players are cheap and young; extrapolating the curve to $0.975M inflates it.
-const ELC_EXPECTED_PTS = {F: 45, D: 20, G: 35};
 
 // Returns prospect bonus score (0 if not a prospect).
 // Weighted by pts vs ELC expectation: high-ceiling prospects score much higher
@@ -1149,7 +1154,7 @@ function prospectBonus(age, pg, capHit, elcMax, wtProspect, pts=0){
   const maxAge = PROSPECT_MAX_AGE[pg] ?? 22;
   if(age > maxAge || capHit > elcMax) return 0;
   const ageScore = maxAge + 1 - age;
-  const normPts = ELC_EXPECTED_PTS[pg] ?? 40;
+  const normPts = _elcExp(pg);
   const ptsRatio = pts > 0 ? pts / normPts : 0;
   return Math.max(0, ageScore * ptsRatio * wtProspect);
 }
@@ -3710,6 +3715,7 @@ function syncSettings(){
   set('s-multF', W.multF);    set('s-multD', W.multD);    set('s-multG', W.multG);
   set('s-wtPPTSM', W.wtPPTSM); set('s-wtYrs', W.wtYrs);  set('s-wtAge', W.wtAge);
   set('s-wtProspect', W.wtProspect);
+  set('s-elcExpF', W.elcExpF); set('s-elcExpD', W.elcExpD); set('s-elcExpG', W.elcExpG);
   set('s-wtSourceConf', W.wtSourceConf);
   set('s-wtPressure', W.wtPressure);
   set('s-wtScarcity', W.wtScarcity);
@@ -3739,6 +3745,9 @@ function updateDraftWeight(key, val){
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
   if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 4.0;
   if(draftWeights.deltaCurveThreshold === undefined) draftWeights.deltaCurveThreshold = 2.0;
+  if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 45;
+  if(draftWeights.elcExpD === undefined) draftWeights.elcExpD = 20;
+  if(draftWeights.elcExpG === undefined) draftWeights.elcExpG = 35;
   draftWeights[key] = val;
   syncSettings();
   if(draftMode) render();
