@@ -4465,7 +4465,9 @@ function simulateDrops2526(){
     dropList.forEach(p => { p.start2526 = null; dropped++; });
   }
 
+  draftState2526 = {picks:[]};
   lsSet(LS_PLAYERS,players);
+  lsSet(LS_DRAFT_2526, draftState2526);
   render2526();
   toast(`25-26 simulate drops — ${dropped} players dropped across ${teams.length} teams.`);
 }
@@ -4765,7 +4767,9 @@ function resetSim2425(){
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null,
     });
   }
+  draftState2425 = {picks:[]};
   lsSet(LS_PLAYERS, players);
+  lsSet(LS_DRAFT_2425, draftState2425);
   render2425();
 }
 
@@ -4859,7 +4863,9 @@ function simulateDrops2425(){
     dropList.forEach(p=>{ p.start2425=null; dropped++; });
   }
 
+  draftState2425 = {picks:[]};
   lsSet(LS_PLAYERS,players);
+  lsSet(LS_DRAFT_2425, draftState2425);
   render2425();
   toast(`24-25 simulate drops — ${dropped} players dropped across ${teams.length} teams.`);
 }
