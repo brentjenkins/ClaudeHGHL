@@ -752,6 +752,7 @@ def nhl_rosters():
                         key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
                         active[key] = {"name": full, "nhlTeam": team, "pos": pos,
                                        "birthDate": p.get("birthDate", "")}
+                        _add_name_aliases(active, key, full, _pos_group(pos))
             print(f"  ✓ {team}")
         except Exception as e:
             errors.append(f"{team}: {str(e)}")
@@ -798,6 +799,7 @@ def season_stats():
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
             }
+            _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  NHL skaters: {len(fetched)} fetched")
     except Exception as e:
         errors.append(f"skaters: {e}")
@@ -818,6 +820,7 @@ def season_stats():
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0,
             }
+            _add_name_aliases(stats, key, full, "G")
         print(f"  NHL goalies: {len(data.get('data', []))} fetched")
     except Exception as e:
         errors.append(f"goalies: {e}")
@@ -856,6 +859,7 @@ def season_stats_2627():
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
             }
+            _add_name_aliases(stats, key, full, _pos_group(pos))
     except Exception as e:
         errors.append(f"skaters: {e}")
 
@@ -874,6 +878,7 @@ def season_stats_2627():
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0,
             }
+            _add_name_aliases(stats, key, full, "G")
     except Exception as e:
         errors.append(f"goalies: {e}")
 
@@ -909,6 +914,7 @@ def season_stats_2425():
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
             }
+            _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2024-25 NHL skaters: {len(fetched)} fetched")
     except Exception as e:
         errors.append(f"skaters: {e}")
@@ -929,6 +935,7 @@ def season_stats_2425():
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0,
             }
+            _add_name_aliases(stats, key, full, "G")
         print(f"  2024-25 NHL goalies: {len(data.get('data', []))} fetched")
     except Exception as e:
         errors.append(f"goalies: {e}")
@@ -1103,6 +1110,7 @@ def _espn_fetch_projections(season_year: int):
                     print(f"  ESPN stat keys (first player '{name}'): {sorted(st.keys())}")
                 key = f"{normalize_name(name).lower()}_{pg}"
                 all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+                _add_name_aliases(all_players, key, name, pg)
             print(f"  ESPN {season_year} {label}: {len(raw)} fetched")
         except Exception as e:
             errors.append(f"{label}: {str(e)}")
@@ -1183,12 +1191,14 @@ def dfo_projections():
         pg  = "D" if p["pos"] == "D" else "F"
         key = f"{normalize_name(p['name']).lower()}_{pg}"
         all_players[key] = {"name": p["name"], "pg": pg, "hghl_pts": hghl_pts, "ppp": round(p["PPP"])}
+        _add_name_aliases(all_players, key, p["name"], pg)
     for p in goalies:
         hghl_pts = round(p["W"] * 2 + p["SO"] * 3)
         if hghl_pts <= 0:
             continue
         key = f"{normalize_name(p['name']).lower()}_G"
         all_players[key] = {"name": p["name"], "pg": "G", "hghl_pts": hghl_pts, "ppp": 0}
+        _add_name_aliases(all_players, key, p["name"], "G")
 
     print(f"  DFO: {len(skaters)} skaters + {len(goalies)} goalies → {len(all_players)} total")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -1245,6 +1255,7 @@ def dfo_projections_2526():
         ppp = round(safe_float(row[col_ppp]) if col_ppp is not None and len(row) > col_ppp else 0)
         key = f"{normalize_name(name).lower()}_{pg}"
         all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+        _add_name_aliases(all_players, key, name, pg)
 
     print(f"  DFO 25-26 CSV: {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -1366,6 +1377,7 @@ def athletic_projections_2526():
         if hghl_pts <= 0: continue
         key = f"{normalize_name(name).lower()}_{pg}"
         all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+        _add_name_aliases(all_players, key, name, pg)
 
     print(f"  Athletic 25-26: {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -1473,6 +1485,7 @@ def athletic_projections():
 
         key = f"{normalize_name(name).lower()}_{pg}"
         all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+        _add_name_aliases(all_players, key, name, pg)
 
     print(f"  Athletic: {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
@@ -1503,10 +1516,14 @@ _POS_GROUP_MAP = {"G": "G", "D": "D"}  # anything else → "F"
 # Map formal → nickname so both keys are indexed in the signings lookup.
 _FORMAL_TO_NICK = {
     "alexander": "alex",
+    "alexandre": "alex",
     "bradley":   "brad",
+    "cameron":   "cam",
     "christopher": "chris",
     "daniel":    "dan",
     "david":     "dave",
+    "gabriel":   "gabe",
+    "jacob":     "jake",
     "joshua":    "josh",
     "matthew":   "matt",
     "michael":   "mike",
@@ -1519,7 +1536,24 @@ _FORMAL_TO_NICK = {
     "samuel":    "sam",
     "thomas":    "tom",
     "timothy":   "tim",
+    "william":   "will",
+    "zachary":   "zach",
 }
+# Reverse map: nick → formal (built from _FORMAL_TO_NICK, last formal wins on collision)
+_NICK_TO_FORMAL = {v: k for k, v in _FORMAL_TO_NICK.items()}
+
+
+def _add_name_aliases(d: dict, key: str, full_name: str, pg: str) -> None:
+    """Emit nick/formal alias keys pointing to the same entry so either spelling matches."""
+    parts = full_name.strip().split(" ", 1)
+    if len(parts) < 2:
+        return
+    first_lower = normalize_name(parts[0]).lower()
+    last = parts[1]
+    for alias_first in filter(None, [_FORMAL_TO_NICK.get(first_lower), _NICK_TO_FORMAL.get(first_lower)]):
+        alias_key = f"{normalize_name(alias_first + ' ' + last).lower()}_{pg}"
+        if alias_key not in d:
+            d[alias_key] = d[key]
 
 
 @app.route("/signings")

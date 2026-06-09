@@ -1216,6 +1216,26 @@ const posGroup = p => ['C','LW','RW','F','Util'].includes(p) ? 'F' : p === 'D' ?
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'');
 
+// Bidirectional first-name alias map (formal↔nick). Mirrors _FORMAL_TO_NICK in yahoo_proxy.py.
+const FIRST_NAME_ALIASES = {
+  'alexander':'alex','alexandre':'alex','bradley':'brad','cameron':'cam',
+  'christopher':'chris','daniel':'dan','david':'dave','gabriel':'gabe',
+  'jacob':'jake','joshua':'josh','matthew':'matt','michael':'mike',
+  'mitchell':'mitch','nicholas':'nick','patrick':'pat','philip':'phil',
+  'richard':'rick','robert':'rob','samuel':'sam','thomas':'tom',
+  'timothy':'tim','william':'will','zachary':'zach',
+  'alex':'alexander','brad':'bradley','cam':'cameron','chris':'christopher',
+  'dan':'daniel','dave':'david','gabe':'gabriel','jake':'jacob',
+  'josh':'joshua','matt':'matthew','mike':'michael','mitch':'mitchell',
+  'nick':'nicholas','pat':'patrick','phil':'philip','rick':'richard',
+  'rob':'robert','sam':'samuel','tom':'thomas','tim':'timothy',
+  'will':'william','zach':'zachary',
+};
+// Returns the alias spelling of a normalized full name, or null if no alias exists.
+function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
+// Find a player by name, trying the alias spelling if exact match fails.
+function findPlayerByName(name){ const n=normName(name).toLowerCase(); return players.find(p=>normName(p.name).toLowerCase()===n)||((_nameAlias(n))?players.find(p=>normName(p.name).toLowerCase()===_nameAlias(n)):null); }
+
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
@@ -1911,7 +1931,7 @@ async function doSync(){
 
     let added=0, updated=0;
     for(const yp of rd.players){
-      const ex = players.find(p=>normName(p.name).toLowerCase()===normName(yp.name).toLowerCase());
+      const ex = findPlayerByName(yp.name);
       if(ex){
         ex.start2627    = yp.fantasyTeam;
         ex.end2526 = yp.fantasyTeam;
@@ -1974,7 +1994,7 @@ async function sync2324Rosters(){
     let matched=0;
     const unmatched=[];
     for(const yp of rd.players){
-      const ex = players.find(p => normName(p.name).toLowerCase() === normName(yp.name).toLowerCase());
+      const ex = findPlayerByName(yp.name);
       if(ex){ ex.end2324 = yp.fantasyTeam; matched++; }
       else unmatched.push(`${yp.name} (${yp.fantasyTeam})`);
     }
@@ -2014,7 +2034,7 @@ async function sync2425Rosters(){
     let matched=0;
     const unmatchedPlayers=[];
     for(const yp of rd.players){
-      const ex = players.find(p => normName(p.name).toLowerCase() === normName(yp.name).toLowerCase());
+      const ex = findPlayerByName(yp.name);
       if(ex){ ex.end2425 = yp.fantasyTeam; matched++; }
       else unmatchedPlayers.push(`${yp.name} (${yp.fantasyTeam})`);
     }
