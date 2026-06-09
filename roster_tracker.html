@@ -1235,6 +1235,10 @@ const FIRST_NAME_ALIASES = {
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
 // Find a player by name, trying the alias spelling if exact match fails.
 function findPlayerByName(name){ const n=normName(name).toLowerCase(); return players.find(p=>normName(p.name).toLowerCase()===n)||((_nameAlias(n))?players.find(p=>normName(p.name).toLowerCase()===_nameAlias(n)):null); }
+// Look up a name-keyed dict (e.g. PREDROP_ROSTER_2425) with alias fallback.
+function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??null; }
+// Look up a name+pos keyed dict (e.g. MANUAL_CAPS_2425) with alias fallback.
+function _dictLookupPos(name, pos, dict){ const n=normName(name).toLowerCase(),pg=posGroup(pos); return dict[`${n}_${pg}`]??(_nameAlias(n)?dict[`${_nameAlias(n)}_${pg}`]:null)??null; }
 
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
@@ -1703,7 +1707,7 @@ function assignCapFromSignings(){
 function applyManualCaps2425(){
   for(const p of players){
     const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-    const m = MANUAL_CAPS_2425[key];
+    const m = _dictLookupPos(p.name, p.pos, MANUAL_CAPS_2425);
     if(!m) continue;
     if(p.cap2425 === null || p.cap2425 === undefined){ p.cap2425 = m.cap || null; }
     if(!p.yrStr2425 && m.yrStr) p.yrStr2425 = m.yrStr;
@@ -4803,7 +4807,7 @@ function resetSim2425(){
     const pg   = posGroup(p.pos);
     // Try position-qualified key first (e.g. 'elias pettersson_F') to resolve name collisions,
     // then fall back to unqualified key for all other entries.
-    p.end2324   = PREDROP_ROSTER_2425[`${base}_${pg}`] ?? PREDROP_ROSTER_2425[base] ?? null;
+    p.end2324   = PREDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2425) ?? null;
     p.start2425 = p.end2324;
   }
   // Create stubs for any PREDROP player with no existing record
@@ -4812,7 +4816,7 @@ function resetSim2425(){
   for(const stub of PREDROP_STUBS_2425){
     const key = normName(stub.name).toLowerCase();
     if(matched.has(key)) continue;
-    const team = PREDROP_ROSTER_2425[key] || null;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2425:null,
       pts:0, pts2425:0, gp2425:0, status:'roster', source:'manual',
@@ -4937,7 +4941,7 @@ function compareDrops2425(){
     return;
   }
 
-  const vp = players.map(p=>({...p, start2425: PREDROP_ROSTER_2425[normName(p.name).toLowerCase()]||null}));
+  const vp = players.map(p=>({...p, start2425: _dictLookup(p.name, PREDROP_ROSTER_2425)||null}));
   const teams = [...new Set(Object.values(PREDROP_ROSTER_2425))].sort();
 
   const rosteredPoolV = vp.filter(p=>p.start2425 && ppts2425blend(p)>=curveMinPts && getCap2425(p)>0);
@@ -5000,7 +5004,7 @@ function compareDrops2425(){
   let totalCorrect=0, totalAll=0;
 
   for(const team of teams){
-    const teamPlayers=vp.filter(p=>PREDROP_ROSTER_2425[normName(p.name).toLowerCase()]===team);
+    const teamPlayers=vp.filter(p=>_dictLookup(p.name,PREDROP_ROSTER_2425)===team);
     const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
 
     for(const p of teamPlayers){
