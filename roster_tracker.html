@@ -5634,7 +5634,8 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     const fas = players.filter(p => {
       if(assigned[p.id]) return false;
       if(ppts(p) <= 0) return false;
-      if((getCap(p)||0) > maxPickCap) return false;
+      if(getCap(p) <= 0) return false;  // no contract = not draftable
+      if(getCap(p) > maxPickCap) return false;
       const pg = posGroup(p.pos);
       if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
       if(otherActualKeys.has(normName(p.name).toLowerCase())) return false;
@@ -5647,7 +5648,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     const leagueNeedM = {F:0, D:0, G:0};
     for(const t of allTeams){ leagueNeedM.F+=(need[t]?.F||0); leagueNeedM.D+=(need[t]?.D||0); leagueNeedM.G+=(need[t]?.G||0); }
     const availM = {F:0, D:0, G:0};
-    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0){ const g=posGroup(p.pos); if(g in availM) availM[g]++; } }
+    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0&&getCap(p)>0){ const g=posGroup(p.pos); if(g in availM) availM[g]++; } }
     const rawPM = { F:leagueNeedM.F/Math.max(1,availM.F), D:leagueNeedM.D/Math.max(1,availM.D), G:leagueNeedM.G/Math.max(1,availM.G) };
     const maxPM = Math.max(rawPM.F, rawPM.D, rawPM.G, 0.0001);
     const simPressureM = { F:rawPM.F/maxPM, D:rawPM.D/maxPM, G:rawPM.G/maxPM };
@@ -5864,7 +5865,8 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     const fas = players.filter(p => {
       if(assigned[p.id]) return false;
       if(ppts(p) <= 0) return false;
-      if((getCap(p)||0) > maxPickCap) return false;
+      if(getCap(p) <= 0) return false;  // no contract = not draftable
+      if(getCap(p) > maxPickCap) return false;
       const pg = posGroup(p.pos);
       if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
       return (need[team]?.[pg]||0) > 0;
@@ -5877,7 +5879,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     const leagueNeed = {F:0, D:0, G:0};
     for(const t of allTeams){ leagueNeed.F+=(need[t]?.F||0); leagueNeed.D+=(need[t]?.D||0); leagueNeed.G+=(need[t]?.G||0); }
     const avail = {F:0, D:0, G:0};
-    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0){ const g=posGroup(p.pos); if(g in avail) avail[g]++; } }
+    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0&&getCap(p)>0){ const g=posGroup(p.pos); if(g in avail) avail[g]++; } }
     const rawP = { F:leagueNeed.F/Math.max(1,avail.F), D:leagueNeed.D/Math.max(1,avail.D), G:leagueNeed.G/Math.max(1,avail.G) };
     const maxP = Math.max(rawP.F, rawP.D, rawP.G, 0.0001);
     const simPressure = { F:rawP.F/maxP, D:rawP.D/maxP, G:rawP.G/maxP };
