@@ -827,7 +827,7 @@ def season_stats():
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
-        print(f"  NHL skaters: {len(fetched)} fetched")
+        print(f"  2025-26 NHL skaters: {len(fetched)} fetched")
 
         pp_toi = _fetch_pp_toi(cayenne)
         for key, val in pp_toi.items():
@@ -853,7 +853,7 @@ def season_stats():
                 "gp": g.get("gamesPlayed", 0), "ppp": 0,
             }
             _add_name_aliases(stats, key, full, "G")
-        print(f"  NHL goalies: {len(data.get('data', []))} fetched")
+        print(f"  2025-26 NHL goalies: {len(data.get('data', []))} fetched")
     except Exception as e:
         errors.append(f"goalies: {e}")
         print(f"  ✗ goalies: {e}")
