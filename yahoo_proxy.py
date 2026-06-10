@@ -767,32 +767,6 @@ def nhl_rosters():
 _NHL_STATS_BASE = "https://api.nhle.com/stats/rest/en"
 
 
-def _fetch_pp_toi(cayenne: str) -> dict:
-    """Returns power-play time-on-ice per game (seconds), keyed by name_posgroup."""
-    toi = {}
-    try:
-        start, page_size, fetched = 0, 100, []
-        while True:
-            url = f"{_NHL_STATS_BASE}/skater/timeonice?limit={page_size}&start={start}&cayenneExp={cayenne}"
-            page = requests.get(url, timeout=30).json()
-            batch = page.get("data", [])
-            fetched.extend(batch)
-            if len(fetched) >= page.get("total", 0) or not batch:
-                break
-            start += page_size
-        for s in fetched:
-            full = s.get("skaterFullName", "").strip()
-            if not full:
-                continue
-            pos = _POS_MAP.get(s.get("positionCode", ""), "C")
-            key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
-            toi[key] = s.get("ppTimeOnIcePerGame", 0)
-            _add_name_aliases(toi, key, full, _pos_group(pos))
-    except Exception as e:
-        print(f"  ✗ PP TOI ({cayenne}): {e}")
-    return toi
-
-
 @app.route("/stats")
 def season_stats():
     """
@@ -828,11 +802,6 @@ def season_stats():
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2025-26 NHL skaters: {len(fetched)} fetched")
-
-        pp_toi = _fetch_pp_toi(cayenne)
-        for key, val in pp_toi.items():
-            if key in stats:
-                stats[key]["ppToi"] = val
     except Exception as e:
         errors.append(f"skaters: {e}")
         print(f"  ✗ skaters: {e}")
@@ -948,11 +917,6 @@ def season_stats_2425():
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2024-25 NHL skaters: {len(fetched)} fetched")
-
-        pp_toi = _fetch_pp_toi(cayenne)
-        for key, val in pp_toi.items():
-            if key in stats:
-                stats[key]["ppToi"] = val
     except Exception as e:
         errors.append(f"skaters: {e}")
         print(f"  ✗ skaters: {e}")

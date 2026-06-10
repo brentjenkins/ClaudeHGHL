@@ -560,7 +560,7 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th colspan="7"></th>
-  <th colspan="4" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th colspan="8" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2"></th>
 </tr>
@@ -574,8 +574,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
   <th onclick="setSortCol('gp2526')" style="color:#9ca3af" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts2526')" style="color:#9ca3af" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
-  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af" title="Actual 25-26 pts above/below the 26-27 projection curve">△Act <span id="sort-curvedelta_actual"></span></th>
-  <th onclick="setSortCol('pptoidelta')" style="color:#9ca3af;border-right:2px solid #e5e7eb" title="PP time/game change vs 24-25 (min/gm) — role trend signal">PP△ <span id="sort-pptoidelta"></span></th>
+  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 26-27 projection curve">△Act <span id="sort-curvedelta_actual"></span></th>
   <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
   <th onclick="setSortCol('ptsDFO')" style="color:#185FA5" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
@@ -1381,15 +1380,6 @@ function curveSurplusColor(s){
   return '#b91c1c';
 }
 
-function ppToiDeltaColor(m){
-  if(m > 1.5) return '#15803d';
-  if(m > 0.5) return '#16a34a';
-  if(m >= 0) return '#22c55e';
-  if(m > -0.5) return '#f59e0b';
-  if(m > -1.5) return '#ef4444';
-  return '#b91c1c';
-}
-
 function simulateDrops(){
   const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))];
   let dropped = 0;
@@ -1522,8 +1512,6 @@ function load(){
     if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
     if(p.pts2425           === undefined){ p.pts2425           = 0;    migrated = true; }
     if(p.gp2425            === undefined){ p.gp2425            = 0;    migrated = true; }
-    if(p.ppToi2526         === undefined){ p.ppToi2526         = 0;    migrated = true; }
-    if(p.ppToi2425         === undefined){ p.ppToi2425         = 0;    migrated = true; }
     if(p.cap2425           === undefined){ p.cap2425           = null; migrated = true; }
     if(p.proj2425_dfo      === undefined){ p.proj2425_dfo      = null; migrated = true; }
     if(p.proj2425_athletic === undefined){ p.proj2425_athletic = null; migrated = true; }
@@ -1554,7 +1542,6 @@ async function syncStats(){
         p.pts2526   = d.players[key].fpts;
         p.gp2526    = d.players[key].gp;
         p.ppp2526   = d.players[key].ppp ?? 0;
-        p.ppToi2526 = d.players[key].ppToi ?? 0;
         p.ptsManual = false;
         matched++;
       } else {
@@ -2340,18 +2327,14 @@ function render(){
     const base = _curveBaseline(pg, p.cap, ELC_MAX_2627, curveFns2627[pg]);
     return base != null ? p.pts2526 - base : null;
   };
-  const ppToiDelta = p => {
-    if(!((p.ppToi2526||0) > 0 || (p.ppToi2425||0) > 0)) return null;
-    return ((p.ppToi2526||0) - (p.ppToi2425||0)) / 60; // minutes/game
-  };
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='rank'?(a.rank??99999):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):sortCol==='pptoidelta'?(ppToiDelta(a)??-Infinity):(a[sortCol]??'');
-    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='rank'?(b.rank??99999):sortCol==='curvedelta'?(curveDelta(b)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(b)??-Infinity):sortCol==='pptoidelta'?(ppToiDelta(b)??-Infinity):(b[sortCol]??'');
+    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='rank'?(a.rank??99999):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):(a[sortCol]??'');
+    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='rank'?(b.rank??99999):sortCol==='curvedelta'?(curveDelta(b)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(b)??-Infinity):(b[sortCol]??'');
     if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','pptoidelta','ptsAthletic','ptsDFO','ptsESPN','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','ptsAthletic','ptsDFO','ptsESPN','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -2468,8 +2451,7 @@ function render(){
       <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2627||contractYearStr(p)||'—'}</div>`:''}</td>
       <td style="color:#9ca3af">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
-      ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${(()=>{const m=ppToiDelta(p);if(m===null)return '<td style="border-right:2px solid #e5e7eb">—</td>';const sign=m>=0?'+':'';const col=ppToiDeltaColor(m);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="PP TOI/gm: ${(p.ppToi2425/60).toFixed(1)} (24-25) → ${(p.ppToi2526/60).toFixed(1)} (25-26)">${sign}${m.toFixed(1)}</td>`;})()}
+      ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="color:#9ca3af">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
       <td style="color:#9ca3af">${p.ptsDFO>0?p.ptsDFO:'—'}</td>
       <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
@@ -4734,7 +4716,6 @@ async function syncStats2425(){
       if(d.players[key]){
         p.pts2425 = d.players[key].fpts;
         p.gp2425  = d.players[key].gp;
-        p.ppToi2425 = d.players[key].ppToi ?? 0;
         matched++;
       } else unmatched++;
     }
