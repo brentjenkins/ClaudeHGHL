@@ -1207,8 +1207,16 @@ let draftDateSupplemental2526 = '2026-01-10';
 let draftDatePreseason2627    = '2026-10-01';
 let draftDateSupplemental2627 = '2027-01-10';
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
+// ── 24-25 season constants ────────────────────────────────────────────────────
+let CAP_LIMIT_2324 = 83.5;
+let CAP_LIMIT_2425 = 88;
+let CAP_LIMIT_2526 = 95.5;
+let CAP_LIMIT = 104;
+const ELC_MAX_2324 = 0.950;
+const ELC_MAX_2425 = 0.975;
 const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
 const ELC_MAX_2627 = 1.025; // ELC max cap hit 2026-27
+const DRAFT_RESERVE_2425 = 1.5 * (ELC_MAX_2425 - 0.175);
 const DRAFT_RESERVE_2526 = 1.5 * (ELC_MAX_2526 - 0.175); // cap to reserve per drop for 25-26 drafting (~$1.20M)
 const DRAFT_RESERVE_2627 = 1.5 * (ELC_MAX_2627 - 0.175); // cap to reserve per drop for 26-27 drafting (~$1.275M)
 
@@ -2468,29 +2476,7 @@ function render(){
   updateStats();
 }
 
-let CAP_LIMIT = 104;
-let CAP_LIMIT_2526 = 95.5;
 const NHL_SEASON_YEAR = 2026;
-
-// 2025-26 final standings — determines draft order (rank 9 picks first)
-const FINAL_STANDINGS_2526 = {
-  'Bossy Posse':         {rank:1, pts:1157},
-  'Pernicious Puckers':  {rank:2, pts:1136},
-  'Motor City Wings':    {rank:3, pts:1134},
-  'Silence of the Lamb': {rank:4, pts:1105},
-  'Damage Inc.':         {rank:5, pts:1091},
-  'Blue Line Bangers':   {rank:6, pts:1058},
-  'Muller Time!':        {rank:7, pts:1055},
-  'Dumb and Goalie To':  {rank:8, pts:1040},
-  'Killer Whales':       {rank:9, pts:909},
-};
-
-
-// Draft order array: rank 9 first (worst team picks first)
-const DRAFT_TEAMS_2627 = Object.entries(FINAL_STANDINGS_2526)
-  .sort((a,b) => b[1].rank - a[1].rank)
-  .map(([name]) => name);
-
 const DRAFT_ROSTER_MAX = {F: 12, D: 6, G: 2};  // target spots per position per team
 
 // Players excluded from all draft simulations (normName_posGroup keys).
@@ -2513,6 +2499,10 @@ const FINAL_STANDINGS_2324 = {
   'Blue Line Bangers':   {rank:9, pts:907},
 };
 
+// 24-25 draft pick order (determined by 23-24 standings — worst team picks first).
+const DRAFT_TEAMS_2425 = Object.entries(FINAL_STANDINGS_2324)
+  .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
+
 // 2024-25 final standings — determines 25-26 draft order (rank 9 picks first)
 const FINAL_STANDINGS_2425 = {
   'Motor City Wings':    {rank:1, pts:1152},
@@ -2528,16 +2518,23 @@ const FINAL_STANDINGS_2425 = {
 const DRAFT_TEAMS_2526 = Object.entries(FINAL_STANDINGS_2425)
   .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
 
-// ── 24-25 season constants ────────────────────────────────────────────────────
-let CAP_LIMIT_2324 = 83.5;
-const ELC_MAX_2324 = 0.950;
-let CAP_LIMIT_2425 = 88;
-const ELC_MAX_2425 = 0.975;
-const DRAFT_RESERVE_2425 = 1.5 * (ELC_MAX_2425 - 0.175);
+// 2025-26 final standings — determines draft order (rank 9 picks first)
+const FINAL_STANDINGS_2526 = {
+  'Bossy Posse':         {rank:1, pts:1157},
+  'Pernicious Puckers':  {rank:2, pts:1136},
+  'Motor City Wings':    {rank:3, pts:1134},
+  'Silence of the Lamb': {rank:4, pts:1105},
+  'Damage Inc.':         {rank:5, pts:1091},
+  'Blue Line Bangers':   {rank:6, pts:1058},
+  'Muller Time!':        {rank:7, pts:1055},
+  'Dumb and Goalie To':  {rank:8, pts:1040},
+  'Killer Whales':       {rank:9, pts:909},
+};
+// Draft order array: rank 9 first (worst team picks first)
+const DRAFT_TEAMS_2627 = Object.entries(FINAL_STANDINGS_2526)
+  .sort((a,b) => b[1].rank - a[1].rank)
+  .map(([name]) => name);
 
-// 24-25 draft pick order (determined by 23-24 standings — worst team picks first).
-const DRAFT_TEAMS_2425 = Object.entries(FINAL_STANDINGS_2324)
-  .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
 
 // 23-24 final rosters — pre-drop starting state for 24-25 simulation. Keys = normName.toLowerCase().
 const PREDROP_ROSTER_2425 = {
