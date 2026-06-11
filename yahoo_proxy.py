@@ -285,6 +285,7 @@ def _fetch_rosters(league_key, token):
 
 LEAGUE_KEY_2425 = "453.l.52799"
 LEAGUE_KEY_2324 = "427.l.1827"
+LEAGUE_KEY_2223 = "419.l.52810"
 
 
 @app.route("/teams-2324")
@@ -332,6 +333,20 @@ def rosters_2324():
     try:
         players = _fetch_rosters(LEAGUE_KEY_2324, token)
         print(f"  2023-24 rosters: {len(players)} players fetched")
+        return jsonify({"ok": True, "players": players})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/rosters-2223")
+def rosters_2223():
+    token = get_valid_token()
+    if not token:
+        return jsonify({"error": "Not authenticated."}), 401
+    try:
+        players = _fetch_rosters(LEAGUE_KEY_2223, token)
+        print(f"  2022-23 rosters: {len(players)} players fetched")
         return jsonify({"ok": True, "players": players})
     except Exception as e:
         traceback.print_exc()
@@ -883,6 +898,66 @@ def season_stats_2627():
     except Exception as e:
         errors.append(f"goalies: {e}")
 
+    return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
+
+
+@app.route("/stats-2324")
+def season_stats_2324():
+    """Returns 2023-24 regular-season fantasy points for all NHL players."""
+    stats = {}
+    errors = []
+    cayenne = "seasonId=20232024%20and%20gameTypeId=2"
+
+    try:
+        start, page_size, fetched = 0, 100, []
+        while True:
+            url = f"{_NHL_STATS_BASE}/skater/summary?limit={page_size}&start={start}&cayenneExp={cayenne}"
+            page = requests.get(url, timeout=30).json()
+            batch = page.get("data", [])
+            fetched.extend(batch)
+            if len(fetched) >= page.get("total", 0) or not batch:
+                break
+            start += page_size
+        for s in fetched:
+            full = s.get("skaterFullName", "").strip()
+            if not full:
+                continue
+            pos = _POS_MAP.get(s.get("positionCode", ""), "C")
+            key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
+            fpts = s.get("goals", 0) + s.get("assists", 0)
+            stats[key] = {
+                "name": full, "fpts": fpts,
+                "goals": s.get("goals", 0), "assists": s.get("assists", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+            }
+            _add_name_aliases(stats, key, full, _pos_group(pos))
+        print(f"  2023-24 NHL skaters: {len(fetched)} fetched")
+    except Exception as e:
+        errors.append(f"skaters: {e}")
+        print(f"  ✗ skaters: {e}")
+
+    try:
+        url = f"{_NHL_STATS_BASE}/goalie/summary?limit=200&cayenneExp={cayenne}"
+        data = requests.get(url, timeout=30).json()
+        for g in data.get("data", []):
+            full = g.get("goalieFullName", "").strip()
+            if not full:
+                continue
+            key = f"{normalize_name(full).lower()}_G"
+            wins = g.get("wins", 0)
+            sos  = g.get("shutouts", 0)
+            stats[key] = {
+                "name": full, "fpts": wins * 2 + sos * 3,
+                "wins": wins, "shutouts": sos,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+            }
+            _add_name_aliases(stats, key, full, "G")
+        print(f"  2023-24 NHL goalies: {len(data.get('data', []))} fetched")
+    except Exception as e:
+        errors.append(f"goalies: {e}")
+        print(f"  ✗ goalies: {e}")
+
+    print(f"Stats 2023-24 done: {len(stats)} players, {len(errors)} errors")
     return jsonify({"ok": True, "players": stats, "count": len(stats), "errors": errors})
 
 
