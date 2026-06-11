@@ -5294,7 +5294,7 @@ function loadDraft(){
 function saveDraft(){ lsSet(LS_DRAFT_2627, draftState2627); }
 function resetDraft(){
   if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 and clears draft picks.')) return;
-  draftState2627 = {picks:[]};
+  draftState2627 = {picks:[], simPicks:[]};
   saveDraft();
   for(const p of players) p.start2627 = p.end2526 || '';
   dropsSimulated = false;
@@ -5488,7 +5488,7 @@ function renderBigBoard(){
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2324').innerHTML;
     stripTop5();
     if(draftViewMode === 'full'){
-      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2324, DRAFT_TEAMS_2324); }
+      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2324, DRAFT_TEAMS_2324, buildDraftSeq2324()); }
       if(colWrap) colWrap.style.display = 'none';
     } else {
       if(boardFull) boardFull.style.display = 'none';
@@ -5508,7 +5508,7 @@ function renderBigBoard(){
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
     stripTop5();
     if(draftViewMode === 'full'){
-      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2425, DRAFT_TEAMS_2425); }
+      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2425, DRAFT_TEAMS_2425, buildDraftSeq2425()); }
       if(colWrap) colWrap.style.display = 'none';
     } else {
       if(boardFull) boardFull.style.display = 'none';
@@ -5528,7 +5528,7 @@ function renderBigBoard(){
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
     stripTop5();
     if(draftViewMode === 'full'){
-      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2526, DRAFT_TEAMS_2526); }
+      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2526, DRAFT_TEAMS_2526, buildDraftSeq2526()); }
       if(colWrap) colWrap.style.display = 'none';
     } else {
       if(boardFull) boardFull.style.display = 'none';
@@ -5723,25 +5723,33 @@ function setDraftView(mode, doRender=true){
   if(doRender){ if(draftMode2425||draftMode2526||draftMode2324) renderBigBoard(); else renderDraftView(); }
 }
 
-function buildDraftBoardHTML(draftStateObj, teamsList){
+function buildDraftBoardHTML(draftStateObj, teamsList, draftSeq = null){
   const picks = draftStateObj.picks;
   const n = picks.length;
   const nT = teamsList.length;
   const posColors = {F:'#dbeafe', D:'#dcfce7', G:'#fef3c7'};
   const posText   = {F:'#1e40af', D:'#166534', G:'#92400e'};
 
-  // Build rows: all made picks + next nT picks (one per team)
+  // Build rows: all made/skipped picks + upcoming picks (one per team)
   const rows = [];
   const seenEmpty = new Set();
-  for(let i = 0; rows.filter(r=>r.isEmpty).length < nT || i < n; i++){
-    const round = Math.floor(i / nT);
-    const posInRound = i % nT;
-    const teamIdx = round % 2 === 0 ? posInRound : nT - 1 - posInRound;
-    const team = teamsList[teamIdx];
-    const made = i < n;
+  for(let i = 0; i < n || (rows.filter(r=>r.isEmpty).length < nT && (!draftSeq || draftSeq[i] !== undefined)); i++){
+    const made = i < n && !!(picks[i] && picks[i].player);
+    let team;
+    if(i < n){
+      team = picks[i].team;
+    } else if(draftSeq){
+      team = draftSeq[i];
+    } else {
+      const round = Math.floor(i / nT);
+      const posInRound = i % nT;
+      const teamIdx = round % 2 === 0 ? posInRound : nT - 1 - posInRound;
+      team = teamsList[teamIdx];
+    }
+    if(!team) break;
     if(!made && seenEmpty.has(team)) continue;
     if(!made) seenEmpty.add(team);
-    rows.push({i, globalPick: i+1, round: round+1, team, pick: made ? picks[i] : null, isEmpty: !made, isOnClock: i===n});
+    rows.push({i, globalPick: i+1, round: Math.floor(i / nT) + 1, team, pick: made ? picks[i] : null, isEmpty: !made, isOnClock: i===n});
   }
 
   // Group by round
@@ -8294,7 +8302,10 @@ function runDraftSim2627(){
     draftWeights,
     applyChanges: true,
     renderFn:     render,
+    boardDraftState: draftState2627,
+    boardLsKey:   LS_DRAFT_2627,
   });
+  renderBigBoard();
 }
 
 // ── My Algo Draft ─────────────────────────────────────────────────────────────
@@ -8314,6 +8325,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   const initialAssigned = {...assigned};
 
   const need = {}, teamCap = {};
+  const teamSpotsLeft = {}; // team → total roster spots remaining (hard cap, position-agnostic)
   for(const t of allTeams){
     const ks = players.filter(p => assigned[p.id] === t);
     need[t] = {
@@ -8322,9 +8334,10 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
       G: Math.max(0, DRAFT_ROSTER_MAX.G - ks.filter(p=>posGroup(p.pos)==='G').length),
     };
     teamCap[t] = ks.reduce((s,p) => s + getCap(p), 0);
+    teamSpotsLeft[t] = Math.max(0, DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G - ks.length);
   }
 
-  const mySpots = (need[myTeam]?.F||0) + (need[myTeam]?.D||0) + (need[myTeam]?.G||0);
+  const mySpots = teamSpotsLeft[myTeam] || 0;
   if(!mySpots){ toast('No open roster spots for your team — run Actual Drops or Reset first.'); return; }
 
   // Pre-assign other teams' actual picks (marks players as unavailable)
@@ -8337,6 +8350,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     assigned[p.id] = team;
     const pg = posGroup(p.pos);
     if(need[team]) need[team][pg] = Math.max(0, (need[team][pg]||0) - 1);
+    if(teamSpotsLeft[team] !== undefined) teamSpotsLeft[team] = Math.max(0, teamSpotsLeft[team] - 1);
     teamCap[team] = (teamCap[team]||0) + getCap(p);
   }
 
@@ -8352,6 +8366,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
 
     const round = pickNum + 1;
     const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
+    if((teamSpotsLeft[team]||0) <= 0) continue;
     const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
     if(spotsLeft <= 0) continue;
     const maxPickCap = capLimit - (teamCap[team]||0) - Math.max(0, spotsLeft-1) * draftReserve;
@@ -8404,6 +8419,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     assigned[pick.p.id] = myTeam;
     const pg = posGroup(pick.p.pos);
     need[myTeam][pg] = Math.max(0, (need[myTeam][pg]||0) - 1);
+    teamSpotsLeft[myTeam] = Math.max(0, (teamSpotsLeft[myTeam]||0) - 1);
     teamCap[myTeam] = (teamCap[myTeam]||0) + (getCap(pick.p)||0);
     myPicks.push({round, player: pick.p.name, pos: pg, ppts: pick.pp, apts: actualPts(pick.p)||0, cap: getCap(pick.p)||0, mode});
   }
@@ -8589,7 +8605,7 @@ function runDraftSim2526(){
   });
 }
 
-function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null }){
+function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
   const pm = {F: draftWeights.wtF||1, D: draftWeights.wtD||1.4, G: draftWeights.wtG||1};
 
@@ -8601,6 +8617,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   // Track roster counts and cap per team (seeded from keepers)
   const need = {}; // team → {F,D,G} remaining spots
   const teamCap = {}; // team → running cap total
+  const teamSpotsLeft = {}; // team → total roster spots remaining (hard cap, position-agnostic)
   for(const t of allTeams){
     const keepers = players.filter(p => assigned[p.id]===t);
     need[t] = {
@@ -8609,18 +8626,28 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
       G: Math.max(0, ROSTER_MAX.G - keepers.filter(p=>posGroup(p.pos)==='G').length),
     };
     teamCap[t] = keepers.reduce((s,p) => s + getCap(p), 0);
+    teamSpotsLeft[t] = Math.max(0, ROSTER_MAX.F + ROSTER_MAX.D + ROSTER_MAX.G - keepers.length);
   }
 
   // Build draft sequence from actual drops state
   const seq = buildSeq();
+  if(!seq.length){
+    toast(`No open roster spots in ${season} — run Simulate Drops or Actual Drops first.`);
+    return;
+  }
   const teamPickNum = {}; // team → picks made so far (0-indexed)
 
   const simPicks = []; // [{round, team, player, pos, ppts, cap, mode}]
+  const boardPicks = []; // parallel to seq; null entries = no eligible pick that slot
 
   for(const team of seq){
     const pickNum = (teamPickNum[team] = (teamPickNum[team]||0));
     const round = pickNum + 1;
     const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
+
+    // Hard cap: skip teams whose total roster is already full, regardless of
+    // per-position need (guards against per-position miscounts on carried-forward rosters)
+    if((teamSpotsLeft[team]||0) <= 0){ teamPickNum[team]++; boardPicks.push(null); continue; }
 
     // Remaining picks for this team after this one (for reserve calculation)
     const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
@@ -8638,7 +8665,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
       return (need[team]?.[pg]||0) > 0;
     });
 
-    if(!fas.length) { teamPickNum[team]++; continue; }
+    if(!fas.length) { teamPickNum[team]++; boardPicks.push(null); continue; }
 
     // Dynamic position pressure: league-wide need vs available supply per position.
     // Recomputed each pick so pressure rises as scarce positions get taken.
@@ -8677,10 +8704,19 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     assigned[pick.p.id] = team;
     const pg = posGroup(pick.p.pos);
     if(need[team]) need[team][pg] = Math.max(0, (need[team][pg]||0) - 1);
+    teamSpotsLeft[team] = Math.max(0, (teamSpotsLeft[team]||0) - 1);
     teamCap[team] = (teamCap[team]||0) + (getCap(pick.p)||0);
 
     simPicks.push({round, team, player: pick.p.name, pos: pg, ppts: pick.pp, cap: getCap(pick.p)||0, mode});
+    boardPicks.push({team, player: pick.p.name, pos: pg, nhlTeam: pick.p.team||'', cap: getCap(pick.p)||0, projPts: pick.pp});
     teamPickNum[team]++;
+  }
+
+  // Mirror the simulated picks onto the Big Board (separate from live draftState.picks
+  // so it doesn't perturb _buildSeq's "already picked" bookkeeping).
+  if(boardDraftState){
+    boardDraftState.simPicks = seq.map((t,i) => boardPicks[i] || {team:t, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
+    if(boardLsKey) lsSet(boardLsKey, boardDraftState);
   }
 
   // Apply sim picks to player data
@@ -9464,7 +9500,11 @@ function renderDraftView(){
   const wrap = document.getElementById('draftCompactWrap');
   if(draftViewMode === 'full'){
     boardFull.style.display = 'block';
-    boardFull.innerHTML = buildDraftBoardHTML(draftState2627, DRAFT_TEAMS_2627);
+    // Once a real (live) pick has been made, that takes precedence; otherwise
+    // fall back to the most recent Simulate Draft results so the board can be
+    // previewed/verified before draft day.
+    const fullState = picks.length ? draftState2627 : {picks: draftState2627.simPicks || []};
+    boardFull.innerHTML = buildDraftBoardHTML(fullState, DRAFT_TEAMS_2627, draftSeq);
     wrap.style.display = 'none';
   } else {
     boardFull.style.display = 'none';
