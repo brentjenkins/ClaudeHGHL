@@ -1248,6 +1248,19 @@ function prospectBonus(age, pg, capHit, elcMax, wtProspect, pts=0){
   return Math.max(0, ageScore * ptsRatio * wtProspect);
 }
 
+// Decaying prospect-bonus weight for rounds beyond draftProspectRounds.
+// Actual 23-24/24-25 drafts show prospects picked ~39% of the time in the first
+// half of the draft vs ~17% in the second half — a taper, not a cliff — so
+// prospect consideration extends a couple rounds past draftProspectRounds at
+// reduced weight instead of dropping to zero immediately.
+function prospectRoundWeight(round){
+  if(round <= draftProspectRounds) return 1;
+  const over = round - draftProspectRounds;
+  if(over === 1) return 0.5;
+  if(over === 2) return 0.25;
+  return 0;
+}
+
 // Peak age by position — production rises until these ages, then declines.
 const PEAK_AGE_BY_POS = {F: 26, D: 28, G: 29};
 
@@ -1327,6 +1340,7 @@ const FIRST_NAME_ALIASES = {
   'nick':'nicholas','pat':'patrick','phil':'philip','rick':'richard',
   'rob':'robert','sam':'samuel','tom':'thomas','tim':'timothy',
   'will':'william','zach':'zachary','freddy':'frederick',
+  'evgeni':'evgenii','evgenii':'evgeni',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
@@ -8376,6 +8390,12 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
         score = pp * (pm[pg]||1) * pressMult + prospect;
       } else {
         score = pp * pressMult;
+        const prospectWeight = prospectRoundWeight(round);
+        if(prospectWeight > 0){
+          const age = calcAgeForSim(p) ?? 99;
+          const cap = getCap(p) || 0;
+          score += prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp) * prospectWeight;
+        }
       }
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
@@ -8643,6 +8663,12 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
         score = pp * (pm[pg]||1) * pressMult + prospect;
       } else {
         score = pp * pressMult;
+        const prospectWeight = prospectRoundWeight(round);
+        if(prospectWeight > 0){
+          const age = calcAgeForSim(p) ?? 99;
+          const cap = getCap(p) || 0;
+          score += prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp) * prospectWeight;
+        }
       }
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
