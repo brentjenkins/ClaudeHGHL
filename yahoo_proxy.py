@@ -1308,6 +1308,86 @@ def dfo_projections():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
+# ── CBS Sports projections scraper ───────────────────────────────────────────
+
+_CBS_HDR = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+_CBS_POS = {"C": "F", "LW": "F", "RW": "F", "D": "D", "G": "G"}
+
+
+def _cbs_parse_rows(html: str) -> list:
+    """Extract (name, [numeric stat values]) tuples from a CBS projections table page."""
+    start = html.find("<table")
+    end = html.find("</table>", start)
+    if start == -1 or end == -1:
+        return []
+    table = html[start:end]
+    rows = []
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.S):
+        name_m = re.search(r'class="fn">([^<]+)</span>', row)
+        if not name_m:
+            continue
+        team_m = re.search(r'class="team">([^<]+)</span>', row)
+        vals = [float(v) for v in re.findall(r'<td class="numeric">([\d.-]+)</td>', row)]
+        rows.append((name_m.group(1).strip(), team_m.group(1).strip() if team_m else "", vals))
+    return rows
+
+
+def _cbs_fetch_position(pos: str) -> list:
+    """Page through CBS Sports projections for a given position (C/LW/RW/D/G)."""
+    rows = []
+    page = 1
+    max_page = 1
+    while True:
+        url = f"https://www.cbssports.com/fantasy/hockey/projections/{pos}/" + (f"{page}/" if page > 1 else "")
+        r = requests.get(url, headers=_CBS_HDR, timeout=20)
+        r.raise_for_status()
+        rows.extend(_cbs_parse_rows(r.text))
+        if page == 1:
+            pages = [int(m) for m in re.findall(rf"/fantasy/hockey/projections/{pos}/(\d+)/", r.text)]
+            max_page = max(pages) if pages else 1
+        if page >= max_page:
+            break
+        page += 1
+    return rows
+
+
+def _cbs_fetch_projections():
+    """Fetch CBS Sports 2026-27 fantasy hockey projections for all positions.
+    Skater rows: GP, G, A, PTS, +/-, PPG, S, SHG, SPct, PIM, FPTS (11 values) → G+A for HGHL pts.
+    Goalie rows: GGP, W, L, SO, GAA, GA, S, SOGA, SPct, Min, FPTS (11 values) → W*2+SO*3 for HGHL pts.
+    """
+    all_players = {}
+    errors = []
+    for pos, pg in _CBS_POS.items():
+        try:
+            rows = _cbs_fetch_position(pos)
+        except Exception as e:
+            errors.append(f"CBS {pos}: {e}")
+            continue
+        for name, team, vals in rows:
+            if len(vals) < 11:
+                continue
+            if pg == "G":
+                hghl_pts = round(vals[1] * 2 + vals[3] * 3)
+            else:
+                hghl_pts = round(vals[1] + vals[2])
+            if hghl_pts <= 0:
+                continue
+            key = f"{normalize_name(name).lower()}_{pg}"
+            all_players[key] = {"name": name, "pg": pg, "team": team, "hghl_pts": hghl_pts}
+            _add_name_aliases(all_players, key, name, pg)
+        print(f"  CBS {pos}: {len(rows)} players")
+    return all_players, errors
+
+
+@app.route("/cbs-projections")
+def cbs_projections():
+    """Fetch CBS Sports 2026-27 fantasy hockey projections (G+A for skaters, W*2+SO*3 for goalies)."""
+    players, errors = _cbs_fetch_projections()
+    print(f"  CBS: {len(players)} total")
+    return jsonify({"ok": True, "players": players, "count": len(players), "errors": errors})
+
+
 @app.route("/dfo-projections-2526", methods=["POST"])
 def dfo_projections_2526():
     """Parse a DFO/5v5hockey CSV export for 2025-26 projections.
