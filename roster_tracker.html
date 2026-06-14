@@ -599,6 +599,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-light" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
+      <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">⬇ Export Draft</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2627()" title="Simulate draft from current rosters and apply picks">⬆ Simulate Draft</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn" onclick="setDraftSubMode('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
@@ -3109,6 +3110,28 @@ function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   resetDraftTimer();
   renderDraftView();
   updateDraftTab();
+}
+
+function exportDraft2627(){
+  if(!draftState2627.picks.length){ toast('No draft picks to export yet.'); return; }
+  const numTeams = DRAFT_TEAMS_2627.length;
+  const rows = [['Round','Pick','Team','Player','Pos']];
+  draftState2627.picks.forEach((pk, i) => {
+    const round = Math.floor(i / numTeams) + 1;
+    const pickInRound = (i % numTeams) + 1;
+    rows.push([round, pickInRound, pk.team, pk.player || 'PASS', pk.pos || '']);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hghl_draft_2627_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`Exported ${draftState2627.picks.length} picks.`);
 }
 
 function undoLastPick(){
