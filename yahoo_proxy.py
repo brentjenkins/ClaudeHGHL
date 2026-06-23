@@ -793,6 +793,9 @@ def nhl_rosters():
                     pos = _POS_MAP.get(p.get("positionCode", ""), "C")
                     if full:
                         key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
+                        if key in active:
+                            print(f"  ⚠ duplicate: {full!r} ({team}) already seen on {active[key]['nhlTeam']}, skipping")
+                            continue
                         active[key] = {"name": full, "nhlTeam": team, "pos": pos,
                                        "birthDate": p.get("birthDate", "")}
                         _add_name_aliases(active, key, full, _pos_group(pos))
