@@ -1348,17 +1348,18 @@ const FIRST_NAME_ALIASES = {
   'rob':'robert','sam':'samuel','tom':'thomas','tim':'timothy',
   'will':'william','zach':'zachary','freddy':'frederick',
   'evgeni':'evgenii','evgenii':'evgeni',
+  'jakob':'jacob',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
 // Find a player by name, trying the alias spelling if exact match fails.
-function findPlayerByName(name){ const n=normName(name).toLowerCase(); return players.find(p=>normName(p.name).toLowerCase()===n)||((_nameAlias(n))?players.find(p=>normName(p.name).toLowerCase()===_nameAlias(n)):null); }
+function findPlayerByName(name){ const n=normName(name).toLowerCase(); const alias=_nameAlias(n); return players.find(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; })||null; }
 // Like findPlayerByName, but if multiple players share the name (e.g. two "Elias Pettersson"s),
 // prefer the one whose position group matches posHint (from the source roster's pos field).
 function findPlayerByNamePos(name, posHint){
   const n=normName(name).toLowerCase();
   const alias=_nameAlias(n);
-  const cands=players.filter(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias); });
+  const cands=players.filter(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; });
   if(cands.length<=1) return cands[0]||null;
   return cands.find(p=>posGroup(p.pos)===posGroup(posHint))||cands[0];
 }
@@ -2073,7 +2074,10 @@ async function syncAllNHL(){
     if(nr.error) throw new Error(nr.error);
     let added=0, updated=0;
     for(const [key, p] of Object.entries(nr.active)){
-      const ex = players.find(x=>`${normName(x.name).toLowerCase()}_${posGroup(x.pos)}`===key);
+      // Skip alias keys — only process the canonical key for each player to avoid duplicates
+      const canonKey = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+      if(key !== canonKey) continue;
+      const ex = findPlayerByNamePos(p.name, p.pos);
       if(ex){
         ex.status = 'roster';
         if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
@@ -2086,6 +2090,7 @@ async function syncAllNHL(){
         added++;
       }
     }
+    dedup();
     lsSet(LS_PLAYERS, players);
     populateTeamFilter(); populateFantasyFilter(); render();
     toast(`NHL sync done! ${added} players added, ${updated} updated.`);
@@ -2172,7 +2177,9 @@ async function doSync(){
       for(const p of players){
         const prev = p.status;
         const nhlKey = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-        p.status = nr.active[nhlKey] ? 'roster' : 'non-roster';
+        const nhlAliasName = _nameAlias(normName(p.name).toLowerCase());
+        const nhlAliasKey = nhlAliasName ? `${nhlAliasName}_${posGroup(p.pos)}` : null;
+        p.status = (nr.active[nhlKey] || (nhlAliasKey && nr.active[nhlAliasKey])) ? 'roster' : 'non-roster';
         if(p.status !== prev) rosterUpdated++;
       }
     }
