@@ -1349,6 +1349,7 @@ const FIRST_NAME_ALIASES = {
   'will':'william','zach':'zachary','freddy':'frederick',
   'evgeni':'evgenii','evgenii':'evgeni',
   'jakob':'jacob',
+  'artyom':'artem','artem':'artyom',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
