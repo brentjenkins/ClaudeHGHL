@@ -1347,6 +1347,7 @@ function toggleCurrentTeamCol(thId, groupThId, draftOn){
   if(g)  g.colSpan = draftOn ? 6 : 7;
 }
 const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'');
+const puckpediaSlug = name => name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/['.]/g,'').replace(/\s+/g,'-').toLowerCase();
 
 // Bidirectional first-name alias map (formal↔nick). Mirrors _FORMAL_TO_NICK in yahoo_proxy.py.
 const FIRST_NAME_ALIASES = {
@@ -2711,7 +2712,7 @@ function render(){
           <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.start2627||'—')}</span>
         </div>
       </td>`}
-      <td>${p.cap>0?`$${p.cap.toFixed(2)}M${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2627||contractYearStr(p)||'—'}</div>`:''}</td>
+      <td>${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${p.cap.toFixed(2)}M</a>${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2627||contractYearStr(p)||'—'}</div>`:''}</td>
       <td style="color:#9ca3af">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -5476,7 +5477,7 @@ function render2425(){
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2324||'—')}</td>
       ${draftMode2425 ? '' : `<td style="color:#185FA5">${esc(p.start2425||'—')}</td>`}
-      <td>${cap>0?`${capStr}${p.yrStr2425?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2425}</div>`:''}` :'—'}</td>
+      <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>${p.yrStr2425?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2425}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2425_nhl>0?p.proj2425_nhl:'—'}</td>
@@ -5792,7 +5793,7 @@ function render2324(){
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2223||'—')}</td>
       ${draftMode2324 ? '' : `<td style="color:#185FA5">${esc(p.start2324||'—')}</td>`}
-      <td>${cap>0?`${capStr}${p.yrStr2324?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2324}</div>`:''}` :'—'}</td>
+      <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>${p.yrStr2324?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2324}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?p.proj2324_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2324_dtz>0?p.proj2324_dtz:'—'}</td>
       <td style="color:#9ca3af">${p.proj2324_nhl>0?p.proj2324_nhl:'—'}</td>
@@ -6968,7 +6969,7 @@ function render2526(){
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2425||'—')}</td>
       ${draftMode2526 ? '' : `<td style="color:#185FA5">${esc(p.start2526||'—')}</td>`}
-      <td>${(()=>{const c=getCap2526(p);return c>0?`$${c.toFixed(2)}M${p.yrStr2526?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2526}</div>`:''}`:''||'—';})()}</td>
+      <td>${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${c.toFixed(2)}M</a>${p.yrStr2526?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2526}</div>`:''}`:''||'—';})()}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
