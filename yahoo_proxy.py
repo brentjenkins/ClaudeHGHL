@@ -1726,6 +1726,14 @@ _FORMAL_TO_NICK = {
     "william":   "will",
     "zachary":   "zach",
     "artyom":    "artem",
+    "benjamin":  "ben",
+    "joseph":    "joe",
+    "matty":     "matthew",
+    "aleksei":   "alexei",
+    "alexey":    "alexei",
+    "yegor":     "egor",
+    "maxwell":   "max",
+    "maxim":     "max",
 }
 # Reverse map: nick → formal (built from _FORMAL_TO_NICK, last formal wins on collision)
 _NICK_TO_FORMAL = {v: k for k, v in _FORMAL_TO_NICK.items()}

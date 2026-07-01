@@ -1163,12 +1163,17 @@ const NHL_LOGOS = {
   VGK:'https://assets.nhle.com/logos/nhl/svg/VGK_light.svg',
   WPG:'https://assets.nhle.com/logos/nhl/svg/WPG_light.svg',
   WSH:'https://assets.nhle.com/logos/nhl/svg/WSH_secondary_light.svg',
-  // Yahoo short-code aliases
+  // Yahoo team-code aliases (Yahoo uses different abbreviations for some teams)
+  WAS:'https://assets.nhle.com/logos/nhl/svg/WSH_secondary_light.svg',
+  NAS:'https://assets.nhle.com/logos/nhl/svg/NSH_light.svg',
   SJ:'https://assets.nhle.com/logos/nhl/svg/SJS_light.svg',
   TB:'https://assets.nhle.com/logos/nhl/svg/TBL_light.svg',
   NJ:'https://assets.nhle.com/logos/nhl/svg/NJD_light.svg',
   LA:'https://assets.nhle.com/logos/nhl/svg/LAK_light.svg',
 };
+// Normalize Yahoo team abbreviations to NHL API standard codes
+const YAHOO_TEAM_NORM = {WAS:'WSH', NAS:'NSH', SJ:'SJS', TB:'TBL', NJ:'NJD', LA:'LAK'};
+const normTeam = t => YAHOO_TEAM_NORM[t] || t;
 const LS_PLAYERS = 'nhl_players_v3';
 // Yahoo league keys — must match yahoo_proxy.py
 const YAHOO_LEAGUE_KEY_2223 = '419.l.52810';
@@ -1350,6 +1355,12 @@ const FIRST_NAME_ALIASES = {
   'evgeni':'evgenii','evgenii':'evgeni',
   'jakob':'jacob',
   'artyom':'artem','artem':'artyom',
+  'ben':'benjamin','benjamin':'ben',
+  'aleksei':'alexei','alexei':'aleksei','alexey':'alexei',
+  'egor':'yegor','yegor':'egor',
+  'joe':'joseph','joseph':'joe',
+  'matty':'matthew',
+  'max':'maxwell','maxwell':'max','maxim':'max',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
@@ -1373,7 +1384,7 @@ function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 
 function dedup(){
-  const srcRank = {yahoo:3, manual:2, nhl:1};
+  const srcRank = {yahoo:3, nhl:2, manual:1};
   const seen = new Map();
   for(const p of players){
     const k = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
@@ -1609,6 +1620,8 @@ function load(){
       p.ptsManual = p.pts > 0 && p.pts2526 > 0 && p.pts !== p.pts2526;
       migrated = true;
     }
+    // Normalize Yahoo team abbreviations to NHL standard (WAS→WSH, NAS→NSH, SJ→SJS, etc.)
+    if(YAHOO_TEAM_NORM[p.team]){ p.team = YAHOO_TEAM_NORM[p.team]; migrated = true; }
     // Clear Yahoo bench/utility slot labels that aren't real positions
     if(['Util','BN'].includes(p.pos)){ p.pos = ''; migrated = true; }
     // Backfill projection / historical roster fields
@@ -2152,12 +2165,12 @@ async function doSync(){
       if(ex){
         ex.start2627    = yp.fantasyTeam;
         ex.end2526 = yp.fantasyTeam;
-        if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = yp.nhlTeam;
+        if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = normTeam(yp.nhlTeam);
         if(yp.pos) ex.pos = yp.pos;
         ex.source = 'yahoo'; updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(p=>p.id))+1 : 1;
-        players.push({id:newId,name:yp.name,team:yp.nhlTeam,pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',start2627:yp.fantasyTeam,end2526:yp.fantasyTeam});
+        players.push({id:newId,name:yp.name,team:normTeam(yp.nhlTeam),pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',start2627:yp.fantasyTeam,end2526:yp.fantasyTeam});
         added++;
       }
     }
