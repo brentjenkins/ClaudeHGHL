@@ -1111,6 +1111,16 @@ tr:hover td{background:#fafaf8}
 </div>
 </div>
 
+<div class="modal-bg" id="abpModal" style="display:none" onclick="if(event.target===this)closeABPModal()">
+<div class="modal" style="width:560px;max-width:96vw">
+  <h2 id="abpModalTitle">Available Better Players</h2>
+  <div id="abpModalBody" style="font-size:13px;margin-top:4px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" onclick="closeABPModal()">Close</button>
+  </div>
+</div>
+</div>
+
 <div id="draftTicker"><div class="ticker-track" id="tickerTrack"></div></div>
 <canvas id="whaleCanvas"></canvas>
 
@@ -2713,7 +2723,7 @@ function render(){
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
-      <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})()}</td>
+      <td>${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';if(n===0)return'<span style="color:#16a34a;font-weight:600">0</span>';const c=n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
       ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
@@ -5458,7 +5468,7 @@ function render2425(){
     const pp=ppts2425blend(p);
     const cap=getCap2425(p);
     const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
-    const abpStr=(()=>{const n=abpMap2425.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})();
+    const abpStr=(()=>{const n=abpMap2425.get(p.id);if(n===null||n===undefined)return'—';if(n===0)return'<span style="color:#16a34a;font-weight:600">0</span>';const c=n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2425')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
@@ -5774,7 +5784,7 @@ function render2324(){
     const pp=ppts2324blend(p);
     const cap=getCap2324(p);
     const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
-    const abpStr=(()=>{const n=abpMap2324.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'color:#16a34a;font-weight:600':n<=3?'color:#1a1a18':n<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';return`<span style="${c}">${n}</span>`;})();
+    const abpStr=(()=>{const n=abpMap2324.get(p.id);if(n===null||n===undefined)return'—';if(n===0)return'<span style="color:#16a34a;font-weight:600">0</span>';const c=n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2324')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
@@ -6945,10 +6955,7 @@ function render2526(){
 
     const pp=ppts2526blend(p);
     const abpVal=abpMap2526.get(p.id);
-    const abpStr=abpVal===null||abpVal===undefined?'—':(()=>{
-      const c=abpVal===0?'color:#16a34a;font-weight:600':abpVal<=3?'color:#1a1a18':abpVal<=7?'color:#d97706;font-weight:600':'color:#dc2626;font-weight:600';
-      return `<span style="${c}">${abpVal}</span>`;
-    })();
+    const abpStr=abpVal===null||abpVal===undefined?'—':abpVal===0?'<span style="color:#16a34a;font-weight:600">0</span>':(()=>{const c=abpVal<=3?'#1a1a18':abpVal<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2526')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${abpVal}</button>`;})();
     const rankStr=p.rank2526!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2526<=10?'#b45309':p.rank2526<=25?'#185FA5':'#555'}">${p.rank2526}</span>`:'—';
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:5px">
@@ -7288,6 +7295,81 @@ function computeABP(allPlayers){
     ).length);
   }
   return abpMap;
+}
+
+function showABPModal(playerId, view) {
+  const p = players.find(x => x.id === playerId);
+  if (!p) return;
+  const getCap   = view==='2627' ? x=>x.cap        : view==='2526' ? getCap2526    : view==='2425' ? getCap2425    : getCap2324;
+  const getPts   = view==='2627' ? x=>x.pts        : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
+  const isFa     = view==='2627' ? x=>!x.start2627 : view==='2526' ? x=>!x.start2526 : view==='2425' ? x=>!x.start2425 : x=>!x.start2324;
+  const isStart  = view==='2627' ? x=>x.start2627  : view==='2526' ? x=>x.start2526  : view==='2425' ? x=>x.start2425  : x=>x.start2324;
+  const getGP    = view==='2627' ? x=>x.gp2526||0  : view==='2526' ? x=>x.gp2526||0  : view==='2425' ? x=>x.gp2425||0  : x=>x.gp2324||0;
+  const getRank  = view==='2627' ? x=>x.rank        : view==='2526' ? x=>x.rank2526   : view==='2425' ? x=>x.rank2425   : x=>x.rank2324;
+  const capLimit = view==='2627' ? CAP_LIMIT : view==='2526' ? CAP_LIMIT_2526 : view==='2425' ? CAP_LIMIT_2425 : CAP_LIMIT_2324;
+  const elcMax   = view==='2627' ? ELC_MAX_2627 : view==='2526' ? ELC_MAX_2526 : view==='2425' ? ELC_MAX_2425 : ELC_MAX_2324;
+  const pg = posGroup(p.pos);
+  const pCap = getCap(p);
+  const pPts = getPts(p);
+  const capCeil = pCap + (abpWiggle / 100) * capLimit;
+  // Build curve fits from the rostered pool for this view
+  const pool = players.filter(x => isStart(x) && getPts(x) >= curveMinPts && getCap(x) > 0);
+  const curveFns = {};
+  for(const pos of ['F','D','G']){
+    curveFns[pos] = fitQuadratic(pool.filter(x => posGroup(x.pos)===pos).map(x => ({x: getCap(x), y: getPts(x)})));
+  }
+  const getDelta = fa => {
+    const fc = getCap(fa), fp = getPts(fa);
+    if(!(fp > 0 && fc > 0)) return null;
+    const base = _curveBaseline(posGroup(fa.pos), fc, elcMax, curveFns[posGroup(fa.pos)]);
+    return base != null ? fp - base : null;
+  };
+  const allBetterFAs = players
+    .filter(fa =>
+      fa.id !== p.id && isFa(fa) && getCap(fa) > 0 &&
+      posGroup(fa.pos) === pg && getCap(fa) <= capCeil && getPts(fa) > pPts &&
+      (abpMinGP <= 0 || getGP(fa) >= abpMinGP) &&
+      (abpMinPts <= 0 || getPts(fa) >= abpMinPts)
+    )
+    .sort((a, b) => getPts(b) - getPts(a));
+  const betterFAs = allBetterFAs.slice(0, 5);
+  const overflow = allBetterFAs.length - betterFAs.length;
+  const posLabel = pg==='F' ? 'Forwards' : pg==='D' ? 'Defensemen' : 'Goalies';
+  const renderRow = (fa, style) => {
+    const faCap = getCap(fa), faPts = getPts(fa), faRank = getRank(fa);
+    const delta = getDelta(fa);
+    const deltaStr = delta != null ? (delta >= 0 ? '+' : '') + Math.round(delta) : '—';
+    const deltaCol = delta != null ? curveSurplusColor(delta) : '#9ca3af';
+    return `<tr style="${style||''}">
+      <td style="padding:6px 8px">${esc(fa.name)}</td>
+      <td style="padding:6px 8px">${esc(fa.team||'—')}</td>
+      <td style="padding:6px 8px">${faCap>0?'$'+faCap.toFixed(2)+'M':'—'}</td>
+      <td style="padding:6px 8px">${faPts||'—'}</td>
+      <td style="padding:6px 8px">${faCap>0?(faPts/faCap).toFixed(1):'—'}</td>
+      <td style="padding:6px 8px;color:${deltaCol};font-weight:600">${deltaStr}</td>
+      <td style="padding:6px 8px">${faRank!=null?faRank:'—'}</td>
+    </tr>`;
+  };
+  const overflowRow = overflow > 0
+    ? `<tr><td colspan="7" style="padding:4px 8px;color:#9ca3af;font-size:11px;text-align:center">… ${overflow} more</td></tr>`
+    : '';
+  const playerRow = renderRow(p, 'border-top:2px solid #e5e7eb;color:#6b7280');
+  document.getElementById('abpModalTitle').textContent = `${p.name} — Top Available ${posLabel}`;
+  document.getElementById('abpModalBody').innerHTML = betterFAs.length
+    ? `<table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;color:#6b7280;font-size:11px;border-bottom:2px solid #e5e7eb">
+          <th style="padding:6px 8px">Player</th><th style="padding:6px 8px">Team</th>
+          <th style="padding:6px 8px">Cap</th><th style="padding:6px 8px">PPTS</th>
+          <th style="padding:6px 8px">PPTS/$M</th><th style="padding:6px 8px">△</th>
+          <th style="padding:6px 8px">Rank</th>
+        </tr></thead>
+        <tbody>${betterFAs.map(fa => renderRow(fa)).join('')}${overflowRow}${playerRow}</tbody>
+      </table>`
+    : `<p style="color:#9ca3af;padding:8px 0">No qualifying free agents found.</p>`;
+  document.getElementById('abpModal').style.display = 'flex';
+}
+function closeABPModal() {
+  document.getElementById('abpModal').style.display = 'none';
 }
 
 const calcAge = p => {
