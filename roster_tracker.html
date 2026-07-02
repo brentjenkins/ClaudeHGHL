@@ -1552,9 +1552,10 @@ function simulateDrops(){
   // deficit > 0: player is below their position curve; sort desc = most inefficient first
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
   // Best FA pts by position — protect any rostered player who scores more than every FA at their position
-  const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
-  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?(p.pts||0)-fn(p.cap)>=0:(p.pts||0)>=DROP_VALUE_FLOOR)||(p.pts||0)>(bestFAByPos[pg]||0); };
+  // isHighVal: protect any player at or above the pts floor, or on/above the efficiency curve.
+  // bestFAByPos comparison removed — it caused elite players to lose protection whenever an
+  // unsigned star sat in the FA pool (e.g. best FA = 90 pts → every 80-pt player became lowVal).
+  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts||0)>=DROP_VALUE_FLOOR||(fn?(p.pts||0)-fn(p.cap)>=0:false); };
 
   for(const team of teams){
     const roster = players.filter(p => p.start2627 === team);
@@ -2514,9 +2515,7 @@ function computeDrops(allPlayers){
 
   const isProspect = p => { const a=calcAge(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && (p.cap||0)<=ELC_MAX_2627; };
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
-  const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=allPlayers.filter(x=>!x.start2627&&posGroup(x.pos)===pg&&(x.pts||0)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>x.pts||0)):0; }
-  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pg=posGroup(p.pos); return (fn?(p.pts||0)-fn(p.cap)>=0:(p.pts||0)>=DROP_VALUE_FLOOR)||(p.pts||0)>(bestFAByPos[pg]||0); };
+  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts||0)>=DROP_VALUE_FLOOR||(fn?(p.pts||0)-fn(p.cap)>=0:false); };
 
   const dropIds = new Set();
   const ftNames = [...new Set(allPlayers.map(p=>p.start2627).filter(Boolean))];
@@ -4440,9 +4439,7 @@ function simulateDrops2526(){
   // Prospects (age≤23, cap≤ELC_MAX_2526) protected — sorted last so they're only dropped if forced
   const isProspect2526 = p => { const a=calcAge2526(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2526(p)<=ELC_MAX_2526; };
   const deficit2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const bestFAByPos2526 = {};
-  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPos2526[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
-  const isHighVal2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),pg=posGroup(p.pos); return (fn?pp-fn(getCap2526(p))>=0:pp>=DROP_VALUE_FLOOR)||pp>(bestFAByPos2526[pg]||0); };
+  const isHighVal2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p); return pp>=DROP_VALUE_FLOOR||(fn?pp-fn(getCap2526(p))>=0:false); };
 
   for(const team of teams){
     const roster = players.filter(p => p.start2526 === team);
@@ -4888,9 +4885,7 @@ function simulateDrops2425(){
 
   const isProspect2425 = p => { const a=calcAge2425(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2425(p)<=ELC_MAX_2425; };
   const deficit2425 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2425blend(p),c=getCap2425(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2425&&posGroup(x.pos)===pg&&ppts2425blend(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>ppts2425blend(x))):0; }
-  const isHighVal2425 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2425blend(p),pg=posGroup(p.pos); return (fn?pp-fn(getCap2425(p))>=0:pp>=DROP_VALUE_FLOOR)||pp>(bestFAByPos[pg]||0); };
+  const isHighVal2425 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2425blend(p); return pp>=DROP_VALUE_FLOOR||(fn?pp-fn(getCap2425(p))>=0:false); };
 
   for(const team of teams){
     const roster = players.filter(p=>p.start2425===team);
@@ -5150,9 +5145,7 @@ function simulateDrops2324(){
 
   const isProspect2324 = p => { const a=calcAge2324(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2324(p)<=ELC_MAX_2324; };
   const deficit2324 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2324blend(p),c=getCap2324(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  const bestFAByPos = {};
-  for(const pg of ['F','D','G']){ const fas=players.filter(x=>!x.start2324&&posGroup(x.pos)===pg&&ppts2324blend(x)>0); bestFAByPos[pg]=fas.length?Math.max(...fas.map(x=>ppts2324blend(x))):0; }
-  const isHighVal2324 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2324blend(p),pg=posGroup(p.pos); return (fn?pp-fn(getCap2324(p))>=0:pp>=DROP_VALUE_FLOOR)||pp>(bestFAByPos[pg]||0); };
+  const isHighVal2324 = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts2324blend(p); return pp>=DROP_VALUE_FLOOR||(fn?pp-fn(getCap2324(p))>=0:false); };
 
   for(const team of teams){
     const roster = players.filter(p=>p.start2324===team);
