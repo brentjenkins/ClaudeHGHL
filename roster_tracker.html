@@ -4053,7 +4053,7 @@ function renderSignings(){
 
   tbody.innerHTML = filtered.length ? filtered.map(r => {
     const capStr = r.cap > 0 ? `$${r.cap.toFixed(2)}M` : '—';
-    const expShort = r.exp ? r.exp.replace(/^(\d{4})-\d{4}$/, (_, y) => `'${String(+y-1).slice(2)}-'${y.slice(2)}`) : '—';
+    const expShort = r.exp ? r.exp.replace(/^(\d{4})-(\d{4})$/, (_, y1, y2) => `'${y1.slice(2)}-'${y2.slice(2)}`) : '—';
     return `<tr>
       <td style="font-weight:500">${esc(r.name)}</td>
       <td>${badge(r.pg)}</td>
