@@ -121,7 +121,7 @@ const ACTUAL_DRAFT_2526 = {
   'isaac howard':'Damage Inc.',
   'kevin korchinski':'Damage Inc.',
   'logan mailloux':'Damage Inc.',
-  'maxim shabanov':'Damage Inc.',
+  'max shabanov':'Damage Inc.',
   'william nylander':'Damage Inc.',
   // Dumb and Goalie To (6 picks)
   'claude giroux':'Dumb and Goalie To',
