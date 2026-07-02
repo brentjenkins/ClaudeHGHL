@@ -953,7 +953,7 @@ tr:hover td{background:#fafaf8}
               <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">PPTS × Position multiplier</div>
               <div style="display:flex;gap:10px">
                 <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Forward baseline — 1.0 is standard">F<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
-                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="D multiplier — curve analysis gives F/D efficiency ratio ~1.26; default 1.2">D<input type="number" id="s-multD" value="1.2" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="D multiplier — curve analysis gives F/D efficiency ratio 1.26; default 1.26">D<input type="number" id="s-multD" value="1.26" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
                 <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Goalie baseline">G<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
               </div>
             </div>
@@ -1223,7 +1223,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
@@ -5985,7 +5985,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   if(!myTeam){ toast('Set "My HGHL Team" in Settings → Draft first.'); return; }
   if(!allTeams.includes(myTeam)){ toast(`"${myTeam}" not found in ${season} rosters — check spelling in Settings.`); return; }
 
-  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.2, G: draftWeights.multG||1};
+  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
 
   const assigned = {};
   for(const p of players) assigned[p.id] = p[startField] || null;
@@ -6274,7 +6274,7 @@ function runDraftSim2526(){
 
 function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
-  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.2, G: draftWeights.multG||1};
+  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
 
   // Snapshot: track each player's current team assignment
   const assigned = {}; // id → team or null
