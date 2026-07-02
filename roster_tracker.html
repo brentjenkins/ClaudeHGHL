@@ -566,6 +566,10 @@ tr:hover td{background:#fafaf8}
     <span class="summary-nav-team" id="summaryNavLabel"></span>
     <button class="btn" onclick="summaryStep(1)" style="height:28px;font-size:12px;padding:0 10px">Next →</button>
     <button class="btn" id="summaryPauseBtn" onclick="summaryTogglePause()" style="height:28px;font-size:12px;padding:0 10px;margin-left:8px">⏸ Pause</button>
+    <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none;margin-left:12px" title="Show positional cap allocation vs optimal (private analysis — not visible on projector)">
+      <input type="checkbox" id="capMixToggle" onchange="setCapMix(this.checked)" style="width:12px;height:12px;accent-color:#6366f1;cursor:pointer">
+      Cap Mix
+    </label>
   </div>
   <div class="summary-card" id="summaryCard"></div>
   <div class="summary-progress"><div class="summary-progress-bar" id="summaryProgressBar"></div></div>
@@ -2838,6 +2842,8 @@ const LS_DRAFT_ANIMS = 'hghl_draft_anims';
 let draftAnimsEnabled = localStorage.getItem(LS_DRAFT_ANIMS) === 'true';
 const LS_TICKER_ENABLED = 'hghl_ticker_enabled';
 let tickerEnabled = localStorage.getItem(LS_TICKER_ENABLED) === 'true';
+const LS_CAP_MIX = 'hghl_show_cap_mix';
+let showCapMix = localStorage.getItem(LS_CAP_MIX) === 'true';
 
 // ── Ticker RAF loop ───────────────────────────────────────────────
 let _tickerRAF = null, _tickerX = 0, _tickerLastTs = null;
@@ -3558,6 +3564,11 @@ function setTickerEnabled(val){
   const el = document.getElementById('draftTicker');
   if(!val){ el.style.display='none'; stopTicker(); }
   else if(currentView==='draft'||currentView==='summary'){ el.style.display='block'; startTicker(); }
+}
+function setCapMix(val){
+  showCapMix = val;
+  localStorage.setItem(LS_CAP_MIX, val);
+  renderSummaryCard(_summaryIdx);
 }
 
 function setDraftView(mode, doRender=true){
@@ -7089,6 +7100,8 @@ function setView(v){
     renderBigBoard();
   }
   if(v==='summary'){
+    const cmtog = document.getElementById('capMixToggle');
+    if(cmtog) cmtog.checked = showCapMix;
     startSummaryRotation();
     const onClock = buildDraftSeq2627()[draftState2627.picks.length] ?? null;
     const pastRound1 = draftState2627.picks.length >= 9;
@@ -7782,6 +7795,83 @@ function renderSummaryCard(teamIdx){
       <div class="ssb" style="min-width:auto"><div class="ssb-label">Cap remaining</div><span class="ssb-val" style="font-size:22px;color:${capRemColor}">$${capRem.toFixed(1)}M</span></div>
       ${dPts.color==='#16a34a'&&dRank.color==='#16a34a'&&dAge.color==='#16a34a'?'<div style="font-size:28px;align-self:center">🍆💦</div>':''}
     </div>
+    ${(()=>{
+      if(!showCapMix || rosterCurr.length===0 || capUsed<=1) return '';
+      const cmGroups=['F','D','G'];
+      const barCol={F:'#3b82f6',D:'#22c55e',G:'#f59e0b'};
+      const lblCol={F:'#1e40af',D:'#166534',G:'#92400e'};
+      // Team stats per pos
+      const tps={};
+      for(const pg of cmGroups){
+        const pp=rosterCurr.filter(p=>posGroup(p.pos)===pg);
+        const c=pp.reduce((s,p)=>s+getCapY(p),0), pt=pp.reduce((s,p)=>s+pptsF(p),0);
+        tps[pg]={n:pp.length,cap:c,pts:pt,pct:capUsed>0?c/capUsed:0,avgCap:pp.length>0?c/pp.length:0,avgPts:pp.length>0?pt/pp.length:0,eff:c>0?pt/c:0};
+      }
+      // League averages
+      const lps={F:{n:0,cap:0,pts:0},D:{n:0,cap:0,pts:0},G:{n:0,cap:0,pts:0}};
+      let lTotCap=0,lTotPts=0;
+      for(const t of teams){
+        const tr=players.filter(p=>p[currField]===t); if(!tr.length) continue;
+        for(const pg of cmGroups){const pp=tr.filter(p=>posGroup(p.pos)===pg);lps[pg].n+=pp.length;lps[pg].cap+=pp.reduce((s,p)=>s+getCapY(p),0);lps[pg].pts+=pp.reduce((s,p)=>s+pptsF(p),0);}
+        lTotCap+=tr.reduce((s,p)=>s+getCapY(p),0); lTotPts+=tr.reduce((s,p)=>s+pptsF(p),0);
+      }
+      const lTotEff=lTotCap>0?(lTotPts/lTotCap).toFixed(1):'—';
+      const thisEff=capUsed>0?(projPtsTotal/capUsed).toFixed(1):'—';
+      const thisEffNum=capUsed>0?projPtsTotal/capUsed:0;
+      const lTotEffNum=lTotCap>0?lTotPts/lTotCap:0;
+      const rows=cmGroups.map(pg=>{
+        const {n,cap,pts,pct,avgCap,avgPts,eff}=tps[pg];
+        const opt=OPT_POS_FRACS[pg]||0, delta=pct-opt, ad=Math.abs(delta);
+        const bad=(pg==='F'&&delta<-0.04)||(pg==='D'&&delta>0.04)||(pg==='G'&&ad>0.04);
+        const warn=!bad&&ad>0.02;
+        const dc=bad?'#dc2626':warn?'#d97706':'#16a34a';
+        const barPct=Math.min(100,Math.round(pct*100)), optPct=Math.round(opt*100);
+        const lAvgCap=lps[pg].n>0?lps[pg].cap/lps[pg].n:0;
+        const lAvgPts=lps[pg].n>0?lps[pg].pts/lps[pg].n:0;
+        const lEff=lps[pg].cap>0?lps[pg].pts/lps[pg].cap:0;
+        // Color: team vs league (green=favourable, red=unfavourable)
+        const capC=lAvgCap>0?(avgCap<=lAvgCap?'#16a34a':'#d97706'):'#555';
+        const ptsC=lAvgPts>0?(avgPts>=lAvgPts?'#16a34a':'#dc2626'):'#1a1a18';
+        const effC=lEff>0?(eff>=lEff?'#16a34a':'#dc2626'):'#555';
+        return `
+          <span style="font-size:11px;font-weight:700;color:${lblCol[pg]}">${pg}</span>
+          <div style="height:10px;background:#e5e7eb;border-radius:3px;position:relative;overflow:visible">
+            <div style="width:${barPct}%;height:100%;background:${barCol[pg]};border-radius:3px;min-width:${barPct>0?2:0}px"></div>
+            <div style="position:absolute;left:${optPct}%;top:-3px;bottom:-3px;width:2px;background:#374151;border-radius:1px" title="Optimal ${optPct}%"></div>
+          </div>
+          <span style="font-size:11px;font-weight:600;color:#1a1a18;text-align:right">${Math.round(pct*100)}%</span>
+          <span style="font-size:11px;font-weight:700;text-align:right;color:${dc}">${delta>=0?'+':''}${Math.round(delta*100)}%</span>
+          <span style="font-size:10px;color:#555;text-align:center">${n}</span>
+          <span style="font-size:10px;font-weight:600;color:${capC};text-align:right">${avgCap>0?'$'+avgCap.toFixed(2)+'M':'—'}</span>
+          <span style="font-size:10px;color:#9ca3af;text-align:right">${lAvgCap>0?'$'+lAvgCap.toFixed(2)+'M':'—'}</span>
+          <span style="font-size:11px;font-weight:600;color:${ptsC};text-align:right">${n>0?Math.round(avgPts):'—'}</span>
+          <span style="font-size:10px;color:#9ca3af;text-align:right">${lAvgPts>0?Math.round(lAvgPts):'—'}</span>
+          <span style="font-size:10px;font-weight:600;color:${effC};text-align:right">${eff>0?eff.toFixed(1):'—'}</span>
+          <span style="font-size:10px;color:#9ca3af;text-align:right">${lEff>0?lEff.toFixed(1):'—'}</span>`;
+      }).join('');
+      const totEffC=lTotEffNum>0?(thisEffNum>=lTotEffNum?'#16a34a':'#dc2626'):'#1a1a18';
+      return `<div style="padding:10px 14px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;margin-top:-4px">
+        <div style="font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Cap Allocation · Private</div>
+        <div style="display:grid;grid-template-columns:16px 1fr 36px 40px 20px 54px 54px 44px 44px 40px 40px;gap:4px 8px;align-items:center">
+          <span></span><span style="font-size:9px;color:#9ca3af">allocation (▐ = optimal)</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">cap%</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">vs opt</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:center">n</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">avg$/pl</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">lg avg$/pl</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">avg ppts</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">lg avg ppts</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">ppts/$M</span>
+          <span style="font-size:9px;color:#9ca3af;text-align:right">lg ppts/$M</span>
+          ${rows}
+        </div>
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e5e7eb;display:flex;gap:16px;font-size:10px;color:#9ca3af;flex-wrap:wrap">
+          <span>This team: <b style="color:${totEffC}">${thisEff} ppts/$M</b></span>
+          <span>League avg: <b style="color:#1a1a18">${lTotEff} ppts/$M</b></span>
+          <span style="color:#c4b5fd">Optimal: F ${Math.round(OPT_POS_FRACS.F*100)}% / D ${Math.round(OPT_POS_FRACS.D*100)}% / G ${Math.round(OPT_POS_FRACS.G*100)}%</span>
+        </div>
+      </div>`;
+    })()}
     <div class="summary-cols">
       <div class="summary-col">
         <h3 class="returning-hdr">Returning (${returning.length})</h3>${colHdrs}
