@@ -953,7 +953,7 @@ tr:hover td{background:#fafaf8}
               <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">PPTS × Position multiplier</div>
               <div style="display:flex;gap:10px">
                 <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Forward baseline — 1.0 is standard">F<input type="number" id="s-multF" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multF',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
-                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="High-scoring D are rarer/more valuable — default 1.4">D<input type="number" id="s-multD" value="1.4" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+                <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="D multiplier — curve analysis gives F/D efficiency ratio ~1.26; default 1.2">D<input type="number" id="s-multD" value="1.2" min="0" max="5" step="0.1" onchange="updateDraftWeight('multD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
                 <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Goalie baseline">G<input type="number" id="s-multG" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('multG',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
               </div>
             </div>
@@ -1026,6 +1026,10 @@ tr:hover td{background:#fafaf8}
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:11px;color:#9ca3af"><span style="color:#6366f1;font-weight:700">Prospect mode</span> Prospect bonus (F≤22, D≤23, G≤24, cap≤ELC max) ×</span>
           <input type="number" id="s-wtProspect" value="12" min="0" max="100" step="1" onchange="updateDraftWeight('wtProspect',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:11px;color:#9ca3af" title="Penalizes D picks when team's D cap share exceeds optimal 35% (knapsack-derived). 0 = off.">Pos budget correction ×</span>
+          <input type="number" id="s-wtPosAlloc" value="1.0" min="0" max="5" step="0.1" onchange="updateDraftWeight('wtPosAlloc',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
         </div>
       </div>
     </div>
@@ -1219,7 +1223,9 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.4, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35 };
+let draftWeights = { multF: 1.0, multD: 1.2, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
+// Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
+const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve,
 // ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
@@ -1558,9 +1564,14 @@ function simulateDrops(){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
+    // Positional rebalancing: D cap > 35% optimal → bump D players' effective deficit
+    const rCapD=remaining.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap||0):s,0);
+    const rCapTot=remaining.reduce((s,p)=>s+(p.cap||0),0);
+    const dExcess=rCapTot>0?Math.max(0,rCapD/rCapTot-OPT_POS_FRACS.D):0;
+    const rebalBonus=p=>posGroup(p.pos)==='D'?dExcess*rCapTot:0;
     // Three tiers: low-value non-prospects first, high-value non-prospects second (last resort), prospects last
-    const lowVal   = remaining.filter(p => !isProspect(p) && !isHighVal(p)).sort((a,b) => deficit(b) - deficit(a));
-    const highVal  = remaining.filter(p => !isProspect(p) &&  isHighVal(p)).sort((a,b) => deficit(b) - deficit(a));
+    const lowVal   = remaining.filter(p => !isProspect(p) && !isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus(b)) - (deficit(a)+rebalBonus(a)));
+    const highVal  = remaining.filter(p => !isProspect(p) &&  isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus(b)) - (deficit(a)+rebalBonus(a)));
     const prospects = remaining.filter(p => isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
     const candidates = [...lowVal, ...highVal, ...prospects];
 
@@ -2517,8 +2528,12 @@ function computeDrops(allPlayers){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const lowVal   = remaining.filter(p => !isProspect(p) && !isHighVal(p)).sort((a,b) => deficit(b) - deficit(a));
-    const highVal  = remaining.filter(p => !isProspect(p) &&  isHighVal(p)).sort((a,b) => deficit(b) - deficit(a));
+    const rCapD2=remaining.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap||0):s,0);
+    const rCapTot2=remaining.reduce((s,p)=>s+(p.cap||0),0);
+    const dExcess2=rCapTot2>0?Math.max(0,rCapD2/rCapTot2-OPT_POS_FRACS.D):0;
+    const rebalBonus2=p=>posGroup(p.pos)==='D'?dExcess2*rCapTot2:0;
+    const lowVal   = remaining.filter(p => !isProspect(p) && !isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus2(b)) - (deficit(a)+rebalBonus2(a)));
+    const highVal  = remaining.filter(p => !isProspect(p) &&  isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus2(b)) - (deficit(a)+rebalBonus2(a)));
     const prospects = remaining.filter(p => isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
     const candidates = [...lowVal, ...highVal, ...prospects];
 
@@ -2613,6 +2628,8 @@ function render(){
     const dN2=viewRoster.filter(p=>posGroup(p.pos)==='D').length;
     const gN2=viewRoster.filter(p=>posGroup(p.pos)==='G').length;
     const need={F:Math.max(0,DRAFT_ROSTER_MAX.F-fN2),D:Math.max(0,DRAFT_ROSTER_MAX.D-dN2),G:Math.max(0,DRAFT_ROSTER_MAX.G-gN2)};
+    const viewCapByPos={F:viewRoster.reduce((s,p)=>posGroup(p.pos)==='F'?s+(p.cap||0):s,0),D:viewRoster.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap||0):s,0),G:viewRoster.reduce((s,p)=>posGroup(p.pos)==='G'?s+(p.cap||0):s,0)};
+    const viewCapTot=viewCapByPos.F+viewCapByPos.D+viewCapByPos.G;
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
@@ -2661,7 +2678,8 @@ function render(){
         const youthRaw=peakTrajectoryScore(calcAge(p),pg,yrsRaw);
         const pressRaw=pressure[pg];
         const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw-1));
-        const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult;
+        const posAllocMult=(viewCapTot>10&&(draftWeights.wtPosAlloc||0)>0)?Math.max(0.5,1-Math.max(0,(viewCapByPos[pg]||0)/viewCapTot-(OPT_POS_FRACS[pg]||0))*(draftWeights.wtPosAlloc||1)*2):1;
+        const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult*posAllocMult;
         const tSc=scV*draftWeights.wtScarcity;
         const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
         const tYouth=youthRaw*draftWeights.wtAge;
@@ -3635,6 +3653,7 @@ function syncSettings(){
   set('s-wtScarcity', W.wtScarcity);
   set('s-wtDeltaCurve', W.wtDeltaCurve);
   set('s-deltaCurveThreshold', W.deltaCurveThreshold);
+  set('s-wtPosAlloc', W.wtPosAlloc??1.0);
   set('s-draftProspectRounds', draftProspectRounds);
   set('s-myHGHLTeam', myHGHLTeam);
   set('s-minDropsPreseason', minDropsPreseason); set('s-maxDropsPreseason', maxDropsPreseason);
@@ -4433,8 +4452,12 @@ function simulateDrops2526(){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const lowVal2526   = remaining.filter(p => !isProspect2526(p) && !isHighVal2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
-    const highVal2526  = remaining.filter(p => !isProspect2526(p) &&  isHighVal2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const rCapD26=remaining.reduce((s,p)=>posGroup(p.pos)==='D'?s+getCap2526(p):s,0);
+    const rCapTot26=remaining.reduce((s,p)=>s+getCap2526(p),0);
+    const dExcess26=rCapTot26>0?Math.max(0,rCapD26/rCapTot26-OPT_POS_FRACS.D):0;
+    const rebalBonus26=p=>posGroup(p.pos)==='D'?dExcess26*rCapTot26:0;
+    const lowVal2526   = remaining.filter(p => !isProspect2526(p) && !isHighVal2526(p)).sort((a,b) => (deficit2526(b)+rebalBonus26(b)) - (deficit2526(a)+rebalBonus26(a)));
+    const highVal2526  = remaining.filter(p => !isProspect2526(p) &&  isHighVal2526(p)).sort((a,b) => (deficit2526(b)+rebalBonus26(b)) - (deficit2526(a)+rebalBonus26(a)));
     const prospects2526 = remaining.filter(p => isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
     const candidates   = [...lowVal2526, ...highVal2526, ...prospects2526];
 
@@ -5962,7 +5985,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   if(!myTeam){ toast('Set "My HGHL Team" in Settings → Draft first.'); return; }
   if(!allTeams.includes(myTeam)){ toast(`"${myTeam}" not found in ${season} rosters — check spelling in Settings.`); return; }
 
-  const pm = {F: draftWeights.wtF||1, D: draftWeights.wtD||1.4, G: draftWeights.wtG||1};
+  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.2, G: draftWeights.multG||1};
 
   const assigned = {};
   for(const p of players) assigned[p.id] = p[startField] || null;
@@ -6251,7 +6274,7 @@ function runDraftSim2526(){
 
 function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
-  const pm = {F: draftWeights.wtF||1, D: draftWeights.wtD||1.4, G: draftWeights.wtG||1};
+  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.2, G: draftWeights.multG||1};
 
   // Snapshot: track each player's current team assignment
   const assigned = {}; // id → team or null
@@ -6271,6 +6294,11 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     };
     teamCap[t] = keepers.reduce((s,p) => s + getCap(p), 0);
     teamSpotsLeft[t] = Math.max(0, ROSTER_MAX.F + ROSTER_MAX.D + ROSTER_MAX.G - keepers.length);
+  }
+  const teamCapByPos = {};
+  for(const t of allTeams){
+    teamCapByPos[t] = {F:0,D:0,G:0};
+    for(const p of players.filter(q=>assigned[q.id]===t)){ const g=posGroup(p.pos); if(g in teamCapByPos[t]) teamCapByPos[t][g]+=getCap(p); }
   }
 
   // Build draft sequence from actual drops state
@@ -6340,6 +6368,14 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
           const cap = getCap(p) || 0;
           score += prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp) * prospectWeight;
         }
+        // Positional budget correction: penalize picks that push D share past knapsack-optimal 35%
+        if((draftWeights.wtPosAlloc||0) > 0){
+          const capTot = teamCap[team] || 0;
+          if(capTot > 10){
+            const posAllocMult = Math.max(0.5, 1 - Math.max(0, (teamCapByPos[team]?.[pg]||0)/capTot - (OPT_POS_FRACS[pg]||0)) * (draftWeights.wtPosAlloc||1) * 2);
+            score *= posAllocMult;
+          }
+        }
       }
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
@@ -6350,6 +6386,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     if(need[team]) need[team][pg] = Math.max(0, (need[team][pg]||0) - 1);
     teamSpotsLeft[team] = Math.max(0, (teamSpotsLeft[team]||0) - 1);
     teamCap[team] = (teamCap[team]||0) + (getCap(pick.p)||0);
+    if(teamCapByPos[team]) teamCapByPos[team][pg] = (teamCapByPos[team][pg]||0) + getCap(pick.p);
 
     simPicks.push({round, team, player: pick.p.name, pos: pg, ppts: pick.pp, cap: getCap(pick.p)||0, mode});
     boardPicks.push({team, player: pick.p.name, pos: pg, nhlTeam: pick.p.team||'', cap: getCap(pick.p)||0, projPts: pick.pp});
