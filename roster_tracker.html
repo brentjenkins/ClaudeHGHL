@@ -4381,7 +4381,7 @@ async function _applyYahooDraft(leagueKey, startField, renderFn){
     let applied=0; const unmatched=[];
     for(const pick of d.picks){
       const key = normName(pick.player).toLowerCase();
-      const p = players.find(x => normName(x.name).toLowerCase() === key);
+      const p = players.find(x => { const n=normName(x.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
       if(p){ p[startField] = pick.team; applied++; }
       else unmatched.push(`${pick.player} (${pick.team} R${pick.round})`);
     }
@@ -4401,7 +4401,7 @@ async function _applyYahooDrops(leagueKey, before, startField, renderFn){
     let applied=0; const unmatched=[];
     for(const drop of d.drops){
       const key = normName(drop.player).toLowerCase();
-      const p = players.find(x => normName(x.name).toLowerCase() === key);
+      const p = players.find(x => { const n=normName(x.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
       if(p){ p[startField] = null; applied++; }
       else unmatched.push(drop.player);
     }
@@ -6005,7 +6005,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   for(const [key, team] of Object.entries(actualDraft)){
     if(team === myTeam) continue;
     otherActualKeys.add(key);
-    const p = players.find(x => normName(x.name).toLowerCase() === key);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
     if(!p) continue;
     assigned[p.id] = team;
     const pg = posGroup(p.pos);
@@ -6095,7 +6095,7 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
   const myActualPicks = [];
   for(const [key, team] of Object.entries(actualDraft)){
     if(team !== myTeam) continue;
-    const p = players.find(x => normName(x.name).toLowerCase() === key);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
     myActualPicks.push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0, apts: p?actualPts(p):0});
   }
 
@@ -6435,7 +6435,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   // Build actual picks per team in insertion order from actualDraft (which should be in draft order)
   const actualByTeam = {};
   for(const [key, team] of Object.entries(actualDraft)){
-    const p = players.find(x => normName(x.name).toLowerCase() === key);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
     if(!actualByTeam[team]) actualByTeam[team] = [];
     actualByTeam[team].push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0});
   }
@@ -6539,7 +6539,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   const keeperIds = new Set(Object.entries(initialAssigned).filter(([,t])=>!!t).map(([id])=>Number(id)));
   const actDraftTotals = {};
   for(const [key, team] of Object.entries(actualDraft)){
-    const p = players.find(x => normName(x.name).toLowerCase() === key);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
     if(!actDraftTotals[team]) actDraftTotals[team] = {F:0,D:0,G:0,cap:0};
     if(p && keeperIds.has(p.id)) continue; // already in keeperTotals — skip
     const pg = p ? posGroup(p.pos) : 'F';
@@ -6616,7 +6616,7 @@ function compareDrafts2526(){
     (actualByTeam[team] = actualByTeam[team] || []).push(key);
   }
 
-  const findPlayer = key => players.find(p => normName(p.name).toLowerCase() === key);
+  const findPlayer = key => players.find(p => { const n=normName(p.name).toLowerCase(); return n===key||_nameAlias(n)===key; });
   const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
   const hasActuals = players.some(p => (p.pts2526||0) > 0);
 
