@@ -5548,6 +5548,14 @@ function _curveDeltaLabel(delta){
   const str = (delta>=0?'+':'')+Math.round(delta);
   return `<div class="team-curve-delta" style="font-size:10px;text-align:center;color:${color};margin-top:2px">△ ${str} vs curve</div>`;
 }
+function _capGapRow(tp, getCapFn, capLimit){
+  const fCap=tp.filter(p=>posGroup(p.pos)==='F').reduce((s,p)=>s+getCapFn(p),0);
+  const dCap=tp.filter(p=>posGroup(p.pos)==='D').reduce((s,p)=>s+getCapFn(p),0);
+  const gCap=tp.filter(p=>posGroup(p.pos)==='G').reduce((s,p)=>s+getCapFn(p),0);
+  const fG=OPT_POS_FRACS.F*capLimit-fCap, dG=OPT_POS_FRACS.D*capLimit-dCap, gG=OPT_POS_FRACS.G*capLimit-gCap;
+  const fmt=(g,col)=>{const c=Math.abs(g)<=1?'#9ca3af':g>0?col:'#dc2626';return`<span style="color:${c};font-weight:600">${g>=0?'+':''}$${g.toFixed(1)}</span>`;};
+  return `<div style="display:flex;gap:5px;font-size:9px;margin-top:1px" title="Cap gap vs optimal (F ${Math.round(OPT_POS_FRACS.F*100)}% / D ${Math.round(OPT_POS_FRACS.D*100)}% / G ${Math.round(OPT_POS_FRACS.G*100)}% of $${capLimit}M)"><span style="color:#9ca3af">F</span>${fmt(fG,'#1e40af')}<span style="color:#9ca3af">D</span>${fmt(dG,'#166534')}<span style="color:#9ca3af">G</span>${fmt(gG,'#92400e')}</div>`;
+}
 
 function updateStats2425(){
   const _oc2425 = draftMode2425 ? (buildDraftSeq2425()[draftState2425.picks.length] ?? null) : null;
@@ -5646,6 +5654,7 @@ function updateStats2425(){
         <span title="${dRem} defense spots remaining (${dN} rostered)">D&thinsp;${dRem}</span>
         <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
+      ${_capGapRow(tp, getCap2425, CAP_LIMIT_2425)}
       <div style="font-size:10px;color:#6b7280;margin-top:3px;text-align:center">
         ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
         ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
@@ -5944,6 +5953,7 @@ function updateStats2324(){
         <span title="${dRem} defense spots remaining (${dN} rostered)">D&thinsp;${dRem}</span>
         <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
+      ${_capGapRow(tp, getCap2324, CAP_LIMIT_2324)}
       <div style="font-size:10px;color:#6b7280;margin-top:3px;text-align:center">
         ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
         ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
@@ -6825,6 +6835,7 @@ function updateStats2526(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
+      ${_capGapRow(tp, getCap2526, CAP_LIMIT_2526)}
       ${_curveDeltaLabel(teamCurveDelta2526(t))}
       ${top5Html2526(fRem,dRem,gRem,rem)}
     </div>`;
@@ -7576,6 +7587,7 @@ function updateStats(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
+      ${_capGapRow(tp, p=>p.cap||0, CAP_LIMIT)}
       ${_curveDeltaLabel(teamCurveDelta(t))}
       ${top5Html(fRem,dRem,gRem,rem)}
     </div>`;
