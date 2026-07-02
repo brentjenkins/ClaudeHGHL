@@ -2576,7 +2576,7 @@ function render(){
 
   let rows=players.filter(p=>{
     if(q&&![p.name,p.team,p.start2627||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
-    if(!draftMode&&fp&&posGroup(p.pos)!==fp) return false;
+    if(fp&&posGroup(p.pos)!==fp) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
     if(ff === '__none__' && p.start2627) return false;
@@ -2695,9 +2695,9 @@ function render(){
         const _dsNormal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
         return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf,tDelta,pressRaw,pressMult}});
       });
-    rows = draftSubMode==='prospect'
-      ? allScored.sort((a,b)=>b._ds-a._ds)
-      : allScored.sort((a,b)=>b._dsNormal-a._dsNormal);
+    rows = sortCol==='pts'
+      ? (draftSubMode==='prospect' ? allScored.sort((a,b)=>b._ds-a._ds) : allScored.sort((a,b)=>b._dsNormal-a._dsNormal))
+      : allScored; // already in sortCol order (allScored built from pre-sorted rows)
   }
 
   const draftModeLabel = draftFocusTeam ? `Viewing: ${draftFocusTeam}` : draftSubMode==='prospect' ? 'Prospect mode' : 'Best Available';
@@ -5454,10 +5454,20 @@ function render2425(){
       const _ds2425Normal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
       return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2425,tProspect2425,srcN,tConf,pressRaw2425:pressure2425[pg],pressMult2425}});
     });
-    rows = draftSubMode2425==='prospect'
-      ? lastAllScored2425.filter(p=>!viewTeam2425||(need2425&&need2425[posGroup(p.pos)]>0)).sort((a,b)=>b._ds2425-a._ds2425)
-      : lastAllScored2425.filter(p=>!viewTeam2425||(need2425&&need2425[posGroup(p.pos)]>0)).sort((a,b)=>b._ds2425Normal-a._ds2425Normal);
-    if(!draftMode2425||fp) rows=rows.filter(r=>!fp||posGroup(r.pos)===fp);
+    rows = lastAllScored2425.filter(p=>{
+      if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
+      if(fp && posGroup(p.pos)!==fp) return false;
+      if(ft && p.team!==ft) return false;
+      if(ft2425v==='__any__' && !(p.end2324||'')) return false;
+      else if(ft2425v && ft2425v!=='__any__' && (p.end2324||'')!==ft2425v) return false;
+      if(q && ![p.name,p.team,p.end2324||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
+      return true;
+    });
+    if(sortCol2425==='ppts2425blend'){
+      rows=draftSubMode2425==='prospect'?rows.sort((a,b)=>b._ds2425-a._ds2425):rows.sort((a,b)=>b._ds2425Normal-a._ds2425Normal);
+    }else{
+      rows.sort((a,b)=>{let av,bv;if(sortCol2425==='age'){av=calcAge2425(a)??-1;bv=calcAge2425(b)??-1;}else if(sortCol2425==='abp2425'){av=abpMap2425.get(a.id)??-1;bv=abpMap2425.get(b.id)??-1;}else if(sortCol2425==='rank2425'){av=a.rank2425??99999;bv=b.rank2425??99999;}else if(sortCol2425==='curvedelta2425'){av=curveDelta2425(a)??-Infinity;bv=curveDelta2425(b)??-Infinity;}else if(sortCol2425==='curvedelta2425actual'){av=curveDeltaActual2425(a)??-Infinity;bv=curveDeltaActual2425(b)??-Infinity;}else if(sortCol2425==='ptsperm2425'){const ca=getCap2425(a),cb=getCap2425(b);av=ca>0?ppts2425blend(a)/ca:0;bv=cb>0?ppts2425blend(b)/cb:0;}else if(sortCol2425==='cap2425'){av=getCap2425(a);bv=getCap2425(b);}else{av=a[sortCol2425]??'';bv=b[sortCol2425]??'';}if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return av<bv?-sortDir2425:av>bv?sortDir2425:0;});
+    }
     const draftModeLabel2425=draftFocusTeam2425?`Viewing: ${draftFocusTeam2425}`:draftSubMode2425==='prospect'?'Prospect mode':'Best Available';
     var draftSectionHdr2425=`<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2425)}</td></tr>`;
   } else {
@@ -5779,10 +5789,20 @@ function render2324(){
       const _ds2324Normal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
       return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2324,tProspect2324,srcN,tConf,pressRaw2324:pressure2324[pg],pressMult2324}});
     });
-    rows = draftSubMode2324==='prospect'
-      ? lastAllScored2324.filter(p=>!viewTeam2324||(need2324&&need2324[posGroup(p.pos)]>0)).sort((a,b)=>b._ds2324-a._ds2324)
-      : lastAllScored2324.filter(p=>!viewTeam2324||(need2324&&need2324[posGroup(p.pos)]>0)).sort((a,b)=>b._ds2324Normal-a._ds2324Normal);
-    rows=rows.filter(r=>(!fp||posGroup(r.pos)===fp) && (!ft||r.team===ft) && (!q||[r.name,r.team,r.end2223||'',r.start2324||''].some(s=>s.toLowerCase().includes(q))));
+    rows = lastAllScored2324.filter(p=>{
+      if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
+      if(fp && posGroup(p.pos)!==fp) return false;
+      if(ft && p.team!==ft) return false;
+      if(ft2324v==='__any__' && !(p.end2223||'')) return false;
+      else if(ft2324v && ft2324v!=='__any__' && (p.end2223||'')!==ft2324v) return false;
+      if(q && ![p.name,p.team,p.end2223||'',p.start2324||''].some(s=>s.toLowerCase().includes(q))) return false;
+      return true;
+    });
+    if(sortCol2324==='ppts2324blend'){
+      rows=draftSubMode2324==='prospect'?rows.sort((a,b)=>b._ds2324-a._ds2324):rows.sort((a,b)=>b._ds2324Normal-a._ds2324Normal);
+    }else{
+      rows.sort((a,b)=>{let av,bv;if(sortCol2324==='age'){av=calcAge2324(a)??-1;bv=calcAge2324(b)??-1;}else if(sortCol2324==='abp2324'){av=abpMap2324.get(a.id)??-1;bv=abpMap2324.get(b.id)??-1;}else if(sortCol2324==='rank2324'){av=a.rank2324??99999;bv=b.rank2324??99999;}else if(sortCol2324==='curvedelta2324'){av=curveDelta2324(a)??-Infinity;bv=curveDelta2324(b)??-Infinity;}else if(sortCol2324==='curvedelta2324actual'){av=curveDeltaActual2324(a)??-Infinity;bv=curveDeltaActual2324(b)??-Infinity;}else if(sortCol2324==='ptsperm2324'){const ca=getCap2324(a),cb=getCap2324(b);av=ca>0?ppts2324blend(a)/ca:0;bv=cb>0?ppts2324blend(b)/cb:0;}else if(sortCol2324==='cap2324'){av=getCap2324(a);bv=getCap2324(b);}else{av=a[sortCol2324]??'';bv=b[sortCol2324]??'';}if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return av<bv?-sortDir2324:av>bv?sortDir2324:0;});
+    }
     const draftModeLabel2324=draftFocusTeam2324?`Viewing: ${draftFocusTeam2324}`:draftSubMode2324==='prospect'?'Prospect mode':'Best Available';
     var draftSectionHdr2324=`<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2324)}</td></tr>`;
   } else {
@@ -6873,7 +6893,7 @@ function render2526(){
 
   let rows = players.filter(p=>{
     if(q&&![p.name,p.team,p.end2425||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
-    if(!draftMode2526&&fp && posGroup(p.pos)!==fp) return false;
+    if(fp && posGroup(p.pos)!==fp) return false;
     if(ft && p.team!==ft) return false;
     if(ft2425 === '__any__' && !(p.end2425||'')) return false;
     else if(ft2425 && ft2425 !== '__any__' && (p.end2425||'')!==ft2425) return false;
@@ -6977,9 +6997,9 @@ function render2526(){
         const _ds2526Normal=tPPTS+tSc+tPPTSM+tYouth+tConf2526+tDelta2526;
         return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526,tDelta:tDelta2526,pressRaw2526,pressMult2526}});
       });
-    rows = draftSubMode2526==='prospect'
-      ? allScored2526.sort((a,b)=>b._ds2526-a._ds2526)
-      : allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal);
+    rows = sortCol2526==='ppts2526blend'
+      ? (draftSubMode2526==='prospect' ? allScored2526.sort((a,b)=>b._ds2526-a._ds2526) : allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal))
+      : allScored2526; // already in sortCol2526 order
   }
 
   // Populate filter dropdowns
