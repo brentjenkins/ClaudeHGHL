@@ -6432,7 +6432,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     return;
   }
 
-  // Build actual picks sorted by PPTS desc per team (proxy for pick order)
+  // Build actual picks per team in insertion order from actualDraft (which should be in draft order)
   const actualByTeam = {};
   for(const [key, team] of Object.entries(actualDraft)){
     const p = players.find(x => normName(x.name).toLowerCase() === key);
@@ -6451,6 +6451,15 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     rows.push({...sp, actName: act?.name||'—', actPos: act?.pos||'?', actPpts: act?.ppts||0});
     teamSimIdx[sp.team]++;
   }
+  // Append any actual picks the sim didn't generate (cap stopped early, or extra actual picks)
+  const maxSimRound = simPicks.length ? Math.max(...simPicks.map(r=>r.round)) : 0;
+  for(const [team, arr] of Object.entries(actualByTeam)){
+    const shown = teamSimIdx[team] || 0;
+    for(let i = shown; i < arr.length; i++){
+      const act = arr[i];
+      rows.push({round: maxSimRound + 1, team, ppts: 0, pos: '?', player: '—', cap: 0, mode: 'bestAvail', actName: act.name, actPos: act.pos, actPpts: act.ppts, _extra: true});
+    }
+  }
 
   // Render
   document.getElementById('draftSimTitle').textContent = `📋 Simulated Draft vs Actual ${season}`;
@@ -6465,7 +6474,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     `Algo total proj: <strong>${Math.round(totalSimPpts)} pts</strong> &nbsp;|&nbsp; `+
     `Actual total proj: <strong>${Math.round(totalActPpts)} pts</strong> &nbsp;|&nbsp; `+
     `<span style="color:${diffCol};font-weight:600">Algo ${diffStr} pts vs actual</span><br>`+
-    `<span style="color:#9ca3af;font-size:11px">${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}  = Prospect mode · R${draftProspectRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks sorted by proj pts as pick-order proxy</span>`;
+    `<span style="color:#9ca3af;font-size:11px">${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}  = Prospect mode · R${draftProspectRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks in draft order per team</span>`;
 
   // Group by round
   const maxRound = Math.max(...rows.map(r=>r.round));

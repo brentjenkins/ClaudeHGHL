@@ -142,14 +142,14 @@ const ACTUAL_DRAFT_2526 = {
   'jimmy snuggerud':'Motor City Wings',
   'john gibson':'Motor City Wings',
   'mackie samoskevich':'Motor City Wings',
-  // Muller Time! (7 picks)
-  'darcy kuemper':'Muller Time!',
-  'karel vejmelka':'Muller Time!',
-  'roman josi':'Muller Time!',
-  'ryan donato':'Muller Time!',
-  'ryan leonard':'Muller Time!',
-  'wyatt johnston':'Muller Time!',
+  // Muller Time! (7 picks) — in actual draft order
   'zeev buium':'Muller Time!',
+  'wyatt johnston':'Muller Time!',
+  'roman josi':'Muller Time!',
+  'darcy kuemper':'Muller Time!',
+  'ryan leonard':'Muller Time!',
+  'ryan donato':'Muller Time!',
+  'karel vejmelka':'Muller Time!',
   // Pernicious Puckers (5 picks)
   'danila yurov':'Pernicious Puckers',
   'dylan cozens':'Pernicious Puckers',
