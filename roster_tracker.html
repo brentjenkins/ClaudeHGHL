@@ -2697,9 +2697,8 @@ function render(){
         const _dsNormal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
         return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf,tDelta,pressRaw,pressMult}});
       });
-    rows = sortCol==='pts'
-      ? (draftSubMode==='prospect' ? allScored.sort((a,b)=>b._ds-a._ds) : allScored.sort((a,b)=>b._dsNormal-a._dsNormal))
-      : allScored; // already in sortCol order (allScored built from pre-sorted rows)
+    const draftPool=(draftSubMode==='prospect'?allScored.filter(p=>{const a=calcAge(p)??99;return a<=(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)&&(p.cap||0)<=ELC_MAX_2627;}):allScored);
+    rows=sortCol==='pts'?(draftSubMode==='prospect'?draftPool.sort((a,b)=>b._ds-a._ds):draftPool.sort((a,b)=>b._dsNormal-a._dsNormal)):draftPool;
   }
 
   const draftModeLabel = draftFocusTeam ? `Viewing: ${draftFocusTeam}` : draftSubMode==='prospect' ? 'Prospect mode' : 'Best Available';
@@ -5460,6 +5459,7 @@ function render2425(){
       return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2425,tProspect2425,srcN,tConf,pressRaw2425:pressure2425[pg],pressMult2425}});
     });
     rows = lastAllScored2425.filter(p=>{
+      if(draftSubMode2425==='prospect'){const a=calcAge2425(p)??99;if(a>(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)||getCap2425(p)>ELC_MAX_2425)return false;}
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
       if(viewTeam2425 && getCap2425(p)>maxAffordable2425) return false;
       if(fp && posGroup(p.pos)!==fp) return false;
@@ -5799,6 +5799,7 @@ function render2324(){
       return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2324,tProspect2324,srcN,tConf,pressRaw2324:pressure2324[pg],pressMult2324}});
     });
     rows = lastAllScored2324.filter(p=>{
+      if(draftSubMode2324==='prospect'){const a=calcAge2324(p)??99;if(a>(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)||getCap2324(p)>ELC_MAX_2324)return false;}
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
       if(viewTeam2324 && getCap2324(p)>maxAffordable2324) return false;
       if(fp && posGroup(p.pos)!==fp) return false;
@@ -7010,9 +7011,8 @@ function render2526(){
         const _ds2526Normal=tPPTS+tSc+tPPTSM+tYouth+tConf2526+tDelta2526;
         return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526,tDelta:tDelta2526,pressRaw2526,pressMult2526}});
       });
-    rows = sortCol2526==='ppts2526blend'
-      ? (draftSubMode2526==='prospect' ? allScored2526.sort((a,b)=>b._ds2526-a._ds2526) : allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal))
-      : allScored2526; // already in sortCol2526 order
+    const draftPool2526=(draftSubMode2526==='prospect'?allScored2526.filter(p=>{const a=calcAge2526(p)??99;return a<=(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)&&getCap2526(p)<=ELC_MAX_2526;}):allScored2526);
+    rows=sortCol2526==='ppts2526blend'?(draftSubMode2526==='prospect'?draftPool2526.sort((a,b)=>b._ds2526-a._ds2526):draftPool2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal)):draftPool2526;
   }
 
   // Populate filter dropdowns
