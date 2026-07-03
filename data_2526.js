@@ -84,7 +84,7 @@ const ACTUAL_ROSTER_2526 = {
   'logan stankoven':'Pernicious Puckers','kent johnson':'Pernicious Puckers',
   'filip gustavsson':'Pernicious Puckers','simon edvinsson':'Pernicious Puckers',
   'thatcher demko':'Pernicious Puckers','artyom levshunov':'Pernicious Puckers',
-  'anthony deangelo':'Pernicious Puckers',
+  'tony deangelo':'Pernicious Puckers',
   // Silence of the Lamb
   'logan thompson':'Silence of the Lamb','connor mcdavid':'Silence of the Lamb',
   'jesper bratt':'Silence of the Lamb','rasmus andersson':'Silence of the Lamb',
