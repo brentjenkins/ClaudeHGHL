@@ -3468,7 +3468,7 @@ function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targ
       <div class="draft-row-player" style="display:flex;align-items:center;gap:10px">
         ${showPlayer?`
           <span style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(pick.player)}</span>
-          <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pick.pos)}</span>
+          <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pickedPG||pick.pos||'?')}</span>
           <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:36px">${esc(pick.nhlTeam||'—')}</span>
           <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:52px;text-align:right">${pick.cap>0?'$'+pick.cap.toFixed(1)+'M':'—'}</span>
           <button class="btn-undo" onclick="${undoFnName}" style="${isLastPick?'':'visibility:hidden'}">↩ Undo</button>
@@ -7221,7 +7221,7 @@ function renderDraftView(){
       <div class="draft-row-player" style="display:flex;align-items:center;gap:10px">
         ${showPlayer ? `
           <span style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(pick.player)}</span>
-          <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pick.pos)}</span>
+          <span style="background:${posColors[pickedPG]||'#f3f4f6'};color:${posText[pickedPG]||'#374151'};border-radius:5px;padding:2px 9px;font-size:13px;font-weight:700;flex-shrink:0">${esc(pickedPG||pick.pos||'?')}</span>
           <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:36px">${esc(pick.nhlTeam||'—')}</span>
           <span style="color:#6b7280;font-size:15px;flex-shrink:0;min-width:52px;text-align:right">${pick.cap>0?'$'+pick.cap.toFixed(1)+'M':'—'}</span>
           <button class="btn-undo" onclick="undoLastPick()" style="${isLastPick?'':'visibility:hidden'}">↩ Undo</button>
