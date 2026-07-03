@@ -146,11 +146,11 @@ const ACTUAL_ROSTER_2425 = {
   'thomas harley':'Dumb and Goalie To','bowen byram':'Dumb and Goalie To','stuart skinner':'Dumb and Goalie To',
   'mats zuccarello':'Dumb and Goalie To',
   'ukkopekka luukkonen':'Dumb and Goalie To','thomas novak':'Dumb and Goalie To',
-  // Killer Whales (11 keepers — dropped: Svechnikov, Aho, Farabee, Ehlers, Hronek, Liljegren, Fox, Demko, Talbot)
+  // Killer Whales (11 keepers — dropped: Svechnikov, Aho, Ehlers, Hronek, Liljegren, Fox, Demko, Talbot)
   'jack hughes':'Killer Whales','seth jarvis':'Killer Whales','quinton byfield':'Killer Whales',
   'william eklund':'Killer Whales','connor bedard':'Killer Whales','owen tippett':'Killer Whales',
   'cole perfetti':'Killer Whales','frank vatrano':'Killer Whales','jamie drysdale':'Killer Whales',
-  'josh morrissey':'Killer Whales','victor hedman':'Killer Whales',
+  'josh morrissey':'Killer Whales','victor hedman':'Killer Whales','joel_farabee':'Killer Whales',
   // Motor City Wings (14 keepers — dropped: Malkin, Sharangovich, Montour, Moser, Zamula, Lyon)
   'kirill kaprizov':'Motor City Wings','sidney crosby':'Motor City Wings','jake guentzel':'Motor City Wings',
   'dylan larkin':'Motor City Wings','lucas raymond':'Motor City Wings','wyatt johnston':'Motor City Wings',
@@ -163,11 +163,12 @@ const ACTUAL_ROSTER_2425 = {
   'matthew poitras':'Muller Time!','mitch marner':'Muller Time!','vincent trocheck':'Muller Time!',
   'shane pinto':'Muller Time!','noah dobson':'Muller Time!','pavel mintyukov':'Muller Time!',
   'pyotr kochetkov':'Muller Time!','igor shesterkin':'Muller Time!',
-  // Pernicious Puckers (12 keepers — dropped: Zibanejad, Thomas, Vilardi, Voronkov, Durzi, Sanderson, Sorokin, Thompson)
+  // Pernicious Puckers (13 keepers — dropped: Zibanejad, Vilardi, Voronkov, Durzi, Sanderson, Sorokin, Thompson)
   'leon draisaitl':'Pernicious Puckers','jason robertson':'Pernicious Puckers','jt miller':'Pernicious Puckers',
   'alex debrincat':'Pernicious Puckers','alexis lafreniere':'Pernicious Puckers','zach benson':'Pernicious Puckers',
   'sam reinhart':'Pernicious Puckers','logan stankoven':'Pernicious Puckers','quinn hughes':'Pernicious Puckers',
   'kevin korchinski':'Pernicious Puckers','brock faber':'Pernicious Puckers','scott perunovich':'Pernicious Puckers',
+  'robert_thomas':'Pernicious Puckers',
   // Silence of the Lamb (13 keepers — dropped: Beniers, Stutzle, Seider, Forsling, Schneider, Ullmark, Swayman)
   'connor mcdavid':'Silence of the Lamb','brad marchand':'Silence of the Lamb','brock nelson':'Silence of the Lamb',
   'jesper bratt':'Silence of the Lamb','matthew knies':'Silence of the Lamb','matt duchene':'Silence of the Lamb',
@@ -183,7 +184,7 @@ const ACTUAL_DRAFT_2425 = {
   'mackenzie weegar':'Blue Line Bangers',
   'nico hischier':'Blue Line Bangers',
   'gustav forsling':'Blue Line Bangers',
-  'elias pettersson':'Blue Line Bangers',   // F (VAN)
+  'elias pettersson_F':'Blue Line Bangers',  // F (VAN) — disambiguates from Elias Pettersson D (SEA)
   'nick schmaltz':'Blue Line Bangers',
   'michael kesselring':'Blue Line Bangers',
   'juuso valimaki':'Blue Line Bangers',

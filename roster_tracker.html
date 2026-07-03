@@ -275,6 +275,7 @@ tr:hover td{background:#fafaf8}
         <button id="draftSubBestBtn2425" onclick="setDraftSubMode2425('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
+      <button class="btn btn-green-outline" onclick="loadActualDraft2425()" title="Load actual 24-25 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
       <button class="btn btn-indigo-light" onclick="runMyAlgoDraft2425()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
     </div>
   </div>
@@ -357,6 +358,7 @@ tr:hover td{background:#fafaf8}
         <button id="draftSubBestBtn2324" onclick="setDraftSubMode2324('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
       <button class="btn btn-blue-outline" onclick="runDraftSim2324()" title="Simulate full 23-24 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
+      <button class="btn btn-green-outline" onclick="loadActualDraft2324()" title="Load actual 23-24 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
       <button class="btn btn-indigo-light" onclick="runMyAlgoDraft2324()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
     </div>
   </div>
@@ -444,6 +446,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-indigo-light" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
 
       <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
+      <button class="btn btn-green-outline" onclick="loadActualDraft2526()" title="Load actual 25-26 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
       <button class="btn btn-indigo-light" onclick="runMyAlgoDraft2526()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn2526" onclick="setDraftSubMode2526('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
@@ -4383,6 +4386,36 @@ function loadActualRoster2526(){
   toast(`Loaded actual 25-26 pre-draft rosters — ${rostered} players rostered, ${matched} matched.`);
 }
 
+function loadActualDraft2526(){
+  if(!Object.keys(ACTUAL_DRAFT_2526).length){ toast('ACTUAL_DRAFT_2526 is empty.'); return; }
+  if(!confirm('Load actual 25-26 post-draft rosters? Overwrites start2526 and populates the Big Board with actual picks.')) return;
+  for(const p of players){
+    const key = normName(p.name).toLowerCase();
+    p.start2526 = (key in ACTUAL_ROSTER_2526) ? ACTUAL_ROSTER_2526[key] : null;
+  }
+  const picks = [], unmatched = [];
+  for(const [rawKey, team] of Object.entries(ACTUAL_DRAFT_2526)){
+    const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
+    const ka = _nameAlias(bk);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
+    if(p){ p.start2526=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2526(p), projPts:ppts2526blend(p)}); }
+    else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
+  }
+  draftState2526 = {picks};
+  lsSet(LS_PLAYERS, players); lsSet(LS_DRAFT_2526, draftState2526);
+  _deactivateDraftMode(); _deactivateDraftMode2425(); _deactivateDraftMode2324();
+  draftMode2526=true; draftFocusTeam2526=null;
+  updateBigBoardTab();
+  const btn=document.getElementById('draftMode2526Btn');
+  if(btn){ btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1'; }
+  const th=document.getElementById('th-score2526'); if(th) th.style.display='';
+  const tg=document.getElementById('th-group-last-2526'); if(tg) tg.colSpan=2;
+  const ctrl=document.getElementById('draftSubModeCtrl2526'); if(ctrl) ctrl.style.display='';
+  render2526();
+  if(unmatched.length) toast(`25-26 actual draft loaded — ${unmatched.length} unmatched: ${unmatched.slice(0,3).join(', ')}`);
+  else toast(`25-26 actual draft loaded — ${picks.length} picks. See Big Board tab.`);
+}
+
 async function _applyYahooDraft(leagueKey, startField, renderFn){
   if(!proxyOk){ toast('Start the proxy first.'); return; }
   try {
@@ -4860,6 +4893,36 @@ function loadActualRoster2425(){
   toast(`Loaded actual 24-25 drops: ${matched} matched, ${unmatched} unmatched.`);
 }
 
+function loadActualDraft2425(){
+  if(!Object.keys(ACTUAL_DRAFT_2425).length){ toast('ACTUAL_DRAFT_2425 is empty.'); return; }
+  if(!confirm('Load actual 24-25 post-draft rosters? Overwrites start2425 and populates the Big Board with actual picks.')) return;
+  for(const p of players){
+    const key = normName(p.name).toLowerCase();
+    p.start2425 = (key in ACTUAL_ROSTER_2425) ? ACTUAL_ROSTER_2425[key] : null;
+  }
+  const picks = [], unmatched = [];
+  for(const [rawKey, team] of Object.entries(ACTUAL_DRAFT_2425)){
+    const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
+    const ka = _nameAlias(bk);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
+    if(p){ p.start2425=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2425(p), projPts:ppts2425blend(p)}); }
+    else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
+  }
+  draftState2425 = {picks};
+  lsSet(LS_PLAYERS, players); lsSet(LS_DRAFT_2425, draftState2425);
+  _deactivateDraftMode(); _deactivateDraftMode2526(); _deactivateDraftMode2324();
+  draftMode2425=true; draftFocusTeam2425=null;
+  updateBigBoardTab();
+  const btn=document.getElementById('draftMode2425Btn');
+  if(btn){ btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1'; }
+  const th=document.getElementById('th-score2425'); if(th) th.style.display='';
+  const tg=document.getElementById('th-group-last-2425'); if(tg) tg.colSpan=2;
+  const ctrl=document.getElementById('draftSubModeCtrl2425'); if(ctrl) ctrl.style.display='';
+  render2425();
+  if(unmatched.length) toast(`24-25 actual draft loaded — ${unmatched.length} unmatched: ${unmatched.slice(0,3).join(', ')}`);
+  else toast(`24-25 actual draft loaded — ${picks.length} picks. See Big Board tab.`);
+}
+
 function rankPlayers2425(){
   const posMult = {F:draftWeights.multF, D:draftWeights.multD, G:draftWeights.multG};
   players.forEach(p=>p.rank2425=null);
@@ -5118,6 +5181,36 @@ function loadActualRoster2324(){
   lsSet(LS_DRAFT_2324, draftState2324);
   render2324();
   toast(`Loaded actual 23-24 drops: ${matched} matched, ${unmatched} unmatched.`);
+}
+
+function loadActualDraft2324(){
+  if(!Object.keys(ACTUAL_DRAFT_2324).length){ toast('ACTUAL_DRAFT_2324 is empty.'); return; }
+  if(!confirm('Load actual 23-24 post-draft rosters? Overwrites start2324 and populates the Big Board with actual picks.')) return;
+  for(const p of players){
+    const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
+    p.start2324 = ACTUAL_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, ACTUAL_ROSTER_2324) ?? null;
+  }
+  const picks = [], unmatched = [];
+  for(const [rawKey, team] of Object.entries(ACTUAL_DRAFT_2324)){
+    const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
+    const ka = _nameAlias(bk);
+    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
+    if(p){ p.start2324=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2324(p), projPts:ppts2324blend(p)}); }
+    else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
+  }
+  draftState2324 = {picks};
+  lsSet(LS_PLAYERS, players); lsSet(LS_DRAFT_2324, draftState2324);
+  _deactivateDraftMode(); _deactivateDraftMode2425(); _deactivateDraftMode2526();
+  draftMode2324=true; draftFocusTeam2324=null;
+  updateBigBoardTab();
+  const btn=document.getElementById('draftMode2324Btn');
+  if(btn){ btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1'; }
+  const th=document.getElementById('th-score2324'); if(th) th.style.display='';
+  const tg=document.getElementById('th-group-last-2324'); if(tg) tg.colSpan=2;
+  const ctrl=document.getElementById('draftSubModeCtrl2324'); if(ctrl) ctrl.style.display='';
+  render2324();
+  if(unmatched.length) toast(`23-24 actual draft loaded — ${unmatched.length} unmatched: ${unmatched.slice(0,3).join(', ')}`);
+  else toast(`23-24 actual draft loaded — ${picks.length} picks. See Big Board tab.`);
 }
 
 function rankPlayers2324(){

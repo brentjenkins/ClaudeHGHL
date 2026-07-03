@@ -1894,5 +1894,5 @@ const ACTUAL_DRAFT_2324 = {
   'matthew coronato':'Pernicious Puckers','zach benson':'Pernicious Puckers',
   // Silence of the Lamb (6 picks)
   'blake wheeler':'Silence of the Lamb','matthew knies':'Silence of the Lamb','pheonix copley':'Silence of the Lamb',
-  'sebastian aho':'Silence of the Lamb','vladimir tarasenko':'Silence of the Lamb','jordan kyrou':'Silence of the Lamb',
+  'sebastian aho_D':'Silence of the Lamb','vladimir tarasenko':'Silence of the Lamb','jordan kyrou':'Silence of the Lamb',
 };
