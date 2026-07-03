@@ -15,6 +15,11 @@ const FINAL_STANDINGS_2425 = {
   'Blue Line Bangers':   {rank:9, pts:998},
 };
 
+// Manual cap overrides for 25-26 — used when PuckPedia sync doesn't have the contract.
+const MANUAL_CAPS_2526 = {
+  'max shabanov_F': { cap: 0.9750, yrStr: 'Yr 1 / 1' },
+};
+
 // Actual pre-draft 25-26 rosters (after drops, before draft picks).
 // Keys = normName(name).toLowerCase() — absent players had no roster spot going into the draft.
 // Ivan Demidov absent: dropped due to mid-season pickup rule; re-drafted with BLB's 1st pick.

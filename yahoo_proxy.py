@@ -1391,6 +1391,54 @@ def cbs_projections():
     return jsonify({"ok": True, "players": players, "count": len(players), "errors": errors})
 
 
+_NHL_PROJ_URLS = {
+    "2526": "https://www.nhl.com/news/nhl-fantasy-hockey-projections-forward-defenseman-points-2025-26",
+    "2627": "https://www.nhl.com/news/nhl-fantasy-hockey-projections-forward-defenseman-points-2026-27",
+}
+
+def _parse_nhl_proj_page(html: str) -> dict:
+    """Parse NHL.com fantasy projections page text into {normName_pos: pts}."""
+    # Unescape literal \n sequences in the embedded JSON blob so they become real newlines
+    text = html.replace('\\n', '\n')
+    # Skip optional leading HTML tag (e.g. <p>) before the name
+    pattern = re.compile(
+        r'^(?:<[^>]+>)*([A-Z][^,\n<]{1,30}),\s*([FD]),\s*[A-Z]{2,4}[^:\n]*:\s*(\d+)',
+        re.MULTILINE
+    )
+    players = {}
+    for m in pattern.finditer(text):
+        name, pos, pts = m.group(1).strip(), m.group(2).strip(), int(m.group(3))
+        key = f"{normalize_name(name).lower()}_{pos}"
+        players[key] = pts
+    return players
+
+
+@app.route("/nhl-projections-2526")
+def nhl_projections_2526():
+    """Fetch NHL.com 2025-26 forward/defenseman point projections."""
+    try:
+        resp = requests.get(_NHL_PROJ_URLS["2526"], timeout=15,
+                            headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+        players = _parse_nhl_proj_page(resp.content.decode("utf-8"))
+        return jsonify({"ok": True, "players": players, "count": len(players)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/nhl-projections-2627")
+def nhl_projections_2627():
+    """Fetch NHL.com 2026-27 forward/defenseman point projections."""
+    try:
+        resp = requests.get(_NHL_PROJ_URLS["2627"], timeout=15,
+                            headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+        players = _parse_nhl_proj_page(resp.content.decode("utf-8"))
+        return jsonify({"ok": True, "players": players, "count": len(players)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/dfo-projections-2526", methods=["POST"])
 def dfo_projections_2526():
     """Parse a DFO/5v5hockey CSV export for 2025-26 projections.

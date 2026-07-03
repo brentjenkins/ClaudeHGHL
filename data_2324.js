@@ -136,6 +136,7 @@ const MANUAL_CAPS_2324 = {
   'nathan mackinnon_F': { cap: 12.6000, yrStr: '' },
   'nikita kucherov_F': { cap: 9.5000, yrStr: '' },
   'nikolaj ehlers_F': { cap: 6.0000, yrStr: '' },
+  'nick perbix_D': { cap: 1.1250, yrStr: 'Yr 1 / 2' },
   'noah dobson_D': { cap: 4.0000, yrStr: '' },
   'noah hanifin_D': { cap: 4.9500, yrStr: '' },
   'owen tippett_F': { cap: 1.5000, yrStr: '' },
