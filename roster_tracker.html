@@ -2805,13 +2805,13 @@ function render(){
       <td style="color:#9ca3af">
         <div style="display:flex;align-items:center;gap:5px">
           ${p.end2526&&teamLogos[p.end2526]?`<img src="${teamLogos[p.end2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
-          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.end2526||'—')}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis">${teamAbbr(p.end2526)||'—'}</span>
         </div>
       </td>
       ${draftMode ? '' : `<td style="color:${p.start2627?'#1a1a18':'#9ca3af'}">
         <div style="display:flex;align-items:center;gap:5px">
           ${p.start2627&&teamLogos[p.start2627]?`<img src="${teamLogos[p.start2627]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
-          <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.start2627||'—')}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis">${teamAbbr(p.start2627)||'—'}</span>
         </div>
       </td>`}
       <td>${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${p.cap.toFixed(2)}M</a>${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}${p.cap>0?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2627||contractYearStr(p)||'—'}</div>`:''}</td>
@@ -2863,6 +2863,19 @@ const DRAFT_TEAMS_2425 = Object.entries(FINAL_STANDINGS_2324)
 // FINAL_STANDINGS_2425 moved to data_2526.js (25-26 draft order setup)
 const DRAFT_TEAMS_2526 = Object.entries(FINAL_STANDINGS_2425)
   .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
+
+const TEAM_ABBREVS = {
+  'Blue Line Bangers':  'BLB',
+  'Bossy Posse':        'BOS',
+  'Damage Inc.':        'DAM',
+  'Dumb and Goalie To': 'DUM',
+  'Killer Whales':      'KIL',
+  'Motor City Wings':   'MOT',
+  'Muller Time!':       'MUL',
+  'Pernicious Puckers': 'PER',
+  'Silence of the Lamb':'SIL',
+};
+const teamAbbr = name => TEAM_ABBREVS[name] || name;
 
 // FINAL_STANDINGS_2526 moved to data_2627.js (26-27 draft order setup)
 // Draft order array: rank 9 first (worst team picks first)
@@ -5704,8 +5717,8 @@ function render2425(){
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge2425(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:#9ca3af">${esc(p.end2324||'—')}</td>
-      ${draftMode2425 ? '' : `<td style="color:#185FA5">${esc(p.start2425||'—')}</td>`}
+      <td style="color:#9ca3af">${teamAbbr(p.end2324)||'—'}</td>
+      ${draftMode2425 ? '' : `<td style="color:#185FA5">${teamAbbr(p.start2425)||'—'}</td>`}
       <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>${p.yrStr2425?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2425}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
@@ -6044,7 +6057,7 @@ function render2324(){
       <td>${calcAge2324(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af">${esc(p.end2223||'—')}</td>
-      ${draftMode2324 ? '' : `<td style="color:#185FA5">${esc(p.start2324||'—')}</td>`}
+      ${draftMode2324 ? '' : `<td style="color:#185FA5">${teamAbbr(p.start2324)||'—'}</td>`}
       <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>${p.yrStr2324?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2324}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?p.proj2324_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2324_dtz>0?p.proj2324_dtz:'—'}</td>
@@ -7245,8 +7258,8 @@ function render2526(){
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge2526(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:#9ca3af">${esc(p.end2425||'—')}</td>
-      ${draftMode2526 ? '' : `<td style="color:#185FA5">${esc(p.start2526||'—')}</td>`}
+      <td style="color:#9ca3af">${teamAbbr(p.end2425)||'—'}</td>
+      ${draftMode2526 ? '' : `<td style="color:#185FA5">${teamAbbr(p.start2526)||'—'}</td>`}
       <td>${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${c.toFixed(2)}M</a>${p.yrStr2526?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2526}</div>`:''}`:''||'—';})()}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
@@ -8016,7 +8029,7 @@ function renderSummaryCard(teamIdx){
   document.getElementById('summaryCard').innerHTML=`
     <div class="summary-hdr">
       ${logo?`<img src="${esc(logo)}" class="summary-logo" loading="lazy">`:'<div class="summary-logo"></div>'}
-      <div style="flex:1;min-width:0"><div class="summary-team-name">${esc(team)}</div></div>
+      <div style="flex:1;min-width:0"><div class="summary-team-name">${esc(team)}</div><div style="font-size:13px;font-weight:700;color:#9ca3af;letter-spacing:.08em;margin-top:2px">${teamAbbr(team)}</div></div>
     </div>
     <div class="summary-stats-bar">
       ${pairBubble('Points',prevPtsTotal,projPtsTotal,'#555',dPts.color,deltaPts!=null&&deltaPts!==0?dPts.str:null,dPts.color)}
