@@ -4395,7 +4395,12 @@ function loadActualDraft2526(){
     p.start2526 = (key in ACTUAL_ROSTER_2526) ? ACTUAL_ROSTER_2526[key] : null;
   }
   const picks = [], unmatched = [];
-  for(const [rawKey, team] of Object.entries(ACTUAL_DRAFT_2526)){
+  const _byTeam2526 = {};
+  for(const entry of Object.entries(ACTUAL_DRAFT_2526)){ const t=entry[1]; if(!_byTeam2526[t])_byTeam2526[t]=[]; _byTeam2526[t].push(entry); }
+  const _maxR2526 = Math.max(0,...Object.values(_byTeam2526).map(a=>a.length));
+  const _ord2526 = [];
+  for(let r=0;r<_maxR2526;r++) for(const t of DRAFT_TEAMS_2526) if(_byTeam2526[t]?.[r]) _ord2526.push(_byTeam2526[t][r]);
+  for(const [rawKey, team] of _ord2526){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
     const ka = _nameAlias(bk);
     const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
@@ -4902,7 +4907,12 @@ function loadActualDraft2425(){
     p.start2425 = (key in ACTUAL_ROSTER_2425) ? ACTUAL_ROSTER_2425[key] : null;
   }
   const picks = [], unmatched = [];
-  for(const [rawKey, team] of Object.entries(ACTUAL_DRAFT_2425)){
+  const _byTeam2425 = {};
+  for(const entry of Object.entries(ACTUAL_DRAFT_2425)){ const t=entry[1]; if(!_byTeam2425[t])_byTeam2425[t]=[]; _byTeam2425[t].push(entry); }
+  const _maxR2425 = Math.max(0,...Object.values(_byTeam2425).map(a=>a.length));
+  const _ord2425 = [];
+  for(let r=0;r<_maxR2425;r++) for(const t of DRAFT_TEAMS_2425) if(_byTeam2425[t]?.[r]) _ord2425.push(_byTeam2425[t][r]);
+  for(const [rawKey, team] of _ord2425){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
     const ka = _nameAlias(bk);
     const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
@@ -5192,7 +5202,12 @@ function loadActualDraft2324(){
     p.start2324 = ACTUAL_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, ACTUAL_ROSTER_2324) ?? null;
   }
   const picks = [], unmatched = [];
-  for(const [rawKey, team] of Object.entries(ACTUAL_DRAFT_2324)){
+  const _byTeam2324 = {};
+  for(const entry of Object.entries(ACTUAL_DRAFT_2324)){ const t=entry[1]; if(!_byTeam2324[t])_byTeam2324[t]=[]; _byTeam2324[t].push(entry); }
+  const _maxR2324 = Math.max(0,...Object.values(_byTeam2324).map(a=>a.length));
+  const _ord2324 = [];
+  for(let r=0;r<_maxR2324;r++) for(const t of DRAFT_TEAMS_2324) if(_byTeam2324[t]?.[r]) _ord2324.push(_byTeam2324[t][r]);
+  for(const [rawKey, team] of _ord2324){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
     const ka = _nameAlias(bk);
     const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
