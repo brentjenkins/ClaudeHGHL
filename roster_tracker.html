@@ -2633,6 +2633,8 @@ function render(){
     const need={F:Math.max(0,DRAFT_ROSTER_MAX.F-fN2),D:Math.max(0,DRAFT_ROSTER_MAX.D-dN2),G:Math.max(0,DRAFT_ROSTER_MAX.G-gN2)};
     const viewCapByPos={F:viewRoster.reduce((s,p)=>posGroup(p.pos)==='F'?s+(p.cap||0):s,0),D:viewRoster.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap||0):s,0),G:viewRoster.reduce((s,p)=>posGroup(p.pos)==='G'?s+(p.cap||0):s,0)};
     const viewCapTot=viewCapByPos.F+viewCapByPos.D+viewCapByPos.G;
+    const slotsLeft=need.F+need.D+need.G;
+    const maxAffordable=draftFocusTeam?CAP_LIMIT-viewCapTot-Math.max(0,slotsLeft-1)*ELC_MAX_2627:Infinity;
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
@@ -2673,7 +2675,7 @@ function render(){
         return {id:p.id,name:p.name,pos:p.pos,pts:p.pts||0,cap:p.cap||0,_ds,_dsNormal};
       });
     const allScored=rows
-      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||need[posGroup(p.pos)]>0)&&(p.pts||0)>0)
+      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap||0)<=maxAffordable))&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos);
         const scV=sc(abpMap.get(p.id)??99);
@@ -2701,7 +2703,7 @@ function render(){
   }
 
   const draftModeLabel = draftFocusTeam ? `Viewing: ${draftFocusTeam}` : draftSubMode==='prospect' ? 'Prospect mode' : 'Best Available';
-  const draftSectionHdr = draftMode ? `<tr><td colspan="18" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel)}</td></tr>` : '';
+  const draftSectionHdr = draftMode ? `<tr><td colspan="99" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel)}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody');
   tbody.innerHTML=rows.length?(draftSectionHdr+rows.map(p=>{
@@ -5435,6 +5437,9 @@ function render2425(){
       const r=players.filter(p=>p.start2425===viewTeam2425);
       return {F:Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length),D:Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length),G:Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length)};
     })() : null;
+    const focusCapUsed2425=viewTeam2425?players.filter(p=>p.start2425===viewTeam2425).reduce((s,p)=>s+getCap2425(p),0):0;
+    const slotsLeft2425=need2425?need2425.F+need2425.D+need2425.G:0;
+    const maxAffordable2425=viewTeam2425?CAP_LIMIT_2425-focusCapUsed2425-Math.max(0,slotsLeft2425-1)*ELC_MAX_2425:Infinity;
     lastAllScored2425 = players.filter(p=>!p.start2425&&ppts2425blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2425blend(p);
       const scV=sc(abpMap2425.get(p.id)??99);
@@ -5456,6 +5461,7 @@ function render2425(){
     });
     rows = lastAllScored2425.filter(p=>{
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
+      if(viewTeam2425 && getCap2425(p)>maxAffordable2425) return false;
       if(fp && posGroup(p.pos)!==fp) return false;
       if(ft && p.team!==ft) return false;
       if(ft2425v==='__any__' && !(p.end2324||'')) return false;
@@ -5469,7 +5475,7 @@ function render2425(){
       rows.sort((a,b)=>{let av,bv;if(sortCol2425==='age'){av=calcAge2425(a)??-1;bv=calcAge2425(b)??-1;}else if(sortCol2425==='abp2425'){av=abpMap2425.get(a.id)??-1;bv=abpMap2425.get(b.id)??-1;}else if(sortCol2425==='rank2425'){av=a.rank2425??99999;bv=b.rank2425??99999;}else if(sortCol2425==='curvedelta2425'){av=curveDelta2425(a)??-Infinity;bv=curveDelta2425(b)??-Infinity;}else if(sortCol2425==='curvedelta2425actual'){av=curveDeltaActual2425(a)??-Infinity;bv=curveDeltaActual2425(b)??-Infinity;}else if(sortCol2425==='ptsperm2425'){const ca=getCap2425(a),cb=getCap2425(b);av=ca>0?ppts2425blend(a)/ca:0;bv=cb>0?ppts2425blend(b)/cb:0;}else if(sortCol2425==='cap2425'){av=getCap2425(a);bv=getCap2425(b);}else{av=a[sortCol2425]??'';bv=b[sortCol2425]??'';}if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return av<bv?-sortDir2425:av>bv?sortDir2425:0;});
     }
     const draftModeLabel2425=draftFocusTeam2425?`Viewing: ${draftFocusTeam2425}`:draftSubMode2425==='prospect'?'Prospect mode':'Best Available';
-    var draftSectionHdr2425=`<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2425)}</td></tr>`;
+    var draftSectionHdr2425=`<tr><td colspan="99" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2425)}</td></tr>`;
   } else {
     var draftSectionHdr2425='';
   }
@@ -5770,6 +5776,9 @@ function render2324(){
       const r=players.filter(p=>p.start2324===viewTeam2324);
       return {F:Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length),D:Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length),G:Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length)};
     })() : null;
+    const focusCapUsed2324=viewTeam2324?players.filter(p=>p.start2324===viewTeam2324).reduce((s,p)=>s+getCap2324(p),0):0;
+    const slotsLeft2324=need2324?need2324.F+need2324.D+need2324.G:0;
+    const maxAffordable2324=viewTeam2324?CAP_LIMIT_2324-focusCapUsed2324-Math.max(0,slotsLeft2324-1)*ELC_MAX_2324:Infinity;
     lastAllScored2324 = players.filter(p=>!p.start2324&&ppts2324blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2324blend(p);
       const scV=sc(abpMap2324.get(p.id)??99);
@@ -5791,6 +5800,7 @@ function render2324(){
     });
     rows = lastAllScored2324.filter(p=>{
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
+      if(viewTeam2324 && getCap2324(p)>maxAffordable2324) return false;
       if(fp && posGroup(p.pos)!==fp) return false;
       if(ft && p.team!==ft) return false;
       if(ft2324v==='__any__' && !(p.end2223||'')) return false;
@@ -5804,7 +5814,7 @@ function render2324(){
       rows.sort((a,b)=>{let av,bv;if(sortCol2324==='age'){av=calcAge2324(a)??-1;bv=calcAge2324(b)??-1;}else if(sortCol2324==='abp2324'){av=abpMap2324.get(a.id)??-1;bv=abpMap2324.get(b.id)??-1;}else if(sortCol2324==='rank2324'){av=a.rank2324??99999;bv=b.rank2324??99999;}else if(sortCol2324==='curvedelta2324'){av=curveDelta2324(a)??-Infinity;bv=curveDelta2324(b)??-Infinity;}else if(sortCol2324==='curvedelta2324actual'){av=curveDeltaActual2324(a)??-Infinity;bv=curveDeltaActual2324(b)??-Infinity;}else if(sortCol2324==='ptsperm2324'){const ca=getCap2324(a),cb=getCap2324(b);av=ca>0?ppts2324blend(a)/ca:0;bv=cb>0?ppts2324blend(b)/cb:0;}else if(sortCol2324==='cap2324'){av=getCap2324(a);bv=getCap2324(b);}else{av=a[sortCol2324]??'';bv=b[sortCol2324]??'';}if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return av<bv?-sortDir2324:av>bv?sortDir2324:0;});
     }
     const draftModeLabel2324=draftFocusTeam2324?`Viewing: ${draftFocusTeam2324}`:draftSubMode2324==='prospect'?'Prospect mode':'Best Available';
-    var draftSectionHdr2324=`<tr><td colspan="19" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2324)}</td></tr>`;
+    var draftSectionHdr2324=`<tr><td colspan="99" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2324)}</td></tr>`;
   } else {
     var draftSectionHdr2324='';
   }
@@ -6936,6 +6946,9 @@ function render2526(){
       D:Math.max(0,DRAFT_ROSTER_MAX.D-teamRoster.filter(p=>posGroup(p.pos)==='D').length),
       G:Math.max(0,DRAFT_ROSTER_MAX.G-teamRoster.filter(p=>posGroup(p.pos)==='G').length),
     };
+    const teamCapUsed2526=draftFocusTeam2526?teamRoster.reduce((s,p)=>s+getCap2526(p),0):0;
+    const slotsLeft2526=need.F+need.D+need.G;
+    const maxAffordable2526=draftFocusTeam2526?CAP_LIMIT_2526-teamCapUsed2526-Math.max(0,slotsLeft2526-1)*ELC_MAX_2526:Infinity;
     const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
     const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
     // league-wide positional pressure for 25-26
@@ -6975,7 +6988,7 @@ function render2526(){
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:getCap2526(p)||0,_ds2526,_ds2526Normal};
       });
     const allScored2526=rows
-      .filter(p=>!p.start2526&&(!draftFocusTeam2526||need[posGroup(p.pos)]>0)&&ppts2526blend(p)>0)
+      .filter(p=>!p.start2526&&(!draftFocusTeam2526||(need[posGroup(p.pos)]>0&&getCap2526(p)<=maxAffordable2526))&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos);
         const pp=ppts2526blend(p);
@@ -7028,7 +7041,7 @@ function render2526(){
   ft2526El.value=prev2526;
 
   const draftModeLabel2526 = draftFocusTeam2526 ? `Viewing: ${draftFocusTeam2526}` : draftSubMode2526==='prospect' ? 'Prospect mode' : 'Best Available';
-  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="20" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2526)}</td></tr>` : '';
+  const draftSectionHdr2526 = draftMode2526 ? `<tr><td colspan="99" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2526)}</td></tr>` : '';
 
   const tbody=document.getElementById('tbody2526');
   tbody.innerHTML=rows.length?(draftSectionHdr2526+rows.map(p=>{
