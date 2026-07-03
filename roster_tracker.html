@@ -5586,13 +5586,14 @@ function updateStats2425(){
   if(!allTeams.length){ document.getElementById('statCards2425').innerHTML=''; return; }
 
   const posBg2425={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2425={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const prospectIds2425=draftSubMode2425==='prospect'?new Set(players.filter(p=>{const a=calcAge2425(p)??99;return a<=(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)&&getCap2425(p)<=ELC_MAX_2425;}).map(p=>p.id)):null;
   const top5Html2425=(fRem,dRem,gRem,rem)=>{
     if(!draftMode2425||!lastAllScored2425) return '';
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored2425].filter(p=>need.has(posGroup(p.pos))&&getCap2425(p)<=maxCap)
+    const picks=[...lastAllScored2425].filter(p=>need.has(posGroup(p.pos))&&getCap2425(p)<=maxCap&&(!prospectIds2425||prospectIds2425.has(p.id)))
       .sort((a,b)=>draftSubMode2425==='prospect'?b._ds2425-a._ds2425:b._ds2425Normal-a._ds2425Normal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
@@ -5900,13 +5901,14 @@ function updateStats2324(){
   if(!allTeams.length){ document.getElementById('statCards2324').innerHTML=''; return; }
 
   const posBg2324={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2324={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const prospectIds2324=draftSubMode2324==='prospect'?new Set(players.filter(p=>{const a=calcAge2324(p)??99;return a<=(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)&&getCap2324(p)<=ELC_MAX_2324;}).map(p=>p.id)):null;
   const top5Html2324=(fRem,dRem,gRem,rem)=>{
     if(!draftMode2324||!lastAllScored2324) return '';
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored2324].filter(p=>need.has(posGroup(p.pos))&&getCap2324(p)<=maxCap)
+    const picks=[...lastAllScored2324].filter(p=>need.has(posGroup(p.pos))&&getCap2324(p)<=maxCap&&(!prospectIds2324||prospectIds2324.has(p.id)))
       .sort((a,b)=>draftSubMode2324==='prospect'?b._ds2324-a._ds2324:b._ds2324Normal-a._ds2324Normal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
@@ -6818,13 +6820,14 @@ function updateStats2526(){
   }
 
   const posBg2526={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2526={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const prospectIds2526=draftSubMode2526==='prospect'?new Set(players.filter(p=>{const a=calcAge2526(p)??99;return a<=(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)&&getCap2526(p)<=ELC_MAX_2526;}).map(p=>p.id)):null;
   const top5Html2526=(fRem,dRem,gRem,rem)=>{
     if(!draftMode2526||!lastAllScored2526) return '';
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
+    const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap&&(!prospectIds2526||prospectIds2526.has(p.id)))
       .sort((a,b)=>draftSubMode2526==='prospect'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
@@ -7572,13 +7575,14 @@ function updateStats(){
   }
 
   const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
+  const prospectIds=draftSubMode==='prospect'?new Set(players.filter(p=>{const a=calcAge(p)??99;return a<=(PROSPECT_MAX_AGE[posGroup(p.pos)]??22)&&(p.cap||0)<=ELC_MAX_2627;}).map(p=>p.id)):null;
   const top5Html=(fRem,dRem,gRem,rem)=>{
     if(!draftMode||!lastAllScored) return '';
     const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
     if(!need.size) return '';
     const spotsLeft=fRem+dRem+gRem;
     const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
+    const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap&&(!prospectIds||prospectIds.has(p.id)))
       .sort((a,b)=>draftSubMode==='prospect'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
