@@ -3640,7 +3640,7 @@ function buildDraftBoardHTML(draftStateObj, teamsList, draftSeq = null){
           <span style="color:#9ca3af;width:32px;font-size:11px;flex-shrink:0">#${r.globalPick}</span>
           <span style="font-size:12px;font-weight:600;flex:1;color:#1a1a18">${esc(r.team)}</span>
           <span style="font-size:12px;flex:2">${esc(p.player)}</span>
-          <span style="background:${posColors[pg]||'#f3f4f6'};color:${posText[pg]||'#374151'};border-radius:5px;padding:1px 7px;font-size:10px;font-weight:600;flex-shrink:0">${esc(p.pos)}</span>
+          <span style="background:${posColors[pg]||'#f3f4f6'};color:${posText[pg]||'#374151'};border-radius:5px;padding:1px 7px;font-size:10px;font-weight:600;flex-shrink:0">${esc(pg||p.pos||'?')}</span>
           <span style="color:#6b7280;font-size:11px;width:36px;flex-shrink:0">${esc(p.nhlTeam||'')}</span>
           <span style="color:#6b7280;font-size:11px;width:44px;text-align:right;flex-shrink:0">${p.cap?'$'+p.cap.toFixed(1)+'M':''}</span>
         </div>`;
