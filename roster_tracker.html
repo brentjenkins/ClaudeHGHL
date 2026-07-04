@@ -258,17 +258,17 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">24-25<br>Projections</span>
       <input type="file" id="athletic2425FileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic2425(this)">
-      <button class="btn btn-athletic" id="athletic2425Btn" onclick="document.getElementById('athletic2425FileInput').click()" title="Import Athletic 2024-25 projections from Excel file" style="opacity:.75">📰 ATH 24-25</button>
+      <button class="btn btn-athletic" id="athletic2425Btn" onclick="document.getElementById('athletic2425FileInput').click()" title="Import Athletic 2024-25 projections from Excel file" style="opacity:.75">📈 ATH 24-25</button>
       <input type="file" id="dfo2425FileInput" accept=".csv" style="display:none" onchange="syncDFO2425(this)">
-      <button class="btn btn-dfo" id="dfo2425Btn" onclick="document.getElementById('dfo2425FileInput').click()" title="Import DFO 2024-25 projections from CSV">🏒 DFO 24-25</button>
+      <button class="btn btn-dfo" id="dfo2425Btn" onclick="document.getElementById('dfo2425FileInput').click()" title="Import DFO 2024-25 projections from CSV">📈 DFO 24-25</button>
       <input type="file" id="nhl2425FileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="syncNHL2425(this)">
-      <button class="btn btn-nhl" id="nhl2425ProjBtn" onclick="document.getElementById('nhl2425FileInput').click()" title="Import NHL 2024-25 projections from file" style="opacity:.75">🏒 NHL 24-25 Proj</button>
+      <button class="btn btn-nhl" id="nhl2425ProjBtn" onclick="document.getElementById('nhl2425FileInput').click()" title="Import NHL 2024-25 projections from file" style="opacity:.75">📈 NHL 24-25 Proj</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2425()" title="Load pre-drop 24-25 rosters from PREDROP_ROSTER_2425">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2425();compareDrops2425()" title="Simulate drops then compare against actual 24-25 drops">⬇ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">↓ Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers2425()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftMode2425Btn" onclick="toggleDraftMode2425()">⚡ Draft Mode</button>
@@ -351,7 +351,7 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2324()" title="Reset 23-24 rosters to end-of-22-23 keepers (start2324 = end2223)">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2324();compareDrops2324()" title="Simulate drops then compare against actual 23-24 drops">⬇ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2324()" title="Load actual 23-24 post-drop pre-pick rosters">↓ Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2324()" title="Load actual 23-24 post-drop pre-pick rosters">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers2324()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftMode2324Btn" onclick="toggleDraftMode2324()">⚡ Draft Mode</button>
@@ -433,17 +433,17 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">25-26<br>Projections</span>
       <input type="file" id="athletic2526FileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic2526(this)">
-      <button class="btn btn-athletic" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="opacity:.75">📰 ATH 25-26</button>
+      <button class="btn btn-athletic" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="opacity:.75">📈 ATH 25-26</button>
       <input type="file" id="dfo2526FileInput" accept=".csv" style="display:none" onchange="syncDFO2526(this)">
-      <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = pts)">🏒 DFO 25-26</button>
+      <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = pts)">📈 DFO 25-26</button>
       <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)">📈 ESPN 25-26</button>
-      <button class="btn btn-nhl" id="nhlProj2526Btn" onclick="syncNHLProj2526()" title="Pull NHL.com 2025-26 forward &amp; defenseman point projections">🏒 NHL 25-26</button>
+      <button class="btn btn-nhl" id="nhlProj2526Btn" onclick="syncNHLProj2526()" title="Pull NHL.com 2025-26 forward &amp; defenseman point projections">📈 NHL 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2526();compareDrops2526()" title="Simulate drops then compare against actual 25-26 drops">⬇ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">↓ Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
@@ -588,7 +588,7 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
-      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo</button>
+      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo 25-26</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-puckpedia signings-all-btn" id="signingsBtn" onclick="syncSigningsAll(event)" title="Fetch all contracts from PuckPedia (~30s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
@@ -597,21 +597,21 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">26-27<br>Projections</span>
       <input type="file" id="athleticFileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic(this)">
-      <button class="btn btn-athletic" id="athleticBtn" onclick="document.getElementById('athleticFileInput').click()" title="Import Athletic 26-27 projections from Excel file (The List sheet: G+A for skaters, W×2+SO×3 for goalies)">📰 ATH 26-27</button>
-      <button class="btn btn-dfo" id="dfo2627Btn" onclick="syncDFO2627()" title="Scrape DFO/5v5hockey 2026-27 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)">🏒 DFO 26-27</button>
+      <button class="btn btn-athletic" id="athleticBtn" onclick="document.getElementById('athleticFileInput').click()" title="Import Athletic 26-27 projections from Excel file (The List sheet: G+A for skaters, W×2+SO×3 for goalies)">📈 ATH 26-27</button>
+      <button class="btn btn-dfo" id="dfo2627Btn" onclick="syncDFO2627()" title="Scrape DFO/5v5hockey 2026-27 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)">📈 DFO 26-27</button>
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
-      <button class="btn btn-cbs" id="cbsBtn" onclick="syncCBS()" title="Scrape CBS Sports 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~25s)">📊 CBS 26-27</button>
-      <button class="btn btn-nhl" id="nhlProj2627Btn" onclick="syncNHLProj2627()" title="Pull NHL.com 2026-27 forward &amp; defenseman point projections (available ~Oct 2026)" style="opacity:.5">🏒 NHL 26-27</button>
+      <button class="btn btn-cbs" id="cbsBtn" onclick="syncCBS()" title="Scrape CBS Sports 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~25s)">📈 CBS 26-27</button>
+      <button class="btn btn-nhl" id="nhlProj2627Btn" onclick="syncNHLProj2627()" title="Pull NHL.com 2026-27 forward &amp; defenseman point projections (available ~Oct 2026)" style="opacity:.5">📈 NHL 26-27</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft()">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops()">⬇ Simulate Drops</button>
-      <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">↓ Actual Drops</button>
+      <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
-      <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">⬇ Export Draft</button>
+      <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">💾 Export Draft</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2627()" title="Simulate draft from current rosters and apply picks">⬆ Simulate Draft</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn" onclick="setDraftSubMode('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
@@ -1832,7 +1832,7 @@ async function syncCBS(){
     toast('CBS sync failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='📊 CBS 26-27';
+    btn.innerHTML='📈 CBS 26-27';
   }
 }
 
@@ -1871,7 +1871,7 @@ async function syncAthletic(input){
     toast('ATH 26-27 import failed: '+e.message);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='📰 ATH 26-27';
+    btn.innerHTML='📈 ATH 26-27';
   }
 }
 
@@ -2275,7 +2275,7 @@ async function doSync(){
     console.error(e);
   } finally {
     btn.disabled=false;
-    btn.innerHTML='⬇ Yahoo';
+    btn.innerHTML='⬇ Yahoo 25-26';
   }
 }
 
@@ -2431,7 +2431,7 @@ async function syncDFO2627(){
     render();
     toast(`DFO 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 26-27 sync failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='🏒 DFO 26-27'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 DFO 26-27'; }
 }
 
 async function syncInjuries(){
@@ -2469,7 +2469,7 @@ async function syncDFO2526(input){
     const {matched,unmatched} = _apply2526Proj('proj2526_dfo', LS_DFO2526, d, 'ppp2526_dfo');
     toast(`DFO 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 25-26 import failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='🏒 DFO 25-26'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 DFO 25-26'; }
 }
 
 async function syncESPN2526(){
@@ -2503,7 +2503,7 @@ async function syncNHLProj2526(){
     render2526();
     toast(`NHL 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('NHL 25-26 sync failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='🏒 NHL 25-26'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 NHL 25-26'; }
 }
 
 async function syncNHLProj2627(){
@@ -2525,7 +2525,7 @@ async function syncNHLProj2627(){
     render();
     toast(`NHL 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('NHL 26-27 sync failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='🏒 NHL 26-27'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 NHL 26-27'; }
 }
 
 async function syncAthletic2526(input){
@@ -2539,7 +2539,7 @@ async function syncAthletic2526(input){
     const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d, 'ppp2526_athletic');
     toast(`ATH 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 25-26 import failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='📰 ATH 25-26'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 ATH 25-26'; }
 }
 
 function renderTransactions(){
@@ -2865,7 +2865,7 @@ const DRAFT_TEAMS_2526 = Object.entries(FINAL_STANDINGS_2425)
   .sort((a,b) => b[1].rank - a[1].rank).map(([name]) => name);
 
 const TEAM_ABBREVS = {
-  'Blue Line Bangers':  'BLB',
+  'Blue Line Bangers':  'BLU',
   'Bossy Posse':        'BOS',
   'Damage Inc.':        'DAM',
   'Dumb and Goalie To': 'DUM',
@@ -4230,7 +4230,7 @@ function toggleDraftMode2425(){
     // Guard: if all roster spots already filled (e.g. after Simulate Draft),
     // the sequence is empty and nothing will work.
     if(!buildDraftSeq2425().length){
-      toast('No open roster spots — load ↓ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
       return;
     }
   }
@@ -4264,7 +4264,7 @@ function toggleDraftMode2324(){
     // Guard: if all roster spots already filled (e.g. after Simulate Draft),
     // the sequence is empty and nothing will work.
     if(!buildDraftSeq2324().length){
-      toast('No open roster spots — load ↓ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
       return;
     }
   }
@@ -4293,7 +4293,7 @@ function toggleDraftMode2526(){
   if(!draftMode2526){
     _deactivateDraftMode(); _deactivateDraftMode2425(); _deactivateDraftMode2324();
     if(!buildDraftSeq2526().length){
-      toast('No open roster spots — load ↓ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
       return;
     }
   }
@@ -4896,7 +4896,7 @@ async function syncDFO2425(input){
     const {matched,unmatched} = _apply2425Proj('proj2425_dfo', LS_DFO2425, d);
     toast(`DFO 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 24-25 import failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='🏒 DFO 24-25'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 DFO 24-25'; }
 }
 
 async function syncAthletic2425(input){
@@ -4910,7 +4910,7 @@ async function syncAthletic2425(input){
     const {matched,unmatched} = _apply2425Proj('proj2425_athletic', LS_ATHLETIC2425, d);
     toast(`ATH 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 24-25 import failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='📰 ATH 24-25'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 ATH 24-25'; }
 }
 
 async function syncNHL2425(input){
@@ -4924,7 +4924,7 @@ async function syncNHL2425(input){
     const {matched,unmatched} = _apply2425Proj('proj2425_nhl', LS_NHL2425, d);
     toast(`NHL 24-25 proj synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('NHL 24-25 import failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='🏒 NHL 24-25 Proj'; }
+  finally { btn.disabled=false; btn.innerHTML='📈 NHL 24-25 Proj'; }
 }
 
 function dropSim2425(id){
@@ -4934,12 +4934,11 @@ function dropSim2425(id){
   render2425();
 }
 
-function resetSim2425(){
-  if(!Object.keys(PREDROP_ROSTER_2425).length){
-    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
-    return;
-  }
-  if(!confirm('Reset 24-25 simulation? Sets start2425 = end2324 (23-24 final rosters).')) return;
+// Seeds start2425 = end2324 (23-24 final rosters) from PREDROP_ROSTER_2425, creating stubs
+// for predrop players with no existing record. Shared by resetSim2425() and simulateDrops2425()
+// so the latter always simulates from the full pre-drop roster instead of compounding on
+// whatever state start2425 was left in by a previous simulate run.
+function _seedStart2425(){
   for(const p of players){
     const base = normName(p.name).toLowerCase();
     const pg   = posGroup(p.pos);
@@ -4966,6 +4965,15 @@ function resetSim2425(){
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
     });
   }
+}
+
+function resetSim2425(){
+  if(!Object.keys(PREDROP_ROSTER_2425).length){
+    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
+    return;
+  }
+  if(!confirm('Reset 24-25 simulation? Sets start2425 = end2324 (23-24 final rosters).')) return;
+  _seedStart2425();
   draftState2425 = {picks:[]};
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2425, draftState2425);
@@ -5043,10 +5051,11 @@ function rankPlayers2425(){
 }
 
 function simulateDrops2425(){
-  if(!players.some(p=>p.start2425)){
-    toast('Load a roster into start2425 first (Reset or ↓ Actual Drops).');
+  if(!Object.keys(PREDROP_ROSTER_2425).length){
+    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
     return;
   }
+  _seedStart2425(); // always simulate from the full pre-drop roster, never compound on a prior simulate run
   const teams = [...new Set(players.map(p=>p.start2425).filter(Boolean))];
   let dropped=0;
 
@@ -5338,10 +5347,11 @@ function rankPlayers2324(){
 }
 
 function simulateDrops2324(){
-  if(!players.some(p=>p.start2324)){
-    toast('Load a roster into start2324 first (Reset or ↓ Actual Drops).');
+  if(!players.some(p=>p.end2223)){
+    toast('Populate end2223 first — click ⬇ Yahoo 22-23 to load 22-23 final rosters.');
     return;
   }
+  for(const p of players) p.start2324 = p.end2223 ?? null; // always simulate from the full pre-drop roster, never compound on a prior simulate run
   const teams = [...new Set(players.map(p=>p.start2324).filter(Boolean))];
   let dropped=0;
 
@@ -5717,8 +5727,8 @@ function render2425(){
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge2425(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:#9ca3af">${teamAbbr(p.end2324)||'—'}</td>
-      ${draftMode2425 ? '' : `<td style="color:#185FA5">${teamAbbr(p.start2425)||'—'}</td>`}
+      <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2324&&teamLogos[p.end2324]?`<img src="${teamLogos[p.end2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2324)||'—'}</span></div></td>
+      ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
       <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>${p.yrStr2425?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2425}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
@@ -5857,7 +5867,7 @@ function updateStats2425(){
     return `<div class="team-card" ${draftMode2425?`onclick="setDraftFocus2425('${esc(t)}')" style="cursor:pointer;${isFocused2425?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull2425&&!isOnClock2425?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
-        <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
+        <div style="min-width:0;flex:1"><span class="team-card-name" title="${esc(t)}">${esc(t)}</span><div style="font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:.06em;margin-top:1px;line-height:1">${teamAbbr(t)}</div></div>
         ${isFocused2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2425?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':isFull2425?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
@@ -6056,8 +6066,8 @@ function render2324(){
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge2324(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:#9ca3af">${esc(p.end2223||'—')}</td>
-      ${draftMode2324 ? '' : `<td style="color:#185FA5">${teamAbbr(p.start2324)||'—'}</td>`}
+      <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2223&&teamLogos[p.end2223]?`<img src="${teamLogos[p.end2223]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2223)||'—'}</span></div></td>
+      ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
       <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>${p.yrStr2324?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2324}</div>`:''}` :'—'}</td>
       <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?p.proj2324_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2324_dtz>0?p.proj2324_dtz:'—'}</td>
@@ -6170,7 +6180,7 @@ function updateStats2324(){
     return `<div class="team-card" ${draftMode2324?`onclick="setDraftFocus2324('${esc(t)}')" style="cursor:pointer;${isFocused2324?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull2324&&!isOnClock2324?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
-        <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
+        <div style="min-width:0;flex:1"><span class="team-card-name" title="${esc(t)}">${esc(t)}</span><div style="font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:.06em;margin-top:1px;line-height:1">${teamAbbr(t)}</div></div>
         ${isFocused2324?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2324?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span>':isFull2324?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
@@ -7054,7 +7064,7 @@ function updateStats2526(){
     return `<div class="team-card" ${draftMode2526?`onclick="setDraftFocus2526('${esc(t)}')" style="cursor:pointer;${isFocused2526?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull2526&&!isOnClock2526?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo?`<img src="${esc(logo)}" class="team-card-logo" loading="lazy">`:'<div class="team-card-logo"></div>'}
-        <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
+        <div style="min-width:0;flex:1"><span class="team-card-name" title="${esc(t)}">${esc(t)}</span><div style="font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:.06em;margin-top:1px;line-height:1">${teamAbbr(t)}</div></div>
         ${isFocused2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock2526?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':isFull2526?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
@@ -7258,8 +7268,8 @@ function render2526(){
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td>${calcAge2526(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
-      <td style="color:#9ca3af">${teamAbbr(p.end2425)||'—'}</td>
-      ${draftMode2526 ? '' : `<td style="color:#185FA5">${teamAbbr(p.start2526)||'—'}</td>`}
+      <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2425&&teamLogos[p.end2425]?`<img src="${teamLogos[p.end2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2425)||'—'}</span></div></td>
+      ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
       <td>${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${c.toFixed(2)}M</a>${p.yrStr2526?`<div style="font-size:10px;color:#9ca3af;margin-top:1px">${p.yrStr2526}</div>`:''}`:''||'—';})()}</td>
       <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
       <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
@@ -7809,7 +7819,7 @@ function updateStats(){
     return `<div class="team-card" ${draftMode?`onclick="setDraftFocus('${esc(t)}')" style="cursor:pointer;${isFocused?'outline:2px solid #6366f1;outline-offset:-2px;':''}${isFull27&&!isOnClock?'opacity:.45;':''}"`:''}">
       <div class="team-card-header">
         ${logo ? `<img src="${esc(logo)}" class="team-card-logo" loading="lazy">` : '<div class="team-card-logo"></div>'}
-        <span class="team-card-name" title="${esc(t)}">${esc(t)}</span>
+        <div style="min-width:0;flex:1"><span class="team-card-name" title="${esc(t)}">${esc(t)}</span><div style="font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:.06em;margin-top:1px;line-height:1">${teamAbbr(t)}</div></div>
         ${isFocused?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Viewing</span>':isOnClock?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">On Clock</span><span class="draft-on-clock-timer" style="font-variant-numeric:tabular-nums;font-size:10px;font-weight:700;margin-left:4px"></span>':isFull27?'<span style="font-size:9px;font-weight:600;background:#e5e7eb;color:#9ca3af;border-radius:3px;padding:1px 5px;white-space:nowrap;margin-left:2px">Full</span>':''}
       </div>
       <div class="team-card-cap" style="display:flex;align-items:center;justify-content:space-between">
