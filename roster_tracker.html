@@ -2893,7 +2893,7 @@ const DRAFT_TEAMS_2627 = Object.entries(FINAL_STANDINGS_2526)
   .map(([name]) => name);
 
 
-// PREDROP_ROSTER_2425, MANUAL_CAPS_2425, PREDROP_STUBS_2425, ACTUAL_ROSTER_2425, ACTUAL_DRAFT_2425 moved to data_2425.js
+// PREDROP_ROSTER_2425, MANUAL_CAPS_2425, PREDROP_STUBS_2425, POSTDROP_ROSTER_2425, POSTDRAFT_ROSTER_2425 moved to data_2425.js
 
 const INJURY_DROPS_2425       = new Set([]);
 const ELC_MANDATORY_DROPS_2425 = new Set([]);
@@ -2907,7 +2907,7 @@ const DRAFT_RESERVE_2324 = 1.5 * (ELC_MAX_2324 - 0.175); // cap to reserve per d
 
 // Baked historical 23-24 data (MANUAL_CAPS_2324, PROJ2324) lives in data_2324.js
 
-// ACTUAL_ROSTER_2324, ACTUAL_DRAFT_2324 moved to data_2324.js
+// POSTDROP_ROSTER_2324, POSTDRAFT_ROSTER_2324 moved to data_2324.js
 
 const INJURY_DROPS_2324       = new Set([]);
 const ELC_MANDATORY_DROPS_2324 = new Set([]);
@@ -2925,9 +2925,9 @@ const ELC_MANDATORY_DROPS_2526 = new Set(['ivan demidov']);
 const ELC_MANDATORY_DROPS_2627 = new Set([]);
 
 // Actual pre-draft 26-27 rosters (after drops, before draft picks). Populated once managers submit.
-const ACTUAL_ROSTER_2627 = {};
+const POSTDROP_ROSTER_2627 = {};
 
-// ACTUAL_ROSTER_2526, ACTUAL_DRAFT_2526 moved to data_2526.js
+// POSTDROP_ROSTER_2526, POSTDRAFT_ROSTER_2526 moved to data_2526.js
 
 const LS_DRAFT_2627 = 'hghl_draft_2627';
 const LS_DRAFT_2526 = 'hghl_draft_2526';
@@ -4450,13 +4450,13 @@ async function syncStats2627(){
 }
 
 function loadActualRoster2627(){
-  if(!Object.keys(ACTUAL_ROSTER_2627).length){ toast('ACTUAL_ROSTER_2627 is empty — populate it first.'); return; }
+  if(!Object.keys(POSTDROP_ROSTER_2627).length){ toast('POSTDROP_ROSTER_2627 is empty — populate it first.'); return; }
   if(!confirm('Load actual 26-27 pre-draft rosters? This overwrites the current 26-27 simulation.')) return;
   let matched = 0, unmatched = 0;
   for(const p of players){
     const key = normName(p.name).toLowerCase();
-    if(key in ACTUAL_ROSTER_2627){
-      p.start2627 = ACTUAL_ROSTER_2627[key];
+    if(key in POSTDROP_ROSTER_2627){
+      p.start2627 = POSTDROP_ROSTER_2627[key];
       matched++;
     } else {
       p.start2627 = null;
@@ -4475,8 +4475,8 @@ function loadActualRoster2526(){
   let matched = 0, unmatched = 0;
   for(const p of players){
     const key = normName(p.name).toLowerCase();
-    if(key in ACTUAL_ROSTER_2526){
-      p.start2526 = ACTUAL_ROSTER_2526[key]; // null = was dropped before draft
+    if(key in POSTDROP_ROSTER_2526){
+      p.start2526 = POSTDROP_ROSTER_2526[key]; // null = was dropped before draft
       matched++;
     } else {
       p.start2526 = null;
@@ -4492,16 +4492,16 @@ function loadActualRoster2526(){
 }
 
 function loadActualDraft2526(){
-  if(!Object.keys(ACTUAL_DRAFT_2526).length){ toast('ACTUAL_DRAFT_2526 is empty.'); return; }
+  if(!Object.keys(POSTDRAFT_ROSTER_2526).length){ toast('POSTDRAFT_ROSTER_2526 is empty.'); return; }
   if(!confirm('Load actual 25-26 post-draft rosters? Overwrites start2526 and populates the Big Board with actual picks.')) return;
   for(const p of players){
     const key = normName(p.name).toLowerCase();
-    const t = (key in ACTUAL_ROSTER_2526) ? ACTUAL_ROSTER_2526[key] : null;
+    const t = (key in POSTDROP_ROSTER_2526) ? POSTDROP_ROSTER_2526[key] : null;
     p.start2526 = p.end2526 = t;
   }
   const picks = [], unmatched = [];
   const _byTeam2526 = {};
-  for(const entry of Object.entries(ACTUAL_DRAFT_2526)){ const t=entry[1]; if(!_byTeam2526[t])_byTeam2526[t]=[]; _byTeam2526[t].push(entry); }
+  for(const entry of Object.entries(POSTDRAFT_ROSTER_2526)){ const t=entry[1]; if(!_byTeam2526[t])_byTeam2526[t]=[]; _byTeam2526[t].push(entry); }
   const _maxR2526 = Math.max(0,...Object.values(_byTeam2526).map(a=>a.length));
   const _ord2526 = [];
   for(let r=0;r<_maxR2526;r++) for(const t of DRAFT_TEAMS_2526) if(_byTeam2526[t]?.[r]) _ord2526.push(_byTeam2526[t][r]);
@@ -4718,8 +4718,8 @@ function compareDrops2526(){
   };
   const labelDelta2526 = p => { const pg=posGroup(p.pos),pp=ppts2526blend(p),c=getCap2526(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2526,curveFnsPostDrop[pg]); return base!=null?pp-base:null; };
 
-  // Compare virtual results to ACTUAL_ROSTER_2526
-  // A player is "actually kept" if they appear in ACTUAL_ROSTER_2526 for this team.
+  // Compare virtual results to POSTDROP_ROSTER_2526
+  // A player is "actually kept" if they appear in POSTDROP_ROSTER_2526 for this team.
   // A player is "sim kept" if their virtual start2526 is still set.
   const teamResults = [];
   let totalCorrect = 0, totalAll = 0;
@@ -4730,7 +4730,7 @@ function compareDrops2526(){
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
-      const actuallyKept = (key in ACTUAL_ROSTER_2526) && ACTUAL_ROSTER_2526[key]===team;
+      const actuallyKept = (key in POSTDROP_ROSTER_2526) && POSTDROP_ROSTER_2526[key]===team;
       const simKept = p.start2526 !== null;
       const pp = ppts2526blend(p).toFixed(1);
       const cap = getCap2526(p).toFixed(2);
@@ -4994,15 +4994,15 @@ function resetSim2425(){
 }
 
 function loadActualRoster2425(){
-  if(!Object.keys(ACTUAL_ROSTER_2425).length){
-    toast('Populate ACTUAL_ROSTER_2425 (post-drop pre-pick 24-25 rosters) first.');
+  if(!Object.keys(POSTDROP_ROSTER_2425).length){
+    toast('Populate POSTDROP_ROSTER_2425 (post-drop pre-pick 24-25 rosters) first.');
     return;
   }
   if(!confirm('Load actual 24-25 pre-draft rosters? This overwrites start2425 with the real post-drop, pre-pick state.')) return;
   let matched=0, unmatched=0;
   for(const p of players){
     const key = normName(p.name).toLowerCase();
-    if(key in ACTUAL_ROSTER_2425){ p.start2425 = ACTUAL_ROSTER_2425[key]; matched++; }
+    if(key in POSTDROP_ROSTER_2425){ p.start2425 = POSTDROP_ROSTER_2425[key]; matched++; }
     else { p.start2425 = null; unmatched++; }
   }
   draftState2425 = {picks:[]};
@@ -5013,15 +5013,15 @@ function loadActualRoster2425(){
 }
 
 function loadActualDraft2425(){
-  if(!Object.keys(ACTUAL_DRAFT_2425).length){ toast('ACTUAL_DRAFT_2425 is empty.'); return; }
+  if(!Object.keys(POSTDRAFT_ROSTER_2425).length){ toast('POSTDRAFT_ROSTER_2425 is empty.'); return; }
   if(!confirm('Load actual 24-25 post-draft rosters? Overwrites start2425 and populates the Big Board with actual picks.')) return;
   for(const p of players){
     const key = normName(p.name).toLowerCase();
-    p.start2425 = (key in ACTUAL_ROSTER_2425) ? ACTUAL_ROSTER_2425[key] : null;
+    p.start2425 = (key in POSTDROP_ROSTER_2425) ? POSTDROP_ROSTER_2425[key] : null;
   }
   const picks = [], unmatched = [];
   const _byTeam2425 = {};
-  for(const entry of Object.entries(ACTUAL_DRAFT_2425)){ const t=entry[1]; if(!_byTeam2425[t])_byTeam2425[t]=[]; _byTeam2425[t].push(entry); }
+  for(const entry of Object.entries(POSTDRAFT_ROSTER_2425)){ const t=entry[1]; if(!_byTeam2425[t])_byTeam2425[t]=[]; _byTeam2425[t].push(entry); }
   const _maxR2425 = Math.max(0,...Object.values(_byTeam2425).map(a=>a.length));
   const _ord2425 = [];
   for(let r=0;r<_maxR2425;r++) for(const t of DRAFT_TEAMS_2425) if(_byTeam2425[t]?.[r]) _ord2425.push(_byTeam2425[t][r]);
@@ -5129,8 +5129,8 @@ function compareDrops2425(){
     toast('Populate PREDROP_ROSTER_2425 to run compare drops.');
     return;
   }
-  if(!Object.keys(ACTUAL_ROSTER_2425).length){
-    toast('Populate ACTUAL_ROSTER_2425 to run compare drops.');
+  if(!Object.keys(POSTDROP_ROSTER_2425).length){
+    toast('Populate POSTDROP_ROSTER_2425 to run compare drops.');
     return;
   }
 
@@ -5202,7 +5202,7 @@ function compareDrops2425(){
 
     for(const p of teamPlayers){
       const key=normName(p.name).toLowerCase();
-      const actuallyKept=(key in ACTUAL_ROSTER_2425) && ACTUAL_ROSTER_2425[key]===team;
+      const actuallyKept=(key in POSTDROP_ROSTER_2425) && POSTDROP_ROSTER_2425[key]===team;
       const simKept=p.start2425!==null;
       const pp=ppts2425blend(p).toFixed(1);
       const cap=getCap2425(p).toFixed(2);
@@ -5289,8 +5289,8 @@ function resetSim2324(){
 }
 
 function loadActualRoster2324(){
-  if(!Object.keys(ACTUAL_ROSTER_2324).length){
-    toast('Populate ACTUAL_ROSTER_2324 (post-drop pre-pick 23-24 rosters) first.');
+  if(!Object.keys(POSTDROP_ROSTER_2324).length){
+    toast('Populate POSTDROP_ROSTER_2324 (post-drop pre-pick 23-24 rosters) first.');
     return;
   }
   if(!confirm('Load actual 23-24 pre-draft rosters? This overwrites start2324 with the real post-drop, pre-pick state.')) return;
@@ -5298,7 +5298,7 @@ function loadActualRoster2324(){
   for(const p of players){
     const base = normName(p.name).toLowerCase();
     const pg   = posGroup(p.pos);
-    const team = ACTUAL_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, ACTUAL_ROSTER_2324) ?? null;
+    const team = POSTDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2324) ?? null;
     if(team){ p.start2324 = team; matched++; } else { p.start2324 = null; unmatched++; }
   }
   draftState2324 = {picks:[]};
@@ -5309,15 +5309,15 @@ function loadActualRoster2324(){
 }
 
 function loadActualDraft2324(){
-  if(!Object.keys(ACTUAL_DRAFT_2324).length){ toast('ACTUAL_DRAFT_2324 is empty.'); return; }
+  if(!Object.keys(POSTDRAFT_ROSTER_2324).length){ toast('POSTDRAFT_ROSTER_2324 is empty.'); return; }
   if(!confirm('Load actual 23-24 post-draft rosters? Overwrites start2324 and populates the Big Board with actual picks.')) return;
   for(const p of players){
     const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
-    p.start2324 = ACTUAL_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, ACTUAL_ROSTER_2324) ?? null;
+    p.start2324 = POSTDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2324) ?? null;
   }
   const picks = [], unmatched = [];
   const _byTeam2324 = {};
-  for(const entry of Object.entries(ACTUAL_DRAFT_2324)){ const t=entry[1]; if(!_byTeam2324[t])_byTeam2324[t]=[]; _byTeam2324[t].push(entry); }
+  for(const entry of Object.entries(POSTDRAFT_ROSTER_2324)){ const t=entry[1]; if(!_byTeam2324[t])_byTeam2324[t]=[]; _byTeam2324[t].push(entry); }
   const _maxR2324 = Math.max(0,...Object.values(_byTeam2324).map(a=>a.length));
   const _ord2324 = [];
   for(let r=0;r<_maxR2324;r++) for(const t of DRAFT_TEAMS_2324) if(_byTeam2324[t]?.[r]) _ord2324.push(_byTeam2324[t][r]);
@@ -5425,8 +5425,8 @@ function compareDrops2324(){
     toast('Populate end2223 (⬇ Yahoo 22-23) to run compare drops.');
     return;
   }
-  if(!Object.keys(ACTUAL_ROSTER_2324).length){
-    toast('Populate ACTUAL_ROSTER_2324 to run compare drops.');
+  if(!Object.keys(POSTDROP_ROSTER_2324).length){
+    toast('Populate POSTDROP_ROSTER_2324 to run compare drops.');
     return;
   }
 
@@ -5499,7 +5499,7 @@ function compareDrops2324(){
     for(const p of teamPlayers){
       const key=normName(p.name).toLowerCase();
       const pg=posGroup(p.pos);
-      const actualTeam=ACTUAL_ROSTER_2324[`${key}_${pg}`] ?? _dictLookup(p.name, ACTUAL_ROSTER_2324) ?? null;
+      const actualTeam=POSTDROP_ROSTER_2324[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2324) ?? null;
       const actuallyKept=actualTeam===team;
       const simKept=p.start2324!==null;
       const pp=ppts2324blend(p).toFixed(1);
@@ -6245,7 +6245,7 @@ function runDraftSim2627(){
 
 // ── My Algo Draft ─────────────────────────────────────────────────────────────
 // Runs the algo draft for myHGHLTeam only. Other teams' picks are locked to
-// ACTUAL_DRAFT_*. My team's pool is restricted to: players I actually drafted
+// POSTDRAFT_ROSTER_*. My team's pool is restricted to: players I actually drafted
 // OR players nobody drafted — excluding players taken by other teams.
 
 function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, actualPts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim, elcMax, renderFn }){
@@ -6436,9 +6436,9 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
 }
 
 function runMyAlgoDraft2425(){
-  if(!Object.keys(ACTUAL_DRAFT_2425).length){ toast('Populate ACTUAL_DRAFT_2425 first.'); return; }
+  if(!Object.keys(POSTDRAFT_ROSTER_2425).length){ toast('Populate POSTDRAFT_ROSTER_2425 first.'); return; }
   _runMyAlgoDraft({
-    season: '24-25', actualDraft: ACTUAL_DRAFT_2425,
+    season: '24-25', actualDraft: POSTDRAFT_ROSTER_2425,
     allTeams: [...new Set(players.filter(p=>p.start2425).map(p=>p.start2425))].sort(),
     buildSeq: buildDraftSeq2425, startField: 'start2425',
     ppts: p => ppts2425blend(p), actualPts: p => p.pts2425||0, getCap: p => getCap2425(p),
@@ -6449,9 +6449,9 @@ function runMyAlgoDraft2425(){
 }
 
 function runMyAlgoDraft2324(){
-  if(!Object.keys(ACTUAL_DRAFT_2324).length){ toast('Populate ACTUAL_DRAFT_2324 first.'); return; }
+  if(!Object.keys(POSTDRAFT_ROSTER_2324).length){ toast('Populate POSTDRAFT_ROSTER_2324 first.'); return; }
   _runMyAlgoDraft({
-    season: '23-24', actualDraft: ACTUAL_DRAFT_2324,
+    season: '23-24', actualDraft: POSTDRAFT_ROSTER_2324,
     allTeams: [...new Set(players.filter(p=>p.start2324).map(p=>p.start2324))].sort(),
     buildSeq: buildDraftSeq2324, startField: 'start2324',
     ppts: p => ppts2324blend(p), actualPts: p => p.pts2324||0, getCap: p => getCap2324(p),
@@ -6462,9 +6462,9 @@ function runMyAlgoDraft2324(){
 }
 
 function runMyAlgoDraft2526(){
-  if(!Object.keys(ACTUAL_DRAFT_2526).length){ toast('Populate ACTUAL_DRAFT_2526 first.'); return; }
+  if(!Object.keys(POSTDRAFT_ROSTER_2526).length){ toast('Populate POSTDRAFT_ROSTER_2526 first.'); return; }
   _runMyAlgoDraft({
-    season: '25-26', actualDraft: ACTUAL_DRAFT_2526,
+    season: '25-26', actualDraft: POSTDRAFT_ROSTER_2526,
     allTeams: [...new Set(players.filter(p=>p.start2526).map(p=>p.start2526))].sort(),
     buildSeq: buildDraftSeq2526, startField: 'start2526',
     ppts: p => ppts2526blend(p), actualPts: p => p.pts2526||0, getCap: p => getCap2526(p),
@@ -6475,12 +6475,12 @@ function runMyAlgoDraft2526(){
 }
 
 function runDraftSim2425(){
-  if(!Object.keys(ACTUAL_DRAFT_2425).length){
-    toast('Populate ACTUAL_DRAFT_2425 first.'); return;
+  if(!Object.keys(POSTDRAFT_ROSTER_2425).length){
+    toast('Populate POSTDRAFT_ROSTER_2425 first.'); return;
   }
   _runDraftSim({
     season:       '24-25',
-    actualDraft:  ACTUAL_DRAFT_2425,
+    actualDraft:  POSTDRAFT_ROSTER_2425,
     allTeams:     [...new Set(players.filter(p=>p.start2425).map(p=>p.start2425))].sort(),
     buildSeq:     buildDraftSeq2425,
     startField:   'start2425',
@@ -6497,12 +6497,12 @@ function runDraftSim2425(){
 }
 
 function runDraftSim2324(){
-  if(!Object.keys(ACTUAL_DRAFT_2324).length){
-    toast('Populate ACTUAL_DRAFT_2324 first.'); return;
+  if(!Object.keys(POSTDRAFT_ROSTER_2324).length){
+    toast('Populate POSTDRAFT_ROSTER_2324 first.'); return;
   }
   _runDraftSim({
     season:       '23-24',
-    actualDraft:  ACTUAL_DRAFT_2324,
+    actualDraft:  POSTDRAFT_ROSTER_2324,
     allTeams:     [...new Set(players.filter(p=>p.start2324).map(p=>p.start2324))].sort(),
     buildSeq:     buildDraftSeq2324,
     startField:   'start2324',
@@ -6519,12 +6519,12 @@ function runDraftSim2324(){
 }
 
 function runDraftSim2526(){
-  if(!Object.keys(ACTUAL_DRAFT_2526).length){
-    toast('Populate ACTUAL_DRAFT_2526 first.'); return;
+  if(!Object.keys(POSTDRAFT_ROSTER_2526).length){
+    toast('Populate POSTDRAFT_ROSTER_2526 first.'); return;
   }
   _runDraftSim({
     season:       '25-26',
-    actualDraft:  ACTUAL_DRAFT_2526,
+    actualDraft:  POSTDRAFT_ROSTER_2526,
     allTeams:     [...new Set(players.filter(p=>p.start2526).map(p=>p.start2526))].sort(),
     buildSeq:     buildDraftSeq2526,
     startField:   'start2526',
@@ -6869,9 +6869,9 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
 }
 
 function compareDrafts2526(){
-  const hasActualData = Object.keys(ACTUAL_DRAFT_2526).length > 0;
+  const hasActualData = Object.keys(POSTDRAFT_ROSTER_2526).length > 0;
   if(!hasActualData){
-    toast('No actual draft data yet. Populate ACTUAL_DRAFT_2526 in the source (normName → team) to enable comparison.');
+    toast('No actual draft data yet. Populate POSTDRAFT_ROSTER_2526 in the source (normName → team) to enable comparison.');
     return;
   }
   if(!draftState2526.picks.length){
@@ -6885,9 +6885,9 @@ function compareDrafts2526(){
     (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
   }
 
-  // Build actual picks per team from ACTUAL_DRAFT_2526
+  // Build actual picks per team from POSTDRAFT_ROSTER_2526
   const actualByTeam = {};
-  for(const [key, team] of Object.entries(ACTUAL_DRAFT_2526)){
+  for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2526)){
     (actualByTeam[team] = actualByTeam[team] || []).push(key);
   }
 

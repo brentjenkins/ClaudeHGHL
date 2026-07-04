@@ -121,7 +121,7 @@ const PREDROP_STUBS_2425 = [
 ];
 
 // Post-drop pre-pick 24-25 rosters. Keys = normName.toLowerCase().
-const ACTUAL_ROSTER_2425 = {
+const POSTDROP_ROSTER_2425 = {
   // Damage Inc. (14 keepers — dropped: Nylander, Scheifele, Chinakhov, Chychrun, Letang)
   'nikita kucherov':'Damage Inc.','brayden point':'Damage Inc.','mikko rantanen':'Damage Inc.',
   'drake batherson':'Damage Inc.','leo carlsson':'Damage Inc.','kirill marchenko':'Damage Inc.',
@@ -178,7 +178,7 @@ const ACTUAL_ROSTER_2425 = {
 };
 
 // Actual 24-25 draft picks. Keys = normName.toLowerCase(), values = team.
-const ACTUAL_DRAFT_2425 = {
+const POSTDRAFT_ROSTER_2425 = {
   // Blue Line Bangers (10 picks)
   'macklin celebrini':'Blue Line Bangers',
   'mackenzie weegar':'Blue Line Bangers',

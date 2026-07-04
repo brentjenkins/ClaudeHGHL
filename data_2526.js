@@ -23,7 +23,7 @@ const MANUAL_CAPS_2526 = {
 // Actual pre-draft 25-26 rosters (after drops, before draft picks).
 // Keys = normName(name).toLowerCase() — absent players had no roster spot going into the draft.
 // Ivan Demidov absent: dropped due to mid-season pickup rule; re-drafted with BLB's 1st pick.
-const ACTUAL_ROSTER_2526 = {
+const POSTDROP_ROSTER_2526 = {
   // Blue Line Bangers
   'mackenzie weegar':'Blue Line Bangers','brandon montour':'Blue Line Bangers',
   'gustav forsling':'Blue Line Bangers','jack eichel':'Blue Line Bangers',
@@ -102,7 +102,7 @@ const ACTUAL_ROSTER_2526 = {
 
 // Actual 25-26 draft picks (players added via draft, not in pre-draft rosters above).
 // Keys = normName(name).toLowerCase(), values = fantasy team name.
-const ACTUAL_DRAFT_2526 = {
+const POSTDRAFT_ROSTER_2526 = {
   // Blue Line Bangers (7 picks — Ivan Demidov re-drafted after mandatory ELC drop)
   'ivan demidov':'Blue Line Bangers',
   'jordan binnington':'Blue Line Bangers',

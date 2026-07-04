@@ -1809,7 +1809,7 @@ const FINAL_STANDINGS_2223 = {
 };
 
 // Post-drop pre-pick 23-24 rosters (keepers heading into the Oct 13, 2023 draft). Keys = normName.toLowerCase().
-const ACTUAL_ROSTER_2324 = {
+const POSTDROP_ROSTER_2324 = {
   // Blue Line Bangers (10 keepers)
   'elias lindholm':'Blue Line Bangers','matt boldy':'Blue Line Bangers','chandler stephenson':'Blue Line Bangers',
   'andrei kuzmenko':'Blue Line Bangers','alex tuch':'Blue Line Bangers','adrian kempe':'Blue Line Bangers',
@@ -1865,7 +1865,7 @@ const ACTUAL_ROSTER_2324 = {
 };
 
 // Actual 23-24 draft picks (Oct 13, 2023). Keys = normName.toLowerCase(), values = team.
-const ACTUAL_DRAFT_2324 = {
+const POSTDRAFT_ROSTER_2324 = {
   // Blue Line Bangers (10 picks)
   'adam fantilli':'Blue Line Bangers','taylor raddysh':'Blue Line Bangers','ryan hartman':'Blue Line Bangers',
   'jared mccann':'Blue Line Bangers','marcandre fleury':'Blue Line Bangers','mark giordano':'Blue Line Bangers',
