@@ -591,7 +591,7 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
-      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull rosters, transactions, and team logos from Yahoo Fantasy">⬇ Yahoo 25-26</button>
+      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull end-of-2025-26 rosters from Yahoo (league 465.l.97882) to record who was on each team last season">⬇ Yahoo 25-26</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-puckpedia signings-all-btn" id="signingsBtn" onclick="syncSigningsAll(event)" title="Fetch all contracts from PuckPedia (~30s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
@@ -608,7 +608,7 @@ tr:hover td{background:#fafaf8}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
-      <button class="btn btn-red-outline" onclick="resetDraft()">Reset</button>
+      <button class="btn btn-red-outline" onclick="resetDraft()" title="Reset 26-27 rosters to 25-26 year-end (start2627 = end2526, from ⬇ Yahoo 25-26)">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops()">⬇ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
@@ -2228,6 +2228,10 @@ async function doSync(){
     const rd = await fetch('/rosters').then(r=>r.json());
     if(rd.error) throw new Error(rd.error);
 
+    // Clear all existing 25-26/26-27 team assignments first — otherwise a player dropped
+    // mid-season keeps their stale fantasyTeam forever since they no longer appear in rd.players.
+    for(const p of players){ p.end2526 = null; p.start2627 = null; }
+
     let added=0, updated=0;
     for(const yp of rd.players){
       const ex = findPlayerByNamePos(yp.name, yp.pos);
@@ -3216,7 +3220,11 @@ function loadDraft(){
 }
 function saveDraft(){ lsSet(LS_DRAFT_2627, draftState2627); }
 function resetDraft(){
-  if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 and clears draft picks.')) return;
+  if(!players.some(p=>p.end2526)){
+    toast('Populate end2526 first — click ⬇ Yahoo 25-26 to load 25-26 year-end rosters.');
+    return;
+  }
+  if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 (25-26 year-end rosters from Yahoo) and clears draft picks.')) return;
   draftState2627 = {picks:[], simPicks:[]};
   saveDraft();
   for(const p of players) p.start2627 = p.end2526 || '';
