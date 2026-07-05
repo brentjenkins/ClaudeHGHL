@@ -2836,7 +2836,7 @@ function render(){
       <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
-      <td style="border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';if(n===0)return'<span style="color:#16a34a;font-weight:600">0</span>';const c=n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
+      <td style="border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
       ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
@@ -5734,7 +5734,7 @@ function render2425(){
     const pp=ppts2425blend(p);
     const cap=getCap2425(p);
     const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
-    const abpStr=(()=>{const n=abpMap2425.get(p.id);if(n===null||n===undefined)return'—';if(n===0)return'<span style="color:#16a34a;font-weight:600">0</span>';const c=n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2425')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
+    const abpStr=(()=>{const n=abpMap2425.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2425')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
@@ -6074,7 +6074,7 @@ function render2324(){
     const pp=ppts2324blend(p);
     const cap=getCap2324(p);
     const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
-    const abpStr=(()=>{const n=abpMap2324.get(p.id);if(n===null||n===undefined)return'—';if(n===0)return'<span style="color:#16a34a;font-weight:600">0</span>';const c=n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2324')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
+    const abpStr=(()=>{const n=abpMap2324.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2324')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
@@ -7273,7 +7273,7 @@ function render2526(){
 
     const pp=ppts2526blend(p);
     const abpVal=abpMap2526.get(p.id);
-    const abpStr=abpVal===null||abpVal===undefined?'—':abpVal===0?'<span style="color:#16a34a;font-weight:600">0</span>':(()=>{const c=abpVal<=3?'#1a1a18':abpVal<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2526')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${abpVal}</button>`;})();
+    const abpStr=abpVal===null||abpVal===undefined?'—':(()=>{const c=abpVal===0?'#16a34a':abpVal<=3?'#1a1a18':abpVal<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2526')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${abpVal}</button>`;})();
     const rankStr=p.rank2526!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2526<=10?'#b45309':p.rank2526<=25?'#185FA5':'#555'}">${p.rank2526}</span>`:'—';
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:5px">
@@ -7568,6 +7568,106 @@ const getCap2526 = p => p.cap2526 ?? 0;
 const getCap2425 = p => p.cap2425 ?? 0;
 const getCap2324 = p => p.cap2324 ?? 0;
 
+const TREND_MIN_GP = 20; // min games played in a season to count toward the trend
+
+// Chronological actual-season rows, newest last. Each entry's vkey matches the
+// showABPModal `view` param that season is "current" for.
+const _TREND_SEASON_ORDER = p => [
+  {vkey:'2324', label:'23-24', pts:p.pts2324, gp:p.gp2324},
+  {vkey:'2425', label:'24-25', pts:p.pts2425, gp:p.gp2425},
+  {vkey:'2526', label:'25-26', pts:p.pts2526, gp:p.gp2526},
+];
+
+// Actual seasons strictly before `view`'s own season (view===undefined/'2627'
+// keeps all three — 26-27 has no actuals yet, so nothing to exclude). A prior-
+// year view (e.g. '2526') is simulating a draft as of that season, so its own
+// season's actual result is hindsight and gets dropped, along with anything
+// after it.
+function _priorActualSeasons(p, view){
+  const order = _TREND_SEASON_ORDER(p);
+  const viewIdx = order.findIndex(s => s.vkey === view);
+  return viewIdx === -1 ? order : order.slice(0, viewIdx);
+}
+
+// Raw projected PPTS for the view's own season — shown as context in the
+// trend tooltip instead of folded into the trend math (no projected-GP data
+// exists to turn it into a rate, and per-game/role math needs one).
+function _viewProjNote(p, view){
+  const label = view==='2526' ? '25-26' : view==='2425' ? '24-25' : view==='2324' ? '23-24' : null;
+  if(!label) return null;
+  const proj = view==='2526' ? ppts2526blend(p) : view==='2425' ? ppts2425blend(p) : ppts2324blend(p);
+  return proj > 0 ? `${label} (proj): ${Math.round(proj)} pts` : null;
+}
+
+function seasonPPGs(p, view){
+  return _priorActualSeasons(p, view)
+    .filter(s => (s.gp||0) >= TREND_MIN_GP && (s.pts||0) >= 0)
+    .map(s => ({label: s.label, ppg: s.pts/s.gp}));
+}
+
+// Trend badge from year-over-year actual PPG (seasons before this view only):
+// steady if the spread across qualifying seasons is small, else rising/
+// declining based on first vs last. Current view-year projection shown as a
+// tooltip note only, per user call — no fabricated PPG for it (no proj-GP data).
+function _skaterTrendBadge(p, view){
+  const seasons = seasonPPGs(p, view);
+  const noteSuffix = (() => { const n = _viewProjNote(p, view); return n ? `  •  ${n}` : ''; })();
+  if(seasons.length < 2){
+    const base = seasons.length ? seasons.map(s => `${s.label}: ${s.ppg.toFixed(2)} PPG`).join('  •  ') : 'Insufficient history (need 2+ prior seasons of 20+ GP)';
+    return {label:'—', color:'#9ca3af', title: base + noteSuffix};
+  }
+  const ppgs = seasons.map(s => s.ppg);
+  const avg = ppgs.reduce((a,b)=>a+b,0) / ppgs.length;
+  const spread = avg > 0 ? (Math.max(...ppgs) - Math.min(...ppgs)) / avg : 0;
+  const title = seasons.map(s => `${s.label}: ${s.ppg.toFixed(2)} PPG`).join('  •  ') + noteSuffix;
+  if(spread <= 0.15) return {label:'→ Steady', color:'#185FA5', title};
+  return ppgs[ppgs.length-1] > ppgs[0]
+    ? {label:'↑ Rising', color:'#16a34a', title}
+    : {label:'↓ Declining', color:'#dc2626', title};
+}
+
+// PPG is meaningless for goalies (points come from W/SO, not per-game touches) —
+// what matters is workload trajectory: is he trending toward a starter's net,
+// a 1B platoon, a backup role, or third-string/emergency duty. Bands are
+// season GP thresholds; the arrow shows whether that band moved since the
+// earliest qualifying season, not raw GP delta.
+const GOALIE_ROLES = [
+  {label:'Emergency', min:0,  color:'#9ca3af'},
+  {label:'Backup',    min:15, color:'#d97706'},
+  {label:'Platoon',   min:30, color:'#185FA5'},
+  {label:'Starter',   min:50, color:'#16a34a'},
+];
+function goalieRole(gp){
+  let role = GOALIE_ROLES[0];
+  for(const r of GOALIE_ROLES) if(gp >= r.min) role = r;
+  return role;
+}
+function goalieSeasons(p, view){
+  return _priorActualSeasons(p, view)
+    .filter(s => (s.gp||0) > 0)
+    .map(s => ({label: s.label, gp: s.gp, pts: s.pts||0}));
+}
+// No projected-starts data exists for goalies (checked: every projection
+// scraper drops GP before returning JSON), so the view's own season can't get
+// a role guess — only the projected points show, as a tooltip note.
+function _goalieTrendBadge(p, view){
+  const seasons = goalieSeasons(p, view);
+  const noteSuffix = (() => { const n = _viewProjNote(p, view); return n ? `  •  ${n}` : ''; })();
+  if(!seasons.length) return {label:'—', color:'#9ca3af', title:'No prior games-played history' + noteSuffix};
+  const title = seasons.map(s => `${s.label}: ${s.gp} GP, ${s.pts} pts`).join('  •  ') + noteSuffix;
+  const latest = seasons[seasons.length-1];
+  const role = goalieRole(latest.gp);
+  if(seasons.length < 2) return {label: role.label, color: role.color, title};
+  const firstRole = goalieRole(seasons[0].gp);
+  const idx = r => GOALIE_ROLES.indexOf(r);
+  const arrow = idx(role) > idx(firstRole) ? ' ↑' : idx(role) < idx(firstRole) ? ' ↓' : '';
+  return {label: role.label + arrow, color: role.color, title};
+}
+
+function trendBadge(p, view){
+  return posGroup(p.pos) === 'G' ? _goalieTrendBadge(p, view) : _skaterTrendBadge(p, view);
+}
+
 function computeABP2526(allPlayers){
   const fas = allPlayers.filter(p => !p.start2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0 &&
     (abpMinGP <= 0 || (p.gp2526||0) >= abpMinGP));
@@ -7663,6 +7763,7 @@ function showABPModal(playerId, view) {
     const delta = getDelta(fa);
     const deltaStr = delta != null ? (delta >= 0 ? '+' : '') + Math.round(delta) : '—';
     const deltaCol = delta != null ? curveSurplusColor(delta) : '#9ca3af';
+    const trend = trendBadge(fa, view);
     return `<tr style="${style||''}">
       <td style="padding:6px 8px">${esc(fa.name)}</td>
       <td style="padding:6px 8px">${esc(fa.team||'—')}</td>
@@ -7670,25 +7771,50 @@ function showABPModal(playerId, view) {
       <td style="padding:6px 8px">${faPts||'—'}</td>
       <td style="padding:6px 8px">${faCap>0?(faPts/faCap).toFixed(1):'—'}</td>
       <td style="padding:6px 8px;color:${deltaCol};font-weight:600">${deltaStr}</td>
+      <td style="padding:6px 8px;color:${trend.color};font-weight:600" title="${esc(trend.title)}">${trend.label}</td>
       <td style="padding:6px 8px">${faRank!=null?faRank:'—'}</td>
     </tr>`;
   };
-  const overflowRow = overflow > 0
-    ? `<tr><td colspan="7" style="padding:4px 8px;color:#9ca3af;font-size:11px;text-align:center">… ${overflow} more</td></tr>`
-    : '';
-  const playerRow = renderRow(p, 'border-top:2px solid #e5e7eb;color:#6b7280');
-  document.getElementById('abpModalTitle').textContent = `${p.name} — Top Available ${posLabel}`;
-  document.getElementById('abpModalBody').innerHTML = betterFAs.length
-    ? `<table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="text-align:left;color:#6b7280;font-size:11px;border-bottom:2px solid #e5e7eb">
+  const tableHead = `<thead><tr style="text-align:left;color:#6b7280;font-size:11px;border-bottom:2px solid #e5e7eb">
           <th style="padding:6px 8px">Player</th><th style="padding:6px 8px">Team</th>
           <th style="padding:6px 8px">Cap</th><th style="padding:6px 8px">PPTS</th>
           <th style="padding:6px 8px">PPTS/$M</th><th style="padding:6px 8px">△</th>
+          <th style="padding:6px 8px" title="${pg==='G' ? 'Workload role from GP in seasons before this view: Starter (50+) / Platoon (30+) / Backup (15+) / Emergency. This view\'s own season shows projected pts in the tooltip only — no role guess.' : `Trend from actual PPG in seasons before this view (min ${TREND_MIN_GP} GP/season). This view\'s own season shows projected PPTS in the tooltip only.`}">Trend</th>
           <th style="padding:6px 8px">Rank</th>
-        </tr></thead>
+        </tr></thead>`;
+  const overflowRow = overflow > 0
+    ? `<tr><td colspan="8" style="padding:4px 8px;color:#9ca3af;font-size:11px;text-align:center">… ${overflow} more</td></tr>`
+    : '';
+  const playerRow = renderRow(p, 'border-top:2px solid #e5e7eb;color:#6b7280');
+  document.getElementById('abpModalTitle').textContent = `${p.name} — Top Available ${posLabel}`;
+  let bodyHtml;
+  if(betterFAs.length){
+    bodyHtml = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+        ${tableHead}
         <tbody>${betterFAs.map(fa => renderRow(fa)).join('')}${overflowRow}${playerRow}</tbody>
-      </table>`
-    : `<p style="color:#9ca3af;padding:8px 0">No qualifying free agents found.</p>`;
+      </table>`;
+  } else {
+    // No FA beats this player within the cap ceiling — fall back to free agents
+    // at the position closest in production, cap ignored, so a trailing-but-
+    // more-consistent option (or a slightly pricier one) can still surface.
+    const closeAlts = players
+      .filter(fa =>
+        fa.id !== p.id && isFa(fa) && getCap(fa) > 0 && getPts(fa) > 0 &&
+        posGroup(fa.pos) === pg &&
+        (abpMinGP <= 0 || getGP(fa) >= abpMinGP) &&
+        (abpMinPts <= 0 || getPts(fa) >= abpMinPts)
+      )
+      .sort((a, b) => Math.abs(getPts(a) - pPts) - Math.abs(getPts(b) - pPts))
+      .slice(0, 5);
+    bodyHtml = closeAlts.length
+      ? `<p style="color:#9ca3af;font-size:12px;margin:0 0 8px">No free agent beats ${esc(p.name)} within the cap ceiling. Closest alternatives by production (cap not limited) — check Trend for a more consistent option even if the points trail slightly:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          ${tableHead}
+          <tbody>${closeAlts.map(fa => renderRow(fa)).join('')}${playerRow}</tbody>
+        </table>`
+      : `<p style="color:#9ca3af;padding:8px 0">No qualifying free agents found.</p>`;
+  }
+  document.getElementById('abpModalBody').innerHTML = bodyHtml;
   document.getElementById('abpModal').style.display = 'flex';
 }
 function closeABPModal() {
