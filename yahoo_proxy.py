@@ -1213,10 +1213,11 @@ def _espn_fetch_projections(season_year: int):
                 else:
                     hghl_pts = round(st.get("16") or (st.get("13", 0) + st.get("14", 0)))
                     ppp = round(st.get("19", 0) or st.get("17", 0) + st.get("18", 0))
+                gp = round(st.get("30", 0))  # ESPN's projected-games-played stat id (confirmed for both skaters/goalies)
                 if not all_players:
                     print(f"  ESPN stat keys (first player '{name}'): {sorted(st.keys())}")
                 key = f"{normalize_name(name).lower()}_{pg}"
-                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp, "gp": gp}
                 _add_name_aliases(all_players, key, name, pg)
             print(f"  ESPN {season_year} {label}: {len(raw)} fetched")
         except Exception as e:
@@ -1611,7 +1612,7 @@ def athletic_projections_2526():
             ppp = round(safe(row[c_ppp]) if c_ppp is not None else 0)
         if hghl_pts <= 0: continue
         key = f"{normalize_name(name).lower()}_{pg}"
-        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp, "gp": round(gp)}
         _add_name_aliases(all_players, key, name, pg)
 
     print(f"  Athletic 25-26: {len(all_players)} players parsed")
@@ -1719,7 +1720,7 @@ def athletic_projections():
             continue
 
         key = f"{normalize_name(name).lower()}_{pg}"
-        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp}
+        all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp, "gp": round(gp)}
         _add_name_aliases(all_players, key, name, pg)
 
     print(f"  Athletic: {len(all_players)} players parsed")

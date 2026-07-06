@@ -614,8 +614,8 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
-      <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">💾 Export Draft</button>
       <button class="btn btn-blue-outline" onclick="runDraftSim2627()" title="Simulate draft from current rosters and apply picks">⬆ Simulate Draft</button>
+      <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">💾 Export Draft</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn" onclick="setDraftSubMode('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn" onclick="setDraftSubMode('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
@@ -1416,7 +1416,14 @@ function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return d
 function _dictLookupPos(name, pos, dict){ const n=normName(name).toLowerCase(),pg=posGroup(pos); return dict[`${n}_${pg}`]??(_nameAlias(n)?dict[`${_nameAlias(n)}_${pg}`]:null)??null; }
 
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
-function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function lsSet(k,v){
+  try{
+    localStorage.setItem(k,JSON.stringify(v));
+  }catch(e){
+    console.error('lsSet failed for', k, e);
+    if(typeof toast === 'function') toast(`⚠ Save failed for ${k} (storage full?) — your last change may not have persisted. See console.`);
+  }
+}
 
 function dedup(){
   const srcRank = {yahoo:3, nhl:2, manual:1};
@@ -1704,6 +1711,10 @@ function load(){
     if(p.proj2526_athletic === undefined){ p.proj2526_athletic = null; migrated = true; }
     if(p.proj2526_cbs      === undefined){ p.proj2526_cbs      = null; migrated = true; }
     if(p.proj2526_nhl      === undefined){ p.proj2526_nhl      = null; migrated = true; }
+    if(p.projGp2526_athletic === undefined){ p.projGp2526_athletic = null; migrated = true; }
+    if(p.projGp2526_espn     === undefined){ p.projGp2526_espn     = null; migrated = true; }
+    if(p.gpAthletic        === undefined){ p.gpAthletic        = null; migrated = true; }
+    if(p.gpESPN            === undefined){ p.gpESPN            = null; migrated = true; }
     if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
     if(p.pts2425           === undefined){ p.pts2425           = 0;    migrated = true; }
     if(p.gp2425            === undefined){ p.gp2425            = 0;    migrated = true; }
@@ -1711,6 +1722,7 @@ function load(){
     if(p.proj2425_dfo      === undefined){ p.proj2425_dfo      = null; migrated = true; }
     if(p.proj2425_athletic === undefined){ p.proj2425_athletic = null; migrated = true; }
     if(p.proj2425_nhl      === undefined){ p.proj2425_nhl      = null; migrated = true; }
+    if(p.projGp2425_athletic === undefined){ p.projGp2425_athletic = null; migrated = true; }
     if(p.rank2425          === undefined){ p.rank2425          = null; migrated = true; }
     if(p.end2324           === undefined){ p.end2324           = null; migrated = true; }
     if(p.end2223           === undefined){ p.end2223           = null; migrated = true; }
@@ -1785,10 +1797,12 @@ async function syncESPN(){
       if(d.players[key]){
         p.ptsESPN = d.players[key].hghl_pts;
         p.pppESPN = d.players[key].ppp ?? null;
+        p.gpESPN  = d.players[key].gp > 0 ? d.players[key].gp : null;
         matched++;
       } else {
         p.ptsESPN = null;
         p.pppESPN = null;
+        p.gpESPN  = null;
         unmatched++;
       }
     }
@@ -1859,10 +1873,12 @@ async function syncAthletic(input){
       if(d.players[key]){
         p.ptsAthletic = d.players[key].hghl_pts;
         p.pppAthletic = d.players[key].ppp ?? null;
+        p.gpAthletic  = d.players[key].gp > 0 ? d.players[key].gp : null;
         matched++;
       } else {
         p.ptsAthletic = null;
         p.pppAthletic = null;
+        p.gpAthletic  = null;
         unmatched++;
       }
     }
@@ -2392,8 +2408,8 @@ async function sync2425Rosters(){
   }
 }
 
-function _apply2526Proj(field, lsKey, data, pppField=null){
-  for(const p of players){ p[field] = null; if(pppField) p[pppField] = null; }
+function _apply2526Proj(field, lsKey, data, pppField=null, gpField=null){
+  for(const p of players){ p[field] = null; if(pppField) p[pppField] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
     const pg  = posGroup(p.pos);
@@ -2401,6 +2417,7 @@ function _apply2526Proj(field, lsKey, data, pppField=null){
     if(data.players[key]){
       p[field] = data.players[key].hghl_pts;
       if(pppField) p[pppField] = data.players[key].ppp ?? null;
+      if(gpField) p[gpField] = data.players[key].gp > 0 ? data.players[key].gp : null;
       matched++;
     } else unmatched++;
   }
@@ -2487,7 +2504,7 @@ async function syncESPN2526(){
   try {
     const d = await fetch('/espn-projections-2526').then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d, 'ppp2526_espn');
+    const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d, 'ppp2526_espn', 'projGp2526_espn');
     toast(`ESPN 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ESPN 25-26 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ESPN 25-26'; }
@@ -2544,7 +2561,7 @@ async function syncAthletic2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d, 'ppp2526_athletic');
+    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d, 'ppp2526_athletic', 'projGp2526_athletic');
     toast(`ATH 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 25-26'; }
@@ -4127,15 +4144,20 @@ function renderSignings(){
 
   // Flatten: one row per qualifying contract
   // For specific seasons, only the first (most recent) qualifying contract per player
+  // Dedup key is derived from the contract's own name (alias-invariant), not the raw
+  // dict key — the backend stores each contract under both formal and nickname keys
+  // (e.g. "jacob macdonald_d" and "jake macdonald_d") so name matching works elsewhere,
+  // but iterating every dict key here would otherwise render the same contract twice.
   const seen = new Set();
   const rows = [];
   for(const [key, contracts] of Object.entries(raw)){
     for(const c of contracts){
       if(!seasonFilter(c)) continue;
-      const rowKey = season === 'all' ? `${key}_${c.sign_date}` : key;
+      const pg = key.split('_').pop();
+      const dedupName = `${normName(c.name).toLowerCase()}_${pg}`;
+      const rowKey = season === 'all' ? `${dedupName}_${c.sign_date}_${c.exp}_${c.start_yr}` : dedupName;
       if(seen.has(rowKey)) continue;
       seen.add(rowKey);
-      const pg = key.split('_').pop();
       const hghl = hghlMap[key] || {};
       const hghlTeam = season==='2526' ? (hghl.team25||'') : season==='2425' ? (hghl.team24||'') : (hghl.team26||'');
       rows.push({...c, pg, key, hghlTeam});
@@ -4883,12 +4905,16 @@ async function syncStats2324(){
 }
 
 
-function _apply2425Proj(field, lsKey, data){
-  for(const p of players) p[field] = null;
+function _apply2425Proj(field, lsKey, data, gpField=null){
+  for(const p of players){ p[field] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
     const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-    if(data.players[key]){ p[field] = data.players[key].hghl_pts; matched++; }
+    if(data.players[key]){
+      p[field] = data.players[key].hghl_pts;
+      if(gpField) p[gpField] = data.players[key].gp > 0 ? data.players[key].gp : null;
+      matched++;
+    }
     else unmatched++;
   }
   lsSet(lsKey, data.players);
@@ -4920,7 +4946,7 @@ async function syncAthletic2425(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_athletic', LS_ATHLETIC2425, d);
+    const {matched,unmatched} = _apply2425Proj('proj2425_athletic', LS_ATHLETIC2425, d, 'projGp2425_athletic');
     toast(`ATH 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 24-25 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 24-25'; }
@@ -7554,6 +7580,19 @@ function ppts2425blend(p){
   return 0;
 }
 
+// Projected games played, blended across whichever sources report it (only
+// Athletic + ESPN scrape a GP column; DFO/NHL Proj/CBS don't). Returns 0 if
+// no source has synced GP for this player yet.
+function projGp2526blend(p){
+  const srcs = [];
+  if(p.projGp2526_athletic > 0) srcs.push(p.projGp2526_athletic);
+  if(p.projGp2526_espn     > 0) srcs.push(p.projGp2526_espn);
+  return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+}
+function projGp2425blend(p){
+  return p.projGp2425_athletic > 0 ? p.projGp2425_athletic : 0;
+}
+
 function ppts2324blend(p){
   const srcs = [];
   if(p.proj2324_athletic > 0) srcs.push(p.proj2324_athletic);
@@ -7578,24 +7617,68 @@ const _TREND_SEASON_ORDER = p => [
   {vkey:'2526', label:'25-26', pts:p.pts2526, gp:p.gp2526},
 ];
 
-// Actual seasons strictly before `view`'s own season (view===undefined/'2627'
-// keeps all three — 26-27 has no actuals yet, so nothing to exclude). A prior-
-// year view (e.g. '2526') is simulating a draft as of that season, so its own
-// season's actual result is hindsight and gets dropped, along with anything
-// after it.
+// Actual seasons strictly before `view`'s own season. '2627' (the upcoming,
+// not-yet-played season) isn't in _TREND_SEASON_ORDER at all, so it keeps all
+// three actual seasons — nothing to exclude, since there's no 26-27 result yet
+// to leak hindsight. A prior-year view (e.g. '2526') is simulating a draft as
+// of that season, so its own season's actual result IS hindsight and gets
+// dropped, along with anything after it.
 function _priorActualSeasons(p, view){
   const order = _TREND_SEASON_ORDER(p);
   const viewIdx = order.findIndex(s => s.vkey === view);
   return viewIdx === -1 ? order : order.slice(0, viewIdx);
 }
 
-// Raw projected PPTS for the view's own season — shown as context in the
-// trend tooltip instead of folded into the trend math (no projected-GP data
-// exists to turn it into a rate, and per-game/role math needs one).
+const _VIEW_SEASON_LABEL = view => view==='2627' ? '26-27' : view==='2526' ? '25-26' : view==='2425' ? '24-25' : view==='2324' ? '23-24' : null;
+// ppts2425blend/ppts2324blend and reblendPts (p.pts, 26-27) all fall back to
+// actuals when no projection is synced (fine for their normal display columns,
+// wrong here — it would relabel a real actual/manual result as "(proj)").
+// Trend needs the pure projection-sources-only value, so 0 means "no
+// projection synced," not "no data at all."
+function _viewProjPts(p, view){
+  if(view==='2627'){
+    const srcs = [];
+    if(p.ptsAthletic > 0) srcs.push(p.ptsAthletic);
+    if(p.ptsDFO      > 0) srcs.push(p.ptsDFO);
+    if(p.ptsESPN     > 0) srcs.push(p.ptsESPN);
+    if(p.ptsCBS      > 0) srcs.push(p.ptsCBS);
+    if(p.ptsNHL      > 0) srcs.push(p.ptsNHL);
+    return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+  }
+  if(view==='2526') return ppts2526blend(p); // no actuals fallback in this one
+  if(view==='2425'){
+    const srcs = [];
+    if(p.proj2425_athletic > 0) srcs.push(p.proj2425_athletic);
+    if(p.proj2425_dfo      > 0) srcs.push(p.proj2425_dfo);
+    if(p.proj2425_nhl      > 0) srcs.push(p.proj2425_nhl);
+    return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+  }
+  if(view==='2324'){
+    const srcs = [];
+    if(p.proj2324_athletic > 0) srcs.push(p.proj2324_athletic);
+    if(p.proj2324_dtz      > 0) srcs.push(p.proj2324_dtz);
+    if(p.proj2324_nhl      > 0) srcs.push(p.proj2324_nhl);
+    return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+  }
+  return 0;
+}
+// Only Athletic + ESPN scrape a projected-GP column, and only for the
+// 26-27/25-26/24-25 syncs (no live source for 23-24 — it's a one-time bake).
+function projGp2627blend(p){
+  const srcs = [];
+  if(p.gpAthletic > 0) srcs.push(p.gpAthletic);
+  if(p.gpESPN     > 0) srcs.push(p.gpESPN);
+  return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+}
+const _viewProjGp = (p, view) => view==='2627' ? projGp2627blend(p) : view==='2526' ? projGp2526blend(p) : view==='2425' ? projGp2425blend(p) : 0;
+
+// Raw projected PPTS for the view's own season, for when no projected-GP is
+// available yet to turn it into a real rate/role data point (shown as a
+// tooltip note instead of being folded into the trend math).
 function _viewProjNote(p, view){
-  const label = view==='2526' ? '25-26' : view==='2425' ? '24-25' : view==='2324' ? '23-24' : null;
+  const label = _VIEW_SEASON_LABEL(view);
   if(!label) return null;
-  const proj = view==='2526' ? ppts2526blend(p) : view==='2425' ? ppts2425blend(p) : ppts2324blend(p);
+  const proj = _viewProjPts(p, view);
   return proj > 0 ? `${label} (proj): ${Math.round(proj)} pts` : null;
 }
 
@@ -7605,25 +7688,31 @@ function seasonPPGs(p, view){
     .map(s => ({label: s.label, ppg: s.pts/s.gp}));
 }
 
-// Trend badge from year-over-year actual PPG (seasons before this view only):
-// steady if the spread across qualifying seasons is small, else rising/
-// declining based on first vs last. Current view-year projection shown as a
-// tooltip note only, per user call — no fabricated PPG for it (no proj-GP data).
+// Trend badge from year-over-year PPG. Seasons before this view are actual;
+// the view's own season is folded in too as a real (proj) data point when a
+// projected GP exists (Athletic/ESPN, 25-26 and 24-25 views only) — otherwise
+// it's dropped from the math and shown as a raw-points tooltip note instead.
 function _skaterTrendBadge(p, view){
   const seasons = seasonPPGs(p, view);
-  const noteSuffix = (() => { const n = _viewProjNote(p, view); return n ? `  •  ${n}` : ''; })();
-  if(seasons.length < 2){
-    const base = seasons.length ? seasons.map(s => `${s.label}: ${s.ppg.toFixed(2)} PPG`).join('  •  ') : 'Insufficient history (need 2+ prior seasons of 20+ GP)';
+  const label = _VIEW_SEASON_LABEL(view);
+  const projPts = _viewProjPts(p, view);
+  const projGp  = _viewProjGp(p, view);
+  const projSeason = (label && projPts > 0 && projGp > 0) ? {label: `${label} (proj)`, ppg: projPts/projGp} : null;
+  const allSeasons = projSeason ? [...seasons, projSeason] : seasons;
+  const projSuffix = projSeason ? ' (proj)' : '';
+  const noteSuffix = projSeason ? '' : (() => { const n = _viewProjNote(p, view); return n ? `  •  ${n}` : ''; })();
+  if(allSeasons.length < 2){
+    const base = allSeasons.length ? allSeasons.map(s => `${s.label}: ${s.ppg.toFixed(2)} PPG`).join('  •  ') : 'Insufficient history (need 2+ prior seasons of 20+ GP)';
     return {label:'—', color:'#9ca3af', title: base + noteSuffix};
   }
-  const ppgs = seasons.map(s => s.ppg);
+  const ppgs = allSeasons.map(s => s.ppg);
   const avg = ppgs.reduce((a,b)=>a+b,0) / ppgs.length;
   const spread = avg > 0 ? (Math.max(...ppgs) - Math.min(...ppgs)) / avg : 0;
-  const title = seasons.map(s => `${s.label}: ${s.ppg.toFixed(2)} PPG`).join('  •  ') + noteSuffix;
-  if(spread <= 0.15) return {label:'→ Steady', color:'#185FA5', title};
+  const title = allSeasons.map(s => `${s.label}: ${s.ppg.toFixed(2)} PPG`).join('  •  ') + noteSuffix;
+  if(spread <= 0.15) return {label:`→ Steady${projSuffix}`, color:'#185FA5', title};
   return ppgs[ppgs.length-1] > ppgs[0]
-    ? {label:'↑ Rising', color:'#16a34a', title}
-    : {label:'↓ Declining', color:'#dc2626', title};
+    ? {label:`↑ Rising${projSuffix}`, color:'#16a34a', title}
+    : {label:`↓ Declining${projSuffix}`, color:'#dc2626', title};
 }
 
 // PPG is meaningless for goalies (points come from W/SO, not per-game touches) —
@@ -7647,21 +7736,26 @@ function goalieSeasons(p, view){
     .filter(s => (s.gp||0) > 0)
     .map(s => ({label: s.label, gp: s.gp, pts: s.pts||0}));
 }
-// No projected-starts data exists for goalies (checked: every projection
-// scraper drops GP before returning JSON), so the view's own season can't get
-// a role guess — only the projected points show, as a tooltip note.
+// Role for the view's own season is only guessed when a projected GP exists
+// (Athletic/ESPN, 25-26/24-25 views) — otherwise projected points show as a
+// tooltip note only, with no fabricated role for a season with no GP signal.
 function _goalieTrendBadge(p, view){
   const seasons = goalieSeasons(p, view);
-  const noteSuffix = (() => { const n = _viewProjNote(p, view); return n ? `  •  ${n}` : ''; })();
-  if(!seasons.length) return {label:'—', color:'#9ca3af', title:'No prior games-played history' + noteSuffix};
-  const title = seasons.map(s => `${s.label}: ${s.gp} GP, ${s.pts} pts`).join('  •  ') + noteSuffix;
-  const latest = seasons[seasons.length-1];
+  const label = _VIEW_SEASON_LABEL(view);
+  const projGp  = _viewProjGp(p, view);
+  const projSeason = (label && projGp > 0) ? {label: `${label} (proj)`, gp: projGp, pts: Math.round(_viewProjPts(p, view))} : null;
+  const allSeasons = projSeason ? [...seasons, projSeason] : seasons;
+  const noteSuffix = projSeason ? '' : (() => { const n = _viewProjNote(p, view); return n ? `  •  ${n}` : ''; })();
+  if(!allSeasons.length) return {label:'—', color:'#9ca3af', title:'No prior games-played history' + noteSuffix};
+  const title = allSeasons.map(s => `${s.label}: ${s.gp} GP, ${s.pts} pts`).join('  •  ') + noteSuffix;
+  const latest = allSeasons[allSeasons.length-1];
   const role = goalieRole(latest.gp);
-  if(seasons.length < 2) return {label: role.label, color: role.color, title};
-  const firstRole = goalieRole(seasons[0].gp);
+  const projSuffix = projSeason ? ' (proj)' : '';
+  if(allSeasons.length < 2) return {label: role.label + projSuffix, color: role.color, title};
+  const firstRole = goalieRole(allSeasons[0].gp);
   const idx = r => GOALIE_ROLES.indexOf(r);
   const arrow = idx(role) > idx(firstRole) ? ' ↑' : idx(role) < idx(firstRole) ? ' ↓' : '';
-  return {label: role.label + arrow, color: role.color, title};
+  return {label: role.label + arrow + projSuffix, color: role.color, title};
 }
 
 function trendBadge(p, view){
@@ -7779,7 +7873,7 @@ function showABPModal(playerId, view) {
           <th style="padding:6px 8px">Player</th><th style="padding:6px 8px">Team</th>
           <th style="padding:6px 8px">Cap</th><th style="padding:6px 8px">PPTS</th>
           <th style="padding:6px 8px">PPTS/$M</th><th style="padding:6px 8px">△</th>
-          <th style="padding:6px 8px" title="${pg==='G' ? 'Workload role from GP in seasons before this view: Starter (50+) / Platoon (30+) / Backup (15+) / Emergency. This view\'s own season shows projected pts in the tooltip only — no role guess.' : `Trend from actual PPG in seasons before this view (min ${TREND_MIN_GP} GP/season). This view\'s own season shows projected PPTS in the tooltip only.`}">Trend</th>
+          <th style="padding:6px 8px" title="${pg==='G' ? 'Workload role: Starter (50+ GP) / Platoon (30+) / Backup (15+) / Emergency. Prior seasons use actual GP; this view\'s own season uses projected GP (Athletic/ESPN) when synced, marked (proj) — else shown as pts-only context.' : `Trend from PPG (min ${TREND_MIN_GP} GP/season). Prior seasons are actual; this view\'s own season uses projected PPTS ÷ projected GP (Athletic/ESPN) when synced, marked (proj) — else shown as pts-only context.`}">Trend</th>
           <th style="padding:6px 8px">Rank</th>
         </tr></thead>`;
   const overflowRow = overflow > 0
