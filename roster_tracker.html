@@ -2042,8 +2042,13 @@ async function syncSigningsAll(e){
   const forceFullSync = e?.shiftKey || !hwm;
   let url = '/signings-all';
   if(!forceFullSync && hwm){
+    // 14-day lookback, not just a couple days — a signing can post to PuckPedia's
+    // feed later than its sign_date, and this app isn't synced every single day,
+    // so a narrow buffer silently drops contracts that fall in the gap (e.g. a
+    // signing from 5 days ago missed entirely because HWM had already advanced
+    // past a 2-day window). Cheap to over-fetch; expensive to silently miss data.
     const since = new Date(hwm);
-    since.setDate(since.getDate() - 2);
+    since.setDate(since.getDate() - 14);
     url = `/signings-all?since=${since.toISOString().slice(0,10)}`;
   }
   const isIncremental = url.includes('since');
