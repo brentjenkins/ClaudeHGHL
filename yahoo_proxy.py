@@ -2058,6 +2058,12 @@ def signings_all():
             exp = p.get("exp", "")
             if not exp:
                 continue
+            # Every cap-lookup window in the client starts at 2023-2024 (the
+            # earliest season this app tracks) — a contract that expired
+            # before that is never consulted, so drop it here rather than
+            # paying to fetch/store/transfer a decade of dead history.
+            if exp < "2023-2024":
+                continue
             try:
                 exp_year = int(exp.split("-")[0])
             except (ValueError, IndexError):
