@@ -294,8 +294,8 @@ tr:hover td{background:#fafaf8}
     <option value="G">Goalies</option>
   </select>
   <select id="filterTeam2425" onchange="render2425()"></select>
-  <select id="filterFT2425_v" onchange="render2425()"><option value="">All 23-24 teams</option></select>
-  <select id="filterSim2425" onchange="render2425()"><option value="">All 24-25 teams</option></select>
+  <select id="filterFT2425_v" onchange="render2425()"><option value="">All 23-24 Y! teams</option></select>
+  <select id="filterSim2425" onchange="render2425()"><option value="">All 24-25 Y! teams</option></select>
   <button class="btn" onclick="clearFilters2425()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
@@ -311,24 +311,24 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th onclick="setSortCol2425('name')">Player <span id="sort2425-name"></span></th>
   <th onclick="setSortCol2425('pos')">Pos <span id="sort2425-pos"></span></th>
-  <th onclick="setSortCol2425('age')">Age <span id="sort2425-age"></span></th>
+  <th onclick="setSortCol2425('age')" style="text-align:right">Age <span id="sort2425-age"></span></th>
   <th onclick="setSortCol2425('team')">NHL Team <span id="sort2425-team"></span></th>
-  <th onclick="setSortCol2425('end2324')" style="color:#bbb">23-24 Team <span id="sort2425-end2324"></span></th>
-  <th id="th-start2425" onclick="setSortCol2425('start2425')" style="color:#185FA5">24-25 Team <span id="sort2425-start2425"></span></th>
-  <th onclick="setSortCol2425('cap2425')">Cap hit <span id="sort2425-cap2425"></span></th>
-  <th>Term</th>
-  <th onclick="setSortCol2425('proj2425_athletic')" style="color:#185FA5;border-left:2px solid #e5e7eb" title="Athletic 2024-25 projection">ATH <span id="sort2425-proj2425_athletic"></span></th>
-  <th onclick="setSortCol2425('proj2425_dfo')" style="color:#185FA5" title="DFO 2024-25 projection">DFO <span id="sort2425-proj2425_dfo"></span></th>
-  <th onclick="setSortCol2425('proj2425_nhl')" style="color:#185FA5" title="NHL 2024-25 projection">NHL <span id="sort2425-proj2425_nhl"></span></th>
-  <th onclick="setSortCol2425('ppts2425blend')" style="color:#185FA5">PPTS <span id="sort2425-ppts2425blend"></span></th>
-  <th onclick="setSortCol2425('ptsperm2425')" style="color:#185FA5">PPTS/$M <span id="sort2425-ptsperm2425"></span></th>
-  <th onclick="setSortCol2425('curvedelta2425')" style="color:#185FA5" title="Projected pts above/below the curve">△ <span id="sort2425-curvedelta2425"></span></th>
-  <th onclick="setSortCol2425('rank2425')" style="color:#185FA5">Rank <span id="sort2425-rank2425"></span></th>
-  <th onclick="setSortCol2425('abp2425')" style="color:#185FA5;border-right:2px solid #e5e7eb" title="Available Better Players (24-25)">ABP <span id="sort2425-abp2425"></span></th>
-  <th onclick="setSortCol2425('gp2425')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort2425-gp2425"></span></th>
-  <th onclick="setSortCol2425('pts2425')" style="color:#bbb">Pts <span id="sort2425-pts2425"></span></th>
-  <th onclick="setSortCol2425('curvedelta2425actual')" style="color:#bbb;border-right:2px solid #e5e7eb" title="Actual 24-25 pts above/below the projection curve">△Act <span id="sort2425-curvedelta2425actual"></span></th>
-  <th id="th-score2425" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
+  <th onclick="setSortCol2425('end2324')" style="color:#bbb">23-24 Y! <span id="sort2425-end2324"></span></th>
+  <th id="th-start2425" onclick="setSortCol2425('start2425')" style="color:#185FA5">24-25 Y! <span id="sort2425-start2425"></span></th>
+  <th onclick="setSortCol2425('cap2425')" style="text-align:right">Cap $M <span id="sort2425-cap2425"></span></th>
+  <th style="text-align:right">Term</th>
+  <th onclick="setSortCol2425('proj2425_athletic')" style="color:#185FA5;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2024-25 projection">ATH <span id="sort2425-proj2425_athletic"></span></th>
+  <th onclick="setSortCol2425('proj2425_dfo')" style="color:#185FA5;text-align:right" title="DFO 2024-25 projection">DFO <span id="sort2425-proj2425_dfo"></span></th>
+  <th onclick="setSortCol2425('proj2425_nhl')" style="color:#185FA5;text-align:right" title="NHL 2024-25 projection">NHL <span id="sort2425-proj2425_nhl"></span></th>
+  <th onclick="setSortCol2425('ppts2425blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2425-ppts2425blend"></span></th>
+  <th onclick="setSortCol2425('ptsperm2425')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort2425-ptsperm2425"></span></th>
+  <th onclick="setSortCol2425('curvedelta2425')" style="color:#185FA5;text-align:right" title="Projected pts above/below the curve">△ <span id="sort2425-curvedelta2425"></span></th>
+  <th onclick="setSortCol2425('rank2425')" style="color:#185FA5;text-align:right">Rank <span id="sort2425-rank2425"></span></th>
+  <th onclick="setSortCol2425('abp2425')" style="color:#185FA5;text-align:right;border-right:2px solid #e5e7eb" title="Available Better Players (24-25)">ABP <span id="sort2425-abp2425"></span></th>
+  <th onclick="setSortCol2425('gp2425')" style="color:#bbb;text-align:right;border-left:2px solid #e5e7eb">GP <span id="sort2425-gp2425"></span></th>
+  <th onclick="setSortCol2425('pts2425')" style="color:#bbb;text-align:right">Pts <span id="sort2425-pts2425"></span></th>
+  <th onclick="setSortCol2425('curvedelta2425actual')" style="color:#bbb;text-align:right;border-right:2px solid #e5e7eb" title="Actual 24-25 pts above/below the projection curve">△Act <span id="sort2425-curvedelta2425actual"></span></th>
+  <th id="th-score2425" style="display:none;color:#6366f1;text-align:right;white-space:nowrap">Score</th>
   <th></th>
 </tr>
 </thead>
@@ -378,8 +378,8 @@ tr:hover td{background:#fafaf8}
     <option value="G">Goalies</option>
   </select>
   <select id="filterTeam2324" onchange="render2324()"></select>
-  <select id="filterFT2324_v" onchange="render2324()"><option value="">All 22-23 teams</option></select>
-  <select id="filterSim2324" onchange="render2324()"><option value="">All 23-24 teams</option></select>
+  <select id="filterFT2324_v" onchange="render2324()"><option value="">All 22-23 Y! teams</option></select>
+  <select id="filterSim2324" onchange="render2324()"><option value="">All 23-24 Y! teams</option></select>
   <button class="btn" onclick="clearFilters2324()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
@@ -395,24 +395,24 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th onclick="setSortCol2324('name')">Player <span id="sort2324-name"></span></th>
   <th onclick="setSortCol2324('pos')">Pos <span id="sort2324-pos"></span></th>
-  <th onclick="setSortCol2324('age')">Age <span id="sort2324-age"></span></th>
+  <th onclick="setSortCol2324('age')" style="text-align:right">Age <span id="sort2324-age"></span></th>
   <th onclick="setSortCol2324('team')">NHL Team <span id="sort2324-team"></span></th>
-  <th onclick="setSortCol2324('end2223')" style="color:#bbb">22-23 Team <span id="sort2324-end2223"></span></th>
-  <th id="th-start2324" onclick="setSortCol2324('start2324')" style="color:#185FA5">23-24 Team <span id="sort2324-start2324"></span></th>
-  <th onclick="setSortCol2324('cap2324')">Cap hit <span id="sort2324-cap2324"></span></th>
-  <th>Term</th>
-  <th onclick="setSortCol2324('proj2324_athletic')" style="color:#185FA5;border-left:2px solid #e5e7eb" title="Athletic 2023-24 projection">ATH <span id="sort2324-proj2324_athletic"></span></th>
-  <th onclick="setSortCol2324('proj2324_dtz')" style="color:#185FA5" title="DTZ 2023-24 projection">DTZ <span id="sort2324-proj2324_dtz"></span></th>
-  <th onclick="setSortCol2324('proj2324_nhl')" style="color:#185FA5" title="NHL 2023-24 projection">NHL <span id="sort2324-proj2324_nhl"></span></th>
-  <th onclick="setSortCol2324('ppts2324blend')" style="color:#185FA5">PPTS <span id="sort2324-ppts2324blend"></span></th>
-  <th onclick="setSortCol2324('ptsperm2324')" style="color:#185FA5">PPTS/$M <span id="sort2324-ptsperm2324"></span></th>
-  <th onclick="setSortCol2324('curvedelta2324')" style="color:#185FA5" title="Projected pts above/below the curve">△ <span id="sort2324-curvedelta2324"></span></th>
-  <th onclick="setSortCol2324('rank2324')" style="color:#185FA5">Rank <span id="sort2324-rank2324"></span></th>
-  <th onclick="setSortCol2324('abp2324')" style="color:#185FA5;border-right:2px solid #e5e7eb" title="Available Better Players (23-24)">ABP <span id="sort2324-abp2324"></span></th>
-  <th onclick="setSortCol2324('gp2324')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort2324-gp2324"></span></th>
-  <th onclick="setSortCol2324('pts2324')" style="color:#bbb">Pts <span id="sort2324-pts2324"></span></th>
-  <th onclick="setSortCol2324('curvedelta2324actual')" style="color:#bbb;border-right:2px solid #e5e7eb" title="Actual 23-24 pts above/below the projection curve">△Act <span id="sort2324-curvedelta2324actual"></span></th>
-  <th id="th-score2324" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
+  <th onclick="setSortCol2324('end2223')" style="color:#bbb">22-23 Y! <span id="sort2324-end2223"></span></th>
+  <th id="th-start2324" onclick="setSortCol2324('start2324')" style="color:#185FA5">23-24 Y! <span id="sort2324-start2324"></span></th>
+  <th onclick="setSortCol2324('cap2324')" style="text-align:right">Cap $M <span id="sort2324-cap2324"></span></th>
+  <th style="text-align:right">Term</th>
+  <th onclick="setSortCol2324('proj2324_athletic')" style="color:#185FA5;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2023-24 projection">ATH <span id="sort2324-proj2324_athletic"></span></th>
+  <th onclick="setSortCol2324('proj2324_dtz')" style="color:#185FA5;text-align:right" title="DTZ 2023-24 projection">DTZ <span id="sort2324-proj2324_dtz"></span></th>
+  <th onclick="setSortCol2324('proj2324_nhl')" style="color:#185FA5;text-align:right" title="NHL 2023-24 projection">NHL <span id="sort2324-proj2324_nhl"></span></th>
+  <th onclick="setSortCol2324('ppts2324blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2324-ppts2324blend"></span></th>
+  <th onclick="setSortCol2324('ptsperm2324')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort2324-ptsperm2324"></span></th>
+  <th onclick="setSortCol2324('curvedelta2324')" style="color:#185FA5;text-align:right" title="Projected pts above/below the curve">△ <span id="sort2324-curvedelta2324"></span></th>
+  <th onclick="setSortCol2324('rank2324')" style="color:#185FA5;text-align:right">Rank <span id="sort2324-rank2324"></span></th>
+  <th onclick="setSortCol2324('abp2324')" style="color:#185FA5;text-align:right;border-right:2px solid #e5e7eb" title="Available Better Players (23-24)">ABP <span id="sort2324-abp2324"></span></th>
+  <th onclick="setSortCol2324('gp2324')" style="color:#bbb;text-align:right;border-left:2px solid #e5e7eb">GP <span id="sort2324-gp2324"></span></th>
+  <th onclick="setSortCol2324('pts2324')" style="color:#bbb;text-align:right">Pts <span id="sort2324-pts2324"></span></th>
+  <th onclick="setSortCol2324('curvedelta2324actual')" style="color:#bbb;text-align:right;border-right:2px solid #e5e7eb" title="Actual 23-24 pts above/below the projection curve">△Act <span id="sort2324-curvedelta2324actual"></span></th>
+  <th id="th-score2324" style="display:none;color:#6366f1;text-align:right;white-space:nowrap">Score</th>
   <th></th>
 </tr>
 </thead>
@@ -473,8 +473,8 @@ tr:hover td{background:#fafaf8}
     <option value="G">Goalies</option>
   </select>
   <select id="filterTeam2526" onchange="render2526()"></select>
-  <select id="filterFT2425" onchange="render2526()"><option value="">All 24-25 teams</option></select>
-  <select id="filterFT2526" onchange="render2526()"><option value="">All 25-26 teams</option></select>
+  <select id="filterFT2425" onchange="render2526()"><option value="">All 24-25 Y! teams</option></select>
+  <select id="filterFT2526" onchange="render2526()"><option value="">All 25-26 Y! teams</option></select>
   <button class="btn" onclick="clearFilters2526()" style="flex-shrink:0;font-size:12px;padding:0 10px;height:32px;margin-left:auto;color:#9ca3af;border-color:#e5e7eb">✕ Clear filters</button>
 </div>
 
@@ -490,26 +490,26 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th onclick="setSortCol2526('name')">Player <span id="sort2526-name"></span></th>
   <th onclick="setSortCol2526('pos')">Pos <span id="sort2526-pos"></span></th>
-  <th onclick="setSortCol2526('age')">Age <span id="sort2526-age"></span></th>
+  <th onclick="setSortCol2526('age')" style="text-align:right">Age <span id="sort2526-age"></span></th>
   <th onclick="setSortCol2526('team')">NHL Team <span id="sort2526-team"></span></th>
-  <th onclick="setSortCol2526('end2425')" style="color:#bbb">24-25 Team <span id="sort2526-end2425"></span></th>
-  <th id="th-end2526" onclick="setSortCol2526('end2526')" style="color:#185FA5">25-26 Team <span id="sort2526-end2526"></span></th>
-  <th onclick="setSortCol2526('cap')">Cap hit <span id="sort2526-cap"></span></th>
-  <th>Term</th>
-  <th onclick="setSortCol2526('proj2526_athletic')" style="color:#bbb;border-left:2px solid #e5e7eb" title="Athletic 2025-26 projection">ATH <span id="sort2526-proj2526_athletic"></span></th>
-  <th onclick="setSortCol2526('proj2526_dfo')" style="color:#bbb" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort2526-proj2526_dfo"></span></th>
-  <th onclick="setSortCol2526('proj2526_espn')" style="color:#bbb" title="ESPN 2025-26 projection">ESPN <span id="sort2526-proj2526_espn"></span></th>
-  <th onclick="setSortCol2526('proj2526_cbs')" style="color:#bbb" title="CBS Sports 2025-26 preseason projection (baked snapshot, captured 2026-06)">CBS <span id="sort2526-proj2526_cbs"></span></th>
-  <th onclick="setSortCol2526('proj2526_nhl')" style="color:#bbb" title="NHL.com 2025-26 forward/defenseman point projection">NHL <span id="sort2526-proj2526_nhl"></span></th>
-  <th onclick="setSortCol2526('ppts2526blend')" style="color:#185FA5">PPTS <span id="sort2526-ppts2526blend"></span></th>
-  <th onclick="setSortCol2526('ptsperm2526')" style="color:#185FA5">PPTS/$M <span id="sort2526-ptsperm2526"></span></th>
-  <th onclick="setSortCol2526('curvedelta2526')" style="color:#185FA5" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort2526-curvedelta2526"></span></th>
-  <th onclick="setSortCol2526('rank2526')" style="color:#185FA5">Rank <span id="sort2526-rank2526"></span></th>
-  <th onclick="setSortCol2526('abp2526')" title="Available Better Players (25-26)" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort2526-abp2526"></span></th>
-  <th onclick="setSortCol2526('gp2526')" style="color:#bbb;border-left:2px solid #e5e7eb">GP <span id="sort2526-gp2526"></span></th>
-  <th onclick="setSortCol2526('pts2526')" style="color:#bbb">Pts <span id="sort2526-pts2526"></span></th>
-  <th onclick="setSortCol2526('curvedelta2526actual')" style="color:#bbb;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the projection curve for their position at this cap hit">△Act <span id="sort2526-curvedelta2526actual"></span></th>
-  <th id="th-score2526" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
+  <th onclick="setSortCol2526('end2425')" style="color:#bbb">24-25 Y! <span id="sort2526-end2425"></span></th>
+  <th id="th-end2526" onclick="setSortCol2526('end2526')" style="color:#185FA5">25-26 Y! <span id="sort2526-end2526"></span></th>
+  <th onclick="setSortCol2526('cap')" style="text-align:right">Cap $M <span id="sort2526-cap"></span></th>
+  <th style="text-align:right">Term</th>
+  <th onclick="setSortCol2526('proj2526_athletic')" style="color:#bbb;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2025-26 projection">ATH <span id="sort2526-proj2526_athletic"></span></th>
+  <th onclick="setSortCol2526('proj2526_dfo')" style="color:#bbb;text-align:right" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort2526-proj2526_dfo"></span></th>
+  <th onclick="setSortCol2526('proj2526_espn')" style="color:#bbb;text-align:right" title="ESPN 2025-26 projection">ESPN <span id="sort2526-proj2526_espn"></span></th>
+  <th onclick="setSortCol2526('proj2526_cbs')" style="color:#bbb;text-align:right" title="CBS Sports 2025-26 preseason projection (baked snapshot, captured 2026-06)">CBS <span id="sort2526-proj2526_cbs"></span></th>
+  <th onclick="setSortCol2526('proj2526_nhl')" style="color:#bbb;text-align:right" title="NHL.com 2025-26 forward/defenseman point projection">NHL <span id="sort2526-proj2526_nhl"></span></th>
+  <th onclick="setSortCol2526('ppts2526blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2526-ppts2526blend"></span></th>
+  <th onclick="setSortCol2526('ptsperm2526')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort2526-ptsperm2526"></span></th>
+  <th onclick="setSortCol2526('curvedelta2526')" style="color:#185FA5;text-align:right" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort2526-curvedelta2526"></span></th>
+  <th onclick="setSortCol2526('rank2526')" style="color:#185FA5;text-align:right">Rank <span id="sort2526-rank2526"></span></th>
+  <th onclick="setSortCol2526('abp2526')" title="Available Better Players (25-26)" style="color:#185FA5;text-align:right;border-right:2px solid #e5e7eb">ABP <span id="sort2526-abp2526"></span></th>
+  <th onclick="setSortCol2526('gp2526')" style="color:#bbb;text-align:right;border-left:2px solid #e5e7eb">GP <span id="sort2526-gp2526"></span></th>
+  <th onclick="setSortCol2526('pts2526')" style="color:#bbb;text-align:right">Pts <span id="sort2526-pts2526"></span></th>
+  <th onclick="setSortCol2526('curvedelta2526actual')" style="color:#bbb;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the projection curve for their position at this cap hit">△Act <span id="sort2526-curvedelta2526actual"></span></th>
+  <th id="th-score2526" style="display:none;color:#6366f1;text-align:right;white-space:nowrap">Score</th>
   <th></th>
 </tr>
 </thead>
@@ -642,10 +642,10 @@ tr:hover td{background:#fafaf8}
   </select>
   <select id="filterTeam" onchange="render()"></select>
   <select id="filterFantasy2526" onchange="render()">
-    <option value="">All 25-26 teams</option>
+    <option value="">All 25-26 Y! teams</option>
   </select>
   <select id="filterFantasy" onchange="render()">
-    <option value="">All 26-27 teams</option>
+    <option value="">All 26-27 Y! teams</option>
   </select>
   <select id="filterSource" onchange="render()">
     <option value="">All sources</option>
@@ -668,26 +668,26 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th onclick="setSortCol('name')">Player <span id="sort-name"></span></th>
   <th onclick="setSortCol('pos')">Pos <span id="sort-pos"></span></th>
-  <th onclick="setSortCol('age')">Age <span id="sort-age"></span></th>
+  <th onclick="setSortCol('age')" style="text-align:right">Age <span id="sort-age"></span></th>
   <th onclick="setSortCol('team')">NHL team <span id="sort-team"></span></th>
-  <th onclick="setSortCol('end2526')" style="color:#bbb">25-26 Team <span id="sort-end2526"></span></th>
-  <th id="th-start2627" onclick="setSortCol('start2627')" style="color:#185FA5">26-27 Team <span id="sort-start2627"></span></th>
-  <th onclick="setSortCol('cap')">Cap hit <span id="sort-cap"></span></th>
-  <th>Term</th>
-  <th onclick="setSortCol('gp2526')" style="color:#9ca3af" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
-  <th onclick="setSortCol('pts2526')" style="color:#9ca3af" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
-  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 26-27 projection curve">△Act <span id="sort-curvedelta_actual"></span></th>
-  <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
-  <th onclick="setSortCol('ptsDFO')" style="color:#185FA5" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
-  <th onclick="setSortCol('ptsESPN')" style="color:#185FA5" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
-  <th onclick="setSortCol('ptsCBS')" style="color:#185FA5" title="CBS Sports 2026-27 projection">CBS <span id="sort-ptsCBS"></span></th>
-  <th onclick="setSortCol('ptsNHL')" style="color:#185FA5" title="NHL.com 2026-27 forward/defenseman point projection">NHL <span id="sort-ptsNHL"></span></th>
-  <th onclick="setSortCol('pts')" style="color:#185FA5">PPTS <span id="sort-pts"></span></th>
-  <th onclick="setSortCol('ptsperm')" style="color:#185FA5">PPTS/$M <span id="sort-ptsperm"></span></th>
-  <th onclick="setSortCol('curvedelta')" style="color:#185FA5" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort-curvedelta"></span></th>
-  <th onclick="setSortCol('rank')" style="color:#185FA5">Rank <span id="sort-rank"></span></th>
-  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
-  <th id="th-score" style="display:none;color:#6366f1;white-space:nowrap">Score</th>
+  <th onclick="setSortCol('end2526')" style="color:#bbb">25-26 Y! <span id="sort-end2526"></span></th>
+  <th id="th-start2627" onclick="setSortCol('start2627')" style="color:#185FA5">26-27 Y! <span id="sort-start2627"></span></th>
+  <th onclick="setSortCol('cap')" style="text-align:right">Cap $M <span id="sort-cap"></span></th>
+  <th style="text-align:right">Term</th>
+  <th onclick="setSortCol('gp2526')" style="color:#9ca3af;text-align:right" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
+  <th onclick="setSortCol('pts2526')" style="color:#9ca3af;text-align:right" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
+  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 26-27 projection curve">△Act <span id="sort-curvedelta_actual"></span></th>
+  <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5;text-align:right" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
+  <th onclick="setSortCol('ptsDFO')" style="color:#185FA5;text-align:right" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
+  <th onclick="setSortCol('ptsESPN')" style="color:#185FA5;text-align:right" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
+  <th onclick="setSortCol('ptsCBS')" style="color:#185FA5;text-align:right" title="CBS Sports 2026-27 projection">CBS <span id="sort-ptsCBS"></span></th>
+  <th onclick="setSortCol('ptsNHL')" style="color:#185FA5;text-align:right" title="NHL.com 2026-27 forward/defenseman point projection">NHL <span id="sort-ptsNHL"></span></th>
+  <th onclick="setSortCol('pts')" style="color:#185FA5;text-align:right">PPTS <span id="sort-pts"></span></th>
+  <th onclick="setSortCol('ptsperm')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort-ptsperm"></span></th>
+  <th onclick="setSortCol('curvedelta')" style="color:#185FA5;text-align:right" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort-curvedelta"></span></th>
+  <th onclick="setSortCol('rank')" style="color:#185FA5;text-align:right">Rank <span id="sort-rank"></span></th>
+  <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;text-align:right;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
+  <th id="th-score" style="display:none;color:#6366f1;text-align:right;white-space:nowrap">Score</th>
   <th></th>
 </tr>
 </thead>
@@ -2593,7 +2593,7 @@ function populateFantasyFilter() {
   const el2526 = document.getElementById('filterFantasy2526');
   const prev2526 = el2526.value;
   const teams2526 = [...new Set(players.map(p => p.end2526).filter(Boolean))].sort();
-  el2526.innerHTML = '<option value="">All 25-26 teams</option>' +
+  el2526.innerHTML = '<option value="">All 25-26 Y! teams</option>' +
     '<option value="__any__">Any team</option>' +
     '<option value="__none__">None (Free Agents)</option>' +
     teams2526.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
@@ -2602,7 +2602,8 @@ function populateFantasyFilter() {
   const el2627 = document.getElementById('filterFantasy');
   const prev2627 = el2627.value;
   const teams2627 = [...new Set(players.map(p => p.start2627).filter(Boolean))].sort();
-  el2627.innerHTML = '<option value="">All 26-27 teams</option>' +
+  el2627.innerHTML = '<option value="">All 26-27 Y! teams</option>' +
+    '<option value="__any__">Any team</option>' +
     '<option value="__none__">None (Free Agents)</option>' +
     teams2627.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
   if(prev2627) el2627.value = prev2627;
@@ -2685,8 +2686,9 @@ function render(){
     if(fp&&posGroup(p.pos)!==fp) return false;
     if(ft&&p.team!==ft) return false;
     if(fs&&(p.source||'manual')!==fs) return false;
-    if(ff === '__none__' && p.start2627) return false;
-    else if(ff && ff !== '__none__' && (p.start2627||'')!==ff) return false;
+    if(ff === '__any__' && !p.start2627) return false;
+    else if(ff === '__none__' && p.start2627) return false;
+    else if(ff && ff !== '__none__' && ff !== '__any__' && (p.start2627||'')!==ff) return false;
     if(ff2526 === '__any__' && !p.end2526) return false;
     else if(ff2526 === '__none__' && p.end2526) return false;
     else if(ff2526 && ff2526 !== '__none__' && ff2526 !== '__any__' && (p.end2526||'')!==ff2526) return false;
@@ -2825,7 +2827,7 @@ function render(){
         </div>
       </td>
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
-      <td>${calcAge(p)??'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge(p)??'—'}</td>
       <td><div style="display:flex;align-items:center;gap:5px">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy">`:''}${esc(p.team||'—')}</div></td>
       <td style="color:#9ca3af">
         <div style="display:flex;align-items:center;gap:5px">
@@ -2839,22 +2841,22 @@ function render(){
           <span style="overflow:hidden;text-overflow:ellipsis">${teamAbbr(p.start2627)||'—'}</span>
         </div>
       </td>`}
-      <td>${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${p.cap.toFixed(2)}M</a>${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
-      <td style="color:#9ca3af">${p.cap>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}</td>
-      <td style="color:#9ca3af">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
-      ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td style="color:#9ca3af">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
-      <td style="color:#9ca3af">${p.ptsDFO>0?p.ptsDFO:'—'}</td>
-      <td style="color:#9ca3af">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
-      <td style="color:#9ca3af">${p.ptsCBS>0?p.ptsCBS:'—'}</td>
-      <td style="color:#9ca3af">${p.ptsNHL>0?p.ptsNHL:'—'}</td>
-      <td>${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
-      <td>${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
-      ${(()=>{const s=curveDelta(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td>${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
-      <td style="border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px">—</td>`:'')}
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap.toFixed(2)}</a>${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
+      <td style="color:#9ca3af;text-align:right">${p.cap>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.gp2526>0?p.gp2526:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
+      ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsDFO>0?p.ptsDFO:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsCBS>0?p.ptsCBS:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsNHL>0?p.ptsNHL:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
+      ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      <td style="text-align:right">${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
+      <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2627
@@ -5632,8 +5634,9 @@ function render2425(){
     if(ft && p.team!==ft) return false;
     if(ft2425v==='__any__' && !(p.end2324||'')) return false;
     else if(ft2425v && ft2425v!=='__any__' && (p.end2324||'')!==ft2425v) return false;
-    if(fsim==='__none__' && p.start2425) return false;
-    else if(fsim && fsim!=='__none__' && (p.start2425||'')!==fsim) return false;
+    if(fsim==='__any__' && !p.start2425) return false;
+    else if(fsim==='__none__' && p.start2425) return false;
+    else if(fsim && fsim!=='__none__' && fsim!=='__any__' && (p.start2425||'')!==fsim) return false;
     return true;
   });
 
@@ -5733,14 +5736,14 @@ function render2425(){
   const ft2425vEl=document.getElementById('filterFT2425_v');
   if(ft2425vEl){
     const prev=ft2425vEl.value;
-    ft2425vEl.innerHTML='<option value="">All 23-24 teams</option><option value="__any__">Any team</option>'+allFT.map(t=>`<option>${esc(t)}</option>`).join('');
+    ft2425vEl.innerHTML='<option value="">All 23-24 Y! teams</option><option value="__any__">Any team</option>'+allFT.map(t=>`<option>${esc(t)}</option>`).join('');
     ft2425vEl.value=prev;
   }
   const allSim=[...new Set(players.map(p=>p.start2425).filter(Boolean))].sort();
   const simEl=document.getElementById('filterSim2425');
   if(simEl){
     const prev=simEl.value;
-    simEl.innerHTML='<option value="">All 24-25 teams</option><option value="__none__">Unrostered</option>'+allSim.map(t=>`<option>${esc(t)}</option>`).join('');
+    simEl.innerHTML='<option value="">All 24-25 Y! teams</option><option value="__any__">Any team</option><option value="__none__">Unrostered</option>'+allSim.map(t=>`<option>${esc(t)}</option>`).join('');
     simEl.value=prev;
   }
   const allT=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
@@ -5759,29 +5762,29 @@ function render2425(){
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const pp=ppts2425blend(p);
     const cap=getCap2425(p);
-    const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
+    const capStr=cap>0?`${cap.toFixed(2)}`:'—';
     const abpStr=(()=>{const n=abpMap2425.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2425')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
-      <td>${calcAge2425(p)??'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2425(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2324&&teamLogos[p.end2324]?`<img src="${teamLogos[p.end2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2324)||'—'}</span></div></td>
       ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
-      <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
-      <td style="color:#9ca3af">${cap>0?(p.yrStr2425||'—'):'—'}</td>
-      <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2425_nhl>0?p.proj2425_nhl:'—'}</td>
-      <td>${pp>0?pp:'—'}</td>
-      <td>${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
-      ${(()=>{const s=curveDelta2425(p);if(s===null)return'<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td>${p.rank2425!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2425<=10?'#b45309':p.rank2425<=25?'#185FA5':'#555'}">${p.rank2425}</span>`:'—'}</td>
-      <td style="border-right:2px solid #e5e7eb">${abpStr}</td>
-      <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.gp2425>0?p.gp2425:'—'}</td>
-      <td style="color:#9ca3af">${p.pts2425>0?p.pts2425:'—'}</td>
-      ${(()=>{const s=curveDeltaActual2425(p);if(s===null)return'<td style="border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="24-25 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}${draftSubMode2425==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1">—</td>':'')}
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
+      <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2425||'—'):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_nhl>0?p.proj2425_nhl:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
+      ${(()=>{const s=curveDelta2425(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      <td style="text-align:right">${p.rank2425!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2425<=10?'#b45309':p.rank2425<=25?'#185FA5':'#555'}">${p.rank2425}</span>`:'—'}</td>
+      <td style="text-align:right;border-right:2px solid #e5e7eb">${abpStr}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2425>0?p.gp2425:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2425>0?p.pts2425:'—'}</td>
+      ${(()=>{const s=curveDeltaActual2425(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="24-25 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}${draftSubMode2425==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2425
@@ -5972,8 +5975,9 @@ function render2324(){
     if(ft && p.team!==ft) return false;
     if(ft2324v==='__any__' && !(p.end2223||'')) return false;
     else if(ft2324v && ft2324v!=='__any__' && (p.end2223||'')!==ft2324v) return false;
-    if(fsim==='__none__' && p.start2324) return false;
-    else if(fsim && fsim!=='__none__' && (p.start2324||'')!==fsim) return false;
+    if(fsim==='__any__' && !p.start2324) return false;
+    else if(fsim==='__none__' && p.start2324) return false;
+    else if(fsim && fsim!=='__none__' && fsim!=='__any__' && (p.start2324||'')!==fsim) return false;
     return true;
   });
 
@@ -6073,14 +6077,14 @@ function render2324(){
   const ft2324vEl=document.getElementById('filterFT2324_v');
   if(ft2324vEl){
     const prev=ft2324vEl.value;
-    ft2324vEl.innerHTML='<option value="">All 22-23 teams</option><option value="__any__">Any team</option>'+allFT.map(t=>`<option>${esc(t)}</option>`).join('');
+    ft2324vEl.innerHTML='<option value="">All 22-23 Y! teams</option><option value="__any__">Any team</option>'+allFT.map(t=>`<option>${esc(t)}</option>`).join('');
     ft2324vEl.value=prev;
   }
   const allSim=[...new Set(players.map(p=>p.start2324).filter(Boolean))].sort();
   const simEl=document.getElementById('filterSim2324');
   if(simEl){
     const prev=simEl.value;
-    simEl.innerHTML='<option value="">All 23-24 teams</option><option value="__none__">Unrostered</option>'+allSim.map(t=>`<option>${esc(t)}</option>`).join('');
+    simEl.innerHTML='<option value="">All 23-24 Y! teams</option><option value="__any__">Any team</option><option value="__none__">Unrostered</option>'+allSim.map(t=>`<option>${esc(t)}</option>`).join('');
     simEl.value=prev;
   }
   const allT=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
@@ -6099,29 +6103,29 @@ function render2324(){
     const bc=pg==='F'?'badge-f':pg==='D'?'badge-d':'badge-g';
     const pp=ppts2324blend(p);
     const cap=getCap2324(p);
-    const capStr=cap>0?`$${cap.toFixed(2)}M`:'—';
+    const capStr=cap>0?`${cap.toFixed(2)}`:'—';
     const abpStr=(()=>{const n=abpMap2324.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2324')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})();
     return `<tr>
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
-      <td>${calcAge2324(p)??'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2324(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2223&&teamLogos[p.end2223]?`<img src="${teamLogos[p.end2223]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2223)||'—'}</span></div></td>
       ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
-      <td>${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
-      <td style="color:#9ca3af">${cap>0?(p.yrStr2324||'—'):'—'}</td>
-      <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?p.proj2324_athletic:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2324_dtz>0?p.proj2324_dtz:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2324_nhl>0?p.proj2324_nhl:'—'}</td>
-      <td>${pp>0?pp:'—'}</td>
-      <td>${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
-      ${(()=>{const s=curveDelta2324(p);if(s===null)return'<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td>${p.rank2324!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2324<=10?'#b45309':p.rank2324<=25?'#185FA5':'#555'}">${p.rank2324}</span>`:'—'}</td>
-      <td style="border-right:2px solid #e5e7eb">${abpStr}</td>
-      <td style="color:#9ca3af;border-left:2px solid #e5e7eb">${p.gp2324>0?p.gp2324:'—'}</td>
-      <td style="color:#9ca3af">${p.pts2324>0?p.pts2324:'—'}</td>
-      ${(()=>{const s=curveDeltaActual2324(p);if(s===null)return'<td style="border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #e5e7eb" title="23-24 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${b.tProspect2324.toFixed(1)}${draftSubMode2324==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1">—</td>':'')}
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
+      <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2324||'—'):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?p.proj2324_athletic:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_dtz>0?p.proj2324_dtz:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_nhl>0?p.proj2324_nhl:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
+      ${(()=>{const s=curveDelta2324(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      <td style="text-align:right">${p.rank2324!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2324<=10?'#b45309':p.rank2324<=25?'#185FA5':'#555'}">${p.rank2324}</span>`:'—'}</td>
+      <td style="text-align:right;border-right:2px solid #e5e7eb">${abpStr}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2324>0?p.gp2324:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2324>0?p.pts2324:'—'}</td>
+      ${(()=>{const s=curveDeltaActual2324(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="23-24 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)})\n+ Sources(${b.srcN})×${draftWeights.wtSourceConf}: ${b.tConf.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${b.tProspect2324.toFixed(1)}${draftSubMode2324==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2324
@@ -7157,8 +7161,9 @@ function render2526(){
     if(ft && p.team!==ft) return false;
     if(ft2425 === '__any__' && !(p.end2425||'')) return false;
     else if(ft2425 && ft2425 !== '__any__' && (p.end2425||'')!==ft2425) return false;
-    if(ft2526==='__none__' && p.start2526) return false;
-    else if(ft2526 && ft2526!=='__none__' && (p.start2526||'')!==ft2526) return false;
+    if(ft2526==='__any__' && !p.start2526) return false;
+    else if(ft2526==='__none__' && p.start2526) return false;
+    else if(ft2526 && ft2526!=='__none__' && ft2526!=='__any__' && (p.start2526||'')!==ft2526) return false;
     return true;
   });
 
@@ -7277,7 +7282,7 @@ function render2526(){
   });
   const ft2425El=document.getElementById('filterFT2425');
   const prev2425=ft2425El.value;
-  ft2425El.innerHTML='<option value="">All 24-25 teams</option><option value="__any__">Any team</option>'+all2425.map(t=>`<option>${esc(t)}</option>`).join('');
+  ft2425El.innerHTML='<option value="">All 24-25 Y! teams</option><option value="__any__">Any team</option>'+all2425.map(t=>`<option>${esc(t)}</option>`).join('');
   ft2425El.value=prev2425;
 
   const all2526=[...new Set(players.map(p=>p.start2526).filter(Boolean))].sort((a,b)=>{
@@ -7286,7 +7291,7 @@ function render2526(){
   });
   const ft2526El=document.getElementById('filterFT2526');
   const prev2526=ft2526El.value;
-  ft2526El.innerHTML='<option value="">All 25-26 teams</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option>${esc(t)}</option>`).join('');
+  ft2526El.innerHTML='<option value="">All 25-26 Y! teams</option><option value="__any__">Any team</option><option value="__none__">None (Free Agents)</option>'+all2526.map(t=>`<option>${esc(t)}</option>`).join('');
   ft2526El.value=prev2526;
 
   const draftModeLabel2526 = draftFocusTeam2526 ? `Viewing: ${draftFocusTeam2526}` : draftSubMode2526==='prospect' ? 'Prospect mode' : 'Best Available';
@@ -7308,26 +7313,26 @@ function render2526(){
         ${p.injuryStatus?`<span class="badge badge-inj" title="${esc(p.injuryDetail||p.injuryStatus)}">INJ</span>`:''}
       </div></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
-      <td>${calcAge2526(p)??'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2526(p)??'—'}</td>
       <td>${esc(p.team||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2425&&teamLogos[p.end2425]?`<img src="${teamLogos[p.end2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2425)||'—'}</span></div></td>
       ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
-      <td>${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">$${c.toFixed(2)}M</a>`:'—';})()}</td>
-      <td style="color:#9ca3af">${getCap2526(p)>0?(p.yrStr2526||'—'):'—'}</td>
-      <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2526_cbs>0?p.proj2526_cbs:'—'}</td>
-      <td style="color:#9ca3af">${p.proj2526_nhl>0?p.proj2526_nhl:'—'}</td>
-      <td>${pp>0?pp:'—'}</td>
-      <td>${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
-      ${(()=>{const s=curveDelta2526(p);if(s===null)return '<td>—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td>${rankStr}</td>
-      <td style="border-right:2px solid #f0f0ee">${abpStr}</td>
-      <td style="color:#9ca3af;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af">${p.pts2526>0?p.pts2526:'—'}</td>
-      ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\n+ Sources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}${draftSubMode2526==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1">—</td>':'')}
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${c.toFixed(2)}</a>`:'—';})()}</td>
+      <td style="color:#9ca3af;text-align:right">${getCap2526(p)>0?(p.yrStr2526||'—'):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_cbs>0?p.proj2526_cbs:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_nhl>0?p.proj2526_nhl:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
+      ${(()=>{const s=curveDelta2526(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      <td style="text-align:right">${rankStr}</td>
+      <td style="text-align:right;border-right:2px solid #f0f0ee">${abpStr}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
+      ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`── Production ──\nPPTS×pos×press: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)})\n+ Sources(${b.srcN2526d})×${draftWeights.wtSourceConf}: ${b.tConf2526.toFixed(1)}\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}${draftSubMode2526==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
