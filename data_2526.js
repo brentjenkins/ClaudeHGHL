@@ -275,11 +275,11 @@ const PREDROP_STUBS_2526 = [
   {name:'Logan Thompson', pos:'G'},
 ];
 
-// ESPN 2025-26 HGHL fantasy-point projections — captured 2026-07 as a fallback for when
-// the live ESPN API for the 25-26 season is no longer reachable (post-season/season rollover).
+// ESPN 2025-26 HGHL fantasy-point projections — the 25-26 season is over, so these are frozen
+// for good. Captured 2026-07 from the live ESPN API before it stops serving 25-26 data.
 // Same shape as /espn-projections-2526's { players: {...} } response. Keys = normName.toLowerCase()_posGroup
 // (includes nickname/alias duplicate keys, matching the live endpoint).
-const ESPN_PROJ_2526_FALLBACK = {
+const ESPN_PROJ_2526 = {
   'aaron ekblad_D': {name:'Aaron Ekblad', pg:'D', hghl_pts:35, ppp:4, gp:72},
   'adam boqvist_D': {name:'Adam Boqvist', pg:'D', hghl_pts:16, ppp:5, gp:62},
   'adam fantilli_F': {name:'Adam Fantilli', pg:'F', hghl_pts:54, ppp:9, gp:68},
@@ -841,6 +841,92 @@ const ESPN_PROJ_2526_FALLBACK = {
   'zachary benson_F': {name:'Zach Benson', pg:'F', hghl_pts:51, ppp:9, gp:75},
   'zachary hyman_F': {name:'Zach Hyman', pg:'F', hghl_pts:74, ppp:7, gp:80},
   'zachary werenski_D': {name:'Zach Werenski', pg:'D', hghl_pts:51, ppp:9, gp:72},
+};
+
+// NHL.com 2025-26 forward/defenseman point projections — the 25-26 season is over, so
+// these are frozen for good. Captured 2026-07 from the live NHL.com projections article
+// before it stops being reachable/relevant. Keys = normName.toLowerCase()_posGroup -> pts.
+const NHL_PROJ_2526 = {
+  'aaron ekblad_D':41, 'adam fantilli_F':73, 'adam fox_D':70, 'adrian kempe_F':74,
+  'alex debrincat_F':69, 'alex laferriere_F':41, 'alex ovechkin_F':64, 'alex tuch_F':63,
+  'alex vlasic_D':30, 'alexander nikishin_D':30, 'alexander romanov_D':30, 'alexis lafreniere_F':58,
+  'aliaksei protas_F':61, 'anders lee_F':52, 'andre burakovsky_F':40, 'andrei kuzmenko_F':59,
+  'andrei svechnikov_F':59, 'andrew mangiapane_F':50, 'anthony beauvillier_F':40, 'anthony cirelli_F':52,
+  'anthony mantha_F':40, 'anton lundell_F':60, 'anze kopitar_F':70, 'artemi panarin_F':95,
+  'artturi lehkonen_F':59, 'artyom levshunov_D':32, 'auston matthews_F':91, 'barrett hayton_F':49,
+  'blake coleman_F':40, 'bo horvat_F':65, 'bobby brink_F':45, 'bobby mcmann_F':44,
+  'boone jenner_F':56, 'bowen byram_D':40, 'brad marchand_F':61, 'brady skjei_D':37,
+  'brady tkachuk_F':82, 'brandon hagel_F':80, 'brandon montour_D':42, 'brandt clarke_D':43,
+  'brayden point_F':86, 'brayden schenn_F':48, 'brent burns_D':35, 'brock boeser_F':57,
+  'brock faber_D':52, 'brock nelson_F':65, 'bryan rust_F':67, 'cale makar_D':95,
+  'cam fowler_D':52, 'carter verhaeghe_F':69, 'casey mittelstadt_F':45, 'chandler stephenson_F':52,
+  'charlie coyle_F':42, 'charlie mcavoy_D':45, 'chris kreider_F':52, 'christian dvorak_F':40,
+  'claude giroux_F':44, 'clayton keller_F':92, 'cole caufield_F':72, 'cole perfetti_F':60,
+  'colton parayko_D':38, 'connor bedard_F':75, 'connor mcdavid_F':135, 'connor mcmichael_F':60,
+  'connor zary_F':42, 'conor garland_F':52, 'cutter gauthier_F':55, 'darnell nurse_D':32,
+  'darren raddysh_D':34, 'david pastrnak_F':94, 'dawson mercer_F':46, 'devon toews_D':45,
+  'dmitri voronkov_F':55, 'dmitry orlov_D':40, 'dougie hamilton_D':56, 'drake batherson_F':67,
+  'drew doughty_D':45, 'dylan cozens_F':56, 'dylan guenther_F':75, 'dylan holloway_F':72,
+  'dylan larkin_F':75, 'dylan strome_F':79, 'eeli tolvanen_F':40, 'eetu luostarinen_F':47,
+  'elias lindholm_F':54, 'elias pettersson_F':75, 'erik karlsson_D':61, 'evan bouchard_D':86,
+  'evander kane_F':45, 'evgeni malkin_F':60, 'fabian zetterlund_F':47, 'filip chytil_F':47,
+  'filip forsberg_F':82, 'filip hronek_D':39, 'frank nazar_F':45, 'frank vatrano_F':48,
+  'gabe perreault_F':40, 'gabriel landeskog_F':64, 'gabriel vilardi_F':67, 'gage goncalves_F':40,
+  'gustav forsling_D':36, 'gustav nyquist_F':40, 'hampus lindholm_D':30, 'isaac howard_F':41,
+  'ivan barbashev_F':50, 'ivan demidov_F':61, 'ivan provorov_D':35, 'jaccob slavin_D':35,
+  'jack drury_F':40, 'jack eichel_F':101, 'jack hughes_F':97, 'jack quinn_F':48,
+  'jackson blake_F':47, 'jackson lacombe_D':52, 'jaden schwartz_F':48, 'jake debrusk_F':54,
+  'jake guentzel_F':82, 'jake neighbours_F':55, 'jake sanderson_D':57, 'jake walman_D':42,
+  'jakob chychrun_D':50, 'james van riemsdyk_F':40, 'jamie benn_F':40, 'jamie drysdale_D':38,
+  'jared mccann_F':63, 'jared spurgeon_D':37, 'jason robertson_F':84, 'jason zucker_F':48,
+  'jeff skinner_F':40, 'jesper bratt_F':86, 'jesperi kotkaniemi_F':42, 'jimmy snuggerud_F':46,
+  'jiri kulich_F':50, 'jj peterka_F':73, 'joel eriksson ek_F':65, 'joel farabee_F':41,
+  'john carlson_D':47, 'john tavares_F':72, 'jonathan drouin_F':43, 'jonathan huberdeau_F':57,
+  'jonathan marchessault_F':63, 'jonathan toews_F':45, 'jordan eberle_F':47, 'jordan kyrou_F':71,
+  'jordan spence_D':32, 'josh doan_F':40, 'josh morrissey_D':60, 'josh norris_F':51,
+  'jt miller_F':79, 'juraj slafkovsky_F':63, 'justin faulk_D':34, 'kaapo kakko_F':42,
+  'kandre miller_D':38, 'kent johnson_F':61, 'kevin fiala_F':73, 'kiefer sherwood_F':47,
+  'kirby dach_F':40, 'kirill kaprizov_F':109, 'kirill marchenko_F':78, 'kyle connor_F':90,
+  'kyle palmieri_F':49, 'lane hutson_D':70, 'leo carlsson_F':54, 'leon draisaitl_F':114,
+  'logan cooley_F':70, 'logan stankoven_F':53, 'lucas raymond_F':82, 'luke evangelista_F':40,
+  'luke hughes_D':47, 'mackenzie weegar_D':44, 'mackie samoskevich_F':42, 'macklin celebrini_F':83,
+  'marco kasper_F':45, 'marco rossi_F':63, 'mark scheifele_F':81, 'mark stone_F':60,
+  'martin necas_F':85, 'mason lohrei_D':41, 'mason marchment_F':48, 'mason mctavish_F':60,
+  'mathew barzal_F':67, 'matias maccelli_F':50, 'mats zuccarello_F':56, 'matt boldy_F':80,
+  'matt coronato_F':56, 'matt duchene_F':70, 'matthew knies_F':68, 'matthew poitras_F':40,
+  'matthew schaefer_D':40, 'matthew tkachuk_F':56, 'mattias ekholm_D':39, 'matty beniers_F':50,
+  'matvei michkov_F':70, 'mavrik bourque_F':45, 'max domi_F':47, 'maxim shabanov_F':40,
+  'michael bunting_F':42, 'michael kesselring_D':30, 'michael misa_F':48, 'mika zibanejad_F':67,
+  'mikael granlund_F':59, 'mike matheson_D':31, 'mikhail sergachev_D':58, 'mikko rantanen_F':96,
+  'miro heiskanen_D':44, 'mitch marner_F':100, 'morgan frost_F':43, 'morgan geekie_F':57,
+  'morgan rielly_D':45, 'moritz seider_D':52, 'nate schmidt_D':30, 'nathan mackinnon_F':118,
+  'nazem kadri_F':65, 'neal pionk_D':40, 'nick paul_F':45, 'nick schmaltz_F':60,
+  'nick suzuki_F':90, 'nico hischier_F':73, 'nicolas hague_D':31, 'nikita kucherov_F':115,
+  'nikolaj ehlers_F':75, 'noah dobson_D':51, 'noah hanifin_D':50, 'oiiver bjorkstrand_F':47,
+  'olen zellweger_D':30, 'oliver ekmanlarsson_D':30, 'owen power_D':41, 'owen tippett_F':52,
+  'patrick kane_F':65, 'patrik laine_F':48, 'pavel buchnevich_F':65, 'pavel dorofeyev_F':66,
+  'pavel zacha_F':48, 'philip broberg_D':40, 'phillip danault_F':46, 'pierreluc dubois_F':61,
+  'pius suter_F':50, 'quinn hughes_D':87, 'quinton byfield_F':60, 'rasmus andersson_D':33,
+  'rasmus dahlin_D':62, 'rasmus sandin_D':37, 'reilly smith_F':45, 'rickard rakell_F':62,
+  'ridly greig_F':40, 'robert thomas_F':84, 'roman josi_D':69, 'roope hintz_F':77,
+  'ross colton_F':45, 'rutger mcgroarty_F':40, 'ryan donato_F':65, 'ryan leonard_F':45,
+  'ryan nugenthopkins_F':64, 'ryan oreilly_F':55, 'ryan strome_F':40, 'sam bennett_F':62,
+  'sam dickinson_D':30, 'sam reinhart_F':82, 'sam rinzel_D':42, 'sean couturier_F':45,
+  'sean durzi_D':36, 'sean monahan_F':70, 'sebastian aho_F':80, 'seth jarvis_F':80,
+  'seth jones_D':45, 'shane pinto_F':43, 'shane wright_F':51, 'shayne gostisbehere_D':44,
+  'shea theodore_D':65, 'sidney crosby_F':90, 'simon edvinsson_D':34, 'simon holmstrom_F':48,
+  'simon nemec_D':30, 'stefan noesen_F':42, 'steven stamkos_F':61, 'tage thompson_F':75,
+  'taylor hall_F':47, 'teuvo teravainen_F':60, 'thomas chabot_D':42, 'thomas harley_D':62,
+  'tim stutzle_F':81, 'timo meier_F':61, 'tom wilson_F':65, 'tomas hertl_F':67,
+  'tony deangelo_D':42, 'travis konecny_F':72, 'travis sanheim_D':42, 'trent frederic_F':43,
+  'trevor zegras_F':57, 'troy terry_F':53, 'tyler bertuzzi_F':46, 'tyler seguin_F':51,
+  'tyler toffoli_F':53, 'valeri nichushkin_F':67, 'vasily podkolzin_F':46, 'victor hedman_D':66,
+  'viktor arvidsson_F':40, 'ville koivunen_F':41, 'vince dunn_D':44, 'vincent trocheck_F':68,
+  'vladimir tarasenko_F':48, 'vladislav gavrikov_D':35, 'warren foegele_F':45, 'will cuylle_F':53,
+  'will smith_F':56, 'william eklund_F':56, 'william karlsson_F':54, 'william nylander_F':84,
+  'wyatt johnston_F':81, 'yanni gourde_F':42, 'yegor chinakhov_F':47, 'zach benson_F':45,
+  'zach bolduc_F':45, 'zach hyman_F':68, 'zach werenski_D':84, 'zayne parekh_D':43,
+  'zeev buium_D':45,
 };
 
 // Manual cap overrides for 25-26 — used when PuckPedia sync doesn't have the contract.

@@ -260,8 +260,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-athletic" id="athletic2425Btn" onclick="document.getElementById('athletic2425FileInput').click()" title="Import Athletic 2024-25 projections from Excel file" style="opacity:.75">📈 ATH 24-25</button>
       <input type="file" id="dfo2425FileInput" accept=".csv" style="display:none" onchange="syncDFO2425(this)">
       <button class="btn btn-dfo" id="dfo2425Btn" onclick="document.getElementById('dfo2425FileInput').click()" title="Import DFO 2024-25 projections from CSV">📈 DFO 24-25</button>
-      <input type="file" id="nhl2425FileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="syncNHL2425(this)">
-      <button class="btn btn-nhl" id="nhl2425ProjBtn" onclick="document.getElementById('nhl2425FileInput').click()" title="Import NHL 2024-25 projections from file" style="opacity:.75">📈 NHL 24-25 Proj</button>
+      <button class="btn btn-nhl" id="nhl2425ProjBtn" onclick="syncNHL2425()" title="Load NHL 2024-25 projections (frozen snapshot — the season is over)" style="opacity:.75">📈 NHL 24-25</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
@@ -435,8 +434,8 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-athletic" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="opacity:.75">📈 ATH 25-26</button>
       <input type="file" id="dfo2526FileInput" accept=".csv" style="display:none" onchange="syncDFO2526(this)">
       <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = pts)">📈 DFO 25-26</button>
-      <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Pull ESPN 2025-26 projections from the ESPN API (~30s)">📈 ESPN 25-26</button>
-      <button class="btn btn-nhl" id="nhlProj2526Btn" onclick="syncNHLProj2526()" title="Pull NHL.com 2025-26 forward &amp; defenseman point projections">📈 NHL 25-26</button>
+      <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Load ESPN 2025-26 projections (frozen snapshot — the season is over)">📈 ESPN 25-26</button>
+      <button class="btn btn-nhl" id="nhlProj2526Btn" onclick="syncNHLProj2526()" title="Load NHL.com 2025-26 forward &amp; defenseman point projections (frozen snapshot — the season is over)">📈 NHL 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
@@ -2333,47 +2332,26 @@ async function syncDFO2526(input){
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 25-26'; }
 }
 
-async function syncESPN2526(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('espn2526Btn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Fetching (~30s)…';
-  try {
-    let d, usedFallback = false;
-    try {
-      d = await fetch('/espn-projections-2526').then(r=>r.json());
-      if(d.error || !Object.keys(d.players||{}).length) throw new Error(d.error || 'empty response');
-    } catch(liveErr) {
-      // ESPN's 25-26 API can go away once the season rolls over — fall back to the
-      // snapshot captured while it was still live (see ESPN_PROJ_2526_FALLBACK in data_2526.js).
-      if(!Object.keys(ESPN_PROJ_2526_FALLBACK).length) throw liveErr;
-      d = {players: ESPN_PROJ_2526_FALLBACK};
-      usedFallback = true;
-    }
-    const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d, 'ppp2526_espn', 'projGp2526_espn');
-    toast(`ESPN 25-26 synced${usedFallback?' (saved snapshot — live API unavailable)':''}! ${matched} matched, ${unmatched} unmatched.`);
-  } catch(e){ toast('ESPN 25-26 sync failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='📈 ESPN 25-26'; }
+function syncESPN2526(){
+  // 25-26 season is over, so these projections are frozen for good — apply the baked
+  // snapshot (data_2526.js) directly instead of hitting the (soon to disappear) live API.
+  const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, {players: ESPN_PROJ_2526}, 'ppp2526_espn', 'projGp2526_espn');
+  toast(`ESPN 25-26 loaded! ${matched} matched, ${unmatched} unmatched.`);
 }
 
-async function syncNHLProj2526(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('nhlProj2526Btn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Fetching…';
-  try {
-    const d = await fetch('/nhl-projections-2526').then(r=>r.json());
-    if(!d.ok) throw new Error(d.error);
-    let matched=0, unmatched=0;
-    for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      const v = d.players[key];
-      p.proj2526_nhl = (v > 0) ? v : null;
-      if(v > 0) matched++; else unmatched++;
-    }
-    lsSet(LS_PLAYERS, players);
-    render2526();
-    toast(`NHL 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
-  } catch(e){ toast('NHL 25-26 sync failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='📈 NHL 25-26'; }
+function syncNHLProj2526(){
+  // 25-26 season is over, so these projections are frozen for good — apply the baked
+  // snapshot (data_2526.js) directly instead of hitting the (soon to disappear) live scrape.
+  let matched=0, unmatched=0;
+  for(const p of players){
+    const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+    const v = NHL_PROJ_2526[key];
+    p.proj2526_nhl = (v > 0) ? v : null;
+    if(v > 0) matched++; else unmatched++;
+  }
+  lsSet(LS_PLAYERS, players);
+  render2526();
+  toast(`NHL 25-26 loaded! ${matched} matched, ${unmatched} unmatched.`);
 }
 
 async function syncNHLProj2627(){
@@ -4857,18 +4835,11 @@ async function syncAthletic2425(input){
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 24-25'; }
 }
 
-async function syncNHL2425(input){
-  const file = input.files[0]; if(!file) return; input.value='';
-  const btn = document.getElementById('nhl2425ProjBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
-  try {
-    const fd = new FormData(); fd.append('file', file);
-    const d = await fetch('/nhl-projections-2425',{method:'POST',body:fd}).then(r=>r.json());
-    if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_nhl', LS_NHL2425, d);
-    toast(`NHL 24-25 proj synced! ${matched} matched, ${unmatched} unmatched.`);
-  } catch(e){ toast('NHL 24-25 import failed: '+e.message); }
-  finally { btn.disabled=false; btn.innerHTML='📈 NHL 24-25 Proj'; }
+function syncNHL2425(){
+  // 24-25 season is over, so these projections are frozen for good — apply the baked
+  // snapshot (data_2425.js, from the original NHL 24-25 projections CSV) directly.
+  const {matched,unmatched} = _apply2425Proj('proj2425_nhl', LS_NHL2425, {players: NHL_PROJ_2425});
+  toast(`NHL 24-25 loaded! ${matched} matched, ${unmatched} unmatched.`);
 }
 
 function dropSim2425(id){
