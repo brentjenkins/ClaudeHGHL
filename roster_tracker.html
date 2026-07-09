@@ -1423,7 +1423,14 @@ function dedup(){
   const srcRank = {yahoo:3, nhl:2, manual:1};
   const seen = new Map();
   for(const p of players){
-    const k = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
+    const n = normName(p.name).toLowerCase();
+    const alias = _nameAlias(n);
+    // Canonicalize formal/nickname alias pairs (e.g. "josh norris" / "joshua norris") to the
+    // same key so two records for the same real player under different name spellings get
+    // merged here, not just literal exact-name duplicates. Picking min(n, alias) is stable
+    // regardless of which spelling is processed first, since the alias map is bidirectional.
+    const canonical = (alias && alias < n) ? alias : n;
+    const k = `${canonical}_${posGroup(p.pos)}`;
     if(!seen.has(k) || (srcRank[p.source]||0) > (srcRank[seen.get(k).source]||0))
       seen.set(k, p);
   }
@@ -6403,6 +6410,7 @@ function runDraftSim2425(){
   _runDraftSim({
     season:       '24-25',
     actualDraft:  POSTDRAFT_ROSTER_2425,
+    postDropRoster: POSTDROP_ROSTER_2425,
     allTeams:     [...new Set(players.filter(p=>p.start2425).map(p=>p.start2425))].sort(),
     buildSeq:     buildDraftSeq2425,
     startField:   'start2425',
@@ -6425,6 +6433,7 @@ function runDraftSim2324(){
   _runDraftSim({
     season:       '23-24',
     actualDraft:  POSTDRAFT_ROSTER_2324,
+    postDropRoster: POSTDROP_ROSTER_2324,
     allTeams:     [...new Set(players.filter(p=>p.start2324).map(p=>p.start2324))].sort(),
     buildSeq:     buildDraftSeq2324,
     startField:   'start2324',
@@ -6447,6 +6456,7 @@ function runDraftSim2526(){
   _runDraftSim({
     season:       '25-26',
     actualDraft:  POSTDRAFT_ROSTER_2526,
+    postDropRoster: POSTDROP_ROSTER_2526,
     allTeams:     [...new Set(players.filter(p=>p.start2526).map(p=>p.start2526))].sort(),
     buildSeq:     buildDraftSeq2526,
     startField:   'start2526',
@@ -6462,7 +6472,7 @@ function runDraftSim2526(){
   });
 }
 
-function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null }){
+function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
 
@@ -6732,13 +6742,46 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     algoDraftTotals[r.team].cap += r.cap;
   }
 
-  // Actual draft totals per team — use initialAssigned to identify pre-draft keepers to skip
-  const keeperIds = new Set(Object.entries(initialAssigned).filter(([,t])=>!!t).map(([id])=>Number(id)));
+  // Real post-drop keeper totals per team, for the "Actual roster" column. Must come from the
+  // true historical POSTDROP_ROSTER_ (postDropRoster), NOT initialAssigned — initialAssigned is
+  // just whatever the current start field happens to hold, which after Simulate Drops reflects
+  // the ALGO's simulated keepers, not who managers actually kept. Using initialAssigned here would
+  // mix algo-simulated keepers with real draft picks, double-counting anyone the algo kept but the
+  // real GM dropped (and who was later actually re-drafted).
+  const actualKeeperIds = new Set();
+  const actualKeeperTotals = {};
+  for(const t of allTeams) actualKeeperTotals[t] = {F:0,D:0,G:0,cap:0};
+  if(postDropRoster && Object.keys(postDropRoster).length){
+    for(const p of players){
+      const key = normName(p.name).toLowerCase();
+      const pg  = posGroup(p.pos);
+      const team = postDropRoster[`${key}_${pg}`] ?? _dictLookup(p.name, postDropRoster) ?? null;
+      if(!team || !actualKeeperTotals[team]) continue;
+      actualKeeperTotals[team][pg]++;
+      actualKeeperTotals[team].cap += getCap(p);
+      actualKeeperIds.add(p.id);
+    }
+  } else {
+    // No real post-drop data available (e.g. 26-27, which hasn't happened yet) — fall back to
+    // whatever's currently live, same as the algo side.
+    for(const t of allTeams){
+      const ks = players.filter(p => initialAssigned[p.id] === t);
+      actualKeeperTotals[t] = {
+        F: ks.filter(p=>posGroup(p.pos)==='F').length,
+        D: ks.filter(p=>posGroup(p.pos)==='D').length,
+        G: ks.filter(p=>posGroup(p.pos)==='G').length,
+        cap: ks.reduce((s,p)=>s+getCap(p),0),
+      };
+    }
+    for(const [id,t] of Object.entries(initialAssigned)) if(t) actualKeeperIds.add(Number(id));
+  }
+
+  // Actual draft totals per team — skip anyone already counted as a real post-drop keeper
   const actDraftTotals = {};
   for(const [key, team] of Object.entries(actualDraft)){
     const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
     if(!actDraftTotals[team]) actDraftTotals[team] = {F:0,D:0,G:0,cap:0};
-    if(p && keeperIds.has(p.id)) continue; // already in keeperTotals — skip
+    if(p && actualKeeperIds.has(p.id)) continue; // already in actualKeeperTotals — skip
     const pg = p ? posGroup(p.pos) : 'F';
     actDraftTotals[team][pg]++;
     actDraftTotals[team].cap += p ? getCap(p) : 0;
@@ -6765,11 +6808,12 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   </tr>`;
 
   for(const t of allTeams){
-    const k = keeperTotals[t]   || {F:0,D:0,G:0,cap:0};
-    const a = algoDraftTotals[t]|| {F:0,D:0,G:0,cap:0};
-    const x = actDraftTotals[t] || {F:0,D:0,G:0,cap:0};
-    const algoF=k.F+a.F, algoD=k.D+a.D, algoG=k.G+a.G, algoCap=k.cap+a.cap;
-    const actF=k.F+x.F,  actD=k.D+x.D,  actG=k.G+x.G,  actCap=k.cap+x.cap;
+    const k  = keeperTotals[t]      || {F:0,D:0,G:0,cap:0};
+    const ak = actualKeeperTotals[t]|| {F:0,D:0,G:0,cap:0};
+    const a  = algoDraftTotals[t]   || {F:0,D:0,G:0,cap:0};
+    const x  = actDraftTotals[t]    || {F:0,D:0,G:0,cap:0};
+    const algoF=k.F+a.F,  algoD=k.D+a.D,  algoG=k.G+a.G,  algoCap=k.cap+a.cap;
+    const actF=ak.F+x.F,  actD=ak.D+x.D,  actG=ak.G+x.G,  actCap=ak.cap+x.cap;
     const posWarn = (v,max,col) => v>max?`<span style="color:#dc2626;font-weight:700">${v}</span>`:
                                    v<max?`<span style="color:#9ca3af">${v}</span>`:`${v}`;
     html += `<tr style="border-bottom:1px solid #f3f4f6">

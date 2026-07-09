@@ -57,7 +57,7 @@ const PREDROP_ROSTER_2324 = {
   'patrice bergeron':'Muller Time!','jonathan marchessault':'Muller Time!','cole caufield':'Muller Time!',
   'carter verhaeghe':'Muller Time!','andre burakovsky':'Muller Time!','evan rodrigues':'Muller Time!',
   'timo meier':'Muller Time!','david perron':'Muller Time!','matthew tkachuk':'Muller Time!',
-  'elias pettersson':'Muller Time!','travis konecny':'Muller Time!','matias maccelli':'Muller Time!',
+  'elias pettersson_F':'Muller Time!','travis konecny':'Muller Time!','matias maccelli':'Muller Time!',
   'devon toews':'Muller Time!','mackenzie weegar':'Muller Time!','noah dobson':'Muller Time!',
   'calen addison':'Muller Time!','matthew benning':'Muller Time!','conor timmins':'Muller Time!',
   'vitek vanecek':'Muller Time!','devon levi':'Muller Time!',

@@ -21,7 +21,7 @@ const PREDROP_ROSTER_2627 = {
   // Blue Line Bangers (20 players)
   'jack eichel':'Blue Line Bangers','macklin celebrini':'Blue Line Bangers','alex tuch':'Blue Line Bangers',
   'nico hischier':'Blue Line Bangers','adrian kempe':'Blue Line Bangers','adam fantilli':'Blue Line Bangers',
-  'ivan demidov':'Blue Line Bangers','matt savoie':'Blue Line Bangers','sebastian aho':'Blue Line Bangers',
+  'ivan demidov':'Blue Line Bangers','matt savoie':'Blue Line Bangers','sebastian aho_F':'Blue Line Bangers',
   'nick schmaltz':'Blue Line Bangers','artemi panarin':'Blue Line Bangers','pavel zacha':'Blue Line Bangers',
   'mackenzie weegar':'Blue Line Bangers','jordan spence':'Blue Line Bangers','mason lohrei':'Blue Line Bangers',
   'john marino':'Blue Line Bangers','sam malinski':'Blue Line Bangers','mike matheson':'Blue Line Bangers',
