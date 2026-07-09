@@ -2338,10 +2338,19 @@ async function syncESPN2526(){
   const btn = document.getElementById('espn2526Btn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Fetching (~30s)…';
   try {
-    const d = await fetch('/espn-projections-2526').then(r=>r.json());
-    if(d.error) throw new Error(d.error);
+    let d, usedFallback = false;
+    try {
+      d = await fetch('/espn-projections-2526').then(r=>r.json());
+      if(d.error || !Object.keys(d.players||{}).length) throw new Error(d.error || 'empty response');
+    } catch(liveErr) {
+      // ESPN's 25-26 API can go away once the season rolls over — fall back to the
+      // snapshot captured while it was still live (see ESPN_PROJ_2526_FALLBACK in data_2526.js).
+      if(!Object.keys(ESPN_PROJ_2526_FALLBACK).length) throw liveErr;
+      d = {players: ESPN_PROJ_2526_FALLBACK};
+      usedFallback = true;
+    }
     const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, d, 'ppp2526_espn', 'projGp2526_espn');
-    toast(`ESPN 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
+    toast(`ESPN 25-26 synced${usedFallback?' (saved snapshot — live API unavailable)':''}! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ESPN 25-26 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ESPN 25-26'; }
 }
