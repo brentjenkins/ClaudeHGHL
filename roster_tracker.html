@@ -251,7 +251,6 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
-      <button class="btn btn-yahoo" id="rosters2324Btn" onclick="sync2324Rosters()" title="Pull end-of-23-24 rosters from Yahoo (league 427.l.1827) to set end2324" style="opacity:.75">⬇ Yahoo 23-24</button>
       <button class="btn btn-puckpedia" id="histCapsBtn" onclick="fetchHistoricalCaps()" title="Scrape PuckPedia player pages to fill missing 24-25 cap hits (players who signed new deals)" style="opacity:.75">📜 Historical Caps</button>
       <button class="btn btn-nhl" id="stats2425Btn" onclick="syncStats2425()" title="Pull 2024-25 actual NHL stats">📊 NHL 24-25</button>
     </div>
@@ -266,7 +265,7 @@ tr:hover td{background:#fafaf8}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
-      <button class="btn btn-red-outline" onclick="resetSim2425()" title="Load pre-drop 24-25 rosters from PREDROP_ROSTER_2425">Reset</button>
+      <button class="btn btn-red-outline" onclick="resetSim2425()" title="Reset 24-25 rosters to 23-24 year-end (start2425 = end2324, from PREDROP_ROSTER_2425)">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2425();compareDrops2425()" title="Simulate drops then compare against actual 24-25 drops">⬇ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
@@ -345,12 +344,11 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
-      <button class="btn btn-yahoo" id="rosters2223Btn" onclick="sync2223Rosters()" title="Pull end-of-22-23 rosters from Yahoo (league 419.l.52810) to set end2223" style="opacity:.75">⬇ Yahoo 22-23</button>
       <button class="btn btn-nhl" id="stats2324Btn" onclick="syncStats2324()" title="Pull 2023-24 actual NHL stats">📊 NHL 23-24</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-basis:100%">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
-      <button class="btn btn-red-outline" onclick="resetSim2324()" title="Reset 23-24 rosters to end-of-22-23 keepers (start2324 = end2223)">Reset</button>
+      <button class="btn btn-red-outline" onclick="resetSim2324()" title="Reset 23-24 rosters to 22-23 year-end (start2324 = end2223, from PREDROP_ROSTER_2324)">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2324();compareDrops2324()" title="Simulate drops then compare against actual 23-24 drops">⬇ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2324()" title="Load actual 23-24 post-drop pre-pick rosters">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
@@ -429,7 +427,6 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
-      <button class="btn btn-yahoo" id="sync2425Btn" onclick="sync2425Rosters()" title="Pull end-of-2024-25 rosters from Yahoo (league 453.l.52799) to record who was on each team last season" style="opacity:.75">⬇ Yahoo 24-25</button>
       <button class="btn btn-nhl" id="statsBtn2526" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -443,7 +440,7 @@ tr:hover td{background:#fafaf8}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
-      <button class="btn btn-red-outline" onclick="resetDraft2526()">Reset</button>
+      <button class="btn btn-red-outline" onclick="resetDraft2526()" title="Reset 25-26 rosters to 24-25 year-end (start2526 = end2425, from PREDROP_ROSTER_2526)">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops2526();compareDrops2526()" title="Simulate drops then compare against actual 25-26 drops">⬇ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
@@ -591,7 +588,6 @@ tr:hover td{background:#fafaf8}
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
-      <button class="btn btn-yahoo" id="syncBtn" onclick="doSync()" title="Pull end-of-2025-26 rosters from Yahoo (league 465.l.97882) to record who was on each team last season">⬇ Yahoo 25-26</button>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
       <button class="btn btn-puckpedia signings-all-btn" id="signingsBtn" onclick="syncSigningsAll(event)" title="Fetch all contracts from PuckPedia (~30s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
@@ -608,7 +604,7 @@ tr:hover td{background:#fafaf8}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
-      <button class="btn btn-red-outline" onclick="resetDraft()" title="Reset 26-27 rosters to 25-26 year-end (start2627 = end2526, from ⬇ Yahoo 25-26)">Reset</button>
+      <button class="btn btn-red-outline" onclick="resetDraft()" title="Reset 26-27 rosters to 25-26 year-end (start2627 = end2526, from PREDROP_ROSTER_2627)">Reset</button>
       <button class="btn btn-blue-outline" onclick="simulateDrops()">⬇ Simulate Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">⬇ Actual Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
@@ -1221,7 +1217,6 @@ const LS_SIGNINGS_RAW = 'hghl_signings_raw_v1'; // all contracts grouped by play
 const LS_ESPN     = 'hghl_espn_proj';
 const LS_ATHLETIC  = 'hghl_athletic_proj';
 const LS_DFO       = 'hghl_dfo_proj';
-const LS_ROSTERS2425   = 'hghl_rosters_2425';
 const LS_DFO2526       = 'hghl_dfo_2526';
 const LS_ESPN2526      = 'hghl_espn_2526';
 const LS_ATHLETIC2526  = 'hghl_athletic_2526';
@@ -2249,183 +2244,6 @@ async function checkProxy(){
   }
 }
 
-async function doSync(){
-  if(!proxyOk){ toast('Start the proxy first: python3 yahoo_proxy.py'); return; }
-  const btn = document.getElementById('syncBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Syncing…';
-  try {
-    const lg = await fetch('/league').then(r=>r.json());
-    if(lg.error) throw new Error(lg.error);
-    document.getElementById('leagueLabel').textContent = `League: ${lg.league.name} (465.l.97882)`;
-
-    const rd = await fetch('/rosters').then(r=>r.json());
-    if(rd.error) throw new Error(rd.error);
-
-    // Clear all existing 25-26/26-27 team assignments first — otherwise a player dropped
-    // mid-season keeps their stale fantasyTeam forever since they no longer appear in rd.players.
-    for(const p of players){ p.end2526 = null; p.start2627 = null; }
-
-    let added=0, updated=0;
-    for(const yp of rd.players){
-      const ex = findPlayerByNamePos(yp.name, yp.pos);
-      if(ex){
-        ex.start2627    = yp.fantasyTeam;
-        ex.end2526 = yp.fantasyTeam;
-        if(yp.nhlTeam && yp.nhlTeam!=='—') ex.team = normTeam(yp.nhlTeam);
-        if(yp.pos) ex.pos = yp.pos;
-        ex.source = 'yahoo'; updated++;
-      } else {
-        const newId = players.length>0 ? Math.max(...players.map(p=>p.id))+1 : 1;
-        players.push({id:newId,name:yp.name,team:normTeam(yp.nhlTeam),pos:yp.pos,cap:0,pts:0,status:'roster',source:'yahoo',start2627:yp.fantasyTeam,end2526:yp.fantasyTeam});
-        added++;
-      }
-    }
-
-    const td = await fetch('/transactions').then(r=>r.json());
-    if(!td.error && td.transactions){ transactions=td.transactions; lsSet(LS_TX,transactions); }
-
-    // Fetch team logos (best-effort — don't fail the whole sync if this errors)
-    try {
-      const ld = await fetch('/teamlogos').then(r=>r.json());
-      if(ld.ok && ld.logos){ teamLogos = ld.logos; lsSet(LS_LOGOS, teamLogos); }
-    } catch(_){}
-
-    // Update NHL roster status for all players
-    const nr = await fetch('/nhlrosters').then(r=>r.json());
-    let rosterUpdated = 0;
-    if(!nr.error && nr.active){
-      for(const p of players){
-        const prev = p.status;
-        const nhlKey = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-        const nhlAliasName = _nameAlias(normName(p.name).toLowerCase());
-        const nhlAliasKey = nhlAliasName ? `${nhlAliasName}_${posGroup(p.pos)}` : null;
-        p.status = (nr.active[nhlKey] || (nhlAliasKey && nr.active[nhlAliasKey])) ? 'roster' : 'non-roster';
-        if(p.status !== prev) rosterUpdated++;
-      }
-    }
-    // Promote source from 'nhl' to 'yahoo' for fantasy-rostered players
-    for(const p of players){
-      if(p.source === 'nhl' && p.start2627) p.source = 'yahoo';
-    }
-
-    lsSet(LS_PLAYERS, players);
-    populateTeamFilter(); populateFantasyFilter(); renderTransactions(); render();
-    toast(`Synced! ${added} added, ${updated} updated, ${transactions.length} transactions, ${rosterUpdated} roster status changes.`);
-  } catch(e){
-    toast('Sync failed: '+e.message);
-    console.error(e);
-  } finally {
-    btn.disabled=false;
-    btn.innerHTML='⬇ Yahoo 25-26';
-  }
-}
-
-async function sync2324Rosters(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('rosters2324Btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Fetching…';
-  try {
-    const rd = await fetch('/rosters-2324').then(r=>r.json());
-    if(rd.error) throw new Error(rd.error);
-    for(const p of players) p.end2324 = null;
-    let matched=0;
-    const unmatched=[];
-    for(const yp of rd.players){
-      const ex = findPlayerByNamePos(yp.name, yp.pos);
-      if(ex){ ex.end2324 = yp.fantasyTeam; matched++; }
-      else unmatched.push(`${yp.name} (${yp.fantasyTeam})`);
-    }
-    // Apply position-qualified overrides (players not in Yahoo but known from PREDROP_ROSTER_2425)
-    for(const [key, team] of Object.entries(PREDROP_ROSTER_2425)){
-      if(!key.includes('_')) continue;
-      const [base, pg] = key.split('_');
-      const ex = players.find(p => normName(p.name).toLowerCase()===base && posGroup(p.pos)===pg);
-      if(ex) ex.end2324 = team;
-    }
-    lsSet(LS_PLAYERS, players);
-    render2425();
-    if(unmatched.length){
-      console.warn('Yahoo 23-24 unmatched:', unmatched);
-      toast(`23-24 rosters: ${matched} matched. Unmatched: ${unmatched.join(', ')}`);
-    } else {
-      toast(`23-24 rosters loaded: ${matched} matched.`);
-    }
-  } catch(e){
-    toast('23-24 roster sync failed: '+e.message);
-  } finally {
-    btn.disabled=false;
-    btn.innerHTML='⬇ Yahoo 23-24';
-  }
-}
-
-async function sync2223Rosters(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('rosters2223Btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Fetching…';
-  try {
-    const rd = await fetch('/rosters-2223').then(r=>r.json());
-    if(rd.error) throw new Error(rd.error);
-    for(const p of players) p.end2223 = null;
-    let matched=0;
-    const unmatched=[];
-    for(const yp of rd.players){
-      const ex = findPlayerByNamePos(yp.name, yp.pos);
-      if(ex){ ex.end2223 = yp.fantasyTeam; matched++; }
-      else unmatched.push(`${yp.name} (${yp.fantasyTeam})`);
-    }
-    lsSet(LS_PLAYERS, players);
-    render2324();
-    if(unmatched.length){
-      console.warn('Yahoo 22-23 unmatched:', unmatched);
-      toast(`22-23 rosters: ${matched} matched. Unmatched: ${unmatched.join(', ')}`);
-    } else {
-      toast(`22-23 rosters loaded: ${matched} matched.`);
-    }
-  } catch(e){
-    toast('22-23 roster sync failed: '+e.message);
-  } finally {
-    btn.disabled=false;
-    btn.innerHTML='⬇ Yahoo 22-23';
-  }
-}
-
-async function sync2425Rosters(){
-  if(!proxyOk){ toast('Start the proxy first.'); return; }
-  const btn = document.getElementById('sync2425Btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Fetching…';
-  try {
-    const rd = await fetch('/rosters-2425').then(r=>r.json());
-    if(rd.error) throw new Error(rd.error);
-    // Clear all existing 2024-25 team assignments first
-    for(const p of players) p.end2425 = null;
-    let matched=0;
-    const unmatchedPlayers=[];
-    for(const yp of rd.players){
-      const ex = findPlayerByNamePos(yp.name, yp.pos);
-      if(ex){ ex.end2425 = yp.fantasyTeam; matched++; }
-      else unmatchedPlayers.push(`${yp.name} (${yp.fantasyTeam})`);
-    }
-    lsSet(LS_ROSTERS2425, rd.players);
-    lsSet(LS_PLAYERS, players);
-    render();
-    if(unmatchedPlayers.length){
-      console.warn('Yahoo 24-25 unmatched:', unmatchedPlayers);
-      toast(`2024-25 rosters: ${matched} matched. Unmatched: ${unmatchedPlayers.join(', ')}`);
-    } else {
-      toast(`2024-25 rosters loaded: ${matched} matched.`);
-    }
-  } catch(e){
-    toast('2024-25 roster sync failed: '+e.message);
-  } finally {
-    btn.disabled=false;
-    btn.innerHTML='⬇ Yahoo 24-25';
-  }
-}
-
 function _apply2526Proj(field, lsKey, data, pppField=null, gpField=null){
   for(const p of players){ p[field] = null; if(pppField) p[pppField] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
@@ -3256,15 +3074,39 @@ function loadDraft(){
   draftState2324 = lsGet(LS_DRAFT_2324) || {picks: []};
 }
 function saveDraft(){ lsSet(LS_DRAFT_2627, draftState2627); }
+// Seeds start2627 = end2526 (25-26 final rosters) from PREDROP_ROSTER_2627, creating stubs
+// for predrop players with no existing record. Mirrors _seedStart2425()/_seedStart2526().
+function _seedStart2627(){
+  for(const p of players){
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    p.end2526   = PREDROP_ROSTER_2627[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2627) ?? null;
+    p.start2627 = p.end2526 || '';
+  }
+  const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
+  let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
+  for(const stub of PREDROP_STUBS_2627){
+    const key = normName(stub.name).toLowerCase();
+    if(matched.has(key)) continue;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
+    players.push({
+      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
+      start2627:team||'', end2526:team,
+      rank:null, birthDate:'', capManual:false, ptsManual:false,
+      ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+    });
+  }
+}
+
 function resetDraft(){
-  if(!players.some(p=>p.end2526)){
-    toast('Populate end2526 first — click ⬇ Yahoo 25-26 to load 25-26 year-end rosters.');
+  if(!Object.keys(PREDROP_ROSTER_2627).length){
+    toast('Populate PREDROP_ROSTER_2627 (25-26 final rosters) to enable the 26-27 simulation.');
     return;
   }
-  if(!confirm('Reset 26-27 simulation? Sets start2627 = end2526 (25-26 year-end rosters from Yahoo) and clears draft picks.')) return;
+  if(!confirm('Reset 26-27 rosters to 25-26 year-end (start2627 = end2526, from PREDROP_ROSTER_2627) and clear draft picks?')) return;
   draftState2627 = {picks:[], simPicks:[]};
   saveDraft();
-  for(const p of players) p.start2627 = p.end2526 || '';
+  _seedStart2627();
   dropsSimulated = false;
   lsSet(LS_DROPS, false);
   lsSet(LS_PLAYERS, players);
@@ -4456,9 +4298,39 @@ function dropPlayer2526(id){
   render2526();
 }
 
+// Seeds start2526 = end2425 (24-25 final rosters) from PREDROP_ROSTER_2526, creating stubs
+// for predrop players with no existing record. Mirrors _seedStart2425().
+function _seedStart2526(){
+  for(const p of players){
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    p.end2425   = PREDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2526) ?? null;
+    p.start2526 = p.end2425;
+  }
+  const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
+  let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
+  for(const stub of PREDROP_STUBS_2526){
+    const key = normName(stub.name).toLowerCase();
+    if(matched.has(key)) continue;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
+    players.push({
+      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2526:null,
+      pts:0, pts2526:0, gp2526:0, status:'roster', source:'manual',
+      start2627:'', end2526:'', end2425:team, start2526:team,
+      rank:null, rank2526:null, birthDate:'', capManual:false, ptsManual:false,
+      proj2526_dfo:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
+      ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+    });
+  }
+}
+
 function resetDraft2526(){
-  if(!confirm('Reset 25-26 simulation? Sets start2526 = end2425 and clears simulated picks.')) return;
-  for(const p of players) p.start2526 = p.end2425 || null;
+  if(!Object.keys(PREDROP_ROSTER_2526).length){
+    toast('Populate PREDROP_ROSTER_2526 (24-25 final rosters) to enable the 25-26 simulation.');
+    return;
+  }
+  if(!confirm('Reset 25-26 rosters to 24-25 year-end (start2526 = end2425, from PREDROP_ROSTER_2526) and clear simulated picks?')) return;
+  _seedStart2526();
   draftState2526 = {picks:[]};
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2526, draftState2526);
@@ -4689,10 +4561,14 @@ function simulateDrops2526(){
 }
 
 function compareDrops2526(){
-  // Virtual copy: seed start2526 from end2425 (pre-season rosters)
-  const vp = players.map(p => ({...p, start2526: p.end2425 || null}));
+  if(!Object.keys(PREDROP_ROSTER_2526).length){
+    toast('Populate PREDROP_ROSTER_2526 to run compare drops.');
+    return;
+  }
+  // Virtual copy: seed start2526 from PREDROP_ROSTER_2526 (pre-season rosters)
+  const vp = players.map(p => ({...p, start2526: _dictLookup(p.name, PREDROP_ROSTER_2526) || null}));
   const teams = [...new Set(vp.map(p => p.start2526).filter(Boolean))].sort();
-  if(!teams.length){ toast('No 25-26 team assignments found (end2425 missing).'); return; }
+  if(!teams.length){ toast('No 25-26 team assignments found.'); return; }
 
   // Quadratic fit: pts vs cap across league-wide rostered pool (pts≥15 excludes scrubs)
   const rosteredPoolV = vp.filter(p => p.start2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
@@ -4767,7 +4643,7 @@ function compareDrops2526(){
   let totalCorrect = 0, totalAll = 0;
 
   for(const team of teams){
-    const teamPlayers = vp.filter(p => p.end2425===team);
+    const teamPlayers = vp.filter(p => _dictLookup(p.name, PREDROP_ROSTER_2526)===team);
     const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[], injuryExcused=[], elcMandatory=[];
 
     for(const p of teamPlayers){
@@ -5319,15 +5195,45 @@ function dropSim2324(id){
   render2324();
 }
 
+// Seeds start2324 = end2223 (22-23 final rosters) from PREDROP_ROSTER_2324, creating stubs
+// for predrop players with no existing record. Shared by resetSim2324() and simulateDrops2324()
+// so the latter always simulates from the full pre-drop roster instead of compounding on
+// whatever state start2324 was left in by a previous simulate run.
+function _seedStart2324(){
+  for(const p of players){
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    p.end2223   = PREDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2324) ?? null;
+    p.start2324 = p.end2223;
+  }
+  // Create stubs for any PREDROP player with no existing record
+  const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
+  let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
+  for(const stub of PREDROP_STUBS_2324){
+    const key = normName(stub.name).toLowerCase();
+    if(matched.has(key)) continue;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
+    players.push({
+      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2324:null, cap2425:null,
+      pts:0, pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'roster', source:'manual',
+      start2627:'', end2526:'', end2425:null, start2526:null,
+      end2324:null, start2425:null, end2223:team, start2324:team,
+      rank:null, rank2324:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
+      proj2324_athletic:null, proj2324_dtz:null, proj2324_nhl:null,
+      proj2425_dfo:null, proj2425_athletic:null, proj2425_nhl:null,
+      proj2526_dfo:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
+      cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+    });
+  }
+}
+
 function resetSim2324(){
-  if(!players.some(p=>p.end2223)){
-    toast('Populate end2223 first — click ⬇ Yahoo 22-23 to load 22-23 final rosters.');
+  if(!Object.keys(PREDROP_ROSTER_2324).length){
+    toast('Populate PREDROP_ROSTER_2324 (22-23 final rosters) to enable the 23-24 simulation.');
     return;
   }
-  if(!confirm('Reset 23-24 simulation? Sets start2324 = end2223 (22-23 final rosters).')) return;
-  for(const p of players){
-    p.start2324 = p.end2223 ?? null;
-  }
+  if(!confirm('Reset 23-24 rosters to 22-23 year-end (start2324 = end2223, from PREDROP_ROSTER_2324) and clear simulated picks?')) return;
+  _seedStart2324();
   draftState2324 = {picks:[]};
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2324, draftState2324);
@@ -5406,11 +5312,11 @@ function rankPlayers2324(){
 }
 
 function simulateDrops2324(){
-  if(!players.some(p=>p.end2223)){
-    toast('Populate end2223 first — click ⬇ Yahoo 22-23 to load 22-23 final rosters.');
+  if(!Object.keys(PREDROP_ROSTER_2324).length){
+    toast('Populate PREDROP_ROSTER_2324 (22-23 final rosters) to enable the 23-24 simulation.');
     return;
   }
-  for(const p of players) p.start2324 = p.end2223 ?? null; // always simulate from the full pre-drop roster, never compound on a prior simulate run
+  _seedStart2324(); // always simulate from the full pre-drop roster, never compound on a prior simulate run
   const teams = [...new Set(players.map(p=>p.start2324).filter(Boolean))];
   let dropped=0;
 
@@ -5467,8 +5373,8 @@ function simulateDrops2324(){
 }
 
 function compareDrops2324(){
-  if(!players.some(p=>p.end2223)){
-    toast('Populate end2223 (⬇ Yahoo 22-23) to run compare drops.');
+  if(!Object.keys(PREDROP_ROSTER_2324).length){
+    toast('Populate PREDROP_ROSTER_2324 to run compare drops.');
     return;
   }
   if(!Object.keys(POSTDROP_ROSTER_2324).length){
@@ -5476,7 +5382,7 @@ function compareDrops2324(){
     return;
   }
 
-  const vp = players.map(p=>({...p, start2324: p.end2223 ?? null}));
+  const vp = players.map(p=>({...p, start2324: _dictLookup(p.name, PREDROP_ROSTER_2324)||null}));
   const teams = [...new Set(vp.map(p=>p.start2324).filter(Boolean))].sort();
 
   const rosteredPoolV = vp.filter(p=>p.start2324 && ppts2324blend(p)>=curveMinPts && getCap2324(p)>0);
@@ -5539,7 +5445,7 @@ function compareDrops2324(){
   let totalCorrect=0, totalAll=0;
 
   for(const team of teams){
-    const teamPlayers=vp.filter(p=>p.end2223===team);
+    const teamPlayers=vp.filter(p=>_dictLookup(p.name,PREDROP_ROSTER_2324)===team);
     const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
 
     for(const p of teamPlayers){
@@ -5914,8 +5820,6 @@ function updateStats2425(){
     const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
     const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
     const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
-    const projPts  = Math.round(tp.reduce((s,p)=>s+ppts2425blend(p),0));
-    const actualPts = tp.reduce((s,p)=>s+(p.pts2425||0),0);
     const logo = teamLogos[t];
     const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
@@ -5941,10 +5845,6 @@ function updateStats2425(){
         <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
       ${_capGapRow(tp, getCap2425, CAP_LIMIT_2425)}
-      <div style="font-size:10px;color:#6b7280;margin-top:3px;text-align:center">
-        ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
-        ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
-      </div>
       ${_curveDeltaLabel(teamCurveDelta2425(t))}
       ${top5Html2425(fRem,dRem,gRem,rem)}
     </div>`;
@@ -6229,8 +6129,6 @@ function updateStats2324(){
     const fRem = Math.max(0, DRAFT_ROSTER_MAX.F - fN);
     const dRem = Math.max(0, DRAFT_ROSTER_MAX.D - dN);
     const gRem = Math.max(0, DRAFT_ROSTER_MAX.G - gN);
-    const projPts  = Math.round(tp.reduce((s,p)=>s+ppts2324blend(p),0));
-    const actualPts = tp.reduce((s,p)=>s+(p.pts2324||0),0);
     const logo = teamLogos[t];
     const remColor = rem<0?'#dc2626':rem<5?'#dc2626':rem<15?'#d97706':'#16a34a';
     const remLabel = rem<0?`$${(-rem).toFixed(1)}M over`:`$${rem.toFixed(1)}M left`;
@@ -6256,10 +6154,6 @@ function updateStats2324(){
         <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
       ${_capGapRow(tp, getCap2324, CAP_LIMIT_2324)}
-      <div style="font-size:10px;color:#6b7280;margin-top:3px;text-align:center">
-        ${projPts>0?`<span title="Projected pts">${projPts}pts proj</span>`:''}
-        ${actualPts>0?`<span style="color:#9ca3af"> · ${actualPts}act</span>`:''}
-      </div>
       ${_curveDeltaLabel(teamCurveDelta2324(t))}
       ${top5Html2324(fRem,dRem,gRem,rem)}
     </div>`;
