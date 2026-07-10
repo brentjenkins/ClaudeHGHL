@@ -4612,6 +4612,16 @@ function compareDrops2526(){
   }
   // Virtual copy: seed start2526 from PREDROP_ROSTER_2526 (pre-season rosters)
   const vp = players.map(p => ({...p, start2526: _dictLookup(p.name, PREDROP_ROSTER_2526) || null}));
+  // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
+  // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
+  // silently absent from every bucket below instead of correctly counting as a predicted drop.
+  const vpMatched2526 = new Set(vp.map(p => normName(p.name).toLowerCase()));
+  for(const stub of PREDROP_STUBS_2526){
+    const key = normName(stub.name).toLowerCase();
+    if(vpMatched2526.has(key)) continue;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
+    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2526:null, pts:0, pts2526:0, start2526:team });
+  }
   const teams = [...new Set(vp.map(p => p.start2526).filter(Boolean))].sort();
   if(!teams.length){ toast('No 25-26 team assignments found.'); return; }
 
@@ -5099,6 +5109,16 @@ function compareDrops2425(){
   }
 
   const vp = players.map(p=>({...p, start2425: _dictLookup(p.name, PREDROP_ROSTER_2425)||null}));
+  // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
+  // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
+  // silently absent from every bucket below instead of correctly counting as a predicted drop.
+  const vpMatched = new Set(vp.map(p => normName(p.name).toLowerCase()));
+  for(const stub of PREDROP_STUBS_2425){
+    const key = normName(stub.name).toLowerCase();
+    if(vpMatched.has(key)) continue;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
+    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2425:null, pts:0, pts2425:0, start2425:team });
+  }
   const teams = [...new Set(Object.values(PREDROP_ROSTER_2425))].sort();
 
   const rosteredPoolV = vp.filter(p=>p.start2425 && ppts2425blend(p)>=curveMinPts && getCap2425(p)>0);
@@ -5426,6 +5446,16 @@ function compareDrops2324(){
   }
 
   const vp = players.map(p=>({...p, start2324: _dictLookup(p.name, PREDROP_ROSTER_2324)||null}));
+  // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
+  // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
+  // silently absent from every bucket below instead of correctly counting as a predicted drop.
+  const vpMatched2324 = new Set(vp.map(p => normName(p.name).toLowerCase()));
+  for(const stub of PREDROP_STUBS_2324){
+    const key = normName(stub.name).toLowerCase();
+    if(vpMatched2324.has(key)) continue;
+    const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
+    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2324:null, pts:0, pts2324:0, start2324:team });
+  }
   const teams = [...new Set(vp.map(p=>p.start2324).filter(Boolean))].sort();
 
   const rosteredPoolV = vp.filter(p=>p.start2324 && ppts2324blend(p)>=curveMinPts && getCap2324(p)>0);
@@ -5790,11 +5820,22 @@ function _curveDeltaLabel(delta, view, team){
 // the "△ vs curve" label that opened it.
 function _teamCurveConfig(view){
   switch(view){
-    case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324 };
-    case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425 };
-    case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526 };
-    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627 };
+    case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324, predropStubs:PREDROP_STUBS_2324 };
+    case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425, predropStubs:PREDROP_STUBS_2425 };
+    case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526, predropStubs:PREDROP_STUBS_2526 };
+    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627 };
   }
+}
+
+// Bare virtual stub for a PREDROP player missing from the live pool entirely (e.g. a veteran
+// who retired and never appears in any later NHL/Yahoo sync) — carries every season's cap/pts
+// field as 0/null so whichever getCapF/pptsF accessor is applied resolves safely to 0.
+function _stubCurvePlayer(name, pos, team){
+  return {
+    id:`stub_${normName(name).toLowerCase()}`, name, pos, cap:0, pts:0,
+    cap2324:null, cap2425:null, cap2526:null, pts2324:0, pts2425:0, pts2526:0,
+    start2324:team, start2425:team, start2526:team, start2627:team,
+  };
 }
 
 // Was `p` on `team`'s pre-drop (Reset-seeded) roster, per the frozen PREDROP_ROSTER_ snapshot?
@@ -5806,7 +5847,7 @@ function _wasPreDropKeeper(p, team, predropDict){
 }
 
 function showTeamCurveModal(view, team){
-  const { startField, pptsF, getCapF, elcMax, label, predropDict } = _teamCurveConfig(view);
+  const { startField, pptsF, getCapF, elcMax, label, predropDict, predropStubs } = _teamCurveConfig(view);
 
   // League-wide pool + curve fit — identical filter/fit logic to _makeTeamCurveDeltaFn so this
   // modal's chart and deltas match whatever number the team card's "△ vs curve" label showed.
@@ -5827,8 +5868,19 @@ function showTeamCurveModal(view, team){
   const pickIds = new Set(
     hasPredrop ? teamPlayers.filter(p => !_wasPreDropKeeper(p, team, predropDict)).map(p=>p.id) : []
   );
+  // Real dropped players (still in the live pool, just rostered elsewhere or nowhere now) plus
+  // virtual stubs for anyone who left the pool entirely (e.g. retired veterans who'll never show
+  // up in another NHL/Yahoo sync) — otherwise they silently never appear as a dropped player at
+  // all, even though they were correctly predicted as a drop.
   const droppedPlayers = hasPredrop
-    ? players.filter(p => p[startField] !== team && getCapF(p) > 0 && pptsF(p) > 0 && _wasPreDropKeeper(p, team, predropDict))
+    ? (() => {
+        const real = players.filter(p => p[startField] !== team && _wasPreDropKeeper(p, team, predropDict));
+        const realMatched = new Set(players.map(p => normName(p.name).toLowerCase()));
+        const stubs = (predropStubs || [])
+          .filter(stub => !realMatched.has(normName(stub.name).toLowerCase()) && _dictLookup(stub.name, predropDict) === team)
+          .map(stub => _stubCurvePlayer(stub.name, stub.pos, team));
+        return [...real, ...stubs];
+      })()
     : [];
 
   document.getElementById('teamCurveModalTitle').textContent = `${team} — Efficiency Curve (${label})`;
