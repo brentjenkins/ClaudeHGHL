@@ -1137,6 +1137,17 @@ tr:hover td{background:#fafaf8}
 </div>
 </div>
 
+<div class="modal-bg" id="teamCurveModal" style="display:none" onclick="if(event.target===this)closeTeamCurveModal()">
+<div class="modal" style="width:640px;max-width:96vw">
+  <h2 id="teamCurveModalTitle">Efficiency Curve</h2>
+  <canvas id="teamCurveCanvas" height="220" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;background:#fafafa;display:block;margin-bottom:12px"></canvas>
+  <div id="teamCurveModalBody" style="font-size:12px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" onclick="closeTeamCurveModal()">Close</button>
+  </div>
+</div>
+</div>
+
 <div id="draftTicker"><div class="ticker-track" id="tickerTrack"></div></div>
 <canvas id="whaleCanvas"></canvas>
 
@@ -2254,12 +2265,11 @@ function _apply2526Proj(field, lsKey, data, pppField=null, gpField=null){
   for(const p of players){ p[field] = null; if(pppField) p[pppField] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
-    const pg  = posGroup(p.pos);
-    const key = `${normName(p.name).toLowerCase()}_${pg}`;
-    if(data.players[key]){
-      p[field] = data.players[key].hghl_pts;
-      if(pppField) p[pppField] = data.players[key].ppp ?? null;
-      if(gpField) p[gpField] = data.players[key].gp > 0 ? data.players[key].gp : null;
+    const entry = _dictLookupPos(p.name, p.pos, data.players);
+    if(entry){
+      p[field] = entry.hghl_pts;
+      if(pppField) p[pppField] = entry.ppp ?? null;
+      if(gpField) p[gpField] = entry.gp > 0 ? entry.gp : null;
       matched++;
     } else unmatched++;
   }
@@ -2351,8 +2361,7 @@ function syncNHLProj2526(){
   // snapshot (data_2526.js) directly instead of hitting the (soon to disappear) live scrape.
   let matched=0, unmatched=0;
   for(const p of players){
-    const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-    const v = NHL_PROJ_2526[key];
+    const v = _dictLookupPos(p.name, p.pos, NHL_PROJ_2526);
     p.proj2526_nhl = (v > 0) ? v : null;
     if(v > 0) matched++; else unmatched++;
   }
@@ -2676,11 +2685,11 @@ function render(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsAthletic>0?p.ptsAthletic:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsDFO>0?p.ptsDFO:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsESPN>0?p.ptsESPN:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsCBS>0?p.ptsCBS:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsNHL>0?p.ptsNHL:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsAthletic>0?Math.round(p.ptsAthletic):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsDFO>0?Math.round(p.ptsDFO):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsESPN>0?Math.round(p.ptsESPN):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsCBS>0?Math.round(p.ptsCBS):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsNHL>0?Math.round(p.ptsNHL):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -3855,8 +3864,18 @@ function _renderXactionsView(xactions, preseasonDate, suppDate, bodyId, statusId
 
 function renderXactions2425(){ _renderXactionsView(xactions2425, draftDatePreseason2425, draftDateSupplemental2425, 'xactionsBody2425', 'xactionsStatus2425'); }
 
-function renderCurveChart(){
-  const canvas = document.getElementById('curveChart');
+// Shared cap-vs-pts efficiency curve chart. pool = players to plot, getCap/getPts = accessors
+// for the season in question, curveFns = {F,D,G} fitted quadratics (caller computes these so
+// they match whatever delta calc triggered the chart). highlightIds (optional Set of player id)
+// draws those dots larger/opaque and everything else faded — used by the per-team modal to pop
+// a team's roster out of the league-wide backdrop; omit (null) to draw every dot at full
+// strength, as the league-wide Settings chart does.
+// pickIds (optional Set of player id): highlighted players also in this set draw as a SQUARE
+// instead of a circle (a roster addition — drafted/picked up, not an original keeper).
+// droppedPlayers (optional array of player objects, not in pool since they're no longer
+// rostered): drawn as a red X at their own cap/pts, so cut players still show where they sat
+// on the curve.
+function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, minPtsLine, highlightIds=null, pickIds=null, droppedPlayers=null){
   if(!canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.clientWidth || 520;
@@ -3870,24 +3889,18 @@ function renderCurveChart(){
   const iW = W - PAD.left - PAD.right;
   const iH = H - PAD.top  - PAD.bottom;
 
-  const pool = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
-
   ctx.fillStyle = '#fafafa';
   ctx.fillRect(0, 0, W, H);
 
   if(!pool.length){
     ctx.fillStyle = '#9ca3af'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('Load 26-27 players to see the efficiency curve', W/2, H/2);
+    ctx.fillText('No rostered players meet the min-pts/cap threshold yet', W/2, H/2);
     return;
   }
 
-  const curveFns = {
-    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap,y:p.pts}))),
-    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
-    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap,y:p.pts}))),
-  };
-
-  const allCaps = pool.map(p=>p.cap), allPts = pool.map(p=>p.pts);
+  const dropped = droppedPlayers || [];
+  const allCaps = [...pool.map(getCap), ...dropped.map(getCap)];
+  const allPts  = [...pool.map(getPts), ...dropped.map(getPts)];
   const maxCap = Math.max(...allCaps) * 1.08;
   const maxPts = Math.max(...allPts) * 1.1;
 
@@ -3902,23 +3915,44 @@ function renderCurveChart(){
   }
 
   // threshold line
-  const thY = ty(curveMinPts);
+  const thY = ty(minPtsLine);
   if(thY > PAD.top && thY < H - PAD.bottom){
     ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.moveTo(PAD.left,thY); ctx.lineTo(W-PAD.right,thY); ctx.stroke();
     ctx.restore();
     ctx.fillStyle='#d97706'; ctx.font='9px sans-serif'; ctx.textAlign='left';
-    ctx.fillText(`min ${curveMinPts}`, PAD.left+3, thY-3);
+    ctx.fillText(`min ${minPtsLine}`, PAD.left+3, thY-3);
   }
 
-  // dots
+  // dots — highlighted (or all, if no highlight set given) drawn full-size/opaque; the rest
+  // faded. Highlighted players in pickIds draw as a square instead of a circle.
   const dotFill = {F:'#bfdbfe',D:'#bbf7d0',G:'#fef08a'};
   const dotStroke = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
   for(const p of pool){
     const pg=posGroup(p.pos);
-    ctx.beginPath(); ctx.arc(tx(p.cap), ty(p.pts), 3, 0, Math.PI*2);
+    const isHi = !highlightIds || highlightIds.has(p.id);
+    const isPick = isHi && pickIds && pickIds.has(p.id);
+    ctx.globalAlpha = isHi ? 1 : 0.18;
+    const x = tx(getCap(p)), y = ty(getPts(p));
+    const r = isHi ? 4 : 2.5;
+    ctx.beginPath();
+    if(isPick){ ctx.rect(x-r, y-r, r*2, r*2); } else { ctx.arc(x, y, r, 0, Math.PI*2); }
     ctx.fillStyle=dotFill[pg]||'#e5e7eb'; ctx.fill();
-    ctx.strokeStyle=dotStroke[pg]||'#9ca3af'; ctx.lineWidth=0.8; ctx.stroke();
+    ctx.strokeStyle=dotStroke[pg]||'#9ca3af'; ctx.lineWidth=isHi ? 1.3 : 0.8; ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // dropped players — position-colored X at their own cap/pts (matching the F/D/G dot colors;
+  // they're no longer in pool since they're no longer rostered anywhere)
+  ctx.lineWidth = 1.8;
+  for(const p of dropped){
+    const pg = posGroup(p.pos);
+    const x = tx(getCap(p)), y = ty(getPts(p)), r = 4;
+    ctx.strokeStyle = dotStroke[pg]||'#9ca3af';
+    ctx.beginPath();
+    ctx.moveTo(x-r,y-r); ctx.lineTo(x+r,y+r);
+    ctx.moveTo(x+r,y-r); ctx.lineTo(x-r,y+r);
+    ctx.stroke();
   }
 
   // curve lines
@@ -3959,6 +3993,28 @@ function renderCurveChart(){
     ctx.fillText(pg, lx+17, PAD.top+12);
     lx+=36;
   }
+}
+
+function renderCurveChart(){
+  const canvas = document.getElementById('curveChart');
+  if(!canvas) return;
+  const pool = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
+  if(!pool.length){
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 520, H = 220;
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr,dpr);
+    ctx.fillStyle = '#fafafa'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#9ca3af'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Load 26-27 players to see the efficiency curve', W/2, H/2);
+    return;
+  }
+  const curveFns = {
+    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap,y:p.pts}))),
+    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
+    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap,y:p.pts}))),
+  };
+  _drawCurveChart(canvas, pool, p=>p.cap, p=>p.pts, curveFns, curveMinPts);
 }
 
 // ── PP Signings ───────────────────────────────────────────────────────────────
@@ -4362,14 +4418,11 @@ function loadActualRoster2627(){
   if(!confirm('Load actual 26-27 pre-draft rosters? This overwrites the current 26-27 simulation.')) return;
   let matched = 0, unmatched = 0;
   for(const p of players){
-    const key = normName(p.name).toLowerCase();
-    if(key in POSTDROP_ROSTER_2627){
-      p.start2627 = POSTDROP_ROSTER_2627[key];
-      matched++;
-    } else {
-      p.start2627 = null;
-      unmatched++;
-    }
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    const t = POSTDROP_ROSTER_2627[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2627) ?? null;
+    p.start2627 = t;
+    if(t) matched++; else unmatched++;
   }
   draftState2627 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -4382,14 +4435,11 @@ function loadActualRoster2526(){
   if(!confirm('Load actual 25-26 pre-draft rosters? This overwrites the current 25-26 simulation with the real post-drop, pre-draft state.')) return;
   let matched = 0, unmatched = 0;
   for(const p of players){
-    const key = normName(p.name).toLowerCase();
-    if(key in POSTDROP_ROSTER_2526){
-      p.start2526 = POSTDROP_ROSTER_2526[key]; // null = was dropped before draft
-      matched++;
-    } else {
-      p.start2526 = null;
-      unmatched++;
-    }
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    const t = POSTDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2526) ?? null; // null = was dropped before draft
+    p.start2526 = t;
+    if(t) matched++; else unmatched++;
   }
   draftState2526 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -4403,8 +4453,9 @@ function loadActualDraft2526(){
   if(!Object.keys(POSTDRAFT_ROSTER_2526).length){ toast('POSTDRAFT_ROSTER_2526 is empty.'); return; }
   if(!confirm('Load actual 25-26 post-draft rosters? Overwrites start2526 and populates the Big Board with actual picks.')) return;
   for(const p of players){
-    const key = normName(p.name).toLowerCase();
-    const t = (key in POSTDROP_ROSTER_2526) ? POSTDROP_ROSTER_2526[key] : null;
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    const t = POSTDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2526) ?? null;
     p.start2526 = p.end2526 = t;
   }
   const picks = [], unmatched = [];
@@ -4642,7 +4693,8 @@ function compareDrops2526(){
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
-      const actuallyKept = (key in POSTDROP_ROSTER_2526) && POSTDROP_ROSTER_2526[key]===team;
+      const pg = posGroup(p.pos);
+      const actuallyKept = (POSTDROP_ROSTER_2526[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2526) ?? null) === team;
       const simKept = p.start2526 !== null;
       const pp = ppts2526blend(p).toFixed(1);
       const cap = getCap2526(p).toFixed(2);
@@ -4799,10 +4851,10 @@ function _apply2425Proj(field, lsKey, data, gpField=null){
   for(const p of players){ p[field] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
-    const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-    if(data.players[key]){
-      p[field] = data.players[key].hghl_pts;
-      if(gpField) p[gpField] = data.players[key].gp > 0 ? data.players[key].gp : null;
+    const entry = _dictLookupPos(p.name, p.pos, data.players);
+    if(entry){
+      p[field] = entry.hghl_pts;
+      if(gpField) p[gpField] = entry.gp > 0 ? entry.gp : null;
       matched++;
     }
     else unmatched++;
@@ -4910,9 +4962,11 @@ function loadActualRoster2425(){
   if(!confirm('Load actual 24-25 pre-draft rosters? This overwrites start2425 with the real post-drop, pre-pick state.')) return;
   let matched=0, unmatched=0;
   for(const p of players){
-    const key = normName(p.name).toLowerCase();
-    if(key in POSTDROP_ROSTER_2425){ p.start2425 = POSTDROP_ROSTER_2425[key]; matched++; }
-    else { p.start2425 = null; unmatched++; }
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    const t = POSTDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2425) ?? null;
+    p.start2425 = t;
+    if(t) matched++; else unmatched++;
   }
   draftState2425 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -4925,8 +4979,9 @@ function loadActualDraft2425(){
   if(!Object.keys(POSTDRAFT_ROSTER_2425).length){ toast('POSTDRAFT_ROSTER_2425 is empty.'); return; }
   if(!confirm('Load actual 24-25 post-draft rosters? Overwrites start2425 and populates the Big Board with actual picks.')) return;
   for(const p of players){
-    const key = normName(p.name).toLowerCase();
-    p.start2425 = (key in POSTDROP_ROSTER_2425) ? POSTDROP_ROSTER_2425[key] : null;
+    const base = normName(p.name).toLowerCase();
+    const pg   = posGroup(p.pos);
+    p.start2425 = POSTDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2425) ?? null;
   }
   const picks = [], unmatched = [];
   const _byTeam2425 = {};
@@ -5111,7 +5166,8 @@ function compareDrops2425(){
 
     for(const p of teamPlayers){
       const key=normName(p.name).toLowerCase();
-      const actuallyKept=(key in POSTDROP_ROSTER_2425) && POSTDROP_ROSTER_2425[key]===team;
+      const pg=posGroup(p.pos);
+      const actuallyKept=(POSTDROP_ROSTER_2425[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2425) ?? null) === team;
       const simKept=p.start2425!==null;
       const pp=ppts2425blend(p).toFixed(1);
       const cap=getCap2425(p).toFixed(2);
@@ -5684,9 +5740,9 @@ function render2425(){
       ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
       <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2425||'—'):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?p.proj2425_athletic:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_dfo>0?p.proj2425_dfo:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_nhl>0?p.proj2425_nhl:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?Math.round(p.proj2425_athletic):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_dfo>0?Math.round(p.proj2425_dfo):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_nhl>0?Math.round(p.proj2425_nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta2425(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -5722,11 +5778,111 @@ function _makeTeamCurveDeltaFn(startField, pptsF, getCapF){
     .reduce((s,p)=>{ const fn=cf[posGroup(p.pos)],pp=pptsF(p),c=getCapF(p); return s+(fn&&pp>0&&c>0?pp-fn(c):0); }, 0);
 }
 
-function _curveDeltaLabel(delta){
+function _curveDeltaLabel(delta, view, team){
   const color = delta>10?'#16a34a':delta<-10?'#dc2626':'#9ca3af';
   const str = (delta>=0?'+':'')+Math.round(delta);
-  return `<div class="team-curve-delta" style="font-size:10px;text-align:center;color:${color};margin-top:2px">△ ${str} vs curve</div>`;
+  const click = (view && team) ? ` onclick="showTeamCurveModal('${view}','${esc(team)}')" style="cursor:pointer;text-decoration:underline dotted" title="Click to see ${esc(team)}'s roster on the efficiency curve"` : '';
+  return `<div class="team-curve-delta"${click} style="font-size:10px;text-align:center;color:${color};margin-top:2px">△ ${str} vs curve</div>`;
 }
+
+// Per-season config for showTeamCurveModal — startField/pptsF/getCapF must match whatever
+// _makeTeamCurveDeltaFn used for that view's team cards, so the modal's numbers agree with
+// the "△ vs curve" label that opened it.
+function _teamCurveConfig(view){
+  switch(view){
+    case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324 };
+    case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425 };
+    case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526 };
+    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627 };
+  }
+}
+
+// Was `p` on `team`'s pre-drop (Reset-seeded) roster, per the frozen PREDROP_ROSTER_ snapshot?
+function _wasPreDropKeeper(p, team, predropDict){
+  const base = normName(p.name).toLowerCase();
+  const pg   = posGroup(p.pos);
+  const t = predropDict[`${base}_${pg}`] ?? _dictLookup(p.name, predropDict) ?? null;
+  return t === team;
+}
+
+function showTeamCurveModal(view, team){
+  const { startField, pptsF, getCapF, elcMax, label, predropDict } = _teamCurveConfig(view);
+
+  // League-wide pool + curve fit — identical filter/fit logic to _makeTeamCurveDeltaFn so this
+  // modal's chart and deltas match whatever number the team card's "△ vs curve" label showed.
+  const pool = players.filter(p => p[startField] && pptsF(p) >= curveMinPts && getCapF(p) > 0);
+  const curveFns = {
+    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCapF(p),y:pptsF(p)}))),
+    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCapF(p),y:pptsF(p)}))),
+    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCapF(p),y:pptsF(p)}))),
+  };
+
+  const teamPlayers = players.filter(p => p[startField] === team);
+  const highlightIds = new Set(teamPlayers.map(p=>p.id));
+
+  // Split the team's current roster into original keepers vs. new additions (picked up via
+  // draft/waiver — anyone not on the frozen pre-drop snapshot), and find anyone who WAS on the
+  // pre-drop snapshot but isn't currently rostered here (i.e. dropped).
+  const hasPredrop = predropDict && Object.keys(predropDict).length > 0;
+  const pickIds = new Set(
+    hasPredrop ? teamPlayers.filter(p => !_wasPreDropKeeper(p, team, predropDict)).map(p=>p.id) : []
+  );
+  const droppedPlayers = hasPredrop
+    ? players.filter(p => p[startField] !== team && getCapF(p) > 0 && pptsF(p) > 0 && _wasPreDropKeeper(p, team, predropDict))
+    : [];
+
+  document.getElementById('teamCurveModalTitle').textContent = `${team} — Efficiency Curve (${label})`;
+  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, curveMinPts, highlightIds, pickIds, droppedPlayers);
+
+  const posColor = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
+  const rowsKept = teamPlayers.map(p => {
+    const pg = posGroup(p.pos);
+    const cap = getCapF(p), pts = pptsF(p);
+    const base = cap>0 ? _curveBaseline(pg, cap, elcMax, curveFns[pg]) : null;
+    const delta = (base!=null && pts>0) ? pts-base : null;
+    const status = pickIds.has(p.id) ? 'pick' : 'kept';
+    return { p, pg, cap, pts, delta, status };
+  });
+  const rowsDropped = droppedPlayers.map(p => {
+    const pg = posGroup(p.pos);
+    const cap = getCapF(p), pts = pptsF(p);
+    const base = cap>0 ? _curveBaseline(pg, cap, elcMax, curveFns[pg]) : null;
+    const delta = (base!=null && pts>0) ? pts-base : null;
+    return { p, pg, cap, pts, delta, status:'dropped' };
+  });
+  const rows = [...rowsKept, ...rowsDropped].sort((a,b) => (b.delta??-Infinity) - (a.delta??-Infinity));
+
+  const statusBadge = (r) => r.status==='pick' ? ` <span style="color:#7c3aed;font-weight:600">■ pick</span>`
+                            : r.status==='dropped' ? ` <span style="color:${posColor[r.pg]||'#dc2626'};font-weight:600">✕ dropped</span>`
+                            : '';
+  const legend = hasPredrop ? `<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">● kept &nbsp; ■ <span style="color:#7c3aed">picked up</span> &nbsp; ✕ dropped (<span style="color:${posColor.F}">F</span>/<span style="color:${posColor.D}">D</span>/<span style="color:${posColor.G}">G</span> colored)</div>` : '';
+
+  const html = legend + `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="border-bottom:1px solid #e5e7eb;color:#9ca3af">
+      <th style="text-align:left;padding:4px 6px">Pos</th>
+      <th style="text-align:left;padding:4px 6px">Player</th>
+      <th style="text-align:right;padding:4px 6px">Cap</th>
+      <th style="text-align:right;padding:4px 6px">Pts</th>
+      <th style="text-align:right;padding:4px 6px">△ vs curve</th>
+    </tr>` +
+    rows.map(r => {
+      const dCol = r.delta==null ? '#9ca3af' : r.delta>=0 ? '#16a34a' : '#dc2626';
+      const dStr = r.delta==null ? '—' : (r.delta>=0?'+':'')+Math.round(r.delta);
+      const faded = r.status==='dropped' ? 'opacity:.6' : '';
+      return `<tr style="border-bottom:1px solid #f3f4f6;${faded}">
+        <td style="padding:4px 6px;color:${posColor[r.pg]||'#6b7280'};font-weight:600">${r.pg}</td>
+        <td style="padding:4px 6px">${esc(r.p.name)}${statusBadge(r)}</td>
+        <td style="padding:4px 6px;text-align:right">$${r.cap.toFixed(2)}M</td>
+        <td style="padding:4px 6px;text-align:right">${Math.round(r.pts)}</td>
+        <td style="padding:4px 6px;text-align:right;color:${dCol};font-weight:600">${dStr}</td>
+      </tr>`;
+    }).join('') +
+  `</table>`;
+  document.getElementById('teamCurveModalBody').innerHTML = html;
+  document.getElementById('teamCurveModal').style.display = 'flex';
+}
+
+function closeTeamCurveModal(){ document.getElementById('teamCurveModal').style.display = 'none'; }
 function _capGapRow(tp, getCapFn, capLimit){
   const fCap=tp.filter(p=>posGroup(p.pos)==='F').reduce((s,p)=>s+getCapFn(p),0);
   const dCap=tp.filter(p=>posGroup(p.pos)==='D').reduce((s,p)=>s+getCapFn(p),0);
@@ -5832,7 +5988,7 @@ function updateStats2425(){
         <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
       ${_capGapRow(tp, getCap2425, CAP_LIMIT_2425)}
-      ${_curveDeltaLabel(teamCurveDelta2425(t))}
+      ${_curveDeltaLabel(teamCurveDelta2425(t), '2425', t)}
       ${top5Html2425(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
@@ -6019,9 +6175,9 @@ function render2324(){
       ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
       <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2324||'—'):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?p.proj2324_athletic:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_dtz>0?p.proj2324_dtz:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_nhl>0?p.proj2324_nhl:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2324_athletic>0?Math.round(p.proj2324_athletic):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_dtz>0?Math.round(p.proj2324_dtz):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_nhl>0?Math.round(p.proj2324_nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta2324(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -6141,7 +6297,7 @@ function updateStats2324(){
         <span title="${gRem} goalie spots remaining (${gN} rostered)">G&thinsp;${gRem}</span>
       </div>
       ${_capGapRow(tp, getCap2324, CAP_LIMIT_2324)}
-      ${_curveDeltaLabel(teamCurveDelta2324(t))}
+      ${_curveDeltaLabel(teamCurveDelta2324(t), '2324', t)}
       ${top5Html2324(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
@@ -7056,7 +7212,7 @@ function updateStats2526(){
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
       ${_capGapRow(tp, getCap2526, CAP_LIMIT_2526)}
-      ${_curveDeltaLabel(teamCurveDelta2526(t))}
+      ${_curveDeltaLabel(teamCurveDelta2526(t), '2526', t)}
       ${top5Html2526(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
@@ -7255,11 +7411,11 @@ function render2526(){
       ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${c.toFixed(2)}</a>`:'—';})()}</td>
       <td style="color:#9ca3af;text-align:right">${getCap2526(p)>0?(p.yrStr2526||'—'):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?p.proj2526_athletic:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_dfo>0?p.proj2526_dfo:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_espn>0?p.proj2526_espn:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_cbs>0?p.proj2526_cbs:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_nhl>0?p.proj2526_nhl:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?Math.round(p.proj2526_athletic):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_dfo>0?Math.round(p.proj2526_dfo):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_espn>0?Math.round(p.proj2526_espn):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_cbs>0?Math.round(p.proj2526_cbs):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_nhl>0?Math.round(p.proj2526_nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
       ${(()=>{const s=curveDelta2526(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -8008,7 +8164,7 @@ function updateStats(){
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
       ${_capGapRow(tp, p=>p.cap||0, CAP_LIMIT)}
-      ${_curveDeltaLabel(teamCurveDelta(t))}
+      ${_curveDeltaLabel(teamCurveDelta(t), '2627', t)}
       ${top5Html(fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');

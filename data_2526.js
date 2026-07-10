@@ -848,6 +848,7 @@ const ESPN_PROJ_2526 = {
 // before it stops being reachable/relevant. Keys = normName.toLowerCase()_posGroup -> pts.
 const NHL_PROJ_2526 = {
   'aaron ekblad_D':41, 'adam fantilli_F':73, 'adam fox_D':70, 'adrian kempe_F':74,
+  'aleksander barkov_F':81,
   'alex debrincat_F':69, 'alex laferriere_F':41, 'alex ovechkin_F':64, 'alex tuch_F':63,
   'alex vlasic_D':30, 'alexander nikishin_D':30, 'alexander romanov_D':30, 'alexis lafreniere_F':58,
   'aliaksei protas_F':61, 'anders lee_F':52, 'andre burakovsky_F':40, 'andrei kuzmenko_F':59,
@@ -902,7 +903,7 @@ const NHL_PROJ_2526 = {
   'morgan rielly_D':45, 'moritz seider_D':52, 'nate schmidt_D':30, 'nathan mackinnon_F':118,
   'nazem kadri_F':65, 'neal pionk_D':40, 'nick paul_F':45, 'nick schmaltz_F':60,
   'nick suzuki_F':90, 'nico hischier_F':73, 'nicolas hague_D':31, 'nikita kucherov_F':115,
-  'nikolaj ehlers_F':75, 'noah dobson_D':51, 'noah hanifin_D':50, 'oiiver bjorkstrand_F':47,
+  'nikolaj ehlers_F':75, 'noah dobson_D':51, 'noah hanifin_D':50, 'oliver bjorkstrand_F':47,
   'olen zellweger_D':30, 'oliver ekmanlarsson_D':30, 'owen power_D':41, 'owen tippett_F':52,
   'patrick kane_F':65, 'patrik laine_F':48, 'pavel buchnevich_F':65, 'pavel dorofeyev_F':66,
   'pavel zacha_F':48, 'philip broberg_D':40, 'phillip danault_F':46, 'pierreluc dubois_F':61,
@@ -927,6 +928,33 @@ const NHL_PROJ_2526 = {
   'wyatt johnston_F':81, 'yanni gourde_F':42, 'yegor chinakhov_F':47, 'zach benson_F':45,
   'zach bolduc_F':45, 'zach hyman_F':68, 'zach werenski_D':84, 'zayne parekh_D':43,
   'zeev buium_D':45,
+  // Goalies (missing from the original NHL.com scrape entirely — that article format
+  // only lists forwards/defensemen, never goalies)
+  'connor hellebuyck_G':89.7, 'jake oettinger_G':85.1, 'sergei bobrovsky_G':85.1,
+  'andrei vasilevskiy_G':85.1, 'filip gustavsson_G':75.9, 'igor shesterkin_G':75.9,
+  'adin hill_G':75.9, 'dustin wolf_G':73.6, 'darcy kuemper_G':73.6,
+  'samuel montembeault_G':73.6, 'jordan binnington_G':71.3, 'ilya sorokin_G':69,
+  'karel vejmelka_G':69, 'logan thompson_G':69, 'stuart skinner_G':66.7,
+  'frederik andersen_G':66.7, 'jacob markstrom_G':66.7, 'linus ullmark_G':66.7,
+  'lukas dostal_G':66.7, 'anthony stolarz_G':64.4, 'joey daccord_G':59.8,
+  'john gibson_G':57.5, 'juuse saros_G':57.5, 'jeremy swayman_G':55.2,
+  'thatcher demko_G':55.2, 'ukkopekka luukkonen_G':48.3, 'pyotr kochetkov_G':46,
+  'spencer knight_G':46, 'elvis merzlikins_G':46, 'jet greaves_G':46,
+  'yaroslav askarov_G':46, 'calvin pickard_G':43.7, 'samuel ersson_G':43.7,
+  'tristan jarry_G':43.7, 'jake allen_G':39.1, 'akira schmid_G':39.1,
+  'scott wedgewood_G':36.8, 'alex lyon_G':12.27, 'alexandar georgiev_G':12.27,
+  'devon levi_G':12.27, 'cam talbot_G':34.5, 'joel hofer_G':34.5,
+  'kevin lankinen_G':34.5, 'charlie lindgren_G':34.5, 'anton forsberg_G':32.2,
+  'dan vladar_G':16.1, 'ivan fedotov_G':16.1, 'leevi merilainen_G':14.95,
+  'mads sogaard_G':14.95, 'casey desmith_G':27.6, 'daniil tarasov_G':27.6,
+  'alex nedeljkovic_G':27.6, 'vitek vanecek_G':13.8, 'jaxson stauber_G':13.8,
+  'jakub dobes_G':12.65, 'jacob fowler_G':12.65, 'arturs silovs_G':25.3,
+  'jonas johansson_G':25.3, 'jesper wallstedt_G':10.35, 'samuel hlavaj_G':10.35,
+  'ville husso_G':10.35, 'petr mrazek_G':10.35, 'joonas korpisalo_G':16.1,
+  'jonathan quick_G':16.1, 'arvid soderblom_G':16.1, 'justus annunen_G':16.1,
+  'philipp grubauer_G':8.05, 'matt murray_G':8.05, 'eric comrie_G':16.1,
+  'devin cooley_G':6.9, 'ivan prosvetov_G':6.9, 'david rittich_G':6.9,
+  'semyon varlamov_G':6.9,
 };
 
 // Manual cap overrides for 25-26 — used when PuckPedia sync doesn't have the contract.
