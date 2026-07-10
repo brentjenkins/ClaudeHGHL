@@ -1769,11 +1769,11 @@ async function syncStats(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.pts2526   = d.players[key].fpts;
-        p.gp2526    = d.players[key].gp;
-        p.ppp2526   = d.players[key].ppp ?? 0;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.pts2526   = entry.fpts;
+        p.gp2526    = entry.gp;
+        p.ppp2526   = entry.ppp ?? 0;
         p.ptsManual = false;
         matched++;
       } else {
@@ -1805,11 +1805,11 @@ async function syncESPN(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.ptsESPN = d.players[key].hghl_pts;
-        p.pppESPN = d.players[key].ppp ?? null;
-        p.gpESPN  = d.players[key].gp > 0 ? d.players[key].gp : null;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.ptsESPN = entry.hghl_pts;
+        p.pppESPN = entry.ppp ?? null;
+        p.gpESPN  = entry.gp > 0 ? entry.gp : null;
         matched++;
       } else {
         p.ptsESPN = null;
@@ -1843,9 +1843,9 @@ async function syncCBS(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.ptsCBS = d.players[key].hghl_pts;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.ptsCBS = entry.hghl_pts;
         matched++;
       } else {
         p.ptsCBS = null;
@@ -1880,12 +1880,11 @@ async function syncAthletic(input){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const pg = posGroup(p.pos);
-      const key = `${normName(p.name).toLowerCase()}_${pg}`;
-      if(d.players[key]){
-        p.ptsAthletic = d.players[key].hghl_pts;
-        p.pppAthletic = d.players[key].ppp ?? null;
-        p.gpAthletic  = d.players[key].gp > 0 ? d.players[key].gp : null;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.ptsAthletic = entry.hghl_pts;
+        p.pppAthletic = entry.ppp ?? null;
+        p.gpAthletic  = entry.gp > 0 ? entry.gp : null;
         matched++;
       } else {
         p.ptsAthletic = null;
@@ -2297,9 +2296,8 @@ async function syncDFO2627(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const pg  = posGroup(p.pos);
-      const key = `${normName(p.name).toLowerCase()}_${pg}`;
-      if(d.players[key]){ p.ptsDFO = d.players[key].hghl_pts; p.pppDFO = d.players[key].ppp ?? null; matched++; }
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){ p.ptsDFO = entry.hghl_pts; p.pppDFO = entry.ppp ?? null; matched++; }
       else { p.ptsDFO = null; p.pppDFO = null; unmatched++; }
     }
     applyBlendedPts();
@@ -2379,8 +2377,7 @@ async function syncNHLProj2627(){
     if(!d.ok) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      const v = d.players[key];
+      const v = _dictLookupPos(p.name, p.pos, d.players);
       p.ptsNHL = (v > 0) ? v : null;
       if(v > 0) matched++; else unmatched++;
     }
@@ -4399,10 +4396,10 @@ async function syncStats2627(){
     if(d.error) throw new Error(d.error);
     let matched = 0, unmatched = 0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.pts2627 = d.players[key].fpts;
-        p.gp2627  = d.players[key].gp;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.pts2627 = entry.fpts;
+        p.gp2627  = entry.gp;
         matched++;
       } else { unmatched++; }
     }
@@ -4815,10 +4812,10 @@ async function syncStats2425(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.pts2425 = d.players[key].fpts;
-        p.gp2425  = d.players[key].gp;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.pts2425 = entry.fpts;
+        p.gp2425  = entry.gp;
         matched++;
       } else unmatched++;
     }
@@ -4840,10 +4837,10 @@ async function syncStats2324(){
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      if(d.players[key]){
-        p.pts2324 = d.players[key].fpts;
-        p.gp2324  = d.players[key].gp;
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.pts2324 = entry.fpts;
+        p.gp2324  = entry.gp;
         matched++;
       } else unmatched++;
     }

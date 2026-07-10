@@ -896,7 +896,7 @@ const NHL_PROJ_2526 = {
   'mathew barzal_F':67, 'matias maccelli_F':50, 'mats zuccarello_F':56, 'matt boldy_F':80,
   'matt coronato_F':56, 'matt duchene_F':70, 'matthew knies_F':68, 'matthew poitras_F':40,
   'matthew schaefer_D':40, 'matthew tkachuk_F':56, 'mattias ekholm_D':39, 'matty beniers_F':50,
-  'matvei michkov_F':70, 'mavrik bourque_F':45, 'max domi_F':47, 'maxim shabanov_F':40,
+  'matvei michkov_F':70, 'mavrik bourque_F':45, 'max domi_F':47, 'max shabanov_F':40,
   'michael bunting_F':42, 'michael kesselring_D':30, 'michael misa_F':48, 'mika zibanejad_F':67,
   'mikael granlund_F':59, 'mike matheson_D':31, 'mikhail sergachev_D':58, 'mikko rantanen_F':96,
   'miro heiskanen_D':44, 'mitch marner_F':100, 'morgan frost_F':43, 'morgan geekie_F':57,
