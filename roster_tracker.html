@@ -858,6 +858,17 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
+    <div class="section-label">Projections <span class="section-line"></span><span class="section-desc">Confidence weight per projection source when blending PPTS/PPP (higher = trusted more). Defaults derived from a 2026-07-13 backtest of each source's 25-26 preseason projection vs actual 25-26 results — Athletic/DFO tracked actuals most closely, ESPN least.</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.74, MAE=12.4 (common pool)">Athletic<input type="number" id="s-wAthletic" value="1.2" min="0" max="3" step="0.1" onchange="updateProjWeight('athletic',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.74, MAE=12.5 (common pool)">DFO<input type="number" id="s-wDFO" value="1.2" min="0" max="3" step="0.1" onchange="updateProjWeight('dfo',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.71, MAE=14.4 (common pool)">CBS<input type="number" id="s-wCBS" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('cbs',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.73, MAE=13.9 (common pool)">NHL.com<input type="number" id="s-wNHL" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('nhl',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.64, MAE=15.2 (common pool)">ESPN<input type="number" id="s-wESPN" value="0.8" min="0" max="3" step="0.1" onchange="updateProjWeight('espn',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+    </div>
+  </div>
+
+  <div>
     <div class="section-label">Yahoo <span class="section-line"></span><span class="section-desc">Yahoo Fantasy league keys and draft dates. Draft dates determine the drop/add window for Yahoo transaction fetches (date + 2 days).</span></div>
     <div style="display:grid;grid-template-columns:72px repeat(6,1fr);gap:6px;align-items:center;font-size:12px">
       <div></div>
@@ -1455,19 +1466,32 @@ function dedup(){
 
 let useActualsPts = true;
 
+// Per-source confidence weights for blending PPTS/PPP across projection sources.
+// Derived 2026-07-13 by backtesting each source's 25-26 preseason projection against
+// actual 25-26 results (r, MAE, RMSE on a common player pool covered by all 5 sources).
+// Athletic/DFO were the clear top tier, ESPN the clear bottom tier, CBS/NHL.com mid —
+// weights are inverse-MAE-squared (precision weighting), normalized to mean=1, rounded.
+// Tunable live in Settings > Projections.
+let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, cbs: 0.9, nhl: 0.9, espn: 0.8 };
+
+function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs with value>0 count
+  let sw = 0, swv = 0;
+  for(const [v, w] of pairs){ if(v > 0){ sw += w; swv += w*v; } }
+  return sw > 0 ? swv / sw : 0;
+}
+
 // Recompute p.pts from all available projection sources.
 // Priority: manual override > (actuals override if useActualsPts) > blend of external sources > 25-26 actuals fallback.
 function reblendPts(p){
   if(p.ptsManual) return;
   if(useActualsPts && p.pts2526 > 0){ p.pts = p.pts2526; return; }
-  const sources = [];
-  if(p.ptsAthletic > 0) sources.push(p.ptsAthletic);
-  if(p.ptsDFO      > 0) sources.push(p.ptsDFO);
-  if(p.ptsESPN     > 0) sources.push(p.ptsESPN);
-  if(p.ptsCBS      > 0) sources.push(p.ptsCBS);
-  if(p.ptsNHL      > 0) sources.push(p.ptsNHL);
-  if(sources.length > 0){
-    p.pts = Math.round(sources.reduce((s,v) => s+v, 0) / sources.length);
+  const W = PROJ_SOURCE_WEIGHTS;
+  const blended = _weightedBlend([
+    [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsESPN, W.espn],
+    [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
+  ]);
+  if(blended > 0){
+    p.pts = Math.round(blended);
   } else if(p.pts2526 > 0){
     p.pts = p.pts2526;
   }
@@ -1481,11 +1505,11 @@ function toggleUseActuals(val){
 
 function reblendPpp(p){
   if(posGroup(p.pos) === 'G'){ p.ppp = 0; return; }
-  const sources = [];
-  if(p.pppAthletic > 0) sources.push(p.pppAthletic);
-  if(p.pppDFO      > 0) sources.push(p.pppDFO);
-  if(p.pppESPN     > 0) sources.push(p.pppESPN);
-  p.ppp = sources.length ? Math.round(sources.reduce((s,v) => s+v, 0) / sources.length) : null;
+  const W = PROJ_SOURCE_WEIGHTS;
+  const blended = _weightedBlend([
+    [p.pppAthletic, W.athletic], [p.pppDFO, W.dfo], [p.pppESPN, W.espn],
+  ]);
+  p.ppp = blended > 0 ? Math.round(blended) : null;
 }
 
 function applyBlendedPts(){
@@ -3661,6 +3685,9 @@ function syncSettings(){
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
+  set('s-wAthletic', PROJ_SOURCE_WEIGHTS.athletic); set('s-wDFO', PROJ_SOURCE_WEIGHTS.dfo);
+  set('s-wCBS', PROJ_SOURCE_WEIGHTS.cbs); set('s-wNHL', PROJ_SOURCE_WEIGHTS.nhl);
+  set('s-wESPN', PROJ_SOURCE_WEIGHTS.espn);
   set('s-draftDatePreseason2324',    draftDatePreseason2324);
   set('s-draftDateSupplemental2324', draftDateSupplemental2324);
   set('s-draftDatePreseason2425',    draftDatePreseason2425);
@@ -3682,6 +3709,11 @@ function updateDraftWeight(key, val){
   syncSettings();
   if(draftMode) render();
   if(draftMode2526) render2526();
+}
+function updateProjWeight(key, val){
+  PROJ_SOURCE_WEIGHTS[key] = val;
+  applyBlendedPts();
+  render();
 }
 function updateSetting(key, val){
   if(key === 'myHGHLTeam')           myHGHLTeam = val;
@@ -6535,35 +6567,34 @@ function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, 
     `<span style="color:#9ca3af;font-size:11px">Pool: your actual picks + undrafted FAs — excludes other teams' picks &nbsp;·&nbsp; `+
     `${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}=Prospect`:'All rounds=Best Avail'} then Best Available</span>`;
 
-  let html = '';
+  let html = `<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
+  html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+  html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb">`+
+    `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500;white-space:nowrap">Pick</th>`+
+    `<th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Algo</th>`+
+    `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Proj</th>`+
+    `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Act</th>`+
+    `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Actual pick</th>`+
+    `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Proj</th>`+
+    `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Act</th>`+
+    `<th style="padding:5px 8px;text-align:right;font-weight:500;font-size:10px">Δ Act</th></tr>`;
   for(let i=0; i<myPicks.length; i++){
     const sp = myPicks[i], ap = myActualPicks[i] || {name:'—',pos:'?',ppts:0,apts:0};
-    const dProj = sp.ppts - ap.ppts;
     const dAct  = (sp.apts||0) - (ap.apts||0);
     const dcAct = dAct>5?'#16a34a':dAct<-5?'#dc2626':'#9ca3af';
     const dsAct = (dAct>=0?'+':'')+Math.round(dAct);
-    html += `<div style="margin-bottom:.4rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-    html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-    if(i===0) html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb">`+
-      `<th style="padding:5px 10px;color:#9ca3af;font-weight:500;width:40px">Pick</th>`+
-      `<th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Algo</th>`+
-      `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Proj</th>`+
-      `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Act</th>`+
-      `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Actual pick</th>`+
-      `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Proj</th>`+
-      `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Act</th>`+
-      `<th style="padding:5px 8px;text-align:right;font-weight:500;font-size:10px">Δ Act</th></tr>`;
     html += `<tr style="border-bottom:1px solid #f3f4f6">`;
-    html += `<td style="padding:5px 10px;color:#9ca3af;font-weight:500">${i+1} ${modeTag(sp.round)}</td>`;
-    html += `<td style="padding:5px 10px;display:flex;gap:4px;align-items:center">${badge(sp.pos,sp.player)}</td>`;
+    html += `<td style="padding:5px 10px;color:#9ca3af;font-weight:500;white-space:nowrap">${i+1} ${modeTag(sp.round)}</td>`;
+    html += `<td style="padding:5px 10px"><span style="display:inline-flex;gap:4px;align-items:center">${badge(sp.pos,sp.player)}</span></td>`;
     html += `<td style="padding:5px 4px;text-align:right;color:#6366f1">${Math.round(sp.ppts)}</td>`;
     html += `<td style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:600">${sp.apts||0}</td>`;
     html += `<td style="padding:5px 10px;color:#9ca3af"><span style="display:inline-flex;gap:4px;align-items:center">${badge(ap.pos,ap.name)}</span></td>`;
     html += `<td style="padding:5px 4px;text-align:right;color:#9ca3af">${Math.round(ap.ppts)}</td>`;
     html += `<td style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:600">${ap.apts||0}</td>`;
     html += `<td style="padding:5px 8px;text-align:right;color:${dcAct};font-weight:600;font-size:11px">${dsAct}</td>`;
-    html += `</tr></table></div>`;
+    html += `</tr>`;
   }
+  html += `</table></div>`;
 
   document.getElementById('draftSimBody').innerHTML = html;
   document.getElementById('draftSimModal').style.display = 'flex';
