@@ -2298,11 +2298,11 @@ function _apply2526Proj(field, lsKey, data, pppField=null, gpField=null){
   }
   for(const p of players){
     if(posGroup(p.pos) === 'G'){ p.ppp2526proj = 0; continue; }
-    const srcs = [];
-    if(p.ppp2526_athletic > 0) srcs.push(p.ppp2526_athletic);
-    if(p.ppp2526_dfo      > 0) srcs.push(p.ppp2526_dfo);
-    if(p.ppp2526_espn     > 0) srcs.push(p.ppp2526_espn);
-    p.ppp2526proj = srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : null;
+    const W = PROJ_SOURCE_WEIGHTS;
+    const blended = _weightedBlend([
+      [p.ppp2526_athletic, W.athletic], [p.ppp2526_dfo, W.dfo], [p.ppp2526_espn, W.espn],
+    ]);
+    p.ppp2526proj = blended > 0 ? Math.round(blended) : null;
   }
   lsSet(lsKey, data.players);
   lsSet(LS_PLAYERS, players);
@@ -7739,20 +7739,20 @@ let abpWiggle = 0.5;   // % of cap limit
 let abpMinPts = 15;
 
 function ppts2526blend(p){
-  const srcs = [];
-  if(p.proj2526_athletic > 0) srcs.push(p.proj2526_athletic);
-  if(p.proj2526_dfo      > 0) srcs.push(p.proj2526_dfo);
-  if(p.proj2526_espn     > 0) srcs.push(p.proj2526_espn);
-  if(p.proj2526_nhl      > 0) srcs.push(p.proj2526_nhl);
-  return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+  const W = PROJ_SOURCE_WEIGHTS;
+  const blended = _weightedBlend([
+    [p.proj2526_athletic, W.athletic], [p.proj2526_dfo, W.dfo],
+    [p.proj2526_espn, W.espn], [p.proj2526_nhl, W.nhl],
+  ]);
+  return blended > 0 ? Math.round(blended) : 0;
 }
 
 function ppts2425blend(p){
-  const srcs = [];
-  if(p.proj2425_athletic > 0) srcs.push(p.proj2425_athletic);
-  if(p.proj2425_dfo      > 0) srcs.push(p.proj2425_dfo);
-  if(p.proj2425_nhl      > 0) srcs.push(p.proj2425_nhl);
-  if(srcs.length) return Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length);
+  const W = PROJ_SOURCE_WEIGHTS;
+  const blended = _weightedBlend([
+    [p.proj2425_athletic, W.athletic], [p.proj2425_dfo, W.dfo], [p.proj2425_nhl, W.nhl],
+  ]);
+  if(blended > 0) return Math.round(blended);
   if(p.pts2425 > 0) return p.pts2425; // fall back to actuals if no projections loaded
   return 0;
 }
@@ -7771,11 +7771,11 @@ function projGp2425blend(p){
 }
 
 function ppts2324blend(p){
-  const srcs = [];
-  if(p.proj2324_athletic > 0) srcs.push(p.proj2324_athletic);
-  if(p.proj2324_dtz      > 0) srcs.push(p.proj2324_dtz);
-  if(p.proj2324_nhl      > 0) srcs.push(p.proj2324_nhl);
-  if(srcs.length) return Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length);
+  const W = PROJ_SOURCE_WEIGHTS;
+  const blended = _weightedBlend([
+    [p.proj2324_athletic, W.athletic], [p.proj2324_dtz, W.dfo], [p.proj2324_nhl, W.nhl],
+  ]);
+  if(blended > 0) return Math.round(blended);
   if(p.pts2324 > 0) return p.pts2324; // fall back to actuals if no projections loaded
   return 0;
 }
@@ -7813,29 +7813,26 @@ const _VIEW_SEASON_LABEL = view => view==='2627' ? '26-27' : view==='2526' ? '25
 // Trend needs the pure projection-sources-only value, so 0 means "no
 // projection synced," not "no data at all."
 function _viewProjPts(p, view){
+  const W = PROJ_SOURCE_WEIGHTS;
   if(view==='2627'){
-    const srcs = [];
-    if(p.ptsAthletic > 0) srcs.push(p.ptsAthletic);
-    if(p.ptsDFO      > 0) srcs.push(p.ptsDFO);
-    if(p.ptsESPN     > 0) srcs.push(p.ptsESPN);
-    if(p.ptsCBS      > 0) srcs.push(p.ptsCBS);
-    if(p.ptsNHL      > 0) srcs.push(p.ptsNHL);
-    return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+    const blended = _weightedBlend([
+      [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsESPN, W.espn],
+      [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
+    ]);
+    return blended > 0 ? Math.round(blended) : 0;
   }
   if(view==='2526') return ppts2526blend(p); // no actuals fallback in this one
   if(view==='2425'){
-    const srcs = [];
-    if(p.proj2425_athletic > 0) srcs.push(p.proj2425_athletic);
-    if(p.proj2425_dfo      > 0) srcs.push(p.proj2425_dfo);
-    if(p.proj2425_nhl      > 0) srcs.push(p.proj2425_nhl);
-    return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+    const blended = _weightedBlend([
+      [p.proj2425_athletic, W.athletic], [p.proj2425_dfo, W.dfo], [p.proj2425_nhl, W.nhl],
+    ]);
+    return blended > 0 ? Math.round(blended) : 0;
   }
   if(view==='2324'){
-    const srcs = [];
-    if(p.proj2324_athletic > 0) srcs.push(p.proj2324_athletic);
-    if(p.proj2324_dtz      > 0) srcs.push(p.proj2324_dtz);
-    if(p.proj2324_nhl      > 0) srcs.push(p.proj2324_nhl);
-    return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
+    const blended = _weightedBlend([
+      [p.proj2324_athletic, W.athletic], [p.proj2324_dtz, W.dfo], [p.proj2324_nhl, W.nhl],
+    ]);
+    return blended > 0 ? Math.round(blended) : 0;
   }
   return 0;
 }
