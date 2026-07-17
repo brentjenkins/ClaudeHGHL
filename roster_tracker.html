@@ -43,9 +43,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .draft-results-row:last-child{border-bottom:none}
 .stats-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px;margin-bottom:1.25rem;overflow-x:auto}
 .team-card{background:#f7f7f5;border-radius:8px;padding:.5rem .625rem;display:flex;flex-direction:column;gap:5px;min-width:0}
-.team-card-header{display:flex;align-items:center;gap:5px;min-width:0}
+.team-card-header{display:flex;flex-wrap:wrap;align-items:center;gap:2px 5px;min-width:0}
 .team-card-logo{width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#e5e7eb}
-.team-card-name{font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team-card-name{display:block;width:100%;font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .team-card-cap{font-size:11px;color:#555}
 .team-card-pos{display:flex;gap:4px;font-size:11px;font-weight:500}
 .team-card-pos span{background:#fff;border-radius:4px;padding:1px 5px;color:#1a1a18}
@@ -3389,9 +3389,13 @@ function renderBigBoard(){
   const draftEntry = document.querySelector('#draftBoard2627 .draft-entry');
   if(draftEntry) draftEntry.style.display = priorDraft ? 'none' : '';
 
+  // Strips private-analysis elements from the Big Board's team-card copy only —
+  // the source cards on the actual Players tabs (#statCards*) are left untouched.
   const stripTop5 = () => {
     document.querySelectorAll('#bbTeamCards .draft-top5').forEach(el => el.remove());
     document.querySelectorAll('#bbTeamCards .team-curve-delta').forEach(el => el.remove());
+    document.querySelectorAll('#bbTeamCards .league-card').forEach(el => el.remove());
+    document.querySelectorAll('#bbTeamCards .pos-spend-row').forEach(el => el.remove());
   };
 
   if(draftMode2324){
@@ -6030,7 +6034,7 @@ function _capGapRow(tp, getCapFn, capLimit){
   const gCap=tp.filter(p=>posGroup(p.pos)==='G').reduce((s,p)=>s+getCapFn(p),0);
   const fG=OPT_POS_FRACS.F*capLimit-fCap, dG=OPT_POS_FRACS.D*capLimit-dCap, gG=OPT_POS_FRACS.G*capLimit-gCap;
   const fmt=(g,col)=>{const c=Math.abs(g)<=1?'#9ca3af':g>0?col:'#dc2626';return`<span style="color:${c};font-weight:600">${g>=0?'+':''}$${g.toFixed(1)}</span>`;};
-  return `<div style="display:flex;gap:5px;font-size:9px;margin-top:1px" title="Cap gap vs optimal (F ${Math.round(OPT_POS_FRACS.F*100)}% / D ${Math.round(OPT_POS_FRACS.D*100)}% / G ${Math.round(OPT_POS_FRACS.G*100)}% of $${capLimit}M)"><span style="color:#9ca3af">F</span>${fmt(fG,'#1e40af')}<span style="color:#9ca3af">D</span>${fmt(dG,'#166534')}<span style="color:#9ca3af">G</span>${fmt(gG,'#92400e')}</div>`;
+  return `<div class="pos-spend-row" style="display:flex;gap:5px;font-size:9px;margin-top:1px" title="Cap gap vs optimal (F ${Math.round(OPT_POS_FRACS.F*100)}% / D ${Math.round(OPT_POS_FRACS.D*100)}% / G ${Math.round(OPT_POS_FRACS.G*100)}% of $${capLimit}M)"><span style="color:#9ca3af">F</span>${fmt(fG,'#1e40af')}<span style="color:#9ca3af">D</span>${fmt(dG,'#166534')}<span style="color:#9ca3af">G</span>${fmt(gG,'#92400e')}</div>`;
 }
 
 function updateStats2425(){
@@ -6075,7 +6079,7 @@ function updateStats2425(){
     const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
     const pr2425={F:rawP.F/maxP,D:rawP.D/maxP,G:rawP.G/maxP};
     const pr=lastPressure2425||pr2425;
-    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+    leagueCard=`<div class="team-card league-card" style="background:#eff6ff;border:1px solid #dbeafe">
       <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
       <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
       <div class="team-card-pos" style="gap:6px">
@@ -6085,7 +6089,7 @@ function updateStats2425(){
       </div>
     </div>`;
   } else {
-    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+    leagueCard=`<div class="team-card league-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
       <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
       <div class="team-card-cap" style="color:#d1d5db">—</div>
       <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
@@ -6384,7 +6388,7 @@ function updateStats2324(){
     const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
     const pr2324={F:rawP.F/maxP,D:rawP.D/maxP,G:rawP.G/maxP};
     const pr=lastPressure2324||pr2324;
-    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+    leagueCard=`<div class="team-card league-card" style="background:#eff6ff;border:1px solid #dbeafe">
       <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
       <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
       <div class="team-card-pos" style="gap:6px">
@@ -6394,7 +6398,7 @@ function updateStats2324(){
       </div>
     </div>`;
   } else {
-    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+    leagueCard=`<div class="team-card league-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
       <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
       <div class="team-card-cap" style="color:#d1d5db">—</div>
       <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
@@ -7285,7 +7289,7 @@ function updateStats2526(){
     const rawPF2526=lnF/Math.max(1,avF), rawPD2526=lnD/Math.max(1,avD), rawPG2526=lnG/Math.max(1,avG);
     const statsMaxP2526=Math.max(rawPF2526,rawPD2526,rawPG2526,0.0001);
     const pr=lastPressure2526||{F:0,D:0,G:0};
-    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+    leagueCard=`<div class="team-card league-card" style="background:#eff6ff;border:1px solid #dbeafe">
       <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
       <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
       <div class="team-card-pos" style="gap:6px">
@@ -7295,7 +7299,7 @@ function updateStats2526(){
       </div>
     </div>`;
   } else {
-    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+    leagueCard=`<div class="team-card league-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
       <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
       <div class="team-card-cap" style="color:#d1d5db">—</div>
       <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
@@ -8234,7 +8238,7 @@ function updateStats(){
     const rawPF=lnF/Math.max(1,avF), rawPD=lnD/Math.max(1,avD), rawPG=lnG/Math.max(1,avG);
     const statsMaxP=Math.max(rawPF,rawPD,rawPG,0.0001);
     const pr=lastPressure||{F:0,D:0,G:0};
-    leagueCard=`<div class="team-card" style="background:#eff6ff;border:1px solid #dbeafe">
+    leagueCard=`<div class="team-card league-card" style="background:#eff6ff;border:1px solid #dbeafe">
       <div class="team-card-header"><span class="team-card-name" style="color:#6366f1">League</span></div>
       <div class="team-card-cap" style="color:#6b7280;font-size:10px">picks remaining</div>
       <div class="team-card-pos" style="gap:6px">
@@ -8244,7 +8248,7 @@ function updateStats(){
       </div>
     </div>`;
   } else {
-    leagueCard=`<div class="team-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
+    leagueCard=`<div class="team-card league-card" style="background:#f9fafb;border:1px dashed #e5e7eb;opacity:0.35;pointer-events:none">
       <div class="team-card-header"><span class="team-card-name" style="color:#9ca3af">League</span></div>
       <div class="team-card-cap" style="color:#d1d5db">—</div>
       <div class="team-card-pos"><span style="color:#d1d5db">—</span></div>
