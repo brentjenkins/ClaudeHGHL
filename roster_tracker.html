@@ -657,6 +657,7 @@ tr:hover td{background:#fafaf8}
 <tr>
   <th id="thg-2627-team" colspan="8"></th>
   <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="2" style="text-align:center;color:#16a34a;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Actual</th>
   <th colspan="10" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2"></th>
 </tr>
@@ -671,12 +672,14 @@ tr:hover td{background:#fafaf8}
   <th style="text-align:right">Term</th>
   <th onclick="setSortCol('gp2526')" style="color:#9ca3af;text-align:right" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts2526')" style="color:#9ca3af;text-align:right" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
-  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 26-27 projection curve">△Act <span id="sort-curvedelta_actual"></span></th>
-  <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5;text-align:right" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
-  <th onclick="setSortCol('ptsDFO')" style="color:#185FA5;text-align:right" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
-  <th onclick="setSortCol('ptsESPN')" style="color:#185FA5;text-align:right" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
-  <th onclick="setSortCol('ptsCBS')" style="color:#185FA5;text-align:right" title="CBS Sports 2026-27 projection">CBS <span id="sort-ptsCBS"></span></th>
-  <th onclick="setSortCol('ptsNHL')" style="color:#185FA5;text-align:right" title="NHL.com 2026-27 forward/defenseman point projection">NHL <span id="sort-ptsNHL"></span></th>
+  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 25-26 projection curve, at 25-26 cap">△Act <span id="sort-curvedelta_actual"></span></th>
+  <th onclick="setSortCol('gp2627')" style="color:#16a34a;text-align:right" title="2026-27 games played so far">GP <span id="sort-gp2627"></span></th>
+  <th onclick="setSortCol('pts2627')" style="color:#16a34a;text-align:right;border-right:2px solid #e5e7eb" title="2026-27 actual points so far — banked; counts fully for whoever ends up rostering this player after the draft (drops/draft apply retroactively)">Pts <span id="sort-pts2627"></span></th>
+  <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
+  <th onclick="setSortCol('ptsDFO')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
+  <th onclick="setSortCol('ptsESPN')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
+  <th onclick="setSortCol('ptsCBS')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="CBS Sports 2026-27 projection">CBS <span id="sort-ptsCBS"></span></th>
+  <th onclick="setSortCol('ptsNHL')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="NHL.com 2026-27 forward/defenseman point projection">NHL <span id="sort-ptsNHL"></span></th>
   <th onclick="setSortCol('pts')" style="color:#185FA5;text-align:right">PPTS <span id="sort-pts"></span></th>
   <th onclick="setSortCol('ptsperm')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('curvedelta')" style="color:#185FA5;text-align:right" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort-curvedelta"></span></th>
@@ -865,6 +868,7 @@ tr:hover td{background:#fafaf8}
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.71, MAE=14.4 (common pool)">CBS<input type="number" id="s-wCBS" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('cbs',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.73, MAE=13.9 (common pool)">NHL.com<input type="number" id="s-wNHL" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('nhl',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.64, MAE=15.2 (common pool)">ESPN<input type="number" id="s-wESPN" value="0.8" min="0" max="3" step="0.1" onchange="updateProjWeight('espn',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Once 26-27 games exist, PPTS = banked actual points (certain — drops/draft apply retroactively) + this-weighted blend of preseason rate vs actual pace for games remaining. Small on purpose — 14 games is a noisy sample.">Early pace wt<input type="number" id="s-earlyPaceWeight" value="0.2" min="0" max="1" step="0.05" onchange="updateSetting('earlyPaceWeight',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
     </div>
   </div>
 
@@ -892,7 +896,7 @@ tr:hover td{background:#fafaf8}
       <input type="date" id="s-draftDatePreseason2324" value="2023-10-13" onchange="updateSetting('draftDatePreseason2324',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <input type="date" id="s-draftDatePreseason2425" value="2024-10-05" onchange="updateSetting('draftDatePreseason2425',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <input type="date" id="s-draftDatePreseason2526" value="2025-09-27" onchange="updateSetting('draftDatePreseason2526',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
-      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+      <input type="date" id="s-draftDatePreseason2627" value="2026-10-02" onchange="updateSetting('draftDatePreseason2627',this.value)" style="height:32px;border:1px solid #185FA5;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Supplemental Draft</div>
@@ -900,7 +904,7 @@ tr:hover td{background:#fafaf8}
       <input type="date" id="s-draftDateSupplemental2324" value="2024-01-06" onchange="updateSetting('draftDateSupplemental2324',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <input type="date" id="s-draftDateSupplemental2425" value="2025-01-04" onchange="updateSetting('draftDateSupplemental2425',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <input type="date" id="s-draftDateSupplemental2526" value="2026-01-10" onchange="updateSetting('draftDateSupplemental2526',this.value)" style="height:32px;border:1px solid #ddd;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
-      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
+      <input type="date" id="s-draftDateSupplemental2627" value="2027-01-10" onchange="updateSetting('draftDateSupplemental2627',this.value)" style="height:32px;border:1px solid #185FA5;border-radius:8px;padding:0 4px;font-size:10px;width:100%;text-align:center;background:#fff">
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
     </div>
   </div>
@@ -1358,7 +1362,7 @@ let draftDatePreseason2425    = '2024-10-05';
 let draftDateSupplemental2425 = '2025-01-04';
 let draftDatePreseason2526    = '2025-09-27';
 let draftDateSupplemental2526 = '2026-01-10';
-let draftDatePreseason2627    = '2026-10-01';
+let draftDatePreseason2627    = '2026-10-02';
 let draftDateSupplemental2627 = '2027-01-10';
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
 // ── 24-25 season constants ────────────────────────────────────────────────────
@@ -1474,6 +1478,20 @@ let useActualsPts = true;
 // Tunable live in Settings > Projections.
 let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, cbs: 0.9, nhl: 0.9, espn: 0.8 };
 
+// How much weight the 26-27 in-season actual pace gets vs. the preseason-projection
+// rate, once real 26-27 games exist, when nowcasting the games remaining (see
+// reblendPts below). This is a ceiling, not a flat weight — the draft happens with
+// only ~14 games played LEAGUE-WIDE (not per team/player), so most individual
+// players will have just 1-3 GP by draft day. The effective weight scales with each
+// player's own gp2627 (see EARLY_PACE_GP_TRUST below) so a single hot/cold game
+// can't swing a season projection — it only approaches this ceiling once a player
+// has actually accumulated a reasonably trustworthy sample. Tunable in Settings >
+// Projections.
+let EARLY_PACE_WEIGHT = 0.2;
+// Games played at which the early-pace weight reaches its full ceiling above.
+// Below this, effective weight scales linearly with gp2627/EARLY_PACE_GP_TRUST.
+const EARLY_PACE_GP_TRUST = 20;
+
 function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs with value>0 count
   let sw = 0, swv = 0;
   for(const [v, w] of pairs){ if(v > 0){ sw += w; swv += w*v; } }
@@ -1481,17 +1499,40 @@ function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs 
 }
 
 // Recompute p.pts from all available projection sources.
-// Priority: manual override > (actuals override if useActualsPts) > blend of external sources > 25-26 actuals fallback.
+// Priority: manual override > in-season nowcast (once 26-27 games exist) >
+// (actuals override if useActualsPts) > blend of external sources > 25-26 actuals fallback.
+//
+// This league applies drops/draft retroactively — whoever ends up rostering a
+// player after the Oct 2 draft gets credit for that player's ENTIRE season,
+// including the ~14 games already played before the draft. So once real 26-27
+// games exist, the banked points (p.pts2627) are already-certain value, not a
+// projection — only the games still remaining need a (small, pace-adjusted)
+// projection on top. See project_early_season_nowcast memory for the 2026-07-17
+// design discussion.
 function reblendPts(p){
   if(p.ptsManual) return;
-  if(useActualsPts && p.pts2526 > 0){ p.pts = p.pts2526; return; }
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
     [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsESPN, W.espn],
     [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
   ]);
-  if(blended > 0){
-    p.pts = Math.round(blended);
+  const preseasonProj = blended > 0 ? blended : (useActualsPts && p.pts2526 > 0 ? p.pts2526 : 0);
+
+  if(p.gp2627 > 0){
+    const banked = p.pts2627 || 0;
+    const paceRate = banked / p.gp2627;
+    const projGP = projGp2627blend(p) || (posGroup(p.pos)==='G' ? 45 : 78);
+    const gamesRemaining = Math.max(0, projGP - p.gp2627);
+    const preseasonRate = preseasonProj > 0 ? preseasonProj / projGP : paceRate;
+    const paceWeight = EARLY_PACE_WEIGHT * Math.min(1, p.gp2627 / EARLY_PACE_GP_TRUST);
+    const blendedRate = preseasonRate*(1-paceWeight) + paceRate*paceWeight;
+    p.pts = Math.round(banked + blendedRate*gamesRemaining);
+    return;
+  }
+
+  if(useActualsPts && p.pts2526 > 0){ p.pts = p.pts2526; return; }
+  if(preseasonProj > 0){
+    p.pts = Math.round(preseasonProj);
   } else if(p.pts2526 > 0){
     p.pts = p.pts2526;
   }
@@ -2570,11 +2611,22 @@ function render(){
     const base = _curveBaseline(pg, p.cap, ELC_MAX_2627, curveFns2627[pg]);
     return base != null ? p.pts - base : null;
   };
+  // △Act compares 25-26 actuals to a 25-26 curve at the 25-26 cap — same-year basis,
+  // matching curveDeltaActual2425/2324/2526. NOT curveFns2627/p.cap (this year's curve/
+  // cap): a player's cap can change year to year (new contract, ELC graduating), so
+  // judging last year's output against this year's price would conflate the two.
+  const rosteredPool2526ForActual = players.filter(p => p.start2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
+  const curveFns2526ForActual = {
+    F: fitQuadratic(rosteredPool2526ForActual.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+    D: fitQuadratic(rosteredPool2526ForActual.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+    G: fitQuadratic(rosteredPool2526ForActual.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+  };
   const curveDeltaActual = p => {
-    if(!((p.pts2526||0) > 0 && p.cap > 0)) return null;
+    const ap = p.pts2526||0, c = getCap2526(p);
+    if(!(ap > 0 && c > 0)) return null;
     const pg = posGroup(p.pos);
-    const base = _curveBaseline(pg, p.cap, ELC_MAX_2627, curveFns2627[pg]);
-    return base != null ? p.pts2526 - base : null;
+    const base = _curveBaseline(pg, c, ELC_MAX_2526, curveFns2526ForActual[pg]);
+    return base != null ? ap - base : null;
   };
   rows.sort((a,b)=>{
     let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='rank'?(a.rank??99999):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):(a[sortCol]??'');
@@ -2583,7 +2635,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','ptsAthletic','ptsDFO','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
+  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAthletic','ptsDFO','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','rank','abp'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -2706,11 +2758,13 @@ function render(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsAthletic>0?Math.round(p.ptsAthletic):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsDFO>0?Math.round(p.ptsDFO):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsESPN>0?Math.round(p.ptsESPN):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsCBS>0?Math.round(p.ptsCBS):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.ptsNHL>0?Math.round(p.ptsNHL):'—'}</td>
+      <td style="color:#16a34a;text-align:right;font-variant-numeric:tabular-nums">${p.gp2627>0?p.gp2627:'—'}</td>
+      <td style="color:#16a34a;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb">${p.pts2627>0?p.pts2627:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsAthletic>0?Math.round(p.ptsAthletic):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsDFO>0?Math.round(p.ptsDFO):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsESPN>0?Math.round(p.ptsESPN):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsCBS>0?Math.round(p.ptsCBS):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsNHL>0?Math.round(p.ptsNHL):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0?`${p.pts}${p.ptsManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -2726,7 +2780,7 @@ function render(){
             : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join('')):`<tr><td colspan="${draftMode?18:19}" class="empty">No players found</td></tr>`;
+  }).join('')):`<tr><td colspan="${draftMode?20:21}" class="empty">No players found</td></tr>`;
 
   document.getElementById('rowCount').textContent=`${rows.length} player${rows.length!==1?'s':''}`;
   updateStats();
@@ -3688,12 +3742,15 @@ function syncSettings(){
   set('s-wAthletic', PROJ_SOURCE_WEIGHTS.athletic); set('s-wDFO', PROJ_SOURCE_WEIGHTS.dfo);
   set('s-wCBS', PROJ_SOURCE_WEIGHTS.cbs); set('s-wNHL', PROJ_SOURCE_WEIGHTS.nhl);
   set('s-wESPN', PROJ_SOURCE_WEIGHTS.espn);
+  set('s-earlyPaceWeight', EARLY_PACE_WEIGHT);
   set('s-draftDatePreseason2324',    draftDatePreseason2324);
   set('s-draftDateSupplemental2324', draftDateSupplemental2324);
   set('s-draftDatePreseason2425',    draftDatePreseason2425);
   set('s-draftDateSupplemental2425', draftDateSupplemental2425);
   set('s-draftDatePreseason2526',    draftDatePreseason2526);
   set('s-draftDateSupplemental2526', draftDateSupplemental2526);
+  set('s-draftDatePreseason2627',    draftDatePreseason2627);
+  set('s-draftDateSupplemental2627', draftDateSupplemental2627);
   updateYahooDropBtnTooltips();
 }
 function updateDraftWeight(key, val){
@@ -3738,6 +3795,9 @@ function updateSetting(key, val){
   else if(key === 'draftDateSupplemental2425') { draftDateSupplemental2425 = val; }
   else if(key === 'draftDatePreseason2526')    { draftDatePreseason2526    = val; updateYahooDropBtnTooltips(); }
   else if(key === 'draftDateSupplemental2526') { draftDateSupplemental2526 = val; }
+  else if(key === 'draftDatePreseason2627')    { draftDatePreseason2627    = val; }
+  else if(key === 'draftDateSupplemental2627') { draftDateSupplemental2627 = val; }
+  else if(key === 'earlyPaceWeight')           { EARLY_PACE_WEIGHT = val; applyBlendedPts(); render(); }
 }
 
 function addDays(dateStr, n){
@@ -4418,8 +4478,8 @@ function resetDraft2526(){
 }
 
 async function syncStats2627(){
-  if(new Date() < new Date('2026-10-01')){
-    toast('NHL 26-27 season hasn\'t started yet — available October 2026.'); return;
+  if(new Date() < new Date(draftDatePreseason2627 + 'T00:00:00')){
+    toast(`NHL 26-27 season hasn't started yet — available ${draftDatePreseason2627}.`); return;
   }
   const btn = document.getElementById('statsBtn2627');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Syncing…';
