@@ -1758,9 +1758,18 @@ function load(){
       p.capManual = true;
       migrated = true;
     }
-    // Backfill ptsManual: PPTS differs from 25-26 Pts means it was manually overridden
+    // Backfill ptsManual for legacy records missing the field. NOT inferred from
+    // "PPTS differs from 25-26 actuals" — that's expected and correct for a real
+    // player, not evidence of a manual edit: reblendPts() blends multiple
+    // projection sources (so it rarely equals raw pts2526 exactly) and, once real
+    // 26-27 games exist, nowcasts using banked points + pace (guaranteed to differ
+    // from pts2526 by design — see reblendPts). The old heuristic here silently
+    // mislabeled real players as manual, which permanently locked their PPTS
+    // in place forever after (reblendPts returns immediately if ptsManual is
+    // true, before the nowcast logic even runs) — worst possible timing, since
+    // it'd bite hardest exactly when the season starts and nowcasting kicks in.
     if(p.ptsManual === undefined){
-      p.ptsManual = p.pts > 0 && p.pts2526 > 0 && p.pts !== p.pts2526;
+      p.ptsManual = false;
       migrated = true;
     }
     // Normalize Yahoo team abbreviations to NHL standard (WAS→WSH, NAS→NSH, SJ→SJS, etc.)
