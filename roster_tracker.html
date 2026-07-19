@@ -1415,7 +1415,7 @@ const FIRST_NAME_ALIASES = {
   'joe':'joseph','joseph':'joe',
   'tony':'anthony','anthony':'tony',
   'matty':'matthew',
-  'max':'maxwell','maxwell':'max','maxim':'max',
+  'max':'maxwell','maxwell':'max','maxim':'max','maksim':'max',
   'johnjason':'jj','jj':'johnjason',
   'fedor':'fyodor','fyodor':'fedor',
 };
@@ -3173,7 +3173,7 @@ function _seedStart2627(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2627){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key)) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
@@ -3182,6 +3182,7 @@ function _seedStart2627(){
       ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
     });
   }
+  dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
 }
 
 function resetDraft(){
@@ -4464,7 +4465,7 @@ function _seedStart2526(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2526){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key)) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2526:null,
@@ -4475,6 +4476,7 @@ function _seedStart2526(){
       ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
     });
   }
+  dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
 }
 
 function resetDraft2526(){
@@ -4721,7 +4723,7 @@ function compareDrops2526(){
   const vpMatched2526 = new Set(vp.map(p => normName(p.name).toLowerCase()));
   for(const stub of PREDROP_STUBS_2526){
     const key = normName(stub.name).toLowerCase();
-    if(vpMatched2526.has(key)) continue;
+    if(vpMatched2526.has(key) || (_nameAlias(key) && vpMatched2526.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2526:null, pts:0, pts2526:0, start2526:team });
   }
@@ -5039,7 +5041,7 @@ function _seedStart2425(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2425){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key)) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2425:null,
@@ -5052,6 +5054,7 @@ function _seedStart2425(){
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
     });
   }
+  dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
 }
 
 function resetSim2425(){
@@ -5218,7 +5221,7 @@ function compareDrops2425(){
   const vpMatched = new Set(vp.map(p => normName(p.name).toLowerCase()));
   for(const stub of PREDROP_STUBS_2425){
     const key = normName(stub.name).toLowerCase();
-    if(vpMatched.has(key)) continue;
+    if(vpMatched.has(key) || (_nameAlias(key) && vpMatched.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2425:null, pts:0, pts2425:0, start2425:team });
   }
@@ -5377,7 +5380,7 @@ function _seedStart2324(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2324){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key)) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2324:null, cap2425:null,
@@ -5391,6 +5394,7 @@ function _seedStart2324(){
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
     });
   }
+  dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
 }
 
 function resetSim2324(){
@@ -5555,7 +5559,7 @@ function compareDrops2324(){
   const vpMatched2324 = new Set(vp.map(p => normName(p.name).toLowerCase()));
   for(const stub of PREDROP_STUBS_2324){
     const key = normName(stub.name).toLowerCase();
-    if(vpMatched2324.has(key)) continue;
+    if(vpMatched2324.has(key) || (_nameAlias(key) && vpMatched2324.has(_nameAlias(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2324:null, pts:0, pts2324:0, start2324:team });
   }
@@ -5979,8 +5983,9 @@ function showTeamCurveModal(view, team){
     ? (() => {
         const real = players.filter(p => p[startField] !== team && _wasPreDropKeeper(p, team, predropDict));
         const realMatched = new Set(players.map(p => normName(p.name).toLowerCase()));
+        const _stubIsMatched = stub => { const k = normName(stub.name).toLowerCase(); return realMatched.has(k) || (_nameAlias(k) && realMatched.has(_nameAlias(k))); };
         const stubs = (predropStubs || [])
-          .filter(stub => !realMatched.has(normName(stub.name).toLowerCase()) && _dictLookup(stub.name, predropDict) === team)
+          .filter(stub => !_stubIsMatched(stub) && _dictLookup(stub.name, predropDict) === team)
           .map(stub => _stubCurvePlayer(stub.name, stub.pos, team));
         return [...real, ...stubs];
       })()

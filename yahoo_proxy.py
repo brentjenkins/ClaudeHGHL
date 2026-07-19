@@ -1783,6 +1783,7 @@ _FORMAL_TO_NICK = {
     "yegor":     "egor",
     "maxwell":   "max",
     "maxim":     "max",
+    "maksim":    "max",
     "johnjason": "jj",
     "fyodor":    "fedor",
 }
@@ -1794,8 +1795,18 @@ _NICK_TO_FORMAL = {v: k for k, v in _FORMAL_TO_NICK.items()}
 # matching (matching normalize_name's hyphen-stripping), but PuckPedia's actual URL
 # needs the real hyphenated spelling: puckpedia.com/player/john-jason-peterka.
 # Keyed by normalize_name(name).lower()_posgroup, same convention as everywhere else.
+#
+# "JJ" is also a structural many-to-one case (same class as the max/alex ambiguity
+# noted elsewhere): it can't be a single alias-map entry because it's short for two
+# different players' formal names (John-Jason Peterka vs Janis Jerome Moser) — a
+# plain dict can only remember one reverse mapping for "jj", so both need explicit
+# overrides here rather than relying on the generic alias retry.
 _PUCKPEDIA_SLUG_OVERRIDES = {
     "jj peterka_F": "john-jason-peterka",
+    "jj moser_D":   "janis-jerome-moser",
+    # "nick" is already claimed by the nicholas<->nick alias pair, so it can't also
+    # reverse-map to "nicklaus" (Nick Perbix's real first name) — same ambiguity class.
+    "nick perbix_D": "nicklaus-perbix",
 }
 
 
@@ -2092,8 +2103,15 @@ def signings_all():
             pg  = _POS_GROUP_MAP.get(pos, "F")
 
             key = f"{normalize_name(full).lower()}_{pg}"
-            first_lower = p.get("p_fn", "").lower()
-            nick = _FORMAL_TO_NICK.get(first_lower)
+            # normalize_name() strips hyphens (matches every other lookup convention in this
+            # app), so a raw p_fn like "John-Jason" must go through it before the alias lookup
+            # — otherwise "john-jason" never matches the "johnjason" alias-map key and this
+            # endpoint's own inline alias logic silently misses hyphenated first names (found
+            # via JJ/John-Jason Peterka: this endpoint created a second phantom player record
+            # instead of matching the existing live one). _FORMAL_TO_NICK/_NICK_TO_FORMAL are
+            # both tried since PuckPedia's feed can give either spelling.
+            first_lower = normalize_name(p.get("p_fn", "")).lower()
+            nick = _FORMAL_TO_NICK.get(first_lower) or _NICK_TO_FORMAL.get(first_lower)
             nick_key = (f"{normalize_name(nick + ' ' + p.get('p_ln', '')).lower()}_{pg}"
                         if nick else None)
 
@@ -2186,10 +2204,28 @@ def player_page_contracts():
     scraper = _make_puckpedia_scraper()
     results = {}
 
-    def _fetch_contracts_for_slug(slug, name, pos):
+    def _fetch_contracts_for_slug(slug, name, pos, retries=2):
         """Fetch one PuckPedia player page and parse its contract-history tab panel.
         Returns (contracts, reason) — reason is set (and contracts empty) on any failure,
-        so the caller can decide whether to retry with an alias spelling."""
+        so the caller can decide whether to retry with an alias spelling.
+
+        A large fraction of "not found" results turn out to be transient — the exact
+        same slug succeeds seconds later on an isolated retest (confirmed repeatedly:
+        Toropchenko, Benn, Peterka, Beniers, Arvidsson, Bolduc, St. Ivany all "failed"
+        once mid-batch then worked immediately on retry). So retry the same slug with
+        backoff before treating it as a real 404/parse failure.
+        """
+        last_reason = None
+        for attempt in range(retries + 1):
+            if attempt > 0:
+                time.sleep(0.5 * attempt)
+            contracts, reason = _fetch_contracts_for_slug_once(slug, name, pos)
+            if contracts:
+                return contracts, None
+            last_reason = reason
+        return [], last_reason
+
+    def _fetch_contracts_for_slug_once(slug, name, pos):
         resp = scraper.get(f"https://puckpedia.com/player/{slug}", timeout=15)
         if resp.status_code != 200:
             return [], f"HTTP {resp.status_code}"
@@ -2204,9 +2240,16 @@ def player_page_contracts():
         contracts = []
         for o in options:
             title   = o.get("title", "")
-            cap_str = o.get("cap_hit", "$0").replace("$", "").replace("M", "")
+            # cap_hit is formatted like "$7.50M" or, for sub-$1M ELC/depth deals,
+            # "$863K" — the K suffix was previously unhandled, silently dropping
+            # every contract below $1M (float("863K") raises, caught below, and
+            # the contract just vanished with no error surfaced).
+            cap_raw = o.get("cap_hit", "$0").replace("$", "")
             try:
-                cap = round(float(cap_str), 4)
+                if cap_raw.endswith("K"):
+                    cap = round(float(cap_raw[:-1]) / 1000, 4)
+                else:
+                    cap = round(float(cap_raw.replace("M", "")), 4)
             except ValueError:
                 continue
             length = int(o.get("length") or 0)
