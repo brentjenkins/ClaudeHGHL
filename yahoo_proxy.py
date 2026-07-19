@@ -1784,6 +1784,7 @@ _FORMAL_TO_NICK = {
     "maxwell":   "max",
     "maxim":     "max",
     "maksim":    "max",
+    "tommy":     "thomas",
     "johnjason": "jj",
     "fyodor":    "fedor",
 }
