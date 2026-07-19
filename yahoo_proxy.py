@@ -1783,9 +1783,20 @@ _FORMAL_TO_NICK = {
     "yegor":     "egor",
     "maxwell":   "max",
     "maxim":     "max",
+    "johnjason": "jj",
+    "fyodor":    "fedor",
 }
 # Reverse map: nick → formal (built from _FORMAL_TO_NICK, last formal wins on collision)
 _NICK_TO_FORMAL = {v: k for k, v in _FORMAL_TO_NICK.items()}
+
+# PuckPedia URL slugs that can't be derived from the app's name spelling even with
+# the alias retry above — e.g. "JJ Peterka" normalizes to "johnjason" for dict-key
+# matching (matching normalize_name's hyphen-stripping), but PuckPedia's actual URL
+# needs the real hyphenated spelling: puckpedia.com/player/john-jason-peterka.
+# Keyed by normalize_name(name).lower()_posgroup, same convention as everywhere else.
+_PUCKPEDIA_SLUG_OVERRIDES = {
+    "jj peterka_F": "john-jason-peterka",
+}
 
 
 def _add_name_aliases(d: dict, key: str, full_name: str, pg: str) -> None:
@@ -2175,13 +2186,56 @@ def player_page_contracts():
     scraper = _make_puckpedia_scraper()
     results = {}
 
+    def _fetch_contracts_for_slug(slug, name, pos):
+        """Fetch one PuckPedia player page and parse its contract-history tab panel.
+        Returns (contracts, reason) — reason is set (and contracts empty) on any failure,
+        so the caller can decide whether to retry with an alias spelling."""
+        resp = scraper.get(f"https://puckpedia.com/player/{slug}", timeout=15)
+        if resp.status_code != 200:
+            return [], f"HTTP {resp.status_code}"
+        m = _re.search(
+            r'id="player-contract-tab-panels".*?options:\s*(\[.*?\])\s*,\s*\n?\s*tabSelected',
+            resp.text, _re.DOTALL,
+        )
+        if not m:
+            return [], "no contract tab panel found"
+        raw_opts = m.group(1).replace("\\/", "/")
+        options  = json.loads(raw_opts)
+        contracts = []
+        for o in options:
+            title   = o.get("title", "")
+            cap_str = o.get("cap_hit", "$0").replace("$", "").replace("M", "")
+            try:
+                cap = round(float(cap_str), 4)
+            except ValueError:
+                continue
+            length = int(o.get("length") or 0)
+            parts  = title.split("-")
+            try:
+                start_yr = int(parts[0])
+                end_yr   = int(parts[1]) if len(parts) > 1 else start_yr + length
+            except (ValueError, IndexError):
+                continue
+            contracts.append({
+                "name":      name,
+                "pos":       pos,
+                "cap":       cap,
+                "sign_date": "",
+                "exp":       f"{end_yr - 1}-{end_yr}",
+                "start_yr":  start_yr,
+                "term":      length,
+                "nhl_id":    "",
+                "team":      "",
+                "birthDate": "",
+            })
+        return contracts, (None if contracts else "0 contracts parsed")
+
     for item in req_players:
         name = item.get("name", "").strip()
         pos  = item.get("pos", "C")
         if not name:
             continue
 
-        slug    = _name_to_puckpedia_slug(name)
         pg      = _POS_GROUP_MAP.get(pos, "F")
         key     = f"{normalize_name(name).lower()}_{pg}"
         first_lower = name.split()[0].lower()
@@ -2189,51 +2243,22 @@ def player_page_contracts():
         last    = " ".join(name.split()[1:])
         nick_key = f"{normalize_name(nick + ' ' + last).lower()}_{pg}" if nick else None
 
+        slug = _PUCKPEDIA_SLUG_OVERRIDES.get(key) or _name_to_puckpedia_slug(name)
         try:
-            resp = scraper.get(f"https://puckpedia.com/player/{slug}", timeout=15)
-            if resp.status_code != 200:
-                print(f"  ✗ {name} ({slug}): HTTP {resp.status_code}")
-                time.sleep(0.2)
-                continue
+            contracts, reason = _fetch_contracts_for_slug(slug, name, pos)
 
-            m = _re.search(
-                r'id="player-contract-tab-panels".*?options:\s*(\[.*?\])\s*,\s*\n?\s*tabSelected',
-                resp.text, _re.DOTALL,
-            )
-            if not m:
-                print(f"  ✗ {name}: no contract tab panel found")
-                time.sleep(0.2)
-                continue
-
-            raw_opts = m.group(1).replace("\\/", "/")
-            options  = json.loads(raw_opts)
-            contracts = []
-            for o in options:
-                title   = o.get("title", "")
-                cap_str = o.get("cap_hit", "$0").replace("$", "").replace("M", "")
-                try:
-                    cap = round(float(cap_str), 4)
-                except ValueError:
-                    continue
-                length = int(o.get("length") or 0)
-                parts  = title.split("-")
-                try:
-                    start_yr = int(parts[0])
-                    end_yr   = int(parts[1]) if len(parts) > 1 else start_yr + length
-                except (ValueError, IndexError):
-                    continue
-                contracts.append({
-                    "name":      name,
-                    "pos":       pos,
-                    "cap":       cap,
-                    "sign_date": "",
-                    "exp":       f"{end_yr - 1}-{end_yr}",
-                    "start_yr":  start_yr,
-                    "term":      length,
-                    "nhl_id":    "",
-                    "team":      "",
-                    "birthDate": "",
-                })
+            # PuckPedia's own URL spelling sometimes diverges from this app's established
+            # name (e.g. "Samuel Montembeault" here vs puckpedia.com/player/sam-montembeault,
+            # "Fedor Svechkov" vs .../fyodor-svechkov) — distinct from the usual nick/formal
+            # alias pairs. Retry once with the alias-swapped first name before giving up.
+            if reason and (nick or _NICK_TO_FORMAL.get(first_lower)):
+                alt_first = nick or _NICK_TO_FORMAL.get(first_lower)
+                alt_slug  = _name_to_puckpedia_slug(f"{alt_first} {last}")
+                if alt_slug != slug:
+                    time.sleep(0.2)
+                    contracts2, reason2 = _fetch_contracts_for_slug(alt_slug, name, pos)
+                    if contracts2:
+                        contracts, reason, slug = contracts2, reason2, alt_slug
 
             if contracts:
                 results[key] = contracts
@@ -2241,7 +2266,7 @@ def player_page_contracts():
                     results[nick_key] = contracts
                 print(f"  ✓ {name}: {len(contracts)} contracts (slug={slug})")
             else:
-                print(f"  ✗ {name}: 0 contracts parsed")
+                print(f"  ✗ {name} ({slug}): {reason}")
 
             time.sleep(0.2)
         except Exception as e:

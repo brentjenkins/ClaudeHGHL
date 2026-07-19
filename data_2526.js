@@ -1608,7 +1608,7 @@ const PROJ2526_CBS = {
   'john marino_D': 28,
   'john tavares_F': 71,
   'johnathan kovacevic_D': 9,
-  'johnjason peterka_F': 61,
+  'jj peterka_F': 61,
   'jon merrill_D': 4,
   'jonah gadjovich_F': 10,
   'jonas brodin_D': 31,
