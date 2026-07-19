@@ -2038,8 +2038,14 @@ function assignCapFromSignings(){
   if(!raw) return;
   for(const p of players){
     const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-    const contracts = raw[key];
-    if(!contracts || !contracts.length) continue;
+    // Alias fallback: a player's live-pool name and PuckPedia's own spelling can differ
+    // by a hop the scrape-time alias emission doesn't cover (e.g. "Tommy" Novak's live
+    // record vs "Thomas"/"Tom" Novak in the signings store) — bare raw[key] silently
+    // leaves cap2324/2425/2526 null, which getCap*() then treats as 0, which in turn
+    // satisfies "cap <= ELC_MAX" and misclassifies a real veteran as an ELC prospect.
+    const aliasKey = _nameAlias(key);
+    const contracts = raw[key] || (aliasKey && raw[aliasKey]) || [];
+    if(!contracts.length) continue;
     // contracts stored sign_date DESC; first match = most recently signed active contract
     const c2324 = contracts.find(c => c.start_yr <= 2023 && c.exp >= '2023-2024');
     const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
@@ -2148,8 +2154,10 @@ async function syncSigningsAll(e){
     const matchedKeys = new Set();
     for(const p of players){
       const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      const contracts = raw[key];
-      if(!contracts || !contracts.length) continue;
+      // Alias fallback — see assignCapFromSignings() for why (Tommy/Thomas/Tom Novak etc.)
+      const aliasKey = _nameAlias(key);
+      const contracts = raw[key] || (aliasKey && raw[aliasKey]) || [];
+      if(!contracts.length) continue;
       const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
       const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
       const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
@@ -2169,6 +2177,7 @@ async function syncSigningsAll(e){
         p.cap = 0; p.contractTerm = 0; p.expYear = 0;
       }
       matchedKeys.add(key);
+      if(aliasKey) matchedKeys.add(aliasKey);
       matched++;
     }
 
@@ -2177,7 +2186,12 @@ async function syncSigningsAll(e){
     let nextId = Math.max(0, ...players.map(p => p.id ?? 0)) + 1;
     const seenIds = new Set();
     for(const [key, contracts] of Object.entries(raw)){
-      if(matchedKeys.has(key) || !contracts.length) continue;
+      // Also check this raw key's own alias against matchedKeys — covers 3-spelling
+      // chains a single alias hop can't bridge directly (e.g. live "Tommy" Novak matches
+      // via "thomas novak_F" in the loop above, but raw also has a separate "tom novak_F"
+      // key one hop *from* thomas rather than from tommy; without this check it'd still
+      // read as "not yet in our list" and spawn a phantom duplicate).
+      if(matchedKeys.has(key) || matchedKeys.has(_nameAlias(key)) || !contracts.length) continue;
       const latest = contracts[0];
       const uid = latest.nhl_id || latest.name;
       if(seenIds.has(uid)) continue;
