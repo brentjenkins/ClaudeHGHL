@@ -261,6 +261,8 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-athletic" id="athletic2425Btn" onclick="document.getElementById('athletic2425FileInput').click()" title="Import Athletic 2024-25 projections from Excel file" style="opacity:.75">📈 ATH 24-25</button>
       <input type="file" id="dfo2425FileInput" accept=".csv" style="display:none" onchange="syncDFO2425(this)">
       <button class="btn btn-dfo" id="dfo2425Btn" onclick="document.getElementById('dfo2425FileInput').click()" title="Import DFO 2024-25 projections from CSV">📈 DFO 24-25</button>
+      <input type="file" id="dtz2425FileInput" accept=".csv" multiple style="display:none" onchange="syncDTZ2425(this)">
+      <button class="btn btn-dtz" id="dtz2425Btn" onclick="document.getElementById('dtz2425FileInput').click()" title="Import DTZ 2024-25 projections — select both the skater and goalie CSV exports together">📈 DTZ 24-25</button>
       <button class="btn btn-nhl" id="nhl2425ProjBtn" onclick="syncNHL2425()" title="Load NHL 2024-25 projections (frozen snapshot — the season is over)" style="opacity:.75">📈 NHL 24-25</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
@@ -303,7 +305,7 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th id="thg-2425-team" colspan="8"></th>
-  <th colspan="8" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">24-25 Proj</th>
+  <th colspan="9" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">24-25 Proj</th>
   <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-right:2px solid #e5e7eb">24-25 Actual</th>
   <th id="th-group-last-2425" colspan="1"></th>
 </tr>
@@ -318,6 +320,7 @@ tr:hover td{background:#fafaf8}
   <th style="text-align:right">Term</th>
   <th onclick="setSortCol2425('proj2425_athletic')" style="color:#185FA5;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2024-25 projection">ATH <span id="sort2425-proj2425_athletic"></span></th>
   <th onclick="setSortCol2425('proj2425_dfo')" style="color:#185FA5;text-align:right" title="DFO 2024-25 projection">DFO <span id="sort2425-proj2425_dfo"></span></th>
+  <th onclick="setSortCol2425('proj2425_dtz')" style="color:#185FA5;text-align:right" title="DTZ 2024-25 projection">DTZ <span id="sort2425-proj2425_dtz"></span></th>
   <th onclick="setSortCol2425('proj2425_nhl')" style="color:#185FA5;text-align:right" title="NHL 2024-25 projection">NHL <span id="sort2425-proj2425_nhl"></span></th>
   <th onclick="setSortCol2425('ppts2425blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2425-ppts2425blend"></span></th>
   <th onclick="setSortCol2425('ptsperm2425')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort2425-ptsperm2425"></span></th>
@@ -1474,14 +1477,22 @@ let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, dtz: 1.2, cbs: 0.9, nhl: 0.
 // reblendPts below). This is a ceiling, not a flat weight — the draft happens with
 // only ~14 games played LEAGUE-WIDE (not per team/player), so most individual
 // players will have just 1-3 GP by draft day. The effective weight scales with each
-// player's own gp2627 (see EARLY_PACE_GP_TRUST below) so a single hot/cold game
-// can't swing a season projection — it only approaches this ceiling once a player
-// has actually accumulated a reasonably trustworthy sample. Tunable in Settings >
-// Projections.
-let EARLY_PACE_WEIGHT = 0.2;
-// Games played at which the early-pace weight reaches its full ceiling above.
-// Below this, effective weight scales linearly with gp2627/EARLY_PACE_GP_TRUST.
-const EARLY_PACE_GP_TRUST = 20;
+// player's own gp2627 (see EARLY_PACE_TRUST_FRACTION below) so a single hot/cold
+// game can't swing a season projection — it only approaches this ceiling once a
+// player has accumulated a trustworthy sample. Set high (not just a mild nudge)
+// because in-season role changes are sticky, not noise: a player who's over/under-
+// performing tends to get moved up/down the lineup or power play, which reinforces
+// rather than reverts their early pace — by ~25% games played that's a real signal,
+// not a hot streak. Tunable in Settings > Projections.
+let EARLY_PACE_WEIGHT = 0.75;
+// Fraction of a player's own projected season (see projGP below — already
+// position-aware, ~78 GP for skaters vs ~45 for goalies) at which the early-pace
+// weight reaches its full ceiling above. Below this, effective weight scales
+// linearly with gp2627/(projGP * EARLY_PACE_TRUST_FRACTION). Using a fraction of
+// each player's own season length (rather than a flat GP count) keeps goalies on
+// the same "25% of the way through their season" footing as skaters instead of
+// taking almost twice as long to reach full trust.
+const EARLY_PACE_TRUST_FRACTION = 0.25;
 
 function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs with value>0 count
   let sw = 0, swv = 0;
@@ -1515,7 +1526,8 @@ function reblendPts(p){
     const projGP = projGp2627blend(p) || (posGroup(p.pos)==='G' ? 45 : 78);
     const gamesRemaining = Math.max(0, projGP - p.gp2627);
     const preseasonRate = preseasonProj > 0 ? preseasonProj / projGP : paceRate;
-    const paceWeight = EARLY_PACE_WEIGHT * Math.min(1, p.gp2627 / EARLY_PACE_GP_TRUST);
+    const trustGP = projGP * EARLY_PACE_TRUST_FRACTION;
+    const paceWeight = EARLY_PACE_WEIGHT * Math.min(1, p.gp2627 / trustGP);
     const blendedRate = preseasonRate*(1-paceWeight) + paceRate*paceWeight;
     p.pts = Math.round(banked + blendedRate*gamesRemaining);
     return;
@@ -1803,9 +1815,11 @@ function load(){
     if(p.gp2425            === undefined){ p.gp2425            = 0;    migrated = true; }
     if(p.cap2425           === undefined){ p.cap2425           = null; migrated = true; }
     if(p.proj2425_dfo      === undefined){ p.proj2425_dfo      = null; migrated = true; }
+    if(p.proj2425_dtz      === undefined){ p.proj2425_dtz      = null; migrated = true; }
     if(p.proj2425_athletic === undefined){ p.proj2425_athletic = null; migrated = true; }
     if(p.proj2425_nhl      === undefined){ p.proj2425_nhl      = null; migrated = true; }
     if(p.projGp2425_athletic === undefined){ p.projGp2425_athletic = null; migrated = true; }
+    if(p.projGp2425_dtz      === undefined){ p.projGp2425_dtz      = null; migrated = true; }
     if(p.rank2425          === undefined){ p.rank2425          = null; migrated = true; }
     if(p.end2324           === undefined){ p.end2324           = null; migrated = true; }
     if(p.end2223           === undefined){ p.end2223           = null; migrated = true; }
@@ -4959,6 +4973,21 @@ async function syncDFO2425(input){
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 24-25'; }
 }
 
+async function syncDTZ2425(input){
+  const files = Array.from(input.files); if(!files.length) return; input.value='';
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('dtz2425Btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData(); files.forEach(f=>fd.append('files', f));
+    const d = await fetch('/dtz-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    const {matched,unmatched} = _apply2425Proj('proj2425_dtz', d, 'projGp2425_dtz');
+    toast(`DTZ 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){ toast('DTZ 24-25 import failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='📈 DTZ 24-25'; }
+}
+
 async function syncAthletic2425(input){
   const file = input.files[0]; if(!file) return; input.value='';
   const btn = document.getElementById('athletic2425Btn');
@@ -5013,7 +5042,7 @@ function _seedStart2425(){
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:team, start2425:team,
       rank:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
-      proj2425_dfo:null, proj2425_athletic:null, proj2425_nhl:null,
+      proj2425_dfo:null, proj2425_dtz:null, proj2425_athletic:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
@@ -5353,7 +5382,7 @@ function _seedStart2324(){
       end2324:null, start2425:null, end2223:team, start2324:team,
       rank:null, rank2324:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
       proj2324_athletic:null, proj2324_dtz:null, proj2324_nhl:null,
-      proj2425_dfo:null, proj2425_athletic:null, proj2425_nhl:null,
+      proj2425_dfo:null, proj2425_dtz:null, proj2425_athletic:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
@@ -5724,7 +5753,7 @@ function render2425(){
   });
 
   const sortCols2425=['name','pos','age','team','end2324','start2425','cap2425',
-    'proj2425_athletic','proj2425_dfo','proj2425_nhl','ppts2425blend','ptsperm2425',
+    'proj2425_athletic','proj2425_dfo','proj2425_dtz','proj2425_nhl','ppts2425blend','ptsperm2425',
     'curvedelta2425','rank2425','abp2425','gp2425','pts2425','curvedelta2425actual'];
   sortCols2425.forEach(c=>{
     const el=document.getElementById(`sort2425-${c}`);
@@ -5771,7 +5800,7 @@ function render2425(){
       const tYouth=youthRaw*draftWeights.wtAge;
       const ageRaw2425=calcAge2425(p)??99;
       const tProspect2425=prospectBonus(ageRaw2425,pg,getCap2425(p),ELC_MAX_2425,draftWeights.wtProspect,pp);
-      const srcN=(p.proj2425_athletic>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_nhl>0?1:0);
+      const srcN=(p.proj2425_athletic>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
       const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
       const tDelta=_deltaCurveBonus(pp,getCap2425(p),curveFns2425[pg],ELC_MAX_2425,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
       const _ds2425=tPPTS+tSc+tPPTSM+tYouth+tProspect2425+tConf+tDelta;
@@ -5843,6 +5872,7 @@ function render2425(){
       <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2425||'—'):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2425_athletic>0?Math.round(p.proj2425_athletic):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_dfo>0?Math.round(p.proj2425_dfo):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_dtz>0?Math.round(p.proj2425_dtz):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425_nhl>0?Math.round(p.proj2425_nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
@@ -5860,7 +5890,7 @@ function render2425(){
           : draftMode2425 ? `<button class="btn-draft" onclick="quickDraft2425(${p.id})">Draft</button>` : ''}
       </td>
     </tr>`;
-  }).join('')) : `<tr><td colspan="${draftMode2425?19:20}" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>`;
+  }).join('')) : `<tr><td colspan="${draftMode2425?20:21}" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>`;
 
   const rc2425 = document.getElementById('rowCount2425');
   if(rc2425) rc2425.textContent = `${rows.length} player${rows.length!==1?'s':''}`;
@@ -7790,7 +7820,7 @@ function ppts2526blend(p){
 function ppts2425blend(p){
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
-    [p.proj2425_athletic, W.athletic], [p.proj2425_dfo, W.dfo], [p.proj2425_nhl, W.nhl],
+    [p.proj2425_athletic, W.athletic], [p.proj2425_dfo, W.dfo], [p.proj2425_dtz, W.dtz], [p.proj2425_nhl, W.nhl],
   ]);
   if(blended > 0) return Math.round(blended);
   if(p.pts2425 > 0) return p.pts2425; // fall back to actuals if no projections loaded
@@ -7808,7 +7838,10 @@ function projGp2526blend(p){
   return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
 }
 function projGp2425blend(p){
-  return p.projGp2425_athletic > 0 ? p.projGp2425_athletic : 0;
+  const srcs = [];
+  if(p.projGp2425_athletic > 0) srcs.push(p.projGp2425_athletic);
+  if(p.projGp2425_dtz      > 0) srcs.push(p.projGp2425_dtz);
+  return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
 }
 
 function ppts2324blend(p){
@@ -7857,7 +7890,7 @@ function _viewProjPts(p, view){
   const W = PROJ_SOURCE_WEIGHTS;
   if(view==='2627'){
     const blended = _weightedBlend([
-      [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsESPN, W.espn],
+      [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsDTZ, W.dtz], [p.ptsESPN, W.espn],
       [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
     ]);
     return blended > 0 ? Math.round(blended) : 0;
@@ -7865,7 +7898,7 @@ function _viewProjPts(p, view){
   if(view==='2526') return ppts2526blend(p); // no actuals fallback in this one
   if(view==='2425'){
     const blended = _weightedBlend([
-      [p.proj2425_athletic, W.athletic], [p.proj2425_dfo, W.dfo], [p.proj2425_nhl, W.nhl],
+      [p.proj2425_athletic, W.athletic], [p.proj2425_dfo, W.dfo], [p.proj2425_dtz, W.dtz], [p.proj2425_nhl, W.nhl],
     ]);
     return blended > 0 ? Math.round(blended) : 0;
   }
