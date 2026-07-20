@@ -757,11 +757,13 @@ _POS_MAP = {"C": "C", "L": "LW", "R": "RW", "D": "D", "G": "G"}
 
 
 def normalize_name(name: str) -> str:
-    """Fold accented chars to ASCII and strip hyphens/periods/apostrophes for key matching.
-    Must stay in sync with JS normName: s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'')"""
+    """Fold accented chars to ASCII, strip hyphens/periods/apostrophes, and collapse
+    whitespace runs for key matching. Must stay in sync with JS normName:
+    s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'').replace(/\\s+/g,' ').trim()"""
     nfd = unicodedata.normalize("NFD", name)
     ascii_only = nfd.encode("ascii", "ignore").decode("ascii")
-    return ascii_only.replace("-", "").replace(".", "").replace("'", "")
+    stripped = ascii_only.replace("-", "").replace(".", "").replace("'", "")
+    return " ".join(stripped.split())
 
 
 def _pos_group(pos):
@@ -1925,6 +1927,7 @@ _FORMAL_TO_NICK = {
     "tommy":     "thomas",
     "johnjason": "jj",
     "fyodor":    "fedor",
+    "john":      "jack",
 }
 # Reverse map: nick → formal (built from _FORMAL_TO_NICK, last formal wins on collision)
 _NICK_TO_FORMAL = {v: k for k, v in _FORMAL_TO_NICK.items()}

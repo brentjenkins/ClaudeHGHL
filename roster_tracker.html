@@ -1378,7 +1378,7 @@ function toggleCurrentTeamCol(thId, groupThId, draftOn){
   if(th) th.style.display = draftOn ? 'none' : '';
   if(g)  g.colSpan = draftOn ? 7 : 8;
 }
-const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'');
+const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'').replace(/\s+/g,' ').trim();
 const puckpediaSlug = name => name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/['.]/g,'').replace(/\s+/g,'-').toLowerCase();
 
 // Bidirectional first-name alias map (formal↔nick). Mirrors _FORMAL_TO_NICK in yahoo_proxy.py.
@@ -1408,9 +1408,23 @@ const FIRST_NAME_ALIASES = {
   'tommy':'thomas',
   'johnjason':'jj','jj':'johnjason',
   'fedor':'fyodor','fyodor':'fedor',
+  'john':'jack','jack':'john',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
+// Known full-name collisions the single-token FIRST_NAME_ALIASES map can't express —
+// two different real players share the same short public initials/nickname but expand
+// to different full names (e.g. "JJ" = "John-Jason" for Peterka, but "Janis Jérôme" for
+// Moser — a key can only hold one alias value, so Moser's expansion needs its own
+// explicit pair rather than fighting Peterka's for the "jj" slot). Bare normalized
+// names (no _pos suffix), lowercase, matching FIRST_NAME_ALIASES' convention.
+const KNOWN_NAME_OVERRIDE_PAIRS = [
+  ['jj moser', 'janis jerome moser'],
+];
+function _knownNameOverride(n){
+  for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
+  return null;
+}
 // Find a player by name, trying the alias spelling if exact match fails.
 function findPlayerByName(name){ const n=normName(name).toLowerCase(); const alias=_nameAlias(n); return players.find(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; })||null; }
 // Like findPlayerByName, but if multiple players share the name (e.g. two "Elias Pettersson"s),
@@ -1443,11 +1457,14 @@ function dedup(){
   for(const p of players){
     const n = normName(p.name).toLowerCase();
     const alias = _nameAlias(n);
+    const override = _knownNameOverride(n);
     // Canonicalize formal/nickname alias pairs (e.g. "josh norris" / "joshua norris") to the
     // same key so two records for the same real player under different name spellings get
-    // merged here, not just literal exact-name duplicates. Picking min(n, alias) is stable
-    // regardless of which spelling is processed first, since the alias map is bidirectional.
-    const canonical = (alias && alias < n) ? alias : n;
+    // merged here, not just literal exact-name duplicates. Picking min(n, alias, override) is
+    // stable regardless of which spelling is processed first, since both maps are bidirectional.
+    let canonical = n;
+    if(alias && alias < canonical) canonical = alias;
+    if(override && override < canonical) canonical = override;
     const k = `${canonical}_${posGroup(p.pos)}`;
     if(!seen.has(k) || (srcRank[p.source]||0) > (srcRank[seen.get(k).source]||0))
       seen.set(k, p);
@@ -2093,7 +2110,10 @@ function assignCapFromSignings(){
     // leaves cap2324/2425/2526 null, which getCap*() then treats as 0, which in turn
     // satisfies "cap <= ELC_MAX" and misclassifies a real veteran as an ELC prospect.
     const aliasKey = _nameAlias(key);
-    const contracts = raw[key] || (aliasKey && raw[aliasKey]) || [];
+    const n = normName(p.name).toLowerCase();
+    const overrideAlt = _knownNameOverride(n);
+    const overrideKey = overrideAlt ? `${overrideAlt}_${posGroup(p.pos)}` : null;
+    const contracts = raw[key] || (aliasKey && raw[aliasKey]) || (overrideKey && raw[overrideKey]) || [];
     if(!contracts.length) continue;
     // contracts stored sign_date DESC; first match = most recently signed active contract
     const c2324 = contracts.find(c => c.start_yr <= 2023 && c.exp >= '2023-2024');
@@ -2205,7 +2225,9 @@ async function syncSigningsAll(e){
       const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
       // Alias fallback — see assignCapFromSignings() for why (Tommy/Thomas/Tom Novak etc.)
       const aliasKey = _nameAlias(key);
-      const contracts = raw[key] || (aliasKey && raw[aliasKey]) || [];
+      const overrideAlt = _knownNameOverride(normName(p.name).toLowerCase());
+      const overrideKey = overrideAlt ? `${overrideAlt}_${posGroup(p.pos)}` : null;
+      const contracts = raw[key] || (aliasKey && raw[aliasKey]) || (overrideKey && raw[overrideKey]) || [];
       if(!contracts.length) continue;
       const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
       const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
@@ -2227,6 +2249,7 @@ async function syncSigningsAll(e){
       }
       matchedKeys.add(key);
       if(aliasKey) matchedKeys.add(aliasKey);
+      if(overrideKey) matchedKeys.add(overrideKey);
       matched++;
     }
 
@@ -2240,7 +2263,9 @@ async function syncSigningsAll(e){
       // via "thomas novak_F" in the loop above, but raw also has a separate "tom novak_F"
       // key one hop *from* thomas rather than from tommy; without this check it'd still
       // read as "not yet in our list" and spawn a phantom duplicate).
-      if(matchedKeys.has(key) || matchedKeys.has(_nameAlias(key)) || !contracts.length) continue;
+      const keyOverrideAlt = _knownNameOverride(key.slice(0, key.lastIndexOf('_')));
+      const keyOverride = keyOverrideAlt ? `${keyOverrideAlt}_${key.slice(key.lastIndexOf('_')+1)}` : null;
+      if(matchedKeys.has(key) || matchedKeys.has(_nameAlias(key)) || (keyOverride && matchedKeys.has(keyOverride)) || !contracts.length) continue;
       const latest = contracts[0];
       const uid = latest.nhl_id || latest.name;
       if(seenIds.has(uid)) continue;
