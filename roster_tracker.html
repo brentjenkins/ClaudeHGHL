@@ -3534,6 +3534,10 @@ function _renderBBStandings(startField, teams, pptsF){
 function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targetId = 'bbPicksLog', undoFnName = 'undoLastPick()'){
   const el = document.getElementById(targetId);
   if(!el) return;
+  // Sticky-bottom auto-scroll: if already near the latest picks (or this is
+  // the first render), follow new picks as they happen. If the user has
+  // scrolled up to check earlier rounds, leave them there.
+  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
   const total = picks.length;
   const startN = 0; // full history from round 1 — container scrolls (see .draft-col)
   const endN = total + 8; // plus ~1 round preview of upcoming picks
@@ -3597,7 +3601,8 @@ function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targ
   }
 
   if(!html) html = '<p style="color:#9ca3af;font-size:13px;padding:.5rem 0">Draft not started.</p>';
-  el.innerHTML = `<div class="draft-col">${html}</div>`;
+  el.innerHTML = html;
+  if(nearBottom) el.scrollTop = el.scrollHeight;
 }
 
 function _deactivateDraftMode(){
@@ -7609,6 +7614,10 @@ function setView(v){
     const ttog = document.getElementById('draftTickerToggle');
     if(ttog) ttog.checked = tickerEnabled;
     renderBigBoard();
+    // Reset to the latest picks whenever this tab is switched to — any manual
+    // scroll-up to check earlier rounds only persists while actively viewing.
+    const col = document.getElementById('draftColumn');
+    if(col) col.scrollTop = col.scrollHeight;
   }
   if(v==='summary'){
     const cmtog = document.getElementById('capMixToggle');
@@ -7627,6 +7636,12 @@ function renderDraftView(){
   const posColors = {F:'#dbeafe', D:'#dcfce7', G:'#fef3c7'};
   const posText   = {F:'#1e40af', D:'#166534', G:'#92400e'};
   const curRound = Math.floor(total / 9) + 1;
+
+  // Sticky-bottom auto-scroll: if already near the latest picks (or this is
+  // the first render), follow new picks as they happen. If the user has
+  // scrolled up to check earlier rounds, leave them there.
+  const _col = document.getElementById('draftColumn');
+  const nearBottom = _col.scrollHeight - _col.scrollTop - _col.clientHeight < 150;
 
   const draftSeq = buildDraftSeq2627();
   const onClock = draftSeq[total] ?? null;
@@ -7701,7 +7716,8 @@ function renderDraftView(){
     </div>`;
   }
 
-  document.getElementById('draftColumn').innerHTML = html;
+  _col.innerHTML = html;
+  if(nearBottom) _col.scrollTop = _col.scrollHeight;
   renderStandings();
 
   // Ticker: hidden before draft starts, proj pts standings once picks begin
