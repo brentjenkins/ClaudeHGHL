@@ -69,6 +69,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-athletic:hover{background:#065f46;border-color:#065f46}
 .btn-dfo{background:#0369a1;color:#fff;border-color:#0369a1}
 .btn-dfo:hover{background:#025a87;border-color:#025a87}
+.btn-dtz{background:#be185d;color:#fff;border-color:#be185d}
+.btn-dtz:hover{background:#9d174d;border-color:#9d174d}
 .btn-cbs{background:#6d28d9;color:#fff;border-color:#6d28d9}
 .btn-cbs:hover{background:#4c1d95;border-color:#4c1d95}
 .btn-amber{background:#d97706;color:#fff;border-color:#b45309}
@@ -434,6 +436,8 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-athletic" id="athletic2526Btn" onclick="document.getElementById('athletic2526FileInput').click()" title="Import Athletic 2025-26 projections from Excel file (The List sheet)" style="opacity:.75">📈 ATH 25-26</button>
       <input type="file" id="dfo2526FileInput" accept=".csv" style="display:none" onchange="syncDFO2526(this)">
       <button class="btn btn-dfo" id="dfo2526Btn" onclick="document.getElementById('dfo2526FileInput').click()" title="Import DFO 2025-26 projections from CSV export (last column = pts)">📈 DFO 25-26</button>
+      <input type="file" id="dtz2526FileInput" accept=".csv" multiple style="display:none" onchange="syncDTZ2526(this)">
+      <button class="btn btn-dtz" id="dtz2526Btn" onclick="document.getElementById('dtz2526FileInput').click()" title="Import DTZ 2025-26 projections — select both the skater and goalie CSV exports together">📈 DTZ 25-26</button>
       <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Load ESPN 2025-26 projections (frozen snapshot — the season is over)">📈 ESPN 25-26</button>
       <button class="btn btn-nhl" id="nhlProj2526Btn" onclick="syncNHLProj2526()" title="Load NHL.com 2025-26 forward &amp; defenseman point projections (frozen snapshot — the season is over)">📈 NHL 25-26</button>
     </div>
@@ -479,7 +483,7 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th id="thg-2526-team" colspan="8"></th>
-  <th colspan="10" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
+  <th colspan="11" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
   <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th id="th-group-last-2526" colspan="1"></th>
 </tr>
@@ -492,11 +496,12 @@ tr:hover td{background:#fafaf8}
   <th id="th-end2526" onclick="setSortCol2526('end2526')" style="color:#185FA5">25-26 Y! <span id="sort2526-end2526"></span></th>
   <th onclick="setSortCol2526('cap')" style="text-align:right">Cap $M <span id="sort2526-cap"></span></th>
   <th style="text-align:right">Term</th>
-  <th onclick="setSortCol2526('proj2526_athletic')" style="color:#bbb;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2025-26 projection">ATH <span id="sort2526-proj2526_athletic"></span></th>
-  <th onclick="setSortCol2526('proj2526_dfo')" style="color:#bbb;text-align:right" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort2526-proj2526_dfo"></span></th>
-  <th onclick="setSortCol2526('proj2526_espn')" style="color:#bbb;text-align:right" title="ESPN 2025-26 projection">ESPN <span id="sort2526-proj2526_espn"></span></th>
-  <th onclick="setSortCol2526('proj2526_cbs')" style="color:#bbb;text-align:right" title="CBS Sports 2025-26 preseason projection (baked snapshot, captured 2026-06)">CBS <span id="sort2526-proj2526_cbs"></span></th>
-  <th onclick="setSortCol2526('proj2526_nhl')" style="color:#bbb;text-align:right" title="NHL.com 2025-26 forward/defenseman point projection">NHL <span id="sort2526-proj2526_nhl"></span></th>
+  <th onclick="setSortCol2526('proj2526_athletic')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb" title="Athletic 2025-26 projection">ATH <span id="sort2526-proj2526_athletic"></span></th>
+  <th onclick="setSortCol2526('proj2526_dfo')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DFO/5v5hockey 2025-26 projection">DFO <span id="sort2526-proj2526_dfo"></span></th>
+  <th onclick="setSortCol2526('proj2526_dtz')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DTZ 2025-26 projection">DTZ <span id="sort2526-proj2526_dtz"></span></th>
+  <th onclick="setSortCol2526('proj2526_espn')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="ESPN 2025-26 projection">ESPN <span id="sort2526-proj2526_espn"></span></th>
+  <th onclick="setSortCol2526('proj2526_cbs')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="CBS Sports 2025-26 preseason projection (baked snapshot, captured 2026-06)">CBS <span id="sort2526-proj2526_cbs"></span></th>
+  <th onclick="setSortCol2526('proj2526_nhl')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="NHL.com 2025-26 forward/defenseman point projection">NHL <span id="sort2526-proj2526_nhl"></span></th>
   <th onclick="setSortCol2526('ppts2526blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2526-ppts2526blend"></span></th>
   <th onclick="setSortCol2526('ptsperm2526')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort2526-ptsperm2526"></span></th>
   <th onclick="setSortCol2526('curvedelta2526')" style="color:#185FA5;text-align:right" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort2526-curvedelta2526"></span></th>
@@ -588,7 +593,6 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
-      <button class="btn btn-puckpedia signings-all-btn" id="signingsBtn" onclick="syncSigningsAll(event)" title="Fetch all contracts from PuckPedia (~30s)">✍ Signings</button>
       <button class="btn btn-amber" id="injuriesBtn" onclick="syncInjuries()" title="Sync current NHL injury report from covers.com">🩹 Injuries</button>
       <button class="btn btn-nhl" id="statsBtn2627" onclick="syncStats2627()" title="Pull 2026-27 actual season stats — available once the season starts (Oct 2026)" style="opacity:.4" disabled>📊 NHL 26-27</button>
     </div>
@@ -597,6 +601,8 @@ tr:hover td{background:#fafaf8}
       <input type="file" id="athleticFileInput" accept=".xlsx,.xls" style="display:none" onchange="syncAthletic(this)">
       <button class="btn btn-athletic" id="athleticBtn" onclick="document.getElementById('athleticFileInput').click()" title="Import Athletic 26-27 projections from Excel file (The List sheet: G+A for skaters, W×2+SO×3 for goalies)">📈 ATH 26-27</button>
       <button class="btn btn-dfo" id="dfo2627Btn" onclick="syncDFO2627()" title="Scrape DFO/5v5hockey 2026-27 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)">📈 DFO 26-27</button>
+      <input type="file" id="dtzFileInput" accept=".csv" multiple style="display:none" onchange="syncDTZ(this)">
+      <button class="btn btn-dtz" id="dtzBtn" onclick="document.getElementById('dtzFileInput').click()" title="Import DTZ 2026-27 projections — select both the skater and goalie CSV exports together (once DTZ publishes 26-27 data)">📈 DTZ 26-27</button>
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
       <button class="btn btn-cbs" id="cbsBtn" onclick="syncCBS()" title="Scrape CBS Sports 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~25s)">📈 CBS 26-27</button>
       <button class="btn btn-nhl" id="nhlProj2627Btn" onclick="syncNHLProj2627()" title="Pull NHL.com 2026-27 forward &amp; defenseman point projections (available ~Oct 2026)" style="opacity:.5">📈 NHL 26-27</button>
@@ -656,9 +662,9 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th id="thg-2627-team" colspan="8"></th>
-  <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th colspan="2" style="text-align:center;color:#16a34a;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Actual</th>
-  <th colspan="10" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
+  <th colspan="11" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2"></th>
 </tr>
 <tr>
@@ -670,13 +676,14 @@ tr:hover td{background:#fafaf8}
   <th id="th-start2627" onclick="setSortCol('start2627')" style="color:#185FA5">26-27 Y! <span id="sort-start2627"></span></th>
   <th onclick="setSortCol('cap')" style="text-align:right">Cap $M <span id="sort-cap"></span></th>
   <th style="text-align:right">Term</th>
-  <th onclick="setSortCol('gp2526')" style="color:#9ca3af;text-align:right" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
+  <th onclick="setSortCol('gp2526')" style="color:#9ca3af;text-align:right;border-left:2px solid #e5e7eb" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
   <th onclick="setSortCol('pts2526')" style="color:#9ca3af;text-align:right" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
   <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 25-26 projection curve, at 25-26 cap">△Act <span id="sort-curvedelta_actual"></span></th>
   <th onclick="setSortCol('gp2627')" style="color:#16a34a;text-align:right" title="2026-27 games played so far">GP <span id="sort-gp2627"></span></th>
   <th onclick="setSortCol('pts2627')" style="color:#16a34a;text-align:right;border-right:2px solid #e5e7eb" title="2026-27 actual points so far — banked; counts fully for whoever ends up rostering this player after the draft (drops/draft apply retroactively)">Pts <span id="sort-pts2627"></span></th>
   <th onclick="setSortCol('ptsAthletic')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAthletic"></span></th>
   <th onclick="setSortCol('ptsDFO')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
+  <th onclick="setSortCol('ptsDTZ')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DTZ 2026-27 projection">DTZ <span id="sort-ptsDTZ"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('ptsCBS')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="CBS Sports 2026-27 projection">CBS <span id="sort-ptsCBS"></span></th>
   <th onclick="setSortCol('ptsNHL')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="NHL.com 2026-27 forward/defenseman point projection">NHL <span id="sort-ptsNHL"></span></th>
@@ -865,6 +872,7 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;flex-wrap:wrap;gap:10px">
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.74, MAE=12.4 (common pool)">Athletic<input type="number" id="s-wAthletic" value="1.2" min="0" max="3" step="0.1" onchange="updateProjWeight('athletic',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.74, MAE=12.5 (common pool)">DFO<input type="number" id="s-wDFO" value="1.2" min="0" max="3" step="0.1" onchange="updateProjWeight('dfo',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.757, MAE=12.4 (common pool)">DTZ<input type="number" id="s-wDTZ" value="1.2" min="0" max="3" step="0.1" onchange="updateProjWeight('dtz',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.71, MAE=14.4 (common pool)">CBS<input type="number" id="s-wCBS" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('cbs',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.73, MAE=13.9 (common pool)">NHL.com<input type="number" id="s-wNHL" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('nhl',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.64, MAE=15.2 (common pool)">ESPN<input type="number" id="s-wESPN" value="0.8" min="0" max="3" step="0.1" onchange="updateProjWeight('espn',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
@@ -1235,24 +1243,9 @@ const YAHOO_LEAGUE_KEY_2526 = '465.l.97882';
 let   YAHOO_LEAGUE_KEY_2627 = ''; // set once the 26-27 Yahoo league is created
 const LS_TX      = 'nhl_transactions_v2';
 const LS_LOGOS   = 'hghl_team_logos';
-const LS_STATS   = 'hghl_stats_2526';
 const LS_DROPS        = 'hghl_drops_simulated';
 const LS_SIGNINGS_HWM = 'hghl_signings_hwm'; // YYYY-MM-DD high-water mark for incremental signings
 const LS_SIGNINGS_RAW = 'hghl_signings_raw_v1'; // all contracts grouped by player key
-const LS_ESPN     = 'hghl_espn_proj';
-const LS_ATHLETIC  = 'hghl_athletic_proj';
-const LS_DFO       = 'hghl_dfo_proj';
-const LS_DFO2526       = 'hghl_dfo_2526';
-const LS_ESPN2526      = 'hghl_espn_2526';
-const LS_ATHLETIC2526  = 'hghl_athletic_2526';
-const LS_CBS           = 'hghl_cbs_proj';
-const LS_DFO2425       = 'hghl_dfo_2425';
-const LS_ATHLETIC2425  = 'hghl_athletic_2425';
-const LS_NHL2425       = 'hghl_nhl_2425';
-const LS_STATS2425     = 'hghl_stats_2425';
-const LS_ATHLETIC2324  = 'hghl_athletic_2324';
-const LS_NHL2324       = 'hghl_nhl_2324';
-const LS_STATS2324     = 'hghl_stats_2324';
 const LS_XACTIONS_2425 = 'hghl_xactions_2425';
 const LS_XACTIONS_2526 = 'hghl_xactions_2526';
 const LS_XACTIONS_2627 = 'hghl_xactions_2627';
@@ -1478,8 +1471,10 @@ let useActualsPts = true;
 // actual 25-26 results (r, MAE, RMSE on a common player pool covered by all 5 sources).
 // Athletic/DFO were the clear top tier, ESPN the clear bottom tier, CBS/NHL.com mid —
 // weights are inverse-MAE-squared (precision weighting), normalized to mean=1, rounded.
-// Tunable live in Settings > Projections.
-let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, cbs: 0.9, nhl: 0.9, espn: 0.8 };
+// DTZ added 2026-07-19 after the same backtest (r=0.834 full pool / 0.757 common pool,
+// tying Athletic for best correlation with the lowest bias of any source) — same tier as
+// Athletic/DFO. Tunable live in Settings > Projections.
+let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, dtz: 1.2, cbs: 0.9, nhl: 0.9, espn: 0.8 };
 
 // How much weight the 26-27 in-season actual pace gets vs. the preseason-projection
 // rate, once real 26-27 games exist, when nowcasting the games remaining (see
@@ -1516,7 +1511,7 @@ function reblendPts(p){
   if(p.ptsManual) return;
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
-    [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsESPN, W.espn],
+    [p.ptsAthletic, W.athletic], [p.ptsDFO, W.dfo], [p.ptsDTZ, W.dtz], [p.ptsESPN, W.espn],
     [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
   ]);
   const preseasonProj = blended > 0 ? blended : (useActualsPts && p.pts2526 > 0 ? p.pts2526 : 0);
@@ -1551,7 +1546,7 @@ function reblendPpp(p){
   if(posGroup(p.pos) === 'G'){ p.ppp = 0; return; }
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
-    [p.pppAthletic, W.athletic], [p.pppDFO, W.dfo], [p.pppESPN, W.espn],
+    [p.pppAthletic, W.athletic], [p.pppDFO, W.dfo], [p.pppDTZ, W.dtz], [p.pppESPN, W.espn],
   ]);
   p.ppp = blended > 0 ? Math.round(blended) : null;
 }
@@ -1576,7 +1571,7 @@ function rankPlayers(){
   eligible
     .map(p => {
       const age    = calcAge(p) ?? 99;
-      const srcN   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0) + (p.ptsCBS > 0 ? 1 : 0);
+      const srcN   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsDTZ > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0) + (p.ptsCBS > 0 ? 1 : 0);
       const scoreA = p.pts * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (p.pts / p.cap) * W.wtPPTSM;
       const scoreD = peakTrajectoryScore(age, posGroup(p.pos), p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtAge;
@@ -1780,15 +1775,18 @@ function load(){
     if(p.ptsESPN        === undefined){ p.ptsESPN        = null; migrated = true; }
     if(p.ptsAthletic    === undefined){ p.ptsAthletic    = null; migrated = true; }
     if(p.ptsDFO         === undefined){ p.ptsDFO         = null; migrated = true; }
+    if(p.ptsDTZ         === undefined){ p.ptsDTZ         = null; migrated = true; }
     if(p.ptsCBS         === undefined){ p.ptsCBS         = null; migrated = true; }
     if(p.ptsNHL         === undefined){ p.ptsNHL         = null; migrated = true; }
     if(p.pppESPN        === undefined){ p.pppESPN        = null; migrated = true; }
     if(p.pppAthletic    === undefined){ p.pppAthletic    = null; migrated = true; }
     if(p.pppDFO         === undefined){ p.pppDFO         = null; migrated = true; }
+    if(p.pppDTZ         === undefined){ p.pppDTZ         = null; migrated = true; }
     if(p.ppp            === undefined){ p.ppp            = null; migrated = true; }
     if(p.ppp2526        === undefined){ p.ppp2526        = 0;    migrated = true; }
     if(p.ppp2526_athletic === undefined){ p.ppp2526_athletic = null; migrated = true; }
     if(p.ppp2526_dfo      === undefined){ p.ppp2526_dfo      = null; migrated = true; }
+    if(p.ppp2526_dtz      === undefined){ p.ppp2526_dtz      = null; migrated = true; }
     if(p.ppp2526_espn     === undefined){ p.ppp2526_espn     = null; migrated = true; }
     if(p.ppp2526proj      === undefined){ p.ppp2526proj      = null; migrated = true; }
     // Migrate renamed fields from old localStorage (split strings to survive future renames)
@@ -1796,13 +1794,16 @@ function load(){
     if(p.end2425   === undefined){ p.end2425   = (p[_oldEnd]   !== undefined ? p[_oldEnd]   : null); migrated = true; }
     if(p.start2425 === undefined){ p.start2425 = (p[_oldStart] !== undefined ? p[_oldStart] : null); migrated = true; }
     if(p.proj2526_dfo      === undefined){ p.proj2526_dfo      = null; migrated = true; }
+    if(p.proj2526_dtz      === undefined){ p.proj2526_dtz      = null; migrated = true; }
     if(p.proj2526_espn     === undefined){ p.proj2526_espn     = null; migrated = true; }
     if(p.proj2526_athletic === undefined){ p.proj2526_athletic = null; migrated = true; }
     if(p.proj2526_cbs      === undefined){ p.proj2526_cbs      = null; migrated = true; }
     if(p.proj2526_nhl      === undefined){ p.proj2526_nhl      = null; migrated = true; }
     if(p.projGp2526_athletic === undefined){ p.projGp2526_athletic = null; migrated = true; }
+    if(p.projGp2526_dtz      === undefined){ p.projGp2526_dtz      = null; migrated = true; }
     if(p.projGp2526_espn     === undefined){ p.projGp2526_espn     = null; migrated = true; }
     if(p.gpAthletic        === undefined){ p.gpAthletic        = null; migrated = true; }
+    if(p.gpDTZ             === undefined){ p.gpDTZ             = null; migrated = true; }
     if(p.gpESPN            === undefined){ p.gpESPN            = null; migrated = true; }
     if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
     if(p.pts2425           === undefined){ p.pts2425           = 0;    migrated = true; }
@@ -1859,7 +1860,6 @@ async function syncStats(){
     }
     applyBlendedPts();
     lsSet(LS_PLAYERS, players);
-    lsSet(LS_STATS, d.players);
     render();
     toast(`Stats synced! ${matched} players updated, ${unmatched} unmatched.`);
     if(d.errors.length) console.warn('Stats errors:', d.errors);
@@ -1896,7 +1896,6 @@ async function syncESPN(){
       }
     }
     applyBlendedPts();
-    lsSet(LS_ESPN, d.players);
     lsSet(LS_PLAYERS, players);
     render();
     toast(`ESPN synced! ${matched} matched, ${unmatched} unmatched. ${d.errors.length?d.errors.length+' errors.':''}`);
@@ -1930,7 +1929,6 @@ async function syncCBS(){
       }
     }
     applyBlendedPts();
-    lsSet(LS_CBS, d.players);
     lsSet(LS_PLAYERS, players);
     render();
     toast(`CBS synced! ${matched} matched, ${unmatched} unmatched. ${d.errors.length?d.errors.length+' errors.':''}`);
@@ -1971,7 +1969,6 @@ async function syncAthletic(input){
       }
     }
     applyBlendedPts();
-    lsSet(LS_ATHLETIC, d.players);
     lsSet(LS_PLAYERS, players);
     render();
     toast(`ATH 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
@@ -1980,6 +1977,42 @@ async function syncAthletic(input){
   } finally {
     btn.disabled=false;
     btn.innerHTML='📈 ATH 26-27';
+  }
+}
+
+async function syncDTZ(input){
+  const files = Array.from(input.files); if(!files.length) return; input.value='';
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('dtzBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData(); files.forEach(f=>fd.append('files', f));
+    const d = await fetch('/dtz-projections',{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched=0, unmatched=0;
+    for(const p of players){
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.ptsDTZ = entry.hghl_pts;
+        p.pppDTZ = entry.ppp ?? null;
+        p.gpDTZ  = entry.gp > 0 ? entry.gp : null;
+        matched++;
+      } else {
+        p.ptsDTZ = null;
+        p.pppDTZ = null;
+        p.gpDTZ  = null;
+        unmatched++;
+      }
+    }
+    applyBlendedPts();
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`DTZ 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){
+    toast('DTZ 26-27 import failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='📈 DTZ 26-27';
   }
 }
 
@@ -2357,7 +2390,7 @@ async function checkProxy(){
   }
 }
 
-function _apply2526Proj(field, lsKey, data, pppField=null, gpField=null){
+function _apply2526Proj(field, data, pppField=null, gpField=null){
   for(const p of players){ p[field] = null; if(pppField) p[pppField] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
@@ -2373,13 +2406,12 @@ function _apply2526Proj(field, lsKey, data, pppField=null, gpField=null){
     if(posGroup(p.pos) === 'G'){ p.ppp2526proj = 0; continue; }
     const W = PROJ_SOURCE_WEIGHTS;
     const blended = _weightedBlend([
-      [p.ppp2526_athletic, W.athletic], [p.ppp2526_dfo, W.dfo], [p.ppp2526_espn, W.espn],
+      [p.ppp2526_athletic, W.athletic], [p.ppp2526_dfo, W.dfo], [p.ppp2526_dtz, W.dtz], [p.ppp2526_espn, W.espn],
     ]);
     p.ppp2526proj = blended > 0 ? Math.round(blended) : null;
   }
-  lsSet(lsKey, data.players);
   lsSet(LS_PLAYERS, players);
-  render();
+  render2526();
   return {matched, unmatched};
 }
 
@@ -2398,7 +2430,6 @@ async function syncDFO2627(){
       else { p.ptsDFO = null; p.pppDFO = null; unmatched++; }
     }
     applyBlendedPts();
-    lsSet(LS_DFO, d.players);
     lsSet(LS_PLAYERS, players);
     render();
     toast(`DFO 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
@@ -2438,16 +2469,31 @@ async function syncDFO2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/dfo-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', LS_DFO2526, d, 'ppp2526_dfo');
+    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', d, 'ppp2526_dfo');
     toast(`DFO 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 25-26'; }
 }
 
+async function syncDTZ2526(input){
+  const files = Array.from(input.files); if(!files.length) return; input.value='';
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('dtz2526Btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData(); files.forEach(f=>fd.append('files', f));
+    const d = await fetch('/dtz-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    const {matched,unmatched} = _apply2526Proj('proj2526_dtz', d, 'ppp2526_dtz', 'projGp2526_dtz');
+    toast(`DTZ 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
+  } catch(e){ toast('DTZ 25-26 import failed: '+e.message); }
+  finally { btn.disabled=false; btn.innerHTML='📈 DTZ 25-26'; }
+}
+
 function syncESPN2526(){
   // 25-26 season is over, so these projections are frozen for good — apply the baked
   // snapshot (data_2526.js) directly instead of hitting the (soon to disappear) live API.
-  const {matched,unmatched} = _apply2526Proj('proj2526_espn', LS_ESPN2526, {players: ESPN_PROJ_2526}, 'ppp2526_espn', 'projGp2526_espn');
+  const {matched,unmatched} = _apply2526Proj('proj2526_espn', {players: ESPN_PROJ_2526}, 'ppp2526_espn', 'projGp2526_espn');
   toast(`ESPN 25-26 loaded! ${matched} matched, ${unmatched} unmatched.`);
 }
 
@@ -2494,7 +2540,7 @@ async function syncAthletic2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', LS_ATHLETIC2526, d, 'ppp2526_athletic', 'projGp2526_athletic');
+    const {matched,unmatched} = _apply2526Proj('proj2526_athletic', d, 'ppp2526_athletic', 'projGp2526_athletic');
     toast(`ATH 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 25-26'; }
@@ -2667,7 +2713,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAthletic','ptsDFO','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','rank','abp','score'].forEach(c=>{
+  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAthletic','ptsDFO','ptsDTZ','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','rank','abp','score'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -2719,7 +2765,7 @@ function render(){
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
         const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect,p.pts||0);
-        const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+        const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const tDelta=_deltaCurveBonus(p.pts||0,p.cap||0,curveFns2627[pg],ELC_MAX_2627,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
         const _ds=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf+tDelta;
@@ -2742,7 +2788,7 @@ function render(){
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge(p)??99;
         const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect,p.pts||0);
-        const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+        const srcN=(p.ptsAthletic>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const tDelta=_deltaCurveBonus(p.pts||0,p.cap||0,curveFns2627[pg],ELC_MAX_2627,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
         const _ds=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf+tDelta;
@@ -2787,13 +2833,14 @@ function render(){
       </td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap.toFixed(2)}</a>${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
       <td style="color:#9ca3af;text-align:right">${p.cap>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.gp2526>0?p.gp2526:'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="color:#16a34a;text-align:right;font-variant-numeric:tabular-nums">${p.gp2627>0?p.gp2627:'—'}</td>
       <td style="color:#16a34a;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb">${p.pts2627>0?p.pts2627:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsAthletic>0?Math.round(p.ptsAthletic):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsDFO>0?Math.round(p.ptsDFO):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsDTZ>0?Math.round(p.ptsDTZ):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsESPN>0?Math.round(p.ptsESPN):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsCBS>0?Math.round(p.ptsCBS):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsNHL>0?Math.round(p.ptsNHL):'—'}</td>
@@ -2812,7 +2859,7 @@ function render(){
             : `<button class="add-btn" onclick="openAssignTeam(${p.id})" title="Add to 26-27 roster">Add</button>`}
       </td>
     </tr>`;
-  }).join('')):`<tr><td colspan="${draftMode?20:21}" class="empty">No players found</td></tr>`;
+  }).join('')):`<tr><td colspan="${draftMode?21:22}" class="empty">No players found</td></tr>`;
 
   document.getElementById('rowCount').textContent=`${rows.length} player${rows.length!==1?'s':''}`;
   updateStats();
@@ -3203,7 +3250,7 @@ function _seedStart2627(){
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
       start2627:team||'', end2526:team,
       rank:null, birthDate:'', capManual:false, ptsManual:false,
-      ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+      ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -3367,7 +3414,7 @@ function simulateBestPick(){
       const yrs2    = p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0;
       const youth   = peakTrajectoryScore(age2 < 99 ? age2 : null, posGroup(p.pos), yrs2) * draftWeights.wtAge;
       const prospect2 = prospectBonus(age2 < 99 ? age2 : null, posGroup(p.pos), p.cap||0, ELC_MAX_2627, draftWeights.wtProspect, p.pts||0);
-      const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0) + (p.ptsCBS > 0 ? 1 : 0);
+      const srcN2   = (p.ptsAthletic > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsDTZ > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0) + (p.ptsCBS > 0 ? 1 : 0);
       const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
       return adjPts + ptsPerM + youth + prospect2 + conf2;
     };
@@ -3779,6 +3826,7 @@ function syncSettings(){
   set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
   set('s-wAthletic', PROJ_SOURCE_WEIGHTS.athletic); set('s-wDFO', PROJ_SOURCE_WEIGHTS.dfo);
+  set('s-wDTZ', PROJ_SOURCE_WEIGHTS.dtz);
   set('s-wCBS', PROJ_SOURCE_WEIGHTS.cbs); set('s-wNHL', PROJ_SOURCE_WEIGHTS.nhl);
   set('s-wESPN', PROJ_SOURCE_WEIGHTS.espn);
   set('s-earlyPaceWeight', EARLY_PACE_WEIGHT);
@@ -4496,8 +4544,8 @@ function _seedStart2526(){
       pts:0, pts2526:0, gp2526:0, status:'roster', source:'manual',
       start2627:'', end2526:'', end2425:team, start2526:team,
       rank:null, rank2526:null, birthDate:'', capManual:false, ptsManual:false,
-      proj2526_dfo:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
-      ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+      proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
+      ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -4951,7 +4999,6 @@ async function syncStats2425(){
         matched++;
       } else unmatched++;
     }
-    lsSet(LS_STATS2425, d.players);
     lsSet(LS_PLAYERS, players);
     render2425();
     toast(`Stats 2024-25 synced! ${matched} players updated, ${unmatched} unmatched.`);
@@ -4976,7 +5023,6 @@ async function syncStats2324(){
         matched++;
       } else unmatched++;
     }
-    lsSet(LS_STATS2324, d.players);
     lsSet(LS_PLAYERS, players);
     render2324();
     toast(`Stats 2023-24 synced! ${matched} players updated, ${unmatched} unmatched.`);
@@ -4986,7 +5032,7 @@ async function syncStats2324(){
 }
 
 
-function _apply2425Proj(field, lsKey, data, gpField=null){
+function _apply2425Proj(field, data, gpField=null){
   for(const p of players){ p[field] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
@@ -4998,7 +5044,6 @@ function _apply2425Proj(field, lsKey, data, gpField=null){
     }
     else unmatched++;
   }
-  lsSet(lsKey, data.players);
   lsSet(LS_PLAYERS, players);
   render2425();
   return {matched, unmatched};
@@ -5013,7 +5058,7 @@ async function syncDFO2425(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/dfo-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_dfo', LS_DFO2425, d);
+    const {matched,unmatched} = _apply2425Proj('proj2425_dfo', d);
     toast(`DFO 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 24-25 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 24-25'; }
@@ -5027,7 +5072,7 @@ async function syncAthletic2425(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_athletic', LS_ATHLETIC2425, d, 'projGp2425_athletic');
+    const {matched,unmatched} = _apply2425Proj('proj2425_athletic', d, 'projGp2425_athletic');
     toast(`ATH 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 24-25 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 24-25'; }
@@ -5036,7 +5081,7 @@ async function syncAthletic2425(input){
 function syncNHL2425(){
   // 24-25 season is over, so these projections are frozen for good — apply the baked
   // snapshot (data_2425.js, from the original NHL 24-25 projections CSV) directly.
-  const {matched,unmatched} = _apply2425Proj('proj2425_nhl', LS_NHL2425, {players: NHL_PROJ_2425});
+  const {matched,unmatched} = _apply2425Proj('proj2425_nhl', {players: NHL_PROJ_2425});
   toast(`NHL 24-25 loaded! ${matched} matched, ${unmatched} unmatched.`);
 }
 
@@ -5074,8 +5119,8 @@ function _seedStart2425(){
       end2324:team, start2425:team,
       rank:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
       proj2425_dfo:null, proj2425_athletic:null, proj2425_nhl:null,
-      proj2526_dfo:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
-      cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+      proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
+      cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -5414,8 +5459,8 @@ function _seedStart2324(){
       rank:null, rank2324:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
       proj2324_athletic:null, proj2324_dtz:null, proj2324_nhl:null,
       proj2425_dfo:null, proj2425_athletic:null, proj2425_nhl:null,
-      proj2526_dfo:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
-      cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsCBS:null, ptsNHL:null,
+      proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
+      cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -7293,7 +7338,7 @@ function rankPlayers2526(){
     const ageS = calcAge2526(p) ?? 99;
     const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
     const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, draftWeights.wtProspect, pp);
-    const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
+    const srcNS = (p.proj2526_athletic > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_dtz > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
     const confS = Math.max(0, srcNS - 1) * draftWeights.wtSourceConf;
     p._score2526 = pp*(posMult[pg]??1) + (pp/getCap2526(p))*draftWeights.wtPPTSM + youth*draftWeights.wtAge + prospectS + confS;
   });
@@ -7459,7 +7504,7 @@ function render2526(){
   });
 
   const sortCols2526 = ['name','pos','age','team','end2425','end2526','cap',
-    'proj2526_athletic','proj2526_dfo','proj2526_espn','proj2526_cbs','proj2526_nhl','ppts2526blend','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526','curvedelta2526actual'];
+    'proj2526_athletic','proj2526_dfo','proj2526_dtz','proj2526_espn','proj2526_cbs','proj2526_nhl','ppts2526blend','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526','curvedelta2526actual'];
   sortCols2526.forEach(c=>{
     const el=document.getElementById('sort2526-'+c);
     if(el) el.textContent=sortCol2526===c?(sortDir2526>0?'↑':'↓'):'';
@@ -7511,7 +7556,7 @@ function render2526(){
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw=calcAge2526(p)??99;
         const tProspect=prospectBonus(ageRaw,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect,pp);
-        const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
+        const srcN=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
         const tDelta=_deltaCurveBonus(pp,getCap2526(p),curveFns2526[pg],ELC_MAX_2526,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
         const _ds2526=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf+tDelta;
@@ -7534,7 +7579,7 @@ function render2526(){
         const tYouth=youthRaw*draftWeights.wtAge;
         const ageRaw2526=calcAge2526(p)??99;
         const tProspect2526=prospectBonus(ageRaw2526,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect,pp);
-        const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_espn>0?1:0);
+        const srcN2526d=(p.proj2526_athletic>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
         const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
         const tDelta2526=_deltaCurveBonus(pp,getCap2526(p),curveFns2526[pg],ELC_MAX_2526,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
         const _ds2526=tPPTS+tSc+tPPTSM+tYouth+tProspect2526+tConf2526+tDelta2526;
@@ -7594,11 +7639,12 @@ function render2526(){
       ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${c.toFixed(2)}</a>`:'—';})()}</td>
       <td style="color:#9ca3af;text-align:right">${getCap2526(p)>0?(p.yrStr2526||'—'):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?Math.round(p.proj2526_athletic):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_dfo>0?Math.round(p.proj2526_dfo):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_espn>0?Math.round(p.proj2526_espn):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_cbs>0?Math.round(p.proj2526_cbs):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2526_nhl>0?Math.round(p.proj2526_nhl):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;border-left:2px solid #f0f0ee">${p.proj2526_athletic>0?Math.round(p.proj2526_athletic):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526_dfo>0?Math.round(p.proj2526_dfo):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526_dtz>0?Math.round(p.proj2526_dtz):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526_espn>0?Math.round(p.proj2526_espn):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526_cbs>0?Math.round(p.proj2526_cbs):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526_nhl>0?Math.round(p.proj2526_nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
       ${(()=>{const s=curveDelta2526(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -7615,7 +7661,7 @@ function render2526(){
           : draftMode2526 ? `<button class="btn-draft" onclick="quickDraft2526(${p.id})">Draft</button>` : ''}
       </td>
     </tr>`;
-  }).join('')):`<tr><td colspan="${draftMode2526?21:22}" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>`;
+  }).join('')):`<tr><td colspan="${draftMode2526?22:23}" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>`;
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
   updateStats2526();
@@ -7844,7 +7890,7 @@ let abpMinPts = 15;
 function ppts2526blend(p){
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
-    [p.proj2526_athletic, W.athletic], [p.proj2526_dfo, W.dfo],
+    [p.proj2526_athletic, W.athletic], [p.proj2526_dfo, W.dfo], [p.proj2526_dtz, W.dtz],
     [p.proj2526_espn, W.espn], [p.proj2526_nhl, W.nhl],
   ]);
   return blended > 0 ? Math.round(blended) : 0;
@@ -7866,6 +7912,7 @@ function ppts2425blend(p){
 function projGp2526blend(p){
   const srcs = [];
   if(p.projGp2526_athletic > 0) srcs.push(p.projGp2526_athletic);
+  if(p.projGp2526_dtz      > 0) srcs.push(p.projGp2526_dtz);
   if(p.projGp2526_espn     > 0) srcs.push(p.projGp2526_espn);
   return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
 }
@@ -7944,6 +7991,7 @@ function _viewProjPts(p, view){
 function projGp2627blend(p){
   const srcs = [];
   if(p.gpAthletic > 0) srcs.push(p.gpAthletic);
+  if(p.gpDTZ      > 0) srcs.push(p.gpDTZ);
   if(p.gpESPN     > 0) srcs.push(p.gpESPN);
   return srcs.length ? Math.round(srcs.reduce((s,v)=>s+v,0)/srcs.length) : 0;
 }

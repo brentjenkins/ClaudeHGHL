@@ -1497,6 +1497,144 @@ def dfo_projections_2526():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
+@app.route("/dtz-projections-2526", methods=["POST"])
+def dtz_projections_2526():
+    """Parse DTZ 2025-26 skater + goalie CSV exports (uploaded together).
+    Skater columns: Player, Age, Pos, Team, ..., Goals, Assists, Points, ...
+      HGHL pts = Goals + Assists (matches the source's own 'Points' column).
+    Goalie columns: player, team, age, pos, ..., W, L, OTL, ..., SO, ...
+      HGHL pts = W*2 + SO*3 (the source's own 'Pts' column uses a different formula, not trusted here).
+    Which file is which is auto-detected from its header row (skater has 'Goals'/'Assists'; goalie has 'SV%').
+    """
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files uploaded"}), 400
+
+    import csv, io
+
+    def safe_float(val):
+        try: return float(val) if val and str(val).strip() else 0.0
+        except: return 0.0
+
+    all_players = {}
+    parsed_kinds = []
+    for f in files:
+        if not f.filename.lower().endswith(".csv"):
+            return jsonify({"error": f"Please upload .csv files ({f.filename} is not a CSV)"}), 400
+        try:
+            text = f.read().decode("utf-8-sig")
+            rows = list(csv.reader(io.StringIO(text)))
+        except Exception as e:
+            return jsonify({"error": f"Could not read {f.filename}: {e}"}), 400
+        if not rows:
+            continue
+        header = [h.strip() for h in rows[0]]
+
+        if "Goals" in header and "Assists" in header:
+            col_name, col_pos = header.index("Player"), header.index("Pos")
+            col_g, col_a = header.index("Goals"), header.index("Assists")
+            col_ppp = header.index("PP Points") if "PP Points" in header else None
+            col_gp  = header.index("GP") if "GP" in header else None
+            for row in rows[1:]:
+                if not row or not row[col_name].strip(): continue
+                name = row[col_name].strip()
+                pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
+                if not pos_raw: continue
+                pg = "D" if pos_raw == "D" else "F"
+                hghl_pts = round(safe_float(row[col_g]) + safe_float(row[col_a]))
+                if hghl_pts <= 0: continue
+                ppp = round(safe_float(row[col_ppp])) if col_ppp is not None and len(row) > col_ppp else 0
+                gp  = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
+                key = f"{normalize_name(name).lower()}_{pg}"
+                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp, "gp": gp}
+                _add_name_aliases(all_players, key, name, pg)
+            parsed_kinds.append(f"skaters({f.filename})")
+        elif "SV%" in header:
+            col_name, col_w, col_so = header.index("player"), header.index("W"), header.index("SO")
+            for row in rows[1:]:
+                if not row or not row[col_name].strip(): continue
+                name = row[col_name].strip()
+                hghl_pts = round(safe_float(row[col_w]) * 2 + safe_float(row[col_so]) * 3)
+                if hghl_pts <= 0: continue
+                key = f"{normalize_name(name).lower()}_G"
+                all_players[key] = {"name": name, "pg": "G", "hghl_pts": hghl_pts}
+                _add_name_aliases(all_players, key, name, "G")
+            parsed_kinds.append(f"goalies({f.filename})")
+        else:
+            return jsonify({"error": f"Could not identify {f.filename} as a DTZ skater or goalie export"}), 400
+
+    print(f"  DTZ 25-26 CSV: {', '.join(parsed_kinds)} → {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
+@app.route("/dtz-projections", methods=["POST"])
+def dtz_projections():
+    """Parse DTZ 2026-27 skater + goalie CSV exports (uploaded together).
+    No live scrape source exists for DTZ, so this mirrors /dtz-projections-2526 exactly —
+    same site, same expected CSV shape, just applied to next season's data once DTZ publishes it.
+    See that endpoint's docstring for the column/scoring details.
+    """
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files uploaded"}), 400
+
+    import csv, io
+
+    def safe_float(val):
+        try: return float(val) if val and str(val).strip() else 0.0
+        except: return 0.0
+
+    all_players = {}
+    parsed_kinds = []
+    for f in files:
+        if not f.filename.lower().endswith(".csv"):
+            return jsonify({"error": f"Please upload .csv files ({f.filename} is not a CSV)"}), 400
+        try:
+            text = f.read().decode("utf-8-sig")
+            rows = list(csv.reader(io.StringIO(text)))
+        except Exception as e:
+            return jsonify({"error": f"Could not read {f.filename}: {e}"}), 400
+        if not rows:
+            continue
+        header = [h.strip() for h in rows[0]]
+
+        if "Goals" in header and "Assists" in header:
+            col_name, col_pos = header.index("Player"), header.index("Pos")
+            col_g, col_a = header.index("Goals"), header.index("Assists")
+            col_ppp = header.index("PP Points") if "PP Points" in header else None
+            col_gp  = header.index("GP") if "GP" in header else None
+            for row in rows[1:]:
+                if not row or not row[col_name].strip(): continue
+                name = row[col_name].strip()
+                pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
+                if not pos_raw: continue
+                pg = "D" if pos_raw == "D" else "F"
+                hghl_pts = round(safe_float(row[col_g]) + safe_float(row[col_a]))
+                if hghl_pts <= 0: continue
+                ppp = round(safe_float(row[col_ppp])) if col_ppp is not None and len(row) > col_ppp else 0
+                gp  = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
+                key = f"{normalize_name(name).lower()}_{pg}"
+                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "ppp": ppp, "gp": gp}
+                _add_name_aliases(all_players, key, name, pg)
+            parsed_kinds.append(f"skaters({f.filename})")
+        elif "SV%" in header:
+            col_name, col_w, col_so = header.index("player"), header.index("W"), header.index("SO")
+            for row in rows[1:]:
+                if not row or not row[col_name].strip(): continue
+                name = row[col_name].strip()
+                hghl_pts = round(safe_float(row[col_w]) * 2 + safe_float(row[col_so]) * 3)
+                if hghl_pts <= 0: continue
+                key = f"{normalize_name(name).lower()}_G"
+                all_players[key] = {"name": name, "pg": "G", "hghl_pts": hghl_pts}
+                _add_name_aliases(all_players, key, name, "G")
+            parsed_kinds.append(f"goalies({f.filename})")
+        else:
+            return jsonify({"error": f"Could not identify {f.filename} as a DTZ skater or goalie export"}), 400
+
+    print(f"  DTZ 26-27 CSV: {', '.join(parsed_kinds)} → {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
 @app.route("/nhl-projections-2425", methods=["POST"])
 def nhl_projections_2425():
     """Parse the NHL 24-25 projections CSV.
