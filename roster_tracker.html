@@ -21,8 +21,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .view-tab{padding:.5rem .9rem;font-size:13px;font-weight:500;color:#888;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s;white-space:nowrap;flex-shrink:0}
 .view-tab:hover{color:#1a1a18}
 .view-tab.active{color:#1a1a18;border-bottom-color:#185FA5;font-weight:700;font-size:14px}
-.draft-col{display:flex;flex-direction:column;gap:3px;max-width:1100px}
-.draft-round-hdr{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:.1rem 0 .1rem .875rem;margin-top:.1rem}
+.draft-col{display:flex;flex-direction:column;gap:3px;max-width:1100px;max-height:70vh;overflow-y:auto}
+.draft-round-hdr{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;padding:.1rem 0 .1rem .875rem;margin-top:.1rem;position:sticky;top:0;background:#fff;z-index:1}
 .draft-row{display:grid;grid-template-columns:28px 1fr 215px 118px 2fr;align-items:center;gap:12px;padding:.2rem .875rem;border-radius:6px;background:#f7f7f5;border:2px solid transparent;transition:border-color .15s}
 .draft-row-pos{display:flex;gap:4px;font-size:16px;font-weight:500;white-space:nowrap}
 .draft-row-pos span{background:#fff;border-radius:4px;padding:1px 6px;color:#1a1a18}
@@ -92,8 +92,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-undo{flex-shrink:0;height:26px;font-size:12px;padding:0 10px;background:none;border:1px solid #d1d5db;border-radius:6px;color:#555;cursor:pointer;white-space:nowrap}
 .btn-undo:hover{background:#f7f7f5;border-color:#9ca3af;color:#1a1a18}
 #draftSubProspectBtn:hover,#draftSubBestBtn:hover,
-#draftSubProspectBtn2526:hover,#draftSubBestBtn2526:hover,
-#draftViewCompactBtn:hover,#draftViewFullBtn:hover{filter:brightness(.9)}
+#draftSubProspectBtn2526:hover,#draftSubBestBtn2526:hover{filter:brightness(.9)}
 .tbl-wrap{overflow-x:auto;overflow-y:auto;border:1px solid #eee;border-radius:10px;flex:1;min-height:0}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #eee;background:#f7f7f5;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;z-index:2}
@@ -548,13 +547,8 @@ tr:hover td{background:#fafaf8}
           <input type="checkbox" id="draftTickerToggle" onchange="setTickerEnabled(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
           Ticker
         </label>
-        <span id="draftViewCtrl" style="border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
-          <button id="draftViewCompactBtn" onclick="setDraftView('compact')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Compact</button>
-          <button id="draftViewFullBtn" onclick="setDraftView('full')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Full View</button>
-        </span>
       </div>
     </div>
-    <div id="draftBoardFull" style="display:none;border:1px solid #e5e7eb;border-radius:10px;overflow-y:auto;max-height:70vh;margin-bottom:1rem;max-width:1100px"></div>
     <div id="draftCompactWrap" style="display:flex;gap:20px;align-items:flex-start">
       <div style="flex:1;min-width:0"><div class="draft-col" id="draftColumn"></div></div>
       <div id="draftStandings" style="width:290px;flex-shrink:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;position:sticky;top:8px"></div>
@@ -1340,7 +1334,6 @@ let draftMode2425 = false, draftSubMode2425 = 'prospect';
 let draftFocusTeam2425 = null, lastAllScored2425 = null, lastPressure2425 = null;
 let draftMode2324 = false, draftSubMode2324 = 'prospect';
 let draftFocusTeam2324 = null, lastAllScored2324 = null, lastPressure2324 = null;
-let draftViewMode = 'compact';
 let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
@@ -3464,8 +3457,6 @@ function renderBigBoard(){
   // 26-27 board wrapper always visible — contains on-clock header, compact/full, standings
   document.getElementById('draftBoard2627').style.display = '';
 
-  const colWrap   = document.getElementById('draftColumn')?.parentElement;
-  const boardFull = document.getElementById('draftBoardFull');
   const draftEntry = document.querySelector('#draftBoard2627 .draft-entry');
   if(draftEntry) draftEntry.style.display = priorDraft ? 'none' : '';
 
@@ -3489,14 +3480,7 @@ function renderBigBoard(){
     updateStats2324();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2324').innerHTML;
     stripTop5();
-    if(draftViewMode === 'full'){
-      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2324, DRAFT_TEAMS_2324, buildDraftSeq2324()); }
-      if(colWrap) colWrap.style.display = 'none';
-    } else {
-      if(boardFull) boardFull.style.display = 'none';
-      if(colWrap) colWrap.style.display = '';
-      _renderBBDraftBoard(draftState2324.picks, seq, 'start2324', getCap2324, CAP_LIMIT_2324, 'draftColumn', 'undoLastPick2324()');
-    }
+    _renderBBDraftBoard(draftState2324.picks, seq, 'start2324', getCap2324, CAP_LIMIT_2324, 'draftColumn', 'undoLastPick2324()');
     document.getElementById('bbPicksLog').innerHTML = '';
   } else if(draftMode2425){
     const seq = buildDraftSeq2425();
@@ -3509,14 +3493,7 @@ function renderBigBoard(){
     updateStats2425();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2425').innerHTML;
     stripTop5();
-    if(draftViewMode === 'full'){
-      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2425, DRAFT_TEAMS_2425, buildDraftSeq2425()); }
-      if(colWrap) colWrap.style.display = 'none';
-    } else {
-      if(boardFull) boardFull.style.display = 'none';
-      if(colWrap) colWrap.style.display = '';
-      _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425, 'draftColumn', 'undoLastPick2425()');
-    }
+    _renderBBDraftBoard(draftState2425.picks, seq, 'start2425', getCap2425, CAP_LIMIT_2425, 'draftColumn', 'undoLastPick2425()');
     document.getElementById('bbPicksLog').innerHTML = '';
   } else if(draftMode2526){
     const seq = buildDraftSeq2526();
@@ -3529,14 +3506,7 @@ function renderBigBoard(){
     updateStats2526();
     document.getElementById('bbTeamCards').innerHTML = document.getElementById('statCards2526').innerHTML;
     stripTop5();
-    if(draftViewMode === 'full'){
-      if(boardFull){ boardFull.style.display = 'block'; boardFull.innerHTML = buildDraftBoardHTML(draftState2526, DRAFT_TEAMS_2526, buildDraftSeq2526()); }
-      if(colWrap) colWrap.style.display = 'none';
-    } else {
-      if(boardFull) boardFull.style.display = 'none';
-      if(colWrap) colWrap.style.display = '';
-      _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526, 'draftColumn', 'undoLastPick2526()');
-    }
+    _renderBBDraftBoard(draftState2526.picks, seq, 'start2526', getCap2526, CAP_LIMIT_2526, 'draftColumn', 'undoLastPick2526()');
     document.getElementById('bbPicksLog').innerHTML = '';
   } else {
     // 26-27 or no-draft: renderDraftView populates on-clock, draftColumn, draftStandings
@@ -3565,8 +3535,8 @@ function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targ
   const el = document.getElementById(targetId);
   if(!el) return;
   const total = picks.length;
-  const startN = Math.max(0, total - 4);
-  const endN = startN + 8;
+  const startN = 0; // full history from round 1 — container scrolls (see .draft-col)
+  const endN = total + 8; // plus ~1 round preview of upcoming picks
   const posColors = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'};
   const posText   = {F:'#1e40af',D:'#166534',G:'#92400e'};
   let html = '', lastRound = null;
@@ -3577,7 +3547,7 @@ function _renderBBDraftBoard(picks, draftSeq, startField, getCap, capLimit, targ
     const round = Math.floor(n / 9) + 1;
     const pick = picks[n];
     const isCurrent = n === total;
-    const showPlayer = pick && pick.player && n >= total - 4;
+    const showPlayer = pick && pick.player;
     const isLastPick = n === total - 1 && total > 0;
 
     if(round !== lastRound){
@@ -3720,86 +3690,6 @@ function setCapMix(val){
   showCapMix = val;
   localStorage.setItem(LS_CAP_MIX, val);
   renderSummaryCard(_summaryIdx);
-}
-
-function setDraftView(mode, doRender=true){
-  draftViewMode = mode;
-  const isF = mode==='full';
-  document.getElementById('draftViewCompactBtn').style.background = isF ? '#e0e7ff' : '#6366f1';
-  document.getElementById('draftViewCompactBtn').style.color    = isF ? '#6366f1' : '#fff';
-  document.getElementById('draftViewFullBtn').style.background  = isF ? '#6366f1' : '#e0e7ff';
-  document.getElementById('draftViewFullBtn').style.color       = isF ? '#fff'    : '#6366f1';
-  if(doRender){ if(draftMode2425||draftMode2526||draftMode2324) renderBigBoard(); else renderDraftView(); }
-}
-
-function buildDraftBoardHTML(draftStateObj, teamsList, draftSeq = null){
-  const picks = draftStateObj.picks;
-  const n = picks.length;
-  const nT = teamsList.length;
-  const posColors = {F:'#dbeafe', D:'#dcfce7', G:'#fef3c7'};
-  const posText   = {F:'#1e40af', D:'#166534', G:'#92400e'};
-
-  // Build rows: all made/skipped picks + upcoming picks (one per team)
-  const rows = [];
-  const seenEmpty = new Set();
-  for(let i = 0; i < n || (rows.filter(r=>r.isEmpty).length < nT && (!draftSeq || draftSeq[i] !== undefined)); i++){
-    const made = i < n && !!(picks[i] && picks[i].player);
-    let team;
-    if(i < n){
-      team = picks[i].team;
-    } else if(draftSeq){
-      team = draftSeq[i];
-    } else {
-      const round = Math.floor(i / nT);
-      const posInRound = i % nT;
-      const teamIdx = round % 2 === 0 ? posInRound : nT - 1 - posInRound;
-      team = teamsList[teamIdx];
-    }
-    if(!team) break;
-    if(!made && seenEmpty.has(team)) continue;
-    if(!made) seenEmpty.add(team);
-    rows.push({i, globalPick: i+1, round: Math.floor(i / nT) + 1, team, pick: made ? picks[i] : null, isEmpty: !made, isOnClock: i===n});
-  }
-
-  // Group by round
-  const byRound = {};
-  for(const r of rows){
-    (byRound[r.round] = byRound[r.round]||[]).push(r);
-  }
-
-  let html = '';
-  for(const rNum of Object.keys(byRound).map(Number).sort((a,b)=>a-b)){
-    const rRows = byRound[rNum];
-    const allEmpty = rRows.every(r=>r.isEmpty);
-    const anyMade  = rRows.some(r=>!r.isEmpty);
-    const label = allEmpty ? `Round ${rNum} — Up Next` : anyMade && rRows.some(r=>r.isEmpty) ? `Round ${rNum} — In Progress` : `Round ${rNum}`;
-    html += `<div style="margin-bottom:1px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;padding:6px 12px 3px;background:#f9fafb;border-bottom:1px solid #f0f0ee;position:sticky;top:0;z-index:1">${label}</div>`;
-    for(const r of rRows){
-      if(r.isEmpty){
-        const oc = r.isOnClock;
-        html += `<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #f0f0ee;background:${oc?'#eff6ff':'#fafafa'};${oc?'border-left:3px solid #6366f1':'border-left:3px solid transparent'}">
-          <span style="color:#9ca3af;width:32px;font-size:11px;flex-shrink:0">#${r.globalPick}</span>
-          <span style="font-size:12px;font-weight:600;flex:1;color:${oc?'#1d4ed8':'#6b7280'}">${esc(r.team)}</span>
-          ${oc?'<span style="font-size:9px;font-weight:700;background:#6366f1;color:#fff;border-radius:3px;padding:1px 6px">On Clock</span>':''}
-          <span style="font-size:12px;color:#d1d5db;flex:2">—</span>
-        </div>`;
-      } else {
-        const p = r.pick;
-        const pg = posGroup(p.pos);
-        html += `<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #f0f0ee;background:#fff;border-left:3px solid transparent">
-          <span style="color:#9ca3af;width:32px;font-size:11px;flex-shrink:0">#${r.globalPick}</span>
-          <span style="font-size:12px;font-weight:600;flex:1;color:#1a1a18">${esc(r.team)}</span>
-          <span style="font-size:12px;flex:2">${esc(p.player)}</span>
-          <span style="background:${posColors[pg]||'#f3f4f6'};color:${posText[pg]||'#374151'};border-radius:5px;padding:1px 7px;font-size:10px;font-weight:600;flex-shrink:0">${esc(pg||p.pos||'?')}</span>
-          <span style="color:#6b7280;font-size:11px;width:36px;flex-shrink:0">${esc(p.nhlTeam||'')}</span>
-          <span style="color:#6b7280;font-size:11px;width:52px;text-align:right;flex-shrink:0">${p.cap?'$'+p.cap.toFixed(2)+'M':''}</span>
-        </div>`;
-      }
-    }
-    html += '</div>';
-  }
-  return html || '<div style="padding:2rem;text-align:center;color:#9ca3af;font-size:13px">No picks yet — start drafting.</div>';
 }
 
 function syncSettings(){
@@ -7747,10 +7637,10 @@ function renderDraftView(){
     ? `Round ${curRound} — On the clock: ${onClock} — Pick ${total + 1}`
     : 'Draft complete';
 
-  // Sliding window: start 4 picks back, show through end of current round,
-  // then preview first 3 picks of the next round.
-  const startN      = Math.max(0, total - 4);
-  const endN = startN + 8;   // always show exactly 9 rows; wraps into next round naturally
+  // Full history from round 1 — container scrolls (see .draft-col) — plus
+  // ~1 round preview of upcoming picks past the current one.
+  const startN      = 0;
+  const endN = total + 8;
 
   let html = '';
   let lastRound = null;
@@ -7761,7 +7651,7 @@ function renderDraftView(){
     if(!team) break; // past end of draft
     const pick    = picks[n];              // defined only if already picked
     const isCurrent  = n === total;
-    const showPlayer  = pick && n >= total - 4;
+    const showPlayer  = !!pick;
     const isLastPick  = n === total - 1 && total > 0;
 
     if(round !== lastRound){
@@ -7811,23 +7701,8 @@ function renderDraftView(){
     </div>`;
   }
 
-  const boardFull = document.getElementById('draftBoardFull');
-  const col = document.getElementById('draftColumn');
-  const wrap = document.getElementById('draftCompactWrap');
-  if(draftViewMode === 'full'){
-    boardFull.style.display = 'block';
-    // Once a real (live) pick has been made, that takes precedence; otherwise
-    // fall back to the most recent Simulate Draft results so the board can be
-    // previewed/verified before draft day.
-    const fullState = picks.length ? draftState2627 : {picks: draftState2627.simPicks || []};
-    boardFull.innerHTML = buildDraftBoardHTML(fullState, DRAFT_TEAMS_2627, draftSeq);
-    wrap.style.display = 'none';
-  } else {
-    boardFull.style.display = 'none';
-    wrap.style.display = 'flex';
-    col.innerHTML = html;
-    renderStandings();
-  }
+  document.getElementById('draftColumn').innerHTML = html;
+  renderStandings();
 
   // Ticker: hidden before draft starts, proj pts standings once picks begin
   const tickerEl = document.getElementById('draftTicker');
@@ -8489,14 +8364,28 @@ updateSigningsBtn();
 updateYahooDropBtnTooltips();
 updateDraftTab();
 
+// Cross-tab live sync: when another tab (e.g. the one actually making draft
+// picks) writes players/draft state, pick that up here and re-render whatever
+// view THIS tab currently has open — used on draft night to keep a
+// screenshared Big Board tab in sync with a separate control tab.
 window.addEventListener('storage', e => {
-  const watched = [LS_PLAYERS, LS_DRAFT_2627, LS_DRAFT_2526];
+  const watched = [LS_PLAYERS, LS_DRAFT_2627, LS_DRAFT_2526, LS_DRAFT_2425, LS_DRAFT_2324];
   if(!watched.includes(e.key) || e.newValue === null) return;
-  if(e.key === LS_PLAYERS)    players       = JSON.parse(e.newValue) || [];
-  if(e.key === LS_DRAFT_2627)      draftState2627    = JSON.parse(e.newValue) || {picks:[]};
-  if(e.key === LS_DRAFT_2526) draftState2526= JSON.parse(e.newValue) || {picks:[]};
-  const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
-  if(tab === '2526') render2526(); else render();
+  if(e.key === LS_PLAYERS)    players        = JSON.parse(e.newValue) || [];
+  if(e.key === LS_DRAFT_2627) draftState2627 = JSON.parse(e.newValue) || {picks:[]};
+  if(e.key === LS_DRAFT_2526) draftState2526 = JSON.parse(e.newValue) || {picks:[]};
+  if(e.key === LS_DRAFT_2425) draftState2425 = JSON.parse(e.newValue) || {picks:[]};
+  if(e.key === LS_DRAFT_2324) draftState2324 = JSON.parse(e.newValue) || {picks:[]};
+  if(currentView === 'draft') renderBigBoard();
+  else if(currentView === 'summary') renderSummaryCard(_summaryIdx);
+  else if(currentView === 'roster2324') render2324();
+  else if(currentView === 'roster2425') render2425();
+  else if(currentView === 'roster2526') render2526();
+  else if(currentView === 'roster') render();
+  else if(currentView === 'xactions2425') renderXactions2425();
+  else if(currentView === 'xactions2526') renderXactions2526();
+  else if(currentView === 'xactions2627') renderXactions2627();
+  else if(currentView === 'signings') renderSignings();
 });
 
 // ── Draft Summary view ────────────────────────────────────────────
