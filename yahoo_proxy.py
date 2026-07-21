@@ -799,7 +799,7 @@ def nhl_rosters():
                             print(f"  ⚠ duplicate: {full!r} ({team}) already seen on {active[key]['nhlTeam']}, skipping")
                             continue
                         active[key] = {"name": full, "nhlTeam": team, "pos": pos,
-                                       "birthDate": p.get("birthDate", "")}
+                                       "birthDate": p.get("birthDate", ""), "nhlId": p.get("id")}
                         _add_name_aliases(active, key, full, _pos_group(pos))
             print(f"  ✓ {team}")
         except Exception as e:
@@ -850,6 +850,7 @@ def season_stats():
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0), "team": team,
+                "nhlId": s.get("playerId"),
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2025-26 NHL skaters: {len(fetched)} fetched")
@@ -872,6 +873,7 @@ def season_stats():
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0, "team": team,
+                "nhlId": g.get("playerId"),
             }
             _add_name_aliases(stats, key, full, "G")
         print(f"  2025-26 NHL goalies: {len(data.get('data', []))} fetched")
@@ -911,6 +913,7 @@ def season_stats_2627():
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+                "nhlId": s.get("playerId"),
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
     except Exception as e:
@@ -930,6 +933,7 @@ def season_stats_2627():
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0,
+                "nhlId": g.get("playerId"),
             }
             _add_name_aliases(stats, key, full, "G")
     except Exception as e:
@@ -967,6 +971,7 @@ def season_stats_2324():
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0), "team": team,
+                "nhlId": s.get("playerId"),
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2023-24 NHL skaters: {len(fetched)} fetched")
@@ -989,6 +994,7 @@ def season_stats_2324():
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0, "team": team,
+                "nhlId": g.get("playerId"),
             }
             _add_name_aliases(stats, key, full, "G")
         print(f"  2023-24 NHL goalies: {len(data.get('data', []))} fetched")
@@ -1029,6 +1035,7 @@ def season_stats_2425():
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
                 "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0), "team": team,
+                "nhlId": s.get("playerId"),
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2024-25 NHL skaters: {len(fetched)} fetched")
@@ -1051,6 +1058,7 @@ def season_stats_2425():
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
                 "gp": g.get("gamesPlayed", 0), "ppp": 0, "team": team,
+                "nhlId": g.get("playerId"),
             }
             _add_name_aliases(stats, key, full, "G")
         print(f"  2024-25 NHL goalies: {len(data.get('data', []))} fetched")

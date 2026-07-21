@@ -1771,6 +1771,7 @@ function load(){
     const _oldEnd2526   = 'fantasy'+'Team2526', _oldStart2526 = 'sim'+'2526';
     const _oldStart2627 = 'fantasy'+'Team';
     if(p.start2627 === undefined){ p.start2627 = p[_oldStart2627] !== undefined ? p[_oldStart2627] : ''; migrated = true; }
+    if(p.nhlId === undefined){ p.nhlId = null; migrated = true; }
     if(p.end2526 === undefined){
       p.end2526 = p[_oldEnd2526] !== undefined ? p[_oldEnd2526] : (p[_oldStart2627] || '');
       migrated = true;
@@ -1889,6 +1890,7 @@ async function syncStats(){
         p.gp2526    = entry.gp;
         p.ppp2526   = entry.ppp ?? 0;
         p.team2526  = entry.team || p.team2526;
+        if(entry.nhlId && !p.nhlId) p.nhlId = entry.nhlId;
         p.ptsManual = false;
         matched++;
       } else {
@@ -2147,6 +2149,7 @@ function assignCapFromSignings(){
       p.expYear      = parseInt(c2627.exp?.split('-')[0]) || 0;
       if(c2627.team && (!p.team || p.team==='—')) p.team = c2627.team;
       if(c2627.birthDate && !p.birthDate)          p.birthDate = c2627.birthDate;
+      if(c2627.nhl_id && !p.nhlId)                 p.nhlId = c2627.nhl_id;
     } else if(!p.capManual){
       p.cap = 0; p.contractTerm = 0; p.expYear = 0;
     }
@@ -2257,6 +2260,7 @@ async function syncSigningsAll(e){
         p.expYear = parseInt(c2627.exp?.split('-')[0]) || 0;
         if(c2627.team && (!p.team || p.team==='—')) p.team = c2627.team;
         if(c2627.birthDate && !p.birthDate) p.birthDate = c2627.birthDate;
+        if(c2627.nhl_id && !p.nhlId) p.nhlId = c2627.nhl_id;
       } else {
         p.cap = 0; p.contractTerm = 0; p.expYear = 0;
       }
@@ -2385,11 +2389,12 @@ async function syncAllNHL(){
         ex.status = 'roster';
         if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
         if(p.birthDate && !ex.birthDate) ex.birthDate = p.birthDate;
+        if(p.nhlId && !ex.nhlId) ex.nhlId = p.nhlId;
         updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(x=>x.id))+1 : 1;
         players.push({id:newId, name:p.name, team:p.nhlTeam, pos:p.pos, cap:0, pts:0,
-                      status:'roster', source:'nhl', start2627:'', birthDate:p.birthDate||''});
+                      status:'roster', source:'nhl', start2627:'', birthDate:p.birthDate||'', nhlId:p.nhlId||null});
         added++;
       }
     }
@@ -4527,6 +4532,7 @@ async function syncStats2627(){
       if(entry){
         p.pts2627 = entry.fpts;
         p.gp2627  = entry.gp;
+        if(entry.nhlId && !p.nhlId) p.nhlId = entry.nhlId;
         matched++;
       } else { unmatched++; }
     }
@@ -4957,6 +4963,7 @@ async function syncStats2425(){
         p.pts2425 = entry.fpts;
         p.gp2425  = entry.gp;
         p.team2425 = entry.team || p.team2425;
+        if(entry.nhlId && !p.nhlId) p.nhlId = entry.nhlId;
         matched++;
       } else unmatched++;
     }
@@ -4982,6 +4989,7 @@ async function syncStats2324(){
         p.pts2324 = entry.fpts;
         p.gp2324  = entry.gp;
         p.team2324 = entry.team || p.team2324;
+        if(entry.nhlId && !p.nhlId) p.nhlId = entry.nhlId;
         matched++;
       } else unmatched++;
     }
