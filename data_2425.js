@@ -594,3 +594,18 @@ const POSTDRAFT_ROSTER_2425 = {
   'jakob chychrun':'Dumb and Goalie To',
   'oliver ekmanlarsson':'Dumb and Goalie To',
 };
+
+// All in-season 'drop' transactions for 24-25, keyed by team, used to check whether a
+// player the algo recommended dropping (but the manager initially kept) was later dropped
+// anyway that season — a 'vindicated' call, not a pure miss. See compareDrops2425().
+const MIDSEASON_DROPS_2425 = {
+  'Blue Line Bangers': ['bobby mcmann_F', 'brock boeser_F', 'connor ingram_G', 'dylan cozens_F', 'elias pettersson_F', 'juuso valimaki_D', 'ross colton_F', 'rutger mcgroarty_F', 'will borgen_D'],
+  'Bossy Posse': ['adam fox_D', 'david jiricek_D', 'egor chinakhov_F', 'morgan geekie_F', 'nick perbix_D', 'simon nemec_D', 'trevor zegras_F', 'ty smith_D', 'william nylander_F'],
+  'Damage Inc.': ['alexandar georgiev_G', 'connor zary_F', 'henry thrun_D', 'kaiden guhle_D', 'kandre miller_D', 'luke evangelista_F', 'mathew barzal_F', 'mike matheson_D'],
+  'Dumb and Goalie To': ['daniel sprong_F', 'jack roslovic_F', 'jeff skinner_F', 'josh doan_F', 'mats zuccarello_F', 'paul cotter_F', 'pavel buchnevich_F', 'thomas novak_F', 'ukkopekka luukkonen_G'],
+  'Killer Whales': ['anton lundell_F', 'braden schneider_D', 'emil andrae_D', 'joel farabee_F', 'miro heiskanen_D', 'nazem kadri_F', 'owen tippett_F', 'ty emberson_D'],
+  'Motor City Wings': ['dylan guenther_F', 'gabriel vilardi_F', 'gustav nyquist_F', 'morgan rielly_D', 'ridly greig_F', 'teuvo teravainen_F'],
+  'Muller Time!': ['auston matthews_F', 'jj moser_D', 'jonathan marchessault_F', 'justin barron_D', 'matias maccelli_F', 'matthew poitras_F', 'pavel dorofeyev_F', 'rickard rakell_F', 'shane pinto_F'],
+  'Pernicious Puckers': ['alex vlasic_D', 'alexis lafreniere_F', 'arturs silovs_G', 'casey mittelstadt_F', 'declan chisholm_D', 'justus annunen_G', 'kevin korchinski_D', 'robert thomas_F', 'scott perunovich_D'],
+  'Silence of the Lamb': ['brock nelson_F', 'evgeni malkin_F', 'filip forsberg_F', 'joel eriksson ek_F', 'kris letang_D', 'mike reilly_D', 'rasmus dahlin_D', 'roman josi_D', 'ryan oreilly_F', 'samuel ersson_G', 'taylor raddysh_F'],
+};

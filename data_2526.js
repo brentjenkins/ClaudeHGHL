@@ -2205,3 +2205,18 @@ const PROJ2526_CBS = {
   'zeev buium_D': 22,
   'zemgus girgensons_F': 12
 };
+
+// All in-season 'drop' transactions for 25-26, keyed by team, used to check whether a
+// player the algo recommended dropping (but the manager initially kept) was later dropped
+// anyway that season — a 'vindicated' call, not a pure miss. See compareDrops2526().
+const MIDSEASON_DROPS_2526 = {
+  'Blue Line Bangers': ['akira schmid_G', 'artturi lehkonen_F', 'brady tkachuk_F', 'brandon montour_D', 'gustav forsling_D', 'jared mccann_F', 'jordan binnington_G', 'michael kesselring_D', 'mike matheson_D', 'rickard rakell_F', 'sam malinski_D', 'tyson foerster_F'],
+  'Bossy Posse': ['adam fox_D', 'adin hill_G', 'emil heineman_F', 'jakub dobes_G', 'lian bichsel_D', 'matt coronato_F', 'robert thomas_F', 'scott morrow_D', 'shane wright_F', 'travis konecny_F', 'ville koivunen_F', 'zach benson_F'],
+  'Damage Inc.': ['adam boqvist_D', 'anthony stolarz_G', 'isaac howard_F', 'kevin korchinski_D', 'luke hughes_D', 'max shabanov_F', 'philipp kurashev_F', 'samuel montembeault_G', 'william nylander_F'],
+  'Dumb and Goalie To': ['artemi panarin_F', 'axel sandinpellikka_D', 'dmitri voronkov_F', 'gabriel landeskog_F', 'jiri kulich_F', 'jonathan drouin_F', 'sam rinzel_D', 'seamus casey_D', 'sean monahan_F', 'stuart skinner_G'],
+  'Killer Whales': ['anton frondell_F', 'anze kopitar_F', 'auston matthews_F', 'dylan holloway_F', 'jacob markstrom_G', 'logan stankoven_F', 'matias maccelli_F', 'sean durzi_D', 'shakir mukhamadullin_D', 'victor hedman_D'],
+  'Motor City Wings': ['braden schneider_D', 'cam york_D', 'connor mcmichael_F', 'mackie samoskevich_F', 'marco kasper_F', 'marco rossi_F', 'scott morrow_D', 'shayne gostisbehere_D'],
+  'Muller Time!': ['carter verhaeghe_F', 'carter yakemchuk_D', 'darcy kuemper_G', 'oliver ekmanlarsson_D', 'roman josi_D', 'roope hintz_F', 'ryan donato_F', 'shea theodore_D'],
+  'Pernicious Puckers': ['dylan cozens_F', 'jt miller_F', 'kent johnson_F', 'liam ohgren_F', 'logan stankoven_F', 'sam reinhart_F', 'thatcher demko_G', 'tom wilson_F'],
+  'Silence of the Lamb': ['andrei vasilevskiy_G', 'conor garland_F', 'erik gustafsson_D', 'jason zucker_F', 'jonathan toews_F', 'josh manson_D', 'noah hanifin_D', 'shane pinto_F', 'uvis balinskis_D'],
+};

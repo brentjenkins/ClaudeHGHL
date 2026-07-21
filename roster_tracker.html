@@ -1430,6 +1430,23 @@ function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
   return null;
 }
+// Was a player the algo recommended dropping (but the manager initially kept) dropped
+// by that same team later in the season anyway? Checks a baked MIDSEASON_DROPS_2x2y
+// dict (team -> [normalizedName_pg, ...]) — alias/override-aware, same lookup pattern
+// as every other name-keyed dict in this app.
+function _wasVindicated(midseasonDrops, team, name, pos){
+  const list = midseasonDrops[team];
+  if(!list) return false;
+  const pg = posGroup(pos);
+  const n = normName(name).toLowerCase();
+  const key = `${n}_${pg}`;
+  if(list.includes(key)) return true;
+  const alias = _nameAlias(n);
+  if(alias && list.includes(`${alias}_${pg}`)) return true;
+  const overrideAlt = _knownNameOverride(n);
+  if(overrideAlt && list.includes(`${overrideAlt}_${pg}`)) return true;
+  return false;
+}
 // Find a player by name, trying the alias spelling if exact match fails.
 function findPlayerByName(name){ const n=normName(name).toLowerCase(); const alias=_nameAlias(n); return players.find(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; })||null; }
 // Like findPlayerByName, but if multiple players share the name (e.g. two "Elias Pettersson"s),
@@ -4879,14 +4896,14 @@ function compareDrops2526(){
   // A player is "actually kept" if they appear in POSTDROP_ROSTER_2526 for this team.
   // A player is "sim kept" if their virtual start2526 is still set.
   const teamResults = [];
-  let totalCorrect = 0, totalAll = 0;
+  let totalCorrect = 0, totalAll = 0, totalCorrectOutcome = 0;
 
   for(const team of teams){
     const teamPlayers = vp.filter(p => {
       const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
       return (PREDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2526) ?? null) === team;
     });
-    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[], injuryExcused=[], elcMandatory=[];
+    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], injuryExcused=[], elcMandatory=[];
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
@@ -4903,7 +4920,13 @@ function compareDrops2526(){
         else correctDrops.push(label);
       }
       else if(simKept && actuallyKept)  correctKeeps.push(label);
-      else if(!simKept && actuallyKept) algoDroppedShouldKeep.push(label);
+      else if(!simKept && actuallyKept){
+        // Manager initially kept them, but did that same team drop them anyway later
+        // in-season? That's real-outcome confirmation the algo's call was right, just
+        // early — track it separately rather than counting it as a pure miss.
+        if(_wasVindicated(MIDSEASON_DROPS_2526, team, p.name, p.pos)) algoDroppedVindicated.push(label);
+        else algoDroppedShouldKeep.push(label);
+      }
       else if(simKept && !actuallyKept){
         if(INJURY_DROPS_2526.has(key)) injuryExcused.push(label);
         else algoKeptShouldDrop.push(label);
@@ -4911,14 +4934,17 @@ function compareDrops2526(){
     }
 
     const correct = correctDrops.length + correctKeeps.length + elcMandatory.length;
+    const correctOutcome = correct + algoDroppedVindicated.length;
     const excused = injuryExcused.length;
     const total = teamPlayers.length - excused;
-    totalCorrect += correct; totalAll += total;
-    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoKeptShouldDrop, injuryExcused, elcMandatory, correct, total});
+    totalCorrect += correct; totalAll += total; totalCorrectOutcome += correctOutcome;
+    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, injuryExcused, elcMandatory, correct, correctOutcome, total});
   }
   window.lastCompareResults2526 = teamResults;
 
   const pct = totalAll>0 ? Math.round(100*totalCorrect/totalAll) : 0;
+  const pctOutcome = totalAll>0 ? Math.round(100*totalCorrectOutcome/totalAll) : 0;
+  const totalVindicated = teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length, 0);
   const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
   const totalELC = teamResults.reduce((s,r)=>s+r.elcMandatory.length, 0);
 
@@ -4927,7 +4953,8 @@ function compareDrops2526(){
     `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
     `Target: <strong>${ptsTarget}pts</strong>` +
     (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
-    (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '');
+    (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '') +
+    (totalVindicated ? ` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated</span>` : '');
 
   const rows = teamResults.map(r => {
     const pct2 = Math.round(100*r.correct/r.total);
@@ -4946,6 +4973,7 @@ function compareDrops2526(){
 
     html += section('Correctly dropped', '#16a34a', '✓', r.correctDrops);
     html += section('Algo dropped — should have kept', '#dc2626', '✗', r.algoDroppedShouldKeep);
+    html += section('Algo dropped — kept, but dropped later anyway (vindicated)', '#0891b2', '⏱', r.algoDroppedVindicated);
     html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
     html += section('Dropped by rule — ELC', '#6366f1', '📋', r.elcMandatory);
     html += section('Dropped for injury (excused)', '#9ca3af', '🏥', r.injuryExcused);
@@ -5385,14 +5413,14 @@ function compareDrops2425(){
   const labelDelta2425 = p => { const pg=posGroup(p.pos),pp=ppts2425blend(p),c=getCap2425(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2425,curveFnsPostDrop2425[pg]); return base!=null?pp-base:null; };
 
   const teamResults=[];
-  let totalCorrect=0, totalAll=0;
+  let totalCorrect=0, totalAll=0, totalCorrectOutcome=0;
 
   for(const team of teams){
     const teamPlayers=vp.filter(p=>{
       const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
       return (PREDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name,PREDROP_ROSTER_2425) ?? null)===team;
     });
-    const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
+    const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoDroppedVindicated=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
 
     for(const p of teamPlayers){
       const key=normName(p.name).toLowerCase();
@@ -5409,21 +5437,27 @@ function compareDrops2425(){
         else correctDrops.push(label);
       }
       else if(simKept && actuallyKept)   correctKeeps.push(label);
-      else if(!simKept && actuallyKept)  algoDroppedShouldKeep.push(label);
+      else if(!simKept && actuallyKept){
+        if(_wasVindicated(MIDSEASON_DROPS_2425, team, p.name, p.pos)) algoDroppedVindicated.push(label);
+        else algoDroppedShouldKeep.push(label);
+      }
       else if(simKept && !actuallyKept){
         if(INJURY_DROPS_2425.has(key)) injuryExcused.push(label);
         else algoKeptShouldDrop.push(label);
       }
     }
     const correct=correctDrops.length+correctKeeps.length+elcMandatory.length;
+    const correctOutcome=correct+algoDroppedVindicated.length;
     const excused=injuryExcused.length;
     const total=teamPlayers.length-excused;
-    totalCorrect+=correct; totalAll+=total;
-    teamResults.push({team,correctDrops,correctKeeps,algoDroppedShouldKeep,algoKeptShouldDrop,injuryExcused,elcMandatory,correct,total});
+    totalCorrect+=correct; totalAll+=total; totalCorrectOutcome+=correctOutcome;
+    teamResults.push({team,correctDrops,correctKeeps,algoDroppedShouldKeep,algoDroppedVindicated,algoKeptShouldDrop,injuryExcused,elcMandatory,correct,correctOutcome,total});
   }
   window.lastCompareResults2425 = teamResults;
 
   const pct=totalAll>0?Math.round(100*totalCorrect/totalAll):0;
+  const pctOutcome=totalAll>0?Math.round(100*totalCorrectOutcome/totalAll):0;
+  const totalVindicated=teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length,0);
   const totalExcused=teamResults.reduce((s,r)=>s+r.injuryExcused.length,0);
   const totalELC=teamResults.reduce((s,r)=>s+r.elcMandatory.length,0);
 
@@ -5431,7 +5465,8 @@ function compareDrops2425(){
     `24-25 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; `+
     `Target: <strong>${ptsTarget}pts</strong>`+
     (totalELC?` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>`:'')+
-    (totalExcused?` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>`:'');
+    (totalExcused?` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>`:'')+
+    (totalVindicated?` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated</span>`:'');
 
   const section=(label,color,icon,items)=>{
     if(!items.length) return '';
@@ -5449,6 +5484,7 @@ function compareDrops2425(){
     html+=`</div><div style="padding:8px 12px">`;
     html+=section('Correctly dropped','#16a34a','✓',r.correctDrops);
     html+=section('Algo dropped — should have kept','#dc2626','✗',r.algoDroppedShouldKeep);
+    html+=section('Algo dropped — kept, but dropped later anyway (vindicated)','#0891b2','⏱',r.algoDroppedVindicated);
     html+=section('Algo kept — should have dropped','#d97706','△',r.algoKeptShouldDrop);
     html+=section('Dropped by rule — ELC','#6366f1','📋',r.elcMandatory);
     html+=section('Dropped for injury (excused)','#9ca3af','🏥',r.injuryExcused);
@@ -5729,14 +5765,14 @@ function compareDrops2324(){
   const labelDelta2324 = p => { const pg=posGroup(p.pos),pp=ppts2324blend(p),c=getCap2324(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2324,curveFnsPostDrop2324[pg]); return base!=null?pp-base:null; };
 
   const teamResults=[];
-  let totalCorrect=0, totalAll=0;
+  let totalCorrect=0, totalAll=0, totalCorrectOutcome=0;
 
   for(const team of teams){
     const teamPlayers=vp.filter(p=>{
       const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
       return (PREDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name,PREDROP_ROSTER_2324) ?? null)===team;
     });
-    const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
+    const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoDroppedVindicated=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
 
     for(const p of teamPlayers){
       const key=normName(p.name).toLowerCase();
@@ -5754,21 +5790,27 @@ function compareDrops2324(){
         else correctDrops.push(label);
       }
       else if(simKept && actuallyKept)   correctKeeps.push(label);
-      else if(!simKept && actuallyKept)  algoDroppedShouldKeep.push(label);
+      else if(!simKept && actuallyKept){
+        if(_wasVindicated(MIDSEASON_DROPS_2324, team, p.name, p.pos)) algoDroppedVindicated.push(label);
+        else algoDroppedShouldKeep.push(label);
+      }
       else if(simKept && !actuallyKept){
         if(INJURY_DROPS_2324.has(key)) injuryExcused.push(label);
         else algoKeptShouldDrop.push(label);
       }
     }
     const correct=correctDrops.length+correctKeeps.length+elcMandatory.length;
+    const correctOutcome=correct+algoDroppedVindicated.length;
     const excused=injuryExcused.length;
     const total=teamPlayers.length-excused;
-    totalCorrect+=correct; totalAll+=total;
-    teamResults.push({team,correctDrops,correctKeeps,algoDroppedShouldKeep,algoKeptShouldDrop,injuryExcused,elcMandatory,correct,total});
+    totalCorrect+=correct; totalAll+=total; totalCorrectOutcome+=correctOutcome;
+    teamResults.push({team,correctDrops,correctKeeps,algoDroppedShouldKeep,algoDroppedVindicated,algoKeptShouldDrop,injuryExcused,elcMandatory,correct,correctOutcome,total});
   }
   window.lastCompareResults2324 = teamResults;
 
   const pct=totalAll>0?Math.round(100*totalCorrect/totalAll):0;
+  const pctOutcome=totalAll>0?Math.round(100*totalCorrectOutcome/totalAll):0;
+  const totalVindicated=teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length,0);
   const totalExcused=teamResults.reduce((s,r)=>s+r.injuryExcused.length,0);
   const totalELC=teamResults.reduce((s,r)=>s+r.elcMandatory.length,0);
 
@@ -5776,7 +5818,8 @@ function compareDrops2324(){
     `23-24 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; `+
     `Target: <strong>${ptsTarget}pts</strong>`+
     (totalELC?` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>`:'')+
-    (totalExcused?` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>`:'');
+    (totalExcused?` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>`:'')+
+    (totalVindicated?` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated</span>`:'');
 
   const section=(label,color,icon,items)=>{
     if(!items.length) return '';
@@ -5794,6 +5837,7 @@ function compareDrops2324(){
     html+=`</div><div style="padding:8px 12px">`;
     html+=section('Correctly dropped','#16a34a','✓',r.correctDrops);
     html+=section('Algo dropped — should have kept','#dc2626','✗',r.algoDroppedShouldKeep);
+    html+=section('Algo dropped — kept, but dropped later anyway (vindicated)','#0891b2','⏱',r.algoDroppedVindicated);
     html+=section('Algo kept — should have dropped','#d97706','△',r.algoKeptShouldDrop);
     html+=section('Dropped by rule — ELC','#6366f1','📋',r.elcMandatory);
     html+=section('Dropped for injury (excused)','#9ca3af','🏥',r.injuryExcused);
@@ -5831,12 +5875,17 @@ function render2425(){
     return base!=null?ap-base:null;
   };
 
-  // ABP for 24-25
+  // ABP for 24-25 — computed for every player with real cap/pts data, not just
+  // rostered ones (matches computeABP2324/2526/computeABP's pattern in all 3 other
+  // views). A free agent's own ABP count is exactly the "is there a better
+  // alternative to draft instead of this guy" signal, so it's just as useful for
+  // undrafted players as for rostered ones.
   const abpMap2425 = new Map();
-  const rostered2425 = players.filter(p=>p.start2425);
   const fa2425 = players.filter(p=>!p.start2425 && getCap2425(p)>0 && ppts2425blend(p)>=abpMinPts);
-  for(const p of rostered2425){
-    const pg=posGroup(p.pos); const cap=getCap2425(p); const pp=ppts2425blend(p);
+  for(const p of players){
+    const cap=getCap2425(p); const pp=ppts2425blend(p);
+    if(!(pp>0) || cap<=0){ abpMap2425.set(p.id,null); continue; }
+    const pg=posGroup(p.pos);
     const wigAmt=(abpWiggle/100)*CAP_LIMIT_2425;
     const n=fa2425.filter(fa=>fa.id!==p.id&&posGroup(fa.pos)===pg&&getCap2425(fa)<=cap+wigAmt&&ppts2425blend(fa)>pp).length;
     abpMap2425.set(p.id,n);
@@ -6290,12 +6339,15 @@ function render2324(){
     return base!=null?ap-base:null;
   };
 
-  // ABP for 23-24
+  // ABP for 23-24 — computed for every player with real cap/pts data, not just
+  // rostered ones (same fix as abpMap2425 above, and matches computeABP2526/
+  // computeABP's pattern for the other 2 views).
   const abpMap2324 = new Map();
-  const rostered2324 = players.filter(p=>p.start2324);
   const fa2324 = players.filter(p=>!p.start2324 && getCap2324(p)>0 && ppts2324blend(p)>=abpMinPts);
-  for(const p of rostered2324){
-    const pg=posGroup(p.pos); const cap=getCap2324(p); const pp=ppts2324blend(p);
+  for(const p of players){
+    const cap=getCap2324(p); const pp=ppts2324blend(p);
+    if(!(pp>0) || cap<=0){ abpMap2324.set(p.id,null); continue; }
+    const pg=posGroup(p.pos);
     const wigAmt=(abpWiggle/100)*CAP_LIMIT_2324;
     const n=fa2324.filter(fa=>fa.id!==p.id&&posGroup(fa.pos)===pg&&getCap2324(fa)<=cap+wigAmt&&ppts2324blend(fa)>pp).length;
     abpMap2324.set(p.id,n);
@@ -8140,23 +8192,6 @@ function computeABP2526(allPlayers){
     const cap = c2526 + (abpWiggle / 100) * CAP_LIMIT_2526;
     abpMap.set(p.id, fas.filter(fa =>
       fa.id !== p.id && posGroup(fa.pos) === pg && getCap2526(fa) <= cap && ppts2526blend(fa) > pp
-    ).length);
-  }
-  return abpMap;
-}
-
-function computeABP2324(allPlayers){
-  const fas = allPlayers.filter(p => !p.start2324 && getCap2324(p) > 0 && ppts2324blend(p) > 0 &&
-    (abpMinGP <= 0 || (p.gp2324||0) >= abpMinGP));
-  const abpMap = new Map();
-  for(const p of allPlayers){
-    const pp = ppts2324blend(p);
-    const c2324 = getCap2324(p);
-    if(!pp || c2324 <= 0){ abpMap.set(p.id, null); continue; }
-    const pg  = posGroup(p.pos);
-    const cap = c2324 + (abpWiggle / 100) * CAP_LIMIT_2324;
-    abpMap.set(p.id, fas.filter(fa =>
-      fa.id !== p.id && posGroup(fa.pos) === pg && getCap2324(fa) <= cap && ppts2324blend(fa) > pp
     ).length);
   }
   return abpMap;

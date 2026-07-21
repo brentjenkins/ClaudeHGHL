@@ -2042,3 +2042,18 @@ const POSTDRAFT_ROSTER_2324 = {
   'blake wheeler':'Silence of the Lamb','matthew knies':'Silence of the Lamb','pheonix copley':'Silence of the Lamb',
   'sebastian aho_D':'Silence of the Lamb','vladimir tarasenko':'Silence of the Lamb','jordan kyrou':'Silence of the Lamb',
 };
+
+// All in-season 'drop' transactions for 23-24, keyed by team, used to check whether a
+// player the algo recommended dropping (but the manager initially kept) was later dropped
+// anyway that season — a 'vindicated' call, not a pure miss. See compareDrops2324().
+const MIDSEASON_DROPS_2324 = {
+  'Blue Line Bangers': ['adam boqvist_D', 'andrei kuzmenko_F', 'brett pesce_D', 'jake walman_D', 'marcandre fleury_G', 'mark giordano_D', 'matt boldy_F', 'nick jensen_D', 'ryan hartman_F', 'shea theodore_D', 'steven stamkos_F', 'taylor raddysh_F'],
+  'Bossy Posse': ['artturi lehkonen_F', 'cody glass_F', 'devon levi_G', 'filip gustavsson_G', 'juuso valimaki_D', 'kirby dach_F', 'philip tomasino_F', 'ridly greig_F', 'roope hintz_F'],
+  'Damage Inc.': ['chris kreider_F', 'gabriel vilardi_F', 'ilya samsonov_G', 'ivan provorov_D', 'joel eriksson ek_F', 'justin schultz_D', 'kent johnson_F', 'nick schmaltz_F', 'shane wright_F', 'tony deangelo_D'],
+  'Dumb and Goalie To': ['hampus lindholm_D', 'jonas johansson_G', 'juuso parssinen_F', 'matthew benning_D', 'mitch marner_F', 'nick perbix_D', 'owen power_D', 'rasmus dahlin_D'],
+  'Killer Whales': ['barrett hayton_F', 'filip chytil_F', 'frederik andersen_G', 'miro heiskanen_D', 'trevor zegras_F', 'valeri nichushkin_F'],
+  'Motor City Wings': ['alexander holtz_F', 'bobby brink_F', 'evgenii dadonov_F', 'igor shesterkin_G', 'john klingberg_D', 'nils lundkvist_D', 'oliver ekmanlarsson_D', 'roope hintz_F', 'tomas tatar_F'],
+  'Muller Time!': ['adin hill_G', 'andre burakovsky_F', 'arber xhekaj_D', 'brady tkachuk_F', 'devon levi_G', 'evan rodrigues_F', 'pyotr kochetkov_G', 'troy terry_F', 'vitek vanecek_G'],
+  'Pernicious Puckers': ['bowen byram_D', 'dawson mercer_F', 'dylan cozens_F', 'lukas reichel_F', 'matt coronato_F', 'nico hischier_F', 'sean monahan_F'],
+  'Silence of the Lamb': ['alexander barabanov_F', 'blake wheeler_F', 'connor ingram_G', 'freddy gaudreau_F', 'jordan kyrou_F', 'pheonix copley_G', 'sebastian aho_D', 'tyson barrie_D', 'vladimir tarasenko_F'],
+};
