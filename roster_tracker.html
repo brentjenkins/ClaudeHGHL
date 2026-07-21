@@ -1420,6 +1420,11 @@ function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; con
 // names (no _pos suffix), lowercase, matching FIRST_NAME_ALIASES' convention.
 const KNOWN_NAME_OVERRIDE_PAIRS = [
   ['jj moser', 'janis jerome moser'],
+  // Live pool stores his name with a space ("Charles Alexis Legault"); PuckPedia's
+  // p_fn is hyphenated ("Charles-Alexis"), and normalize_name() strips hyphens with
+  // no space substitution, fusing it into "charlesalexis" — never matches the
+  // space-separated live key otherwise.
+  ['charles alexis legault', 'charlesalexis legault'],
 ];
 function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
@@ -2238,9 +2243,15 @@ async function syncSigningsAll(e){
     const d = await fetch(url).then(r=>r.json());
     if(d.error) throw new Error(d.error);
 
-    // Merge into cached store (incremental) or replace (full)
-    const existing = isIncremental ? (lsGet(LS_SIGNINGS_RAW) || {}) : {};
-    const raw = isIncremental ? _mergeSigningsRaw(existing, d.contracts) : d.contracts;
+    // Always merge into the cached store — even a "full" resync only returns each
+    // player's currently-active contract (api_signings has no historical data, see
+    // /player-page-contracts's docstring; confirmed live: Draisaitl has exactly 1
+    // record in the whole feed, his current deal, not the 2017-2025 contract that
+    // actually covers 23-24/24-25). Replacing the store here silently discarded any
+    // non-current contract "📜 Historical Caps" had merged in, regressing cap2324/
+    // cap2425 to null on the next reload for anyone who's since re-signed.
+    const existing = lsGet(LS_SIGNINGS_RAW) || {};
+    const raw = _mergeSigningsRaw(existing, d.contracts);
     lsSet(LS_SIGNINGS_RAW, raw);
 
     // Apply cap hits to all existing players
@@ -2254,11 +2265,14 @@ async function syncSigningsAll(e){
       const overrideKey = overrideAlt ? `${overrideAlt}_${posGroup(p.pos)}` : null;
       const contracts = raw[key] || (aliasKey && raw[aliasKey]) || (overrideKey && raw[overrideKey]) || [];
       if(!contracts.length) continue;
+      const c2324 = contracts.find(c => c.start_yr <= 2023 && c.exp >= '2023-2024');
       const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
       const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
       const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
+      p.cap2324   = c2324?.cap ?? null;
       p.cap2425   = c2425?.cap ?? null;
       p.cap2526   = c2526?.cap ?? null;
+      p.yrStr2324 = _signingYrStr(c2324, 2023);
       p.yrStr2425 = _signingYrStr(c2425, 2024);
       p.yrStr2526 = _signingYrStr(c2526, 2025);
       p.yrStr2627 = _signingYrStr(c2627, 2026);
@@ -2301,14 +2315,17 @@ async function syncSigningsAll(e){
       const uid = latest.nhl_id || latest.name;
       if(seenIds.has(uid)) continue;
       seenIds.add(uid);
+      const c2324 = contracts.find(c => c.start_yr <= 2023 && c.exp >= '2023-2024');
       const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
       const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
       const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
 
       const existingById = latest.nhl_id && byNhlId.get(String(latest.nhl_id));
       if(existingById){
+        existingById.cap2324   = c2324?.cap ?? existingById.cap2324 ?? null;
         existingById.cap2425   = c2425?.cap ?? existingById.cap2425 ?? null;
         existingById.cap2526   = c2526?.cap ?? existingById.cap2526 ?? null;
+        existingById.yrStr2324 = _signingYrStr(c2324, 2023);
         existingById.yrStr2425 = _signingYrStr(c2425, 2024);
         existingById.yrStr2526 = _signingYrStr(c2526, 2025);
         existingById.yrStr2627 = _signingYrStr(c2627, 2026);
@@ -2332,7 +2349,7 @@ async function syncSigningsAll(e){
         birthDate: latest.birthDate || '', source: 'puckpedia', status: 'roster',
         start2627: '', end2526: '', pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
-        cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null,
+        cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null, cap2324: c2324?.cap ?? null,
         nhlId: latest.nhl_id || null,
       });
       added++;
