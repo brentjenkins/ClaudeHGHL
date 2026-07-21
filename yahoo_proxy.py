@@ -843,10 +843,13 @@ def season_stats():
             pos = _POS_MAP.get(s.get("positionCode", ""), "C")
             key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
             fpts = s.get("goals", 0) + s.get("assists", 0)
+            # teamAbbrevs lists teams in chronological order for a mid-season trade
+            # (e.g. "NYR,LAK") — first entry is the team the player started the season with.
+            team = (s.get("teamAbbrevs") or "").split(",")[0] or None
             stats[key] = {
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
-                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0), "team": team,
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2025-26 NHL skaters: {len(fetched)} fetched")
@@ -864,10 +867,11 @@ def season_stats():
             key = f"{normalize_name(full).lower()}_G"
             wins = g.get("wins", 0)
             sos  = g.get("shutouts", 0)
+            team = (g.get("teamAbbrevs") or "").split(",")[0] or None
             stats[key] = {
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
-                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0, "team": team,
             }
             _add_name_aliases(stats, key, full, "G")
         print(f"  2025-26 NHL goalies: {len(data.get('data', []))} fetched")
@@ -958,10 +962,11 @@ def season_stats_2324():
             pos = _POS_MAP.get(s.get("positionCode", ""), "C")
             key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
             fpts = s.get("goals", 0) + s.get("assists", 0)
+            team = (s.get("teamAbbrevs") or "").split(",")[0] or None
             stats[key] = {
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
-                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0), "team": team,
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2023-24 NHL skaters: {len(fetched)} fetched")
@@ -979,10 +984,11 @@ def season_stats_2324():
             key = f"{normalize_name(full).lower()}_G"
             wins = g.get("wins", 0)
             sos  = g.get("shutouts", 0)
+            team = (g.get("teamAbbrevs") or "").split(",")[0] or None
             stats[key] = {
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
-                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0, "team": team,
             }
             _add_name_aliases(stats, key, full, "G")
         print(f"  2023-24 NHL goalies: {len(data.get('data', []))} fetched")
@@ -1018,10 +1024,11 @@ def season_stats_2425():
             pos = _POS_MAP.get(s.get("positionCode", ""), "C")
             key = f"{normalize_name(full).lower()}_{_pos_group(pos)}"
             fpts = s.get("goals", 0) + s.get("assists", 0)
+            team = (s.get("teamAbbrevs") or "").split(",")[0] or None
             stats[key] = {
                 "name": full, "fpts": fpts,
                 "goals": s.get("goals", 0), "assists": s.get("assists", 0),
-                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0),
+                "gp": s.get("gamesPlayed", 0), "ppp": s.get("ppPoints", 0), "team": team,
             }
             _add_name_aliases(stats, key, full, _pos_group(pos))
         print(f"  2024-25 NHL skaters: {len(fetched)} fetched")
@@ -1039,10 +1046,11 @@ def season_stats_2425():
             key = f"{normalize_name(full).lower()}_G"
             wins = g.get("wins", 0)
             sos  = g.get("shutouts", 0)
+            team = (g.get("teamAbbrevs") or "").split(",")[0] or None
             stats[key] = {
                 "name": full, "fpts": wins * 2 + sos * 3,
                 "wins": wins, "shutouts": sos,
-                "gp": g.get("gamesPlayed", 0), "ppp": 0,
+                "gp": g.get("gamesPlayed", 0), "ppp": 0, "team": team,
             }
             _add_name_aliases(stats, key, full, "G")
         print(f"  2024-25 NHL goalies: {len(data.get('data', []))} fetched")

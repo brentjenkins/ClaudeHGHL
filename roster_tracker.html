@@ -1837,8 +1837,10 @@ function load(){
     if(p.gpDTZ             === undefined){ p.gpDTZ             = null; migrated = true; }
     if(p.gpESPN            === undefined){ p.gpESPN            = null; migrated = true; }
     if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
+    if(p.team2526          === undefined){ p.team2526          = null; migrated = true; }
     if(p.pts2425           === undefined){ p.pts2425           = 0;    migrated = true; }
     if(p.gp2425            === undefined){ p.gp2425            = 0;    migrated = true; }
+    if(p.team2425          === undefined){ p.team2425          = null; migrated = true; }
     if(p.cap2425           === undefined){ p.cap2425           = null; migrated = true; }
     if(p.proj2425_dfo      === undefined){ p.proj2425_dfo      = null; migrated = true; }
     if(p.proj2425_dtz      === undefined){ p.proj2425_dtz      = null; migrated = true; }
@@ -1852,6 +1854,7 @@ function load(){
     if(p.start2324         === undefined){ p.start2324         = null; migrated = true; }
     if(p.pts2324           === undefined){ p.pts2324           = 0;    migrated = true; }
     if(p.gp2324            === undefined){ p.gp2324            = 0;    migrated = true; }
+    if(p.team2324          === undefined){ p.team2324          = null; migrated = true; }
     if(p.cap2324           === undefined){ p.cap2324           = null; migrated = true; }
     if(p.proj2324_athletic === undefined){ p.proj2324_athletic = null; migrated = true; }
     if(p.proj2324_dtz      === undefined){ p.proj2324_dtz      = null; migrated = true; }
@@ -1885,6 +1888,7 @@ async function syncStats(){
         p.pts2526   = entry.fpts;
         p.gp2526    = entry.gp;
         p.ppp2526   = entry.ppp ?? 0;
+        p.team2526  = entry.team || p.team2526;
         p.ptsManual = false;
         matched++;
       } else {
@@ -4952,6 +4956,7 @@ async function syncStats2425(){
       if(entry){
         p.pts2425 = entry.fpts;
         p.gp2425  = entry.gp;
+        p.team2425 = entry.team || p.team2425;
         matched++;
       } else unmatched++;
     }
@@ -4976,6 +4981,7 @@ async function syncStats2324(){
       if(entry){
         p.pts2324 = entry.fpts;
         p.gp2324  = entry.gp;
+        p.team2324 = entry.team || p.team2324;
         matched++;
       } else unmatched++;
     }
@@ -5924,7 +5930,7 @@ function render2425(){
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2425(p)??'—'}</td>
-      <td>${esc(p.team||'—')}</td>
+      <td title="Team as of the 2024-25 season">${esc(p.team2425||p.team||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2324&&teamLogos[p.end2324]?`<img src="${teamLogos[p.end2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2324)||'—'}</span></div></td>
       ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
@@ -6383,7 +6389,7 @@ function render2324(){
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2324(p)??'—'}</td>
-      <td>${esc(p.team||'—')}</td>
+      <td title="Team as of the 2023-24 season">${esc(p.team2324||p.team||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2223&&teamLogos[p.end2223]?`<img src="${teamLogos[p.end2223]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2223)||'—'}</span></div></td>
       ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
@@ -7618,7 +7624,7 @@ function render2526(){
       </div></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2526(p)??'—'}</td>
-      <td>${esc(p.team||'—')}</td>
+      <td title="Team as of the 2025-26 season">${esc(p.team2526||p.team||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2425&&teamLogos[p.end2425]?`<img src="${teamLogos[p.end2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2425)||'—'}</span></div></td>
       ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${c.toFixed(2)}</a>`:'—';})()}</td>
