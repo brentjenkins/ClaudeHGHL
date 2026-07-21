@@ -463,6 +463,7 @@ const PREDROP_STUBS_2425 = [
   {name:'Henry Thrun',       pos:'D'},
   {name:'Daniel Sprong',     pos:'RW'},
   {name:'Joe Pavelski',      pos:'C'},
+  {name:'Cam Talbot',        pos:'G'},
 ];
 
 // Post-drop pre-pick 24-25 rosters. Keys = normName.toLowerCase().

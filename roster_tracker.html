@@ -1433,8 +1433,17 @@ function findPlayerByNamePos(name, posHint){
   const n=normName(name).toLowerCase();
   const alias=_nameAlias(n);
   const cands=players.filter(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; });
-  if(cands.length<=1) return cands[0]||null;
-  return cands.find(p=>posGroup(p.pos)===posGroup(posHint))||cands[0];
+  if(!cands.length) return null;
+  if(!posHint) return cands[0];
+  const posMatch = cands.find(p=>posGroup(p.pos)===posGroup(posHint));
+  if(posMatch) return posMatch;
+  // No candidate matches the hinted position. With 2+ name-candidates already on file,
+  // guessing cands[0] is the pre-existing (harmless) fallback. But with exactly ONE
+  // name-candidate, a position mismatch means this is very likely the *other* real
+  // player of a same-name pair (e.g. Elias Pettersson F vs D, Sebastian Aho F vs D) who
+  // hasn't been added yet — returning cands[0] here would silently merge two distinct
+  // real players into one corrupted record instead of letting the caller add a second one.
+  return cands.length>1 ? cands[0] : null;
 }
 // Look up a name-keyed dict (e.g. PREDROP_ROSTER_2425) with alias fallback.
 function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??null; }
