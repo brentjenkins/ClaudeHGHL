@@ -2046,14 +2046,34 @@ const POSTDRAFT_ROSTER_2324 = {
 // All in-season 'drop' transactions for 23-24, keyed by team, used to check whether a
 // player the algo recommended dropping (but the manager initially kept) was later dropped
 // anyway that season — a 'vindicated' call, not a pure miss. See compareDrops2324().
+// Excludes any drop immediately reversed by a same-team re-add within 48h (mistake/trade-
+// mechanic noise, not a genuine decision) — confirmed a real pattern in this data, not hypothetical.
 const MIDSEASON_DROPS_2324 = {
-  'Blue Line Bangers': ['adam boqvist_D', 'andrei kuzmenko_F', 'brett pesce_D', 'jake walman_D', 'marcandre fleury_G', 'mark giordano_D', 'matt boldy_F', 'nick jensen_D', 'ryan hartman_F', 'shea theodore_D', 'steven stamkos_F', 'taylor raddysh_F'],
+  'Blue Line Bangers': ['adam boqvist_D', 'andrei kuzmenko_F', 'brett pesce_D', 'marcandre fleury_G', 'mark giordano_D', 'matt boldy_F', 'nick jensen_D', 'ryan hartman_F', 'shea theodore_D', 'steven stamkos_F', 'taylor raddysh_F'],
   'Bossy Posse': ['artturi lehkonen_F', 'cody glass_F', 'devon levi_G', 'filip gustavsson_G', 'juuso valimaki_D', 'kirby dach_F', 'philip tomasino_F', 'ridly greig_F', 'roope hintz_F'],
-  'Damage Inc.': ['chris kreider_F', 'gabriel vilardi_F', 'ilya samsonov_G', 'ivan provorov_D', 'joel eriksson ek_F', 'justin schultz_D', 'kent johnson_F', 'nick schmaltz_F', 'shane wright_F', 'tony deangelo_D'],
+  'Damage Inc.': ['chris kreider_F', 'gabriel vilardi_F', 'ilya samsonov_G', 'joel eriksson ek_F', 'justin schultz_D', 'kent johnson_F', 'nick schmaltz_F', 'shane wright_F', 'tony deangelo_D'],
   'Dumb and Goalie To': ['hampus lindholm_D', 'jonas johansson_G', 'juuso parssinen_F', 'matthew benning_D', 'mitch marner_F', 'nick perbix_D', 'owen power_D', 'rasmus dahlin_D'],
   'Killer Whales': ['barrett hayton_F', 'filip chytil_F', 'frederik andersen_G', 'miro heiskanen_D', 'trevor zegras_F', 'valeri nichushkin_F'],
   'Motor City Wings': ['alexander holtz_F', 'bobby brink_F', 'evgenii dadonov_F', 'igor shesterkin_G', 'john klingberg_D', 'nils lundkvist_D', 'oliver ekmanlarsson_D', 'roope hintz_F', 'tomas tatar_F'],
   'Muller Time!': ['adin hill_G', 'andre burakovsky_F', 'arber xhekaj_D', 'brady tkachuk_F', 'devon levi_G', 'evan rodrigues_F', 'pyotr kochetkov_G', 'troy terry_F', 'vitek vanecek_G'],
   'Pernicious Puckers': ['bowen byram_D', 'dawson mercer_F', 'dylan cozens_F', 'lukas reichel_F', 'matt coronato_F', 'nico hischier_F', 'sean monahan_F'],
   'Silence of the Lamb': ['alexander barabanov_F', 'blake wheeler_F', 'connor ingram_G', 'freddy gaudreau_F', 'jordan kyrou_F', 'pheonix copley_G', 'sebastian aho_D', 'tyson barrie_D', 'vladimir tarasenko_F'],
+};
+
+// All in-season 'add' transactions for 23-24, keyed by team, used to check whether a
+// player the algo recommended keeping (but the manager initially dropped) was re-acquired by
+// that SAME team later that season — a 'vindicated' call for the keep side, mirroring
+// MIDSEASON_DROPS_2324. See compareDrops2324().
+// Excludes any add immediately reversed by a same-team drop within 48h (test-drive-and-cut
+// noise / trade-mechanic artifact, not a genuine decision to bring the player back).
+const MIDSEASON_READDS_2324 = {
+  'Blue Line Bangers': ['brady skjei_D', 'brayden mcnabb_D', 'brock boeser_F', 'connor ingram_G', 'eeli tolvanen_F', 'jake middleton_D', 'jake neighbours_F', 'jordan spence_D', 'mason marchment_F', 'trevor moore_F', 'will borgen_D'],
+  'Bossy Posse': ['cody glass_F', 'devon levi_G', 'juraj slafkovsky_F', 'morgan geekie_F', 'ridly greig_F', 'roope hintz_F', 'samuel ersson_G', 'simon nemec_D', 'trevor zegras_F'],
+  'Damage Inc.': ['chris kreider_F', 'connor zary_F', 'egor chinakhov_F', 'joey daccord_G', 'kris letang_D', 'matt boldy_F', 'mike matheson_D', 'nick schmaltz_F', 'shane wright_F'],
+  'Dumb and Goalie To': ['artemi panarin_F', 'bowen byram_D', 'henry thrun_D', 'jack quinn_F', 'mike reilly_D', 'thomas harley_D', 'travis sanheim_D', 'ukkopekka luukkonen_G'],
+  'Killer Whales': ['cam talbot_G', 'frank vatrano_F', 'joel farabee_F', 'nikolaj ehlers_F', 'sebastian aho_F', 'victor hedman_D'],
+  'Motor City Wings': ['alex lyon_G', 'bobby brink_F', 'brandon montour_D', 'dylan guenther_F', 'egor zamula_D', 'gustav nyquist_F', 'marco rossi_F', 'morgan rielly_D', 'yegor sharangovich_F'],
+  'Muller Time!': ['adin hill_G', 'arber xhekaj_D', 'igor shesterkin_G', 'justin barron_D', 'matthew poitras_F', 'mitch marner_F', 'pyotr kochetkov_G', 'shane pinto_F', 'vincent trocheck_F'],
+  'Pernicious Puckers': ['dmitri voronkov_F', 'gabriel vilardi_F', 'logan stankoven_F', 'robert thomas_F', 'sam reinhart_F', 'scott perunovich_D', 'sean monahan_F'],
+  'Silence of the Lamb': ['braden schneider_D', 'connor ingram_G', 'darren raddysh_D', 'filip forsberg_F', 'james van riemsdyk_F', 'jeremy swayman_G', 'matt duchene_F', 'patrick kane_F', 'ryan oreilly_F'],
 };

@@ -2209,14 +2209,34 @@ const PROJ2526_CBS = {
 // All in-season 'drop' transactions for 25-26, keyed by team, used to check whether a
 // player the algo recommended dropping (but the manager initially kept) was later dropped
 // anyway that season — a 'vindicated' call, not a pure miss. See compareDrops2526().
+// Excludes any drop immediately reversed by a same-team re-add within 48h (mistake/trade-
+// mechanic noise, not a genuine decision) — confirmed a real pattern in this data, not hypothetical.
 const MIDSEASON_DROPS_2526 = {
-  'Blue Line Bangers': ['akira schmid_G', 'artturi lehkonen_F', 'brady tkachuk_F', 'brandon montour_D', 'gustav forsling_D', 'jared mccann_F', 'jordan binnington_G', 'michael kesselring_D', 'mike matheson_D', 'rickard rakell_F', 'sam malinski_D', 'tyson foerster_F'],
-  'Bossy Posse': ['adam fox_D', 'adin hill_G', 'emil heineman_F', 'jakub dobes_G', 'lian bichsel_D', 'matt coronato_F', 'robert thomas_F', 'scott morrow_D', 'shane wright_F', 'travis konecny_F', 'ville koivunen_F', 'zach benson_F'],
+  'Blue Line Bangers': ['akira schmid_G', 'artturi lehkonen_F', 'brady tkachuk_F', 'gustav forsling_D', 'jared mccann_F', 'rickard rakell_F', 'tyson foerster_F'],
+  'Bossy Posse': ['adam fox_D', 'adin hill_G', 'jakub dobes_G', 'lian bichsel_D', 'matt coronato_F', 'scott morrow_D', 'ville koivunen_F', 'zach benson_F'],
   'Damage Inc.': ['adam boqvist_D', 'anthony stolarz_G', 'isaac howard_F', 'kevin korchinski_D', 'luke hughes_D', 'max shabanov_F', 'philipp kurashev_F', 'samuel montembeault_G', 'william nylander_F'],
   'Dumb and Goalie To': ['artemi panarin_F', 'axel sandinpellikka_D', 'dmitri voronkov_F', 'gabriel landeskog_F', 'jiri kulich_F', 'jonathan drouin_F', 'sam rinzel_D', 'seamus casey_D', 'sean monahan_F', 'stuart skinner_G'],
-  'Killer Whales': ['anton frondell_F', 'anze kopitar_F', 'auston matthews_F', 'dylan holloway_F', 'jacob markstrom_G', 'logan stankoven_F', 'matias maccelli_F', 'sean durzi_D', 'shakir mukhamadullin_D', 'victor hedman_D'],
+  'Killer Whales': ['anze kopitar_F', 'auston matthews_F', 'dylan holloway_F', 'jacob markstrom_G', 'logan stankoven_F', 'matias maccelli_F', 'sean durzi_D', 'shakir mukhamadullin_D', 'victor hedman_D'],
   'Motor City Wings': ['braden schneider_D', 'cam york_D', 'connor mcmichael_F', 'mackie samoskevich_F', 'marco kasper_F', 'marco rossi_F', 'scott morrow_D', 'shayne gostisbehere_D'],
   'Muller Time!': ['carter verhaeghe_F', 'carter yakemchuk_D', 'darcy kuemper_G', 'oliver ekmanlarsson_D', 'roman josi_D', 'roope hintz_F', 'ryan donato_F', 'shea theodore_D'],
   'Pernicious Puckers': ['dylan cozens_F', 'jt miller_F', 'kent johnson_F', 'liam ohgren_F', 'logan stankoven_F', 'sam reinhart_F', 'thatcher demko_G', 'tom wilson_F'],
   'Silence of the Lamb': ['andrei vasilevskiy_G', 'conor garland_F', 'erik gustafsson_D', 'jason zucker_F', 'jonathan toews_F', 'josh manson_D', 'noah hanifin_D', 'shane pinto_F', 'uvis balinskis_D'],
+};
+
+// All in-season 'add' transactions for 25-26, keyed by team, used to check whether a
+// player the algo recommended keeping (but the manager initially dropped) was re-acquired by
+// that SAME team later that season — a 'vindicated' call for the keep side, mirroring
+// MIDSEASON_DROPS_2526. See compareDrops2526().
+// Excludes any add immediately reversed by a same-team drop within 48h (test-drive-and-cut
+// noise / trade-mechanic artifact, not a genuine decision to bring the player back).
+const MIDSEASON_READDS_2526 = {
+  'Blue Line Bangers': ['artemi panarin_F', 'artturi lehkonen_F', 'jakub dobes_G', 'john marino_D', 'nick schmaltz_F', 'pavel zacha_F', 'sebastian aho_F'],
+  'Bossy Posse': ['gabe perreault_F', 'gabriel vilardi_F', 'ilya sorokin_G', 'jakub dobes_G', 'lian bichsel_D', 'matt grzelcyk_D', 'mika zibanejad_F', 'ryker evans_D', 'trevor zegras_F'],
+  'Damage Inc.': ['beckett sennecke_F', 'brandon bussi_G', 'charleedouard dastous_D', 'jake sanderson_D', 'lukas dostal_G', 'luke evangelista_F', 'philipp kurashev_F', 'robert thomas_F', 'ryan shea_D'],
+  'Dumb and Goalie To': ['axel sandinpellikka_D', 'brock nelson_F', 'egor chinakhov_F', 'josh doan_F', 'josh norris_F', 'marcus johansson_F', 'parker wotherspoon_D', 'rasmus dahlin_D', 'shayne gostisbehere_D', 'yaroslav askarov_G'],
+  'Killer Whales': ['igor chernyshov_F', 'jakob chychrun_D', 'logan stankoven_F', 'mason mctavish_F', 'matthew wood_F', 'matvei gridin_F', 'sean durzi_D', 'shakir mukhamadullin_D', 'spencer knight_G'],
+  'Motor City Wings': ['ben kindel_F', 'cam york_D', 'connor mcmichael_F', 'dylan holloway_F', 'rickard rakell_F', 'ryan oreilly_F', 'sam rinzel_D', 'scott morrow_D', 'tom willander_D'],
+  'Muller Time!': ['carter yakemchuk_D', 'jacob fowler_G', 'john carlson_D', 'mark stone_F', 'miro heiskanen_D', 'oliver ekmanlarsson_D', 'oliver kapanen_F', 'zach hyman_F'],
+  'Pernicious Puckers': ['alex debrincat_F', 'alexis lafreniere_F', 'emmitt finnie_F', 'jackson blake_F', 'jesper wallstedt_G', 'marco rossi_F', 'mats zuccarello_F', 'tom wilson_F'],
+  'Silence of the Lamb': ['filip hronek_D', 'ivan barbashev_F', 'josh manson_D', 'mattias samuelsson_D', 'scott wedgewood_G', 'shane pinto_F', 'troy terry_F', 'tyler bertuzzi_F', 'uvis balinskis_D'],
 };

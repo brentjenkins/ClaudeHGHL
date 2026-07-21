@@ -598,6 +598,8 @@ const POSTDRAFT_ROSTER_2425 = {
 // All in-season 'drop' transactions for 24-25, keyed by team, used to check whether a
 // player the algo recommended dropping (but the manager initially kept) was later dropped
 // anyway that season — a 'vindicated' call, not a pure miss. See compareDrops2425().
+// Excludes any drop immediately reversed by a same-team re-add within 48h (mistake/trade-
+// mechanic noise, not a genuine decision) — confirmed a real pattern in this data, not hypothetical.
 const MIDSEASON_DROPS_2425 = {
   'Blue Line Bangers': ['bobby mcmann_F', 'brock boeser_F', 'connor ingram_G', 'dylan cozens_F', 'elias pettersson_F', 'juuso valimaki_D', 'ross colton_F', 'rutger mcgroarty_F', 'will borgen_D'],
   'Bossy Posse': ['adam fox_D', 'david jiricek_D', 'egor chinakhov_F', 'morgan geekie_F', 'nick perbix_D', 'simon nemec_D', 'trevor zegras_F', 'ty smith_D', 'william nylander_F'],
@@ -608,4 +610,22 @@ const MIDSEASON_DROPS_2425 = {
   'Muller Time!': ['auston matthews_F', 'jj moser_D', 'jonathan marchessault_F', 'justin barron_D', 'matias maccelli_F', 'matthew poitras_F', 'pavel dorofeyev_F', 'rickard rakell_F', 'shane pinto_F'],
   'Pernicious Puckers': ['alex vlasic_D', 'alexis lafreniere_F', 'arturs silovs_G', 'casey mittelstadt_F', 'declan chisholm_D', 'justus annunen_G', 'kevin korchinski_D', 'robert thomas_F', 'scott perunovich_D'],
   'Silence of the Lamb': ['brock nelson_F', 'evgeni malkin_F', 'filip forsberg_F', 'joel eriksson ek_F', 'kris letang_D', 'mike reilly_D', 'rasmus dahlin_D', 'roman josi_D', 'ryan oreilly_F', 'samuel ersson_G', 'taylor raddysh_F'],
+};
+
+// All in-season 'add' transactions for 24-25, keyed by team, used to check whether a
+// player the algo recommended keeping (but the manager initially dropped) was re-acquired by
+// that SAME team later that season — a 'vindicated' call for the keep side, mirroring
+// MIDSEASON_DROPS_2425. See compareDrops2425().
+// Excludes any add immediately reversed by a same-team drop within 48h (test-drive-and-cut
+// noise / trade-mechanic artifact, not a genuine decision to bring the player back).
+const MIDSEASON_READDS_2425 = {
+  'Blue Line Bangers': ['alex laferriere_F', 'anthony cirelli_F', 'bobby mcmann_F', 'brandon montour_D', 'ivan demidov_F', 'jack eichel_F', 'kevin lankinen_G', 'neal pionk_D', 'ross colton_F'],
+  'Bossy Posse': ['adam fox_D', 'egor chinakhov_F', 'jackson lacombe_D', 'kaapo kakko_F', 'matt coronato_F', 'robert thomas_F', 'ryker evans_D', 'ty smith_D', 'vince dunn_D'],
+  'Damage Inc.': ['adam boqvist_D', 'brady tkachuk_F', 'dylan guenther_F', 'dylan strome_F', 'henry thrun_D', 'ivan barbashev_F', 'jordan kyrou_F', 'kevin bahl_D', 'mathew barzal_F', 'niko mikkola_D', 'philip broberg_D', 'samuel montembeault_G', 'simon nemec_D'],
+  'Dumb and Goalie To': ['cole caufield_F', 'dmitri voronkov_F', 'jack roslovic_F', 'jakob chychrun_D', 'jeff skinner_F', 'jiri kulich_F', 'josh doan_F', 'mackenzie blackwood_G', 'mikael granlund_F', 'morgan geekie_F', 'oliver ekmanlarsson_D', 'paul cotter_F', 'seamus casey_D', 'sean monahan_F'],
+  'Killer Whales': ['anton lundell_F', 'anze kopitar_F', 'auston matthews_F', 'braden schneider_D', 'dustin wolf_G', 'dylan holloway_F', 'emil andrae_D', 'fabian zetterlund_F', 'jacob markstrom_G', 'matt grzelcyk_D', 'miro heiskanen_D', 'nazem kadri_F', 'samuel girard_D', 'ty emberson_D', 'uvis balinskis_D', 'will smith_F'],
+  'Motor City Wings': ['alex lyon_G', 'connor mcmichael_F', 'gabriel vilardi_F', 'jake walman_D', 'marco kasper_F', 'mason lohrei_D', 'mats zuccarello_F', 'olen zellweger_D', 'pavel dorofeyev_F', 'ridly greig_F', 'teuvo teravainen_F', 'zach werenski_D'],
+  'Muller Time!': ['aliaksei protas_F', 'auston matthews_F', 'bryan rust_F', 'carter yakemchuk_D', 'denton mateychuk_D', 'jj moser_D', 'justin barron_D', 'martin necas_F', 'matvei michkov_F', 'pavel dorofeyev_F', 'rickard rakell_F', 'roope hintz_F', 'rutger mcgroarty_F', 'shea theodore_D', 'zayne parekh_D'],
+  'Pernicious Puckers': ['alex vlasic_D', 'arturs silovs_G', 'artyom levshunov_D', 'casey mittelstadt_F', 'declan chisholm_D', 'filip gustavsson_G', 'justus annunen_G', 'kent johnson_F', 'lane hutson_D', 'nick suzuki_F', 'simon edvinsson_D', 'thatcher demko_G', 'tim stutzle_F', 'tony deangelo_D', 'victor olofsson_F', 'will cuylle_F'],
+  'Silence of the Lamb': ['charlie lindgren_G', 'conor garland_F', 'cutter gauthier_F', 'darren raddysh_D', 'evgeni malkin_F', 'jason zucker_F', 'joel eriksson ek_F', 'john carlson_D', 'kris letang_D', 'logan thompson_G', 'mark scheifele_F', 'mike reilly_D', 'nick perbix_D', 'nikolaj ehlers_F', 'rasmus andersson_D', 'roman josi_D', 'samuel ersson_G', 'travis sanheim_D'],
 };
