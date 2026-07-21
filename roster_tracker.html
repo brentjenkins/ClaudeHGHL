@@ -1462,8 +1462,24 @@ function lsSet(k,v){
 
 function dedup(){
   const srcRank = {yahoo:3, nhl:2, manual:1};
-  const seen = new Map();
+  const before = players.length;
+
+  // Stage 1: merge by NHL player ID first — the strongest possible signal, since it
+  // catches a same-player duplicate under a spelling that no name-alias/override entry
+  // anticipates (as opposed to stage 2 below, which only merges spellings we already
+  // know are equivalent). Only applies to records that actually have an ID; everything
+  // else falls through untouched to stage 2.
+  const byId = new Map();
+  const rest = [];
   for(const p of players){
+    if(!p.nhlId){ rest.push(p); continue; }
+    const existing = byId.get(p.nhlId);
+    if(!existing || (srcRank[p.source]||0) > (srcRank[existing.source]||0)) byId.set(p.nhlId, p);
+  }
+
+  // Stage 2: existing name+alias dedup, applied to the id-deduped survivors + no-id players
+  const seen = new Map();
+  for(const p of [...byId.values(), ...rest]){
     const n = normName(p.name).toLowerCase();
     const alias = _nameAlias(n);
     const override = _knownNameOverride(n);
@@ -1478,7 +1494,7 @@ function dedup(){
     if(!seen.has(k) || (srcRank[p.source]||0) > (srcRank[seen.get(k).source]||0))
       seen.set(k, p);
   }
-  const before = players.length;
+
   players = [...seen.values()];
   if(players.length < before){
     console.log(`Deduped ${before - players.length} duplicate player(s)`);
@@ -2271,9 +2287,14 @@ async function syncSigningsAll(e){
     }
 
     // Add players from PuckPedia not yet in our list
-    let added = 0;
+    let added = 0, idMatched = 0;
     let nextId = Math.max(0, ...players.map(p => p.id ?? 0)) + 1;
     const seenIds = new Set();
+    // NHL player ID is a stronger signal than any name/alias match — catches a contract
+    // whose name spelling doesn't match any existing alias/override entry at all (the
+    // root cause behind the Moser/Peterka/Gaudreau phantom-duplicate bugs), without
+    // needing a new hand-added override for every future case of the same shape.
+    const byNhlId = new Map(players.filter(p => p.nhlId).map(p => [String(p.nhlId), p]));
     for(const [key, contracts] of Object.entries(raw)){
       // Also check this raw key's own alias against matchedKeys — covers 3-spelling
       // chains a single alias hop can't bridge directly (e.g. live "Tommy" Novak matches
@@ -2290,6 +2311,26 @@ async function syncSigningsAll(e){
       const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
       const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
       const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
+
+      const existingById = latest.nhl_id && byNhlId.get(String(latest.nhl_id));
+      if(existingById){
+        existingById.cap2425   = c2425?.cap ?? existingById.cap2425 ?? null;
+        existingById.cap2526   = c2526?.cap ?? existingById.cap2526 ?? null;
+        existingById.yrStr2425 = _signingYrStr(c2425, 2024);
+        existingById.yrStr2526 = _signingYrStr(c2526, 2025);
+        existingById.yrStr2627 = _signingYrStr(c2627, 2026);
+        existingById.capManual = false;
+        if(c2627){
+          existingById.cap = c2627.cap;
+          existingById.contractTerm = c2627.term || 0;
+          existingById.expYear = parseInt(c2627.exp?.split('-')[0]) || 0;
+          if(c2627.team && (!existingById.team || existingById.team==='—')) existingById.team = c2627.team;
+          if(c2627.birthDate && !existingById.birthDate) existingById.birthDate = c2627.birthDate;
+        }
+        idMatched++;
+        continue;
+      }
+
       players.push({
         id: nextId++, name: latest.name, team: c2627?.team || latest.team || '',
         pos: latest.pos || 'C',
@@ -2299,6 +2340,7 @@ async function syncSigningsAll(e){
         start2627: '', end2526: '', pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
         cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null,
+        nhlId: latest.nhl_id || null,
       });
       added++;
     }
@@ -2309,8 +2351,9 @@ async function syncSigningsAll(e){
     if(d.fetched_through) localStorage.setItem(LS_SIGNINGS_HWM, d.fetched_through);
     updateSigningsBtn();
     const addedMsg = added ? `, ${added} new players added` : '';
+    const idMsg    = idMatched ? `, ${idMatched} matched by NHL ID` : '';
     const modeMsg  = isIncremental ? ' (incremental)' : '';
-    toast(`Signings sync done! ${matched} cap hits assigned${addedMsg}${modeMsg}.`);
+    toast(`Signings sync done! ${matched} cap hits assigned${addedMsg}${idMsg}${modeMsg}.`);
     if(d.errors?.length) console.warn('Signings page errors:', d.errors);
   } catch(e){
     toast('Signings sync failed: '+e.message);
