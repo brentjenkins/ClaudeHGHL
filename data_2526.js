@@ -224,7 +224,7 @@ const PREDROP_STUBS_2526 = [
   {name:'Aliaksei Protas', pos:'F'},
   {name:'Bryan Rust', pos:'F'},
   {name:'Roope Hintz', pos:'F'},
-  {name:'Rutger McGroarty', pos:'F'},
+  {name:'Rutger McGroarty', pos:'F', birthDate:'2004-03-30'},
   {name:'Noah Dobson', pos:'D'},
   {name:'Shea Theodore', pos:'D'},
   {name:'Pavel Mintyukov', pos:'D'},

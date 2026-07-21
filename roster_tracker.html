@@ -3290,7 +3290,7 @@ function _seedStart2627(){
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
       start2627:team||'', end2526:team,
-      rank:null, birthDate:'', capManual:false, ptsManual:false,
+      rank:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
       ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
   }
@@ -4486,7 +4486,7 @@ function _seedStart2526(){
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2526:null,
       pts:0, pts2526:0, gp2526:0, status:'roster', source:'manual',
       start2627:'', end2526:'', end2425:team, start2526:team,
-      rank:null, rank2526:null, birthDate:'', capManual:false, ptsManual:false,
+      rank:null, rank2526:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
       ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
     });
@@ -4672,6 +4672,11 @@ function simulateDrops2526(){
 
   // Prospects (age≤23, cap≤ELC_MAX_2526) protected — sorted last so they're only dropped if forced
   const isProspect2526 = p => { const a=calcAge2526(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2526(p)<=ELC_MAX_2526; };
+  // A prospect who's also a known long-term injury with no established production history is a
+  // near-automatic drop, not a protected asset — unlike an established/proven player (who'd
+  // already fail isProspect2526 on age or cap) who's just hurt. Excludes these from prospect
+  // protection so they tier/sort like any other marginal roster spot instead of being dropped last.
+  const isProtectedProspect2526 = p => isProspect2526(p) && !INJURY_DROPS_2526.has(normName(p.name).toLowerCase());
   const deficit2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const isHighVal2526 = p => { const fn=curveFns2526[posGroup(p.pos)],pp=ppts2526blend(p); return pp>=DROP_VALUE_FLOOR||(fn?pp-fn(getCap2526(p))>=0:false); };
 
@@ -4687,9 +4692,9 @@ function simulateDrops2526(){
     const rCapTot26=remaining.reduce((s,p)=>s+getCap2526(p),0);
     const dExcess26=rCapTot26>0?Math.max(0,rCapD26/rCapTot26-OPT_POS_FRACS.D):0;
     const rebalBonus26=p=>posGroup(p.pos)==='D'?dExcess26*rCapTot26:0;
-    const lowVal2526   = remaining.filter(p => !isProspect2526(p) && !isHighVal2526(p)).sort((a,b) => (deficit2526(b)+rebalBonus26(b)) - (deficit2526(a)+rebalBonus26(a)));
-    const highVal2526  = remaining.filter(p => !isProspect2526(p) &&  isHighVal2526(p)).sort((a,b) => (deficit2526(b)+rebalBonus26(b)) - (deficit2526(a)+rebalBonus26(a)));
-    const prospects2526 = remaining.filter(p => isProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
+    const lowVal2526   = remaining.filter(p => !isProtectedProspect2526(p) && !isHighVal2526(p)).sort((a,b) => (deficit2526(b)+rebalBonus26(b)) - (deficit2526(a)+rebalBonus26(a)));
+    const highVal2526  = remaining.filter(p => !isProtectedProspect2526(p) &&  isHighVal2526(p)).sort((a,b) => (deficit2526(b)+rebalBonus26(b)) - (deficit2526(a)+rebalBonus26(a)));
+    const prospects2526 = remaining.filter(p => isProtectedProspect2526(p)).sort((a,b) => deficit2526(b) - deficit2526(a));
     const candidates   = [...lowVal2526, ...highVal2526, ...prospects2526];
 
     const dropList = [...mandatory];
@@ -4731,7 +4736,10 @@ function compareDrops2526(){
     return;
   }
   // Virtual copy: seed start2526 from PREDROP_ROSTER_2526 (pre-season rosters)
-  const vp = players.map(p => ({...p, start2526: _dictLookup(p.name, PREDROP_ROSTER_2526) || null}));
+  const vp = players.map(p => {
+    const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
+    return {...p, start2526: PREDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2526) ?? null};
+  });
   // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
   // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
   // silently absent from every bucket below instead of correctly counting as a predicted drop.
@@ -4759,6 +4767,8 @@ function compareDrops2526(){
   const avgFAPtsV = faPoolV.length ? faPoolV.reduce((s,p) => s+ppts2526blend(p), 0) / faPoolV.length : 40;
 
   const isProspectV = p => { const a=calcAge2526(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && getCap2526(p)<=ELC_MAX_2526; };
+  // See isProtectedProspect2526 in simulateDrops2526 for why — keep this in sync with that copy.
+  const isProtectedProspectV = p => isProspectV(p) && !INJURY_DROPS_2526.has(normName(p.name).toLowerCase());
   const deficitV = p => { const fn=curveFnsV[posGroup(p.pos)],pp=ppts2526blend(p),c=getCap2526(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
   const bestFAByPosV = {};
   for(const pg of ['F','D','G']){ const fas=vp.filter(x=>!x.start2526&&posGroup(x.pos)===pg&&ppts2526blend(x)>0); bestFAByPosV[pg]=fas.length?Math.max(...fas.map(x=>ppts2526blend(x))):0; }
@@ -4772,9 +4782,9 @@ function compareDrops2526(){
     const mandatoryIds = new Set(mandatory.map(p => p.id));
 
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const lowValV   = remaining.filter(p => !isProspectV(p) && !isHighValV(p)).sort((a,b) => deficitV(b) - deficitV(a));
-    const highValV  = remaining.filter(p => !isProspectV(p) &&  isHighValV(p)).sort((a,b) => deficitV(b) - deficitV(a));
-    const prospectsV = remaining.filter(p => isProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
+    const lowValV   = remaining.filter(p => !isProtectedProspectV(p) && !isHighValV(p)).sort((a,b) => deficitV(b) - deficitV(a));
+    const highValV  = remaining.filter(p => !isProtectedProspectV(p) &&  isHighValV(p)).sort((a,b) => deficitV(b) - deficitV(a));
+    const prospectsV = remaining.filter(p => isProtectedProspectV(p)).sort((a,b) => deficitV(b) - deficitV(a));
     const candidates = [...lowValV, ...highValV, ...prospectsV];
 
     const dropList = [...mandatory];
@@ -4818,7 +4828,10 @@ function compareDrops2526(){
   let totalCorrect = 0, totalAll = 0;
 
   for(const team of teams){
-    const teamPlayers = vp.filter(p => _dictLookup(p.name, PREDROP_ROSTER_2526)===team);
+    const teamPlayers = vp.filter(p => {
+      const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
+      return (PREDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2526) ?? null) === team;
+    });
     const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoKeptShouldDrop=[], injuryExcused=[], elcMandatory=[];
 
     for(const p of teamPlayers){
@@ -5075,7 +5088,7 @@ function _seedStart2425(){
       pts:0, pts2425:0, gp2425:0, status:'roster', source:'manual',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:team, start2425:team,
-      rank:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
+      rank:null, rank2425:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
       proj2425_dfo:null, proj2425_dtz:null, proj2425_athletic:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
       cap2526:null, ppp:null, ptsESPN:null, ptsAthletic:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
@@ -5241,7 +5254,10 @@ function compareDrops2425(){
     return;
   }
 
-  const vp = players.map(p=>({...p, start2425: _dictLookup(p.name, PREDROP_ROSTER_2425)||null}));
+  const vp = players.map(p=>{
+    const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
+    return {...p, start2425: PREDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2425) ?? null};
+  });
   // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
   // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
   // silently absent from every bucket below instead of correctly counting as a predicted drop.
@@ -5314,7 +5330,10 @@ function compareDrops2425(){
   let totalCorrect=0, totalAll=0;
 
   for(const team of teams){
-    const teamPlayers=vp.filter(p=>_dictLookup(p.name,PREDROP_ROSTER_2425)===team);
+    const teamPlayers=vp.filter(p=>{
+      const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
+      return (PREDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name,PREDROP_ROSTER_2425) ?? null)===team;
+    });
     const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
 
     for(const p of teamPlayers){
@@ -5414,7 +5433,7 @@ function _seedStart2324(){
       pts:0, pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'roster', source:'manual',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:null, start2425:null, end2223:team, start2324:team,
-      rank:null, rank2324:null, rank2425:null, birthDate:'', capManual:false, ptsManual:false,
+      rank:null, rank2324:null, rank2425:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
       proj2324_athletic:null, proj2324_dtz:null, proj2324_nhl:null,
       proj2425_dfo:null, proj2425_dtz:null, proj2425_athletic:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_athletic:null, proj2526_cbs:null,
@@ -5579,7 +5598,10 @@ function compareDrops2324(){
     return;
   }
 
-  const vp = players.map(p=>({...p, start2324: _dictLookup(p.name, PREDROP_ROSTER_2324)||null}));
+  const vp = players.map(p=>{
+    const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
+    return {...p, start2324: PREDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2324) ?? null};
+  });
   // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
   // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
   // silently absent from every bucket below instead of correctly counting as a predicted drop.
@@ -5652,7 +5674,10 @@ function compareDrops2324(){
   let totalCorrect=0, totalAll=0;
 
   for(const team of teams){
-    const teamPlayers=vp.filter(p=>_dictLookup(p.name,PREDROP_ROSTER_2324)===team);
+    const teamPlayers=vp.filter(p=>{
+      const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
+      return (PREDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name,PREDROP_ROSTER_2324) ?? null)===team;
+    });
     const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoKeptShouldDrop=[],injuryExcused=[],elcMandatory=[];
 
     for(const p of teamPlayers){
