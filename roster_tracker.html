@@ -268,9 +268,9 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2425()" title="Reset 24-25 rosters to 23-24 year-end (start2425 = end2324, from PREDROP_ROSTER_2425)">Reset</button>
-      <button class="btn btn-blue-outline" onclick="simulateDrops2425();compareDrops2425()" title="Simulate drops then compare against actual 24-25 drops">⬇ Simulate Drops</button>
+      <button class="btn btn-blue-outline" onclick="algoDrops2425();compareDrops2425()" title="Run Algo Drops then compare against actual 24-25 drops">⬇ Algo Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2425()" title="Load actual 24-25 post-drop pre-pick rosters">⬇ Actual Drops</button>
-      <button class="btn btn-indigo-light" onclick="compareDrops2425()" title="Compare drop decisions against the real 24-25 drops without re-running the simulation">📋 Compare Drops</button>
+      <button class="btn btn-indigo-light" onclick="compareDrops2425()" title="Compare drop decisions against the real 24-25 drops without re-running Algo Drops">📋 Compare Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers2425()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftMode2425Btn" onclick="toggleDraftMode2425()">⚡ Draft Mode</button>
@@ -278,9 +278,9 @@ tr:hover td{background:#fafaf8}
         <button id="draftSubProspectBtn2425" onclick="setDraftSubMode2425('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn2425" onclick="setDraftSubMode2425('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
-      <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
+      <button class="btn btn-blue-outline" onclick="algoDraft2425()" title="Run Algo Draft for 24-25 from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Algo Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2425()" title="Load actual 24-25 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
-      <button class="btn btn-indigo-light" onclick="compareDrafts2425()" title="Compare Simulate Draft's picks per team against the real 24-25 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
+      <button class="btn btn-indigo-light" onclick="compareDrafts2425()" title="Compare Algo Draft's picks per team against the real 24-25 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
     </div>
   </div>
 </div>
@@ -353,9 +353,9 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px;flex-basis:100%">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2324()" title="Reset 23-24 rosters to 22-23 year-end (start2324 = end2223, from PREDROP_ROSTER_2324)">Reset</button>
-      <button class="btn btn-blue-outline" onclick="simulateDrops2324();compareDrops2324()" title="Simulate drops then compare against actual 23-24 drops">⬇ Simulate Drops</button>
+      <button class="btn btn-blue-outline" onclick="algoDrops2324();compareDrops2324()" title="Run Algo Drops then compare against actual 23-24 drops">⬇ Algo Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2324()" title="Load actual 23-24 post-drop pre-pick rosters">⬇ Actual Drops</button>
-      <button class="btn btn-indigo-light" onclick="compareDrops2324()" title="Compare drop decisions against the real 23-24 drops without re-running the simulation">📋 Compare Drops</button>
+      <button class="btn btn-indigo-light" onclick="compareDrops2324()" title="Compare drop decisions against the real 23-24 drops without re-running Algo Drops">📋 Compare Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers2324()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftMode2324Btn" onclick="toggleDraftMode2324()">⚡ Draft Mode</button>
@@ -363,9 +363,9 @@ tr:hover td{background:#fafaf8}
         <button id="draftSubProspectBtn2324" onclick="setDraftSubMode2324('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn2324" onclick="setDraftSubMode2324('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
       </span>
-      <button class="btn btn-blue-outline" onclick="runDraftSim2324()" title="Simulate full 23-24 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
+      <button class="btn btn-blue-outline" onclick="algoDraft2324()" title="Run Algo Draft for 23-24 from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Algo Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2324()" title="Load actual 23-24 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
-      <button class="btn btn-indigo-light" onclick="compareDrafts2324()" title="Compare Simulate Draft's picks per team against the real 23-24 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
+      <button class="btn btn-indigo-light" onclick="compareDrafts2324()" title="Compare Algo Draft's picks per team against the real 23-24 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
     </div>
   </div>
 </div>
@@ -448,16 +448,16 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft2526()" title="Reset 25-26 rosters to 24-25 year-end (start2526 = end2425, from PREDROP_ROSTER_2526)">Reset</button>
-      <button class="btn btn-blue-outline" onclick="simulateDrops2526();compareDrops2526()" title="Simulate drops then compare against actual 25-26 drops">⬇ Simulate Drops</button>
+      <button class="btn btn-blue-outline" onclick="algoDrops2526();compareDrops2526()" title="Run Algo Drops then compare against actual 25-26 drops">⬇ Algo Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2526()" title="Load actual 25-26 pre-draft rosters (post-drops, pre-draft) for comparison with algorithm">⬇ Actual Drops</button>
-      <button class="btn btn-indigo-light" onclick="compareDrops2526()" title="Compare drop decisions against the real 25-26 drops without re-running the simulation">📋 Compare Drops</button>
+      <button class="btn btn-indigo-light" onclick="compareDrops2526()" title="Compare drop decisions against the real 25-26 drops without re-running Algo Drops">📋 Compare Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers2526()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftMode2526Btn" onclick="toggleDraftMode2526()">⚡ Draft Mode</button>
 
-      <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
+      <button class="btn btn-blue-outline" onclick="algoDraft2526()" title="Run Algo Draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Algo Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2526()" title="Load actual 25-26 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
-      <button class="btn btn-indigo-light" onclick="compareDrafts2526()" title="Compare Simulate Draft's picks per team against the real 25-26 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
+      <button class="btn btn-indigo-light" onclick="compareDrafts2526()" title="Compare Algo Draft's picks per team against the real 25-26 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn2526" onclick="setDraftSubMode2526('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
@@ -610,13 +610,13 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetDraft()" title="Reset 26-27 rosters to 25-26 year-end (start2627 = end2526, from PREDROP_ROSTER_2627)">Reset</button>
-      <button class="btn btn-blue-outline" onclick="simulateDrops()">⬇ Simulate Drops</button>
+      <button class="btn btn-blue-outline" onclick="algoDrops()">⬇ Algo Drops</button>
       <button class="btn btn-green-outline" onclick="loadActualRoster2627()" title="Load actual 26-27 pre-draft rosters once managers have submitted their drops">⬇ Actual Drops</button>
       <button class="btn btn-indigo-light" id="compareDropsBtn2627" onclick="compareDrops2627()" title="Available once managers submit real 26-27 drops (POSTDROP_ROSTER_2627)" style="opacity:.4;cursor:not-allowed">📋 Compare Drops</button>
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
-      <button class="btn btn-blue-outline" onclick="runDraftSim2627()" title="Simulate draft from current rosters and apply picks">⬆ Simulate Draft</button>
+      <button class="btn btn-blue-outline" onclick="algoDraft2627()" title="Run Algo Draft from current rosters and apply picks">⬆ Algo Draft</button>
       <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">💾 Export Draft</button>
       <button class="btn btn-indigo-light" id="compareDraftsBtn2627" onclick="compareDrafts2627()" title="Available once the real 26-27 draft happens (Oct 2, 2026) and POSTDRAFT_ROSTER_2627 is populated" style="opacity:.4;cursor:not-allowed">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
@@ -1073,10 +1073,10 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Simulation settings.</span></div>
+    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Algo Draft settings.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Simulate Draft Prospect rounds</span>
+        <span style="font-size:11px;color:#9ca3af">Algo Draft Prospect rounds</span>
         <input type="number" id="s-draftProspectRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftProspectRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
@@ -1106,7 +1106,7 @@ tr:hover td{background:#fafaf8}
 <!-- Compare Drops 25-26 modal -->
 <div class="modal-bg" id="compareDropsModal" style="display:none" onclick="if(event.target===this)closeCompareDropsModal()">
 <div class="modal" style="width:680px;max-width:96vw">
-  <h2 id="compareDropsTitle">📊 Simulated vs Actual 25-26 Drops</h2>
+  <h2 id="compareDropsTitle">📊 Algo vs Actual 25-26 Drops</h2>
   <div id="compareDropsSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
   <div id="compareDropsBody" style="font-size:13px"></div>
   <div class="modal-actions">
@@ -1117,7 +1117,7 @@ tr:hover td{background:#fafaf8}
 
 <div class="modal-bg" id="compareDraftsModal" style="display:none" onclick="if(event.target===this)closeCompareDraftsModal()">
 <div class="modal" style="width:720px;max-width:96vw">
-  <h2 id="compareDraftsTitle">📋 Simulated vs Actual 25-26 Draft Picks</h2>
+  <h2 id="compareDraftsTitle">📋 Algo vs Actual 25-26 Draft Picks</h2>
   <div id="compareDraftsSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
   <div id="compareDraftsBody" style="font-size:13px"></div>
   <div class="modal-actions">
@@ -1126,10 +1126,10 @@ tr:hover td{background:#fafaf8}
 </div>
 </div>
 
-<!-- Draft simulation vs actual modal -->
+<!-- Algo Draft vs actual modal -->
 <div class="modal-bg" id="draftSimModal" style="display:none" onclick="if(event.target===this)closeDraftSimModal()">
 <div class="modal" style="width:820px;max-width:96vw">
-  <h2 id="draftSimTitle">📋 Simulated Draft vs Actual 25-26</h2>
+  <h2 id="draftSimTitle">📋 Algo Draft vs Actual 25-26</h2>
   <div id="draftSimSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
   <div id="draftSimBody" style="font-size:13px"></div>
   <div class="modal-actions">
@@ -1238,7 +1238,7 @@ const LS_XACTIONS_2425 = 'hghl_xactions_2425';
 const LS_XACTIONS_2526 = 'hghl_xactions_2526';
 const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 
-let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, dropsSimulated = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
+let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, algoDropsApplied = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
@@ -1706,9 +1706,9 @@ function curveSurplusColor(s){
   return '#b91c1c';
 }
 
-function simulateDrops(){
+function algoDrops(){
   const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))];
-  const dropped = _runDropSim({
+  const dropped = _runAlgoDrops({
     players, teams, startField: 'start2627',
     ppts: p => p.pts||0, getCap: p => p.cap||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
@@ -1718,18 +1718,18 @@ function simulateDrops(){
     useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
   });
 
-  dropsSimulated = true;
+  algoDropsApplied = true;
   lsSet(LS_DROPS, true);
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render();
   updateDraftTab();
-  toast(`Simulate drops complete — ${dropped} players dropped.`);
+  toast(`Algo Drops complete — ${dropped} players dropped.`);
 }
 
 function load(){
   players        = lsGet(LS_PLAYERS) || defaultPlayers();
   transactions   = lsGet(LS_TX)      || [];
   teamLogos      = lsGet(LS_LOGOS)   || {};
-  dropsSimulated = lsGet(LS_DROPS)   || false;
+  algoDropsApplied = lsGet(LS_DROPS)   || false;
   xactions2425   = lsGet(LS_XACTIONS_2425) || [];
   xactions2526   = lsGet(LS_XACTIONS_2526) || [];
   xactions2627   = lsGet(LS_XACTIONS_2627) || [];
@@ -2643,7 +2643,7 @@ function populateFantasyFilter() {
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
 
 function computeDrops(allPlayers){
-  // Quick indicator: uses same quadratic deficit + pts-target logic as simulateDrops().
+  // Quick indicator: uses same quadratic deficit + pts-target logic as algoDrops().
   const rosteredPool = allPlayers.filter(p => p.start2627 && p.pts >= curveMinPts && p.cap > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
@@ -2657,7 +2657,7 @@ function computeDrops(allPlayers){
 
   const isProspect = p => { const a=calcAge(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && (p.cap||0)<=ELC_MAX_2627; };
   const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
-  // ABP=0 override — see simulateDrops() for the backtested rationale.
+  // ABP=0 override — see algoDrops() for the backtested rationale.
   const abpMap627cd = computeABP(allPlayers);
   const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts||0)>=DROP_VALUE_FLOOR||(fn?(p.pts||0)-fn(p.cap)>=0:false)||(abpMap627cd.get(p.id)??99)===0; };
 
@@ -2730,7 +2730,7 @@ function render(){
     return true;
   });
 
-  const dropIds = dropsSimulated ? new Set() : computeDrops(players);
+  const dropIds = algoDropsApplied ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
   const rosteredPool2627 = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && p.cap > 0);
@@ -3325,14 +3325,14 @@ function _seedStart2627(){
 
 function resetDraft(){
   if(!Object.keys(PREDROP_ROSTER_2627).length){
-    toast('Populate PREDROP_ROSTER_2627 (25-26 final rosters) to enable the 26-27 simulation.');
+    toast('Populate PREDROP_ROSTER_2627 (25-26 final rosters) to enable 26-27 Algo Drops.');
     return;
   }
   if(!confirm('Reset 26-27 rosters to 25-26 year-end (start2627 = end2526, from PREDROP_ROSTER_2627) and clear draft picks?')) return;
   draftState2627 = {picks:[], simPicks:[]};
   saveDraft();
   _seedStart2627();
-  dropsSimulated = false;
+  algoDropsApplied = false;
   lsSet(LS_DROPS, false);
   lsSet(LS_PLAYERS, players);
   if(draftMode) toggleDraftMode();
@@ -4317,10 +4317,10 @@ function setDraftFocus2425(t){
 function toggleDraftMode2425(){
   if(!draftMode2425){
     _deactivateDraftMode(); _deactivateDraftMode2526(); _deactivateDraftMode2324();
-    // Guard: if all roster spots already filled (e.g. after Simulate Draft),
+    // Guard: if all roster spots already filled (e.g. after Algo Draft),
     // the sequence is empty and nothing will work.
     if(!buildDraftSeq2425().length){
-      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Algo Drops first to set pre-draft rosters.');
       return;
     }
   }
@@ -4351,10 +4351,10 @@ function setDraftFocus2324(t){
 function toggleDraftMode2324(){
   if(!draftMode2324){
     _deactivateDraftMode(); _deactivateDraftMode2425(); _deactivateDraftMode2526();
-    // Guard: if all roster spots already filled (e.g. after Simulate Draft),
+    // Guard: if all roster spots already filled (e.g. after Algo Draft),
     // the sequence is empty and nothing will work.
     if(!buildDraftSeq2324().length){
-      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Algo Drops first to set pre-draft rosters.');
       return;
     }
   }
@@ -4383,7 +4383,7 @@ function toggleDraftMode2526(){
   if(!draftMode2526){
     _deactivateDraftMode(); _deactivateDraftMode2425(); _deactivateDraftMode2324();
     if(!buildDraftSeq2526().length){
-      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Simulate Drops first to set pre-draft rosters.');
+      toast('No open roster spots — load ⬇ Actual Drops or ⬇ Algo Drops first to set pre-draft rosters.');
       return;
     }
   }
@@ -4520,10 +4520,10 @@ function _seedStart2526(){
 
 function resetDraft2526(){
   if(!Object.keys(PREDROP_ROSTER_2526).length){
-    toast('Populate PREDROP_ROSTER_2526 (24-25 final rosters) to enable the 25-26 simulation.');
+    toast('Populate PREDROP_ROSTER_2526 (24-25 final rosters) to enable 25-26 Algo Drops.');
     return;
   }
-  if(!confirm('Reset 25-26 rosters to 24-25 year-end (start2526 = end2425, from PREDROP_ROSTER_2526) and clear simulated picks?')) return;
+  if(!confirm('Reset 25-26 rosters to 24-25 year-end (start2526 = end2425, from PREDROP_ROSTER_2526) and clear algo picks?')) return;
   _seedStart2526();
   draftState2526 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -4560,7 +4560,7 @@ async function syncStats2627(){
 
 function loadActualRoster2627(){
   if(!Object.keys(POSTDROP_ROSTER_2627).length){ toast('POSTDROP_ROSTER_2627 is empty — populate it first.'); return; }
-  if(!confirm('Load actual 26-27 pre-draft rosters? This overwrites the current 26-27 simulation.')) return;
+  if(!confirm('Load actual 26-27 pre-draft rosters? This overwrites the current 26-27 algo-drops state.')) return;
   let matched = 0, unmatched = 0;
   for(const p of players){
     const base = normName(p.name).toLowerCase();
@@ -4577,7 +4577,7 @@ function loadActualRoster2627(){
 }
 
 function loadActualRoster2526(){
-  if(!confirm('Load actual 25-26 pre-draft rosters? This overwrites the current 25-26 simulation with the real post-drop, pre-draft state.')) return;
+  if(!confirm('Load actual 25-26 pre-draft rosters? This overwrites the current 25-26 algo-drops state with the real post-drop, pre-draft state.')) return;
   let matched = 0, unmatched = 0;
   for(const p of players){
     const base = normName(p.name).toLowerCase();
@@ -4677,10 +4677,10 @@ const loadYahooDraft2425  = () => _applyYahooDraft(YAHOO_LEAGUE_KEY_2425, 'start
 const loadYahooDrops2324  = () => _applyYahooDrops(YAHOO_LEAGUE_KEY_2324, addDays(draftDatePreseason2324, 2),    'start2324', render2324);
 const loadYahooDraft2324  = () => _applyYahooDraft(YAHOO_LEAGUE_KEY_2324, 'start2324', render2324);
 
-function simulateDrops2526(){
+function algoDrops2526(){
   const teams = [...new Set(players.map(p=>p.start2526).filter(Boolean))];
   if(!teams.length){ toast('Reset 25-26 first to seed rosters.'); return; }
-  const dropped = _runDropSim({
+  const dropped = _runAlgoDrops({
     players, teams, startField: 'start2526',
     ppts: ppts2526blend, getCap: getCap2526,
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
@@ -4694,7 +4694,7 @@ function simulateDrops2526(){
   lsSet(LS_PLAYERS,players);
   lsSet(LS_DRAFT_2526, draftState2526);
   render2526();
-  toast(`25-26 simulate drops — ${dropped} players dropped across ${teams.length} teams.`);
+  toast(`25-26 algo drops — ${dropped} players dropped across ${teams.length} teams.`);
 }
 
 function compareDrops2526(){
@@ -4720,10 +4720,10 @@ function compareDrops2526(){
   const teams = [...new Set(vp.map(p => p.start2526).filter(Boolean))].sort();
   if(!teams.length){ toast('No 25-26 team assignments found.'); return; }
 
-  // Run the exact same core algorithm "Simulate Drops" uses, on this throwaway virtual copy —
-  // see _runDropSim for why this used to be a hand-copied duplicate that silently drifted out
+  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy —
+  // see _runAlgoDrops for why this used to be a hand-copied duplicate that silently drifted out
   // of sync with what the real button does.
-  _runDropSim({
+  _runAlgoDrops({
     players: vp, teams, startField: 'start2526',
     ppts: ppts2526blend, getCap: getCap2526,
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
@@ -4837,7 +4837,7 @@ function compareDrops2526(){
     return html;
   }).join('');
 
-  document.getElementById('compareDropsTitle').textContent='📊 Simulated vs Actual 25-26 Drops';
+  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 25-26 Drops';
   document.getElementById('compareDropsBody').innerHTML = rows;
   document.getElementById('compareDropsModal').style.display = 'flex';
 }
@@ -4864,8 +4864,8 @@ function compareDrops2627(){
   const teams = [...new Set(vp.map(p => p.start2627).filter(Boolean))].sort();
   if(!teams.length){ toast('No 26-27 team assignments found.'); return; }
 
-  // Run the exact same core algorithm "Simulate Drops" uses, on this throwaway virtual copy.
-  _runDropSim({
+  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy.
+  _runAlgoDrops({
     players: vp, teams, startField: 'start2627',
     ppts: p => p.pts||0, getCap: p => p.cap||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
@@ -4968,7 +4968,7 @@ function compareDrops2627(){
     return html;
   }).join('');
 
-  document.getElementById('compareDropsTitle').textContent='📊 Simulated vs Actual 26-27 Drops';
+  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 26-27 Drops';
   document.getElementById('compareDropsBody').innerHTML = rows;
   document.getElementById('compareDropsModal').style.display = 'flex';
 }
@@ -5136,7 +5136,7 @@ function dropSim2425(id){
 }
 
 // Seeds start2425 = end2324 (23-24 final rosters) from PREDROP_ROSTER_2425, creating stubs
-// for predrop players with no existing record. Shared by resetSim2425() and simulateDrops2425()
+// for predrop players with no existing record. Shared by resetSim2425() and algoDrops2425()
 // so the latter always simulates from the full pre-drop roster instead of compounding on
 // whatever state start2425 was left in by a previous simulate run.
 function _seedStart2425(){
@@ -5171,10 +5171,10 @@ function _seedStart2425(){
 
 function resetSim2425(){
   if(!Object.keys(PREDROP_ROSTER_2425).length){
-    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
+    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable 24-25 Algo Drops.');
     return;
   }
-  if(!confirm('Reset 24-25 simulation? Sets start2425 = end2324 (23-24 final rosters).')) return;
+  if(!confirm('Reset 24-25 algo drops? Sets start2425 = end2324 (23-24 final rosters).')) return;
   _seedStart2425();
   draftState2425 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -5255,14 +5255,14 @@ function rankPlayers2425(){
   render2425();
 }
 
-function simulateDrops2425(){
+function algoDrops2425(){
   if(!Object.keys(PREDROP_ROSTER_2425).length){
-    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable the 24-25 simulation.');
+    toast('Populate PREDROP_ROSTER_2425 (23-24 final rosters) to enable 24-25 Algo Drops.');
     return;
   }
   _seedStart2425(); // always simulate from the full pre-drop roster, never compound on a prior simulate run
   const teams = [...new Set(players.map(p=>p.start2425).filter(Boolean))];
-  const dropped = _runDropSim({
+  const dropped = _runAlgoDrops({
     players, teams, startField: 'start2425',
     ppts: ppts2425blend, getCap: getCap2425,
     capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
@@ -5276,7 +5276,7 @@ function simulateDrops2425(){
   lsSet(LS_PLAYERS,players);
   lsSet(LS_DRAFT_2425, draftState2425);
   render2425();
-  toast(`24-25 simulate drops — ${dropped} players dropped across ${teams.length} teams.`);
+  toast(`24-25 algo drops — ${dropped} players dropped across ${teams.length} teams.`);
 }
 
 function compareDrops2425(){
@@ -5305,8 +5305,8 @@ function compareDrops2425(){
   }
   const teams = [...new Set(Object.values(PREDROP_ROSTER_2425))].sort();
 
-  // Run the exact same core algorithm "Simulate Drops" uses, on this throwaway virtual copy.
-  _runDropSim({
+  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy.
+  _runAlgoDrops({
     players: vp, teams, startField: 'start2425',
     ppts: ppts2425blend, getCap: getCap2425,
     capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
@@ -5408,7 +5408,7 @@ function compareDrops2425(){
     return html;
   }).join('');
 
-  document.getElementById('compareDropsTitle').textContent='📊 Simulated vs Actual 24-25 Drops';
+  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 24-25 Drops';
   document.getElementById('compareDropsBody').innerHTML=rows;
   document.getElementById('compareDropsModal').style.display='flex';
 }
@@ -5421,7 +5421,7 @@ function dropSim2324(id){
 }
 
 // Seeds start2324 = end2223 (22-23 final rosters) from PREDROP_ROSTER_2324, creating stubs
-// for predrop players with no existing record. Shared by resetSim2324() and simulateDrops2324()
+// for predrop players with no existing record. Shared by resetSim2324() and algoDrops2324()
 // so the latter always simulates from the full pre-drop roster instead of compounding on
 // whatever state start2324 was left in by a previous simulate run.
 function _seedStart2324(){
@@ -5455,10 +5455,10 @@ function _seedStart2324(){
 
 function resetSim2324(){
   if(!Object.keys(PREDROP_ROSTER_2324).length){
-    toast('Populate PREDROP_ROSTER_2324 (22-23 final rosters) to enable the 23-24 simulation.');
+    toast('Populate PREDROP_ROSTER_2324 (22-23 final rosters) to enable 23-24 Algo Drops.');
     return;
   }
-  if(!confirm('Reset 23-24 rosters to 22-23 year-end (start2324 = end2223, from PREDROP_ROSTER_2324) and clear simulated picks?')) return;
+  if(!confirm('Reset 23-24 rosters to 22-23 year-end (start2324 = end2223, from PREDROP_ROSTER_2324) and clear algo picks?')) return;
   _seedStart2324();
   draftState2324 = {picks:[]};
   lsSet(LS_PLAYERS, players);
@@ -5537,14 +5537,14 @@ function rankPlayers2324(){
   render2324();
 }
 
-function simulateDrops2324(){
+function algoDrops2324(){
   if(!Object.keys(PREDROP_ROSTER_2324).length){
-    toast('Populate PREDROP_ROSTER_2324 (22-23 final rosters) to enable the 23-24 simulation.');
+    toast('Populate PREDROP_ROSTER_2324 (22-23 final rosters) to enable 23-24 Algo Drops.');
     return;
   }
   _seedStart2324(); // always simulate from the full pre-drop roster, never compound on a prior simulate run
   const teams = [...new Set(players.map(p=>p.start2324).filter(Boolean))];
-  const dropped = _runDropSim({
+  const dropped = _runAlgoDrops({
     players, teams, startField: 'start2324',
     ppts: ppts2324blend, getCap: getCap2324,
     capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324,
@@ -5558,7 +5558,7 @@ function simulateDrops2324(){
   lsSet(LS_PLAYERS,players);
   lsSet(LS_DRAFT_2324, draftState2324);
   render2324();
-  toast(`23-24 simulate drops — ${dropped} players dropped across ${teams.length} teams.`);
+  toast(`23-24 algo drops — ${dropped} players dropped across ${teams.length} teams.`);
 }
 
 function compareDrops2324(){
@@ -5587,8 +5587,8 @@ function compareDrops2324(){
   }
   const teams = [...new Set(vp.map(p=>p.start2324).filter(Boolean))].sort();
 
-  // Run the exact same core algorithm "Simulate Drops" uses, on this throwaway virtual copy.
-  _runDropSim({
+  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy.
+  _runAlgoDrops({
     players: vp, teams, startField: 'start2324',
     ppts: ppts2324blend, getCap: getCap2324,
     capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324,
@@ -5691,7 +5691,7 @@ function compareDrops2324(){
     return html;
   }).join('');
 
-  document.getElementById('compareDropsTitle').textContent='📊 Simulated vs Actual 23-24 Drops';
+  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 23-24 Drops';
   document.getElementById('compareDropsBody').innerHTML=rows;
   document.getElementById('compareDropsModal').style.display='flex';
 }
@@ -5721,7 +5721,7 @@ function render2425(){
     return base!=null?ap-base:null;
   };
 
-  // ABP for 24-25 — extracted into computeABP2425() so simulateDrops2425/compareDrops2425
+  // ABP for 24-25 — extracted into computeABP2425() so algoDrops2425/compareDrops2425
   // can reuse the exact same computation for the ABP=0 drop-protection override.
   const abpMap2425 = computeABP2425(players);
 
@@ -6173,7 +6173,7 @@ function render2324(){
     return base!=null?ap-base:null;
   };
 
-  // ABP for 23-24 — extracted into computeABP2324() so simulateDrops2324/compareDrops2324
+  // ABP for 23-24 — extracted into computeABP2324() so algoDrops2324/compareDrops2324
   // can reuse the exact same computation for the ABP=0 drop-protection override.
   const abpMap2324 = computeABP2324(players);
 
@@ -6453,10 +6453,10 @@ function updateStats2324(){
 
 function closeDraftSimModal(){ document.getElementById('draftSimModal').style.display='none'; }
 
-function runDraftSim2627(){
+function algoDraft2627(){
   const teams = [...new Set(players.filter(p=>p.start2627).map(p=>p.start2627))].sort();
-  if(!teams.length){ toast('Run Simulate Drops first to seed rosters.'); return; }
-  _runDraftSim({
+  if(!teams.length){ toast('Run Algo Drops first to seed rosters.'); return; }
+  _runAlgoDraft({
     season:       '26-27',
     actualDraft:  {},
     allTeams:     teams,
@@ -6475,19 +6475,19 @@ function runDraftSim2627(){
   renderBigBoard();
 }
 
-function runDraftSim2425(){
+function algoDraft2425(){
   if(!Object.keys(POSTDRAFT_ROSTER_2425).length){
     toast('Populate POSTDRAFT_ROSTER_2425 first.'); return;
   }
   // Always seed from the real actual post-drop state (POSTDROP_ROSTER_2425), not whatever
   // start2425 currently holds — real draft day always follows real Actual Drops, never the
-  // algo's own hypothetical Simulate Drops output, so Compare Drafts must match that too.
+  // algo's own hypothetical Algo Drops output, so Compare Drafts must match that too.
   for(const p of players){
     const base = normName(p.name).toLowerCase();
     const pg = posGroup(p.pos);
     p.start2425 = POSTDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2425) ?? null;
   }
-  _runDraftSim({
+  _runAlgoDraft({
     season:       '24-25',
     actualDraft:  POSTDRAFT_ROSTER_2425,
     postDropRoster: POSTDROP_ROSTER_2425,
@@ -6508,17 +6508,17 @@ function runDraftSim2425(){
   });
 }
 
-function runDraftSim2324(){
+function algoDraft2324(){
   if(!Object.keys(POSTDRAFT_ROSTER_2324).length){
     toast('Populate POSTDRAFT_ROSTER_2324 first.'); return;
   }
-  // Always seed from the real actual post-drop state — see runDraftSim2425() for why.
+  // Always seed from the real actual post-drop state — see algoDraft2425() for why.
   for(const p of players){
     const base = normName(p.name).toLowerCase();
     const pg = posGroup(p.pos);
     p.start2324 = POSTDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2324) ?? null;
   }
-  _runDraftSim({
+  _runAlgoDraft({
     season:       '23-24',
     actualDraft:  POSTDRAFT_ROSTER_2324,
     postDropRoster: POSTDROP_ROSTER_2324,
@@ -6539,17 +6539,17 @@ function runDraftSim2324(){
   });
 }
 
-function runDraftSim2526(){
+function algoDraft2526(){
   if(!Object.keys(POSTDRAFT_ROSTER_2526).length){
     toast('Populate POSTDRAFT_ROSTER_2526 first.'); return;
   }
-  // Always seed from the real actual post-drop state — see runDraftSim2425() for why.
+  // Always seed from the real actual post-drop state — see algoDraft2425() for why.
   for(const p of players){
     const base = normName(p.name).toLowerCase();
     const pg = posGroup(p.pos);
     p.start2526 = POSTDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2526) ?? null;
   }
-  _runDraftSim({
+  _runAlgoDraft({
     season:       '25-26',
     actualDraft:  POSTDRAFT_ROSTER_2526,
     postDropRoster: POSTDROP_ROSTER_2526,
@@ -6580,7 +6580,7 @@ function runDraftSim2526(){
 // drops correctly (found 2026-07-22 via Blue Line Bangers/Mason Marchment in 24-25).
 // Mutates only p[startField] on the given `players` array; every other side effect (persistence,
 // rendering, toasts) stays in each season's own wrapper function, called after this returns.
-function _runDropSim({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null }){
+function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null }){
   const rosteredPool = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
@@ -6667,7 +6667,7 @@ function _runDropSim({ players, teams, startField, ppts, getCap, capLimit, draft
   return dropped;
 }
 
-function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
 
@@ -6699,7 +6699,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   // Build draft sequence from actual drops state
   const seq = buildSeq();
   if(!seq.length){
-    toast(`No open roster spots in ${season} — run Simulate Drops or Actual Drops first.`);
+    toast(`No open roster spots in ${season} — run Algo Drops or Actual Drops first.`);
     return;
   }
   const teamPickNum = {}; // team → picks made so far (0-indexed)
@@ -6788,7 +6788,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     teamPickNum[team]++;
   }
 
-  // Mirror the simulated picks onto the Big Board (separate from live draftState.picks
+  // Mirror the algo picks onto the Big Board (separate from live draftState.picks
   // so it doesn't perturb _buildSeq's "already picked" bookkeeping).
   if(boardDraftState){
     boardDraftState.simPicks = seq.map((t,i) => boardPicks[i] || {team:t, player:null, pos:null, nhlTeam:'', cap:0, projPts:0});
@@ -6814,7 +6814,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
 
   if(!hasActual){
     const simPts = simPicks.reduce((s,r)=>s+r.ppts, 0);
-    document.getElementById('draftSimTitle').textContent = `📋 Simulated Draft ${season}`;
+    document.getElementById('draftSimTitle').textContent = `📋 Algo Draft ${season}`;
     document.getElementById('draftSimSummary').innerHTML =
       `${simPicks.length} picks · Algo total proj: <strong>${Math.round(simPts)} pts</strong><br>${modeFooter}`;
     const maxR = simPicks.length ? Math.max(...simPicks.map(r=>r.round)) : 0;
@@ -6864,7 +6864,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   }
 
   // Render
-  document.getElementById('draftSimTitle').textContent = `📋 Simulated Draft vs Actual ${season}`;
+  document.getElementById('draftSimTitle').textContent = `📋 Algo Draft vs Actual ${season}`;
   const totalSimPpts  = rows.reduce((s,r)=>s+r.ppts,0);
   const totalActPpts  = rows.reduce((s,r)=>s+r.actPpts,0);
   const diff = totalSimPpts - totalActPpts;
@@ -6872,7 +6872,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
   const diffCol = diff>=0?'#16a34a':'#dc2626';
 
   document.getElementById('draftSimSummary').innerHTML =
-    `${rows.length} picks simulated &nbsp;|&nbsp; `+
+    `${rows.length} algo picks &nbsp;|&nbsp; `+
     `Algo total proj: <strong>${Math.round(totalSimPpts)} pts</strong> &nbsp;|&nbsp; `+
     `Actual total proj: <strong>${Math.round(totalActPpts)} pts</strong> &nbsp;|&nbsp; `+
     `<span style="color:${diffCol};font-weight:600">Algo ${diffStr} pts vs actual</span><br>`+
@@ -6929,7 +6929,7 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
     };
   }
 
-  // Algo draft totals per team (picks from simulation)
+  // Algo draft totals per team (picks from the algo draft)
   const algoDraftTotals = {};
   for(const r of rows){
     if(!algoDraftTotals[r.team]) algoDraftTotals[r.team] = {F:0,D:0,G:0,cap:0};
@@ -6939,9 +6939,9 @@ function _runDraftSim({ season, actualDraft, allTeams, buildSeq, startField, ppt
 
   // Real post-drop keeper totals per team, for the "Actual roster" column. Must come from the
   // true historical POSTDROP_ROSTER_ (postDropRoster), NOT initialAssigned — initialAssigned is
-  // just whatever the current start field happens to hold, which after Simulate Drops reflects
+  // just whatever the current start field happens to hold, which after Algo Drops reflects
   // the ALGO's simulated keepers, not who managers actually kept. Using initialAssigned here would
-  // mix algo-simulated keepers with real draft picks, double-counting anyone the algo kept but the
+  // mix algo-kept keepers with real draft picks, double-counting anyone the algo kept but the
   // real GM dropped (and who was later actually re-drafted).
   const actualKeeperIds = new Set();
   const actualKeeperTotals = {};
@@ -7036,11 +7036,11 @@ function compareDrafts2526(){
     return;
   }
   if(!draftState2526.simPicks?.length){
-    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
+    toast('No algo picks found. Run ⬆ Algo Draft first to generate algorithm picks.');
     return;
   }
 
-  // Build algo picks per team from draftState2526.simPicks (the automated Simulate Draft
+  // Build algo picks per team from draftState2526.simPicks (the automated Algo Draft
   // output) — deliberately NOT draftState2526.picks, which is the separate manual Draft
   // Mode click-through state and answers a different question ("how did my own picks do").
   const algoByTeam = {};
@@ -7187,7 +7187,7 @@ function compareDrafts2526(){
   leagueHtml += `</div></div>`;
 
 
-  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 25-26 Draft Picks';
+  document.getElementById('compareDraftsTitle').textContent = '📋 Algo vs Actual 25-26 Draft Picks';
   document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
   document.getElementById('compareDraftsModal').style.display = 'flex';
 }
@@ -7202,7 +7202,7 @@ function compareDrafts2627(){
     return;
   }
   if(!draftState2627.simPicks?.length){
-    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
+    toast('No algo picks found. Run ⬆ Algo Draft first to generate algorithm picks.');
     return;
   }
 
@@ -7341,7 +7341,7 @@ function compareDrafts2627(){
   leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly, k => actualTeamOf[k]);
   leagueHtml += `</div></div>`;
 
-  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 26-27 Draft Picks';
+  document.getElementById('compareDraftsTitle').textContent = '📋 Algo vs Actual 26-27 Draft Picks';
   document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
   document.getElementById('compareDraftsModal').style.display = 'flex';
 }
@@ -7353,7 +7353,7 @@ function compareDrafts2425(){
     return;
   }
   if(!draftState2425.simPicks?.length){
-    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
+    toast('No algo picks found. Run ⬆ Algo Draft first to generate algorithm picks.');
     return;
   }
 
@@ -7500,7 +7500,7 @@ function compareDrafts2425(){
   leagueHtml += `</div></div>`;
 
 
-  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 24-25 Draft Picks';
+  document.getElementById('compareDraftsTitle').textContent = '📋 Algo vs Actual 24-25 Draft Picks';
   document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
   document.getElementById('compareDraftsModal').style.display = 'flex';
 }
@@ -7512,7 +7512,7 @@ function compareDrafts2324(){
     return;
   }
   if(!draftState2324.simPicks?.length){
-    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
+    toast('No algo picks found. Run ⬆ Algo Draft first to generate algorithm picks.');
     return;
   }
 
@@ -7659,7 +7659,7 @@ function compareDrafts2324(){
   leagueHtml += `</div></div>`;
 
 
-  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 23-24 Draft Picks';
+  document.getElementById('compareDraftsTitle').textContent = '📋 Algo vs Actual 23-24 Draft Picks';
   document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
   document.getElementById('compareDraftsModal').style.display = 'flex';
 }
@@ -8008,15 +8008,15 @@ function updateDraftTab(){
   const btn = document.getElementById('tab-draft');
   if(btn){
     const ROSTER_TOTAL = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
-    const allFull = dropsSimulated && DRAFT_TEAMS_2627.every(t => {
+    const allFull = algoDropsApplied && DRAFT_TEAMS_2627.every(t => {
       const retained = players.filter(p => p.start2627 === t).length;
       const picked   = draftState2627.picks.filter(p => p.team === t).length;
       return retained + picked >= ROSTER_TOTAL;
     });
-    const blocked = !dropsSimulated || allFull;
+    const blocked = !algoDropsApplied || allFull;
     btn.style.opacity  = blocked ? '0.45' : '';
     btn.style.cursor   = blocked ? 'not-allowed' : '';
-    btn.title = !dropsSimulated ? 'Run Simulate Drops first'
+    btn.title = !algoDropsApplied ? 'Run Algo Drops first'
               : allFull         ? 'All rosters are full'
               : '';
   }
