@@ -6548,28 +6548,17 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
     G: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
   };
-  // Free agent pool, split by position — a flat league-wide average blended F+D+G and drawn
-  // from the top 30 by points regardless of cost badly overstated what's realistically
-  // achievable: those top scorers are mostly expensive, and a team down to its last few
-  // million with several open slots can't actually sign them. Filtered fresh per team below
-  // to whatever's affordable at that team's actual remaining-cap-per-slot.
-  const faPoolByPos = { F: [], D: [], G: [] };
+  // True pre-drop free-agent pool (cap/pts pairs, for fitQuadratic), split by position —
+  // computed once, before any team is processed, so no team's decisions leak into another
+  // team's view of the market (real GMs submit their drop lists independently, without seeing
+  // each other's first). This is the fixed starting point every team's own working view grows
+  // from below; it is never itself mutated.
+  const basePoolByPos = { F: [], D: [], G: [] };
   for(const p of players){
-    if(p[startField] || ppts(p) <= 0) continue;
+    if(p[startField] || ppts(p) <= 0 || (getCap(p)||0) <= 0) continue;
     const pg = posGroup(p.pos);
-    if(pg in faPoolByPos) faPoolByPos[pg].push(p);
+    if(pg in basePoolByPos) basePoolByPos[pg].push({x: getCap(p), y: ppts(p)});
   }
-  for(const pg of ['F','D','G']) faPoolByPos[pg].sort((a,b) => ppts(b)-ppts(a));
-  // Average points among the top-30 (by points) free agents at this position who cost no
-  // more than `budget` — the realistic replacement value at whatever this team can actually
-  // spend per remaining slot, not an unconstrained best-case. Falls back to a modest
-  // replacement-level floor if literally nothing at that position is affordable.
-  const avgAffordableFAPts = (pg, budget) => {
-    const pool = faPoolByPos[pg] || [];
-    const affordable = budget > 0 ? pool.filter(p => (getCap(p)||0) <= budget) : pool;
-    const top = affordable.slice(0, 30);
-    return top.length ? top.reduce((s,p) => s+ppts(p), 0) / top.length : 15;
-  };
 
   const isProspect = p => { const a = calcAgeForSim(p) ?? 99; const mx = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22; return a<=mx && (getCap(p)||0)<=elcMax; };
   const isProtectedProspect = p => isProspect(p) && !injurySet.has(normName(p.name).toLowerCase());
@@ -6617,6 +6606,17 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     let droppedD = mandatory.filter(p => posGroup(p.pos)==='D').length;
     let droppedG = mandatory.filter(p => posGroup(p.pos)==='G').length;
 
+    // This team's own working view of the free-agent market — starts as a copy of the true
+    // pre-drop pool (plus this team's own mandatory drops, already "back on the market" from
+    // this team's perspective), and grows with each of THIS team's own decisions below. Other
+    // teams' simultaneous drops never touch it, matching how real GMs submit their lists
+    // independently without seeing each other's first.
+    const teamPoolByPos = { F: [...basePoolByPos.F], D: [...basePoolByPos.D], G: [...basePoolByPos.G] };
+    for(const p of mandatory){ const pg=posGroup(p.pos); if(pg in teamPoolByPos) teamPoolByPos[pg].push({x:getCap(p)||0, y:ppts(p)}); }
+    const faCurveFns = {
+      F: fitQuadratic(teamPoolByPos.F), D: fitQuadratic(teamPoolByPos.D), G: fitQuadratic(teamPoolByPos.G),
+    };
+
     for(const p of candidates){
       const pg = posGroup(p.pos);
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
@@ -6632,17 +6632,28 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
       // remaining cap headroom across the actual remaining open slots) and position-aware
-      // (F/D/G each drawn from their own free-agent pool), instead of a single flat league-wide
-      // average applied regardless of what this specific team can afford to spend per slot.
+      // (F/D/G each evaluated on this team's own free-agent curve, fit on real unclaimed players
+      // rather than the rostered-player curve above, which would be an optimistic best case —
+      // anyone actually worth their cap at that price is likely rostered already, not sitting
+      // unclaimed). Evaluating a curve instead of averaging a fixed top-N also avoids an all-
+      // or-nothing cutoff: a $10M free agent isn't simply excluded because the per-slot budget
+      // looks like $6M on average (multiple open slots of the same position don't really have
+      // to split evenly — a real GM might spend unevenly across them), it just smoothly pulls
+      // the curve up if one exists.
       const openSlots = droppedF+droppedD+droppedG;
       const perSlotBudget = openSlots>0 ? (capLimit-keptCap)/openSlots : 0;
-      const assumedReplacementPts = droppedF*avgAffordableFAPts('F', perSlotBudget)
-                                   + droppedD*avgAffordableFAPts('D', perSlotBudget)
-                                   + droppedG*avgAffordableFAPts('G', perSlotBudget);
+      const assumedReplacementPts = droppedF*Math.max(0, faCurveFns.F(perSlotBudget))
+                                   + droppedD*Math.max(0, faCurveFns.D(perSlotBudget))
+                                   + droppedG*Math.max(0, faCurveFns.G(perSlotBudget));
       if(!isValuable && numDropped >= minDropsPreseason && keptPts+assumedReplacementPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts(p); keptCap -= (getCap(p)||0); numDropped++;
       if(pg==='F') droppedF++; else if(pg==='D') droppedD++; else if(pg==='G') droppedG++;
+      // This player is now "back on the market" from this team's own perspective (they might
+      // reconsider the field including this cut when the real draft happens) — grows only this
+      // team's own working curve, never leaking into any other team's view.
+      teamPoolByPos[pg].push({x: getCap(p)||0, y: ppts(p)});
+      faCurveFns[pg] = fitQuadratic(teamPoolByPos[pg]);
     }
 
     // Enforce minimum drops: if candidates ran out before minimum, force-drop lowest-value remaining
