@@ -2643,68 +2643,22 @@ function populateFantasyFilter() {
 function setSortCol(col){ if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=-1;} render(); }
 
 function computeDrops(allPlayers){
-  // Quick indicator: uses same quadratic deficit + pts-target logic as algoDrops().
-  const rosteredPool = allPlayers.filter(p => p.start2627 && p.pts >= curveMinPts && p.cap > 0);
-  const curveFns = {
-    F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
-    D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
-    G: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
-  };
-
-  const faPool = allPlayers.filter(p => !p.start2627 && p.pts > 0)
-                           .sort((a,b) => b.pts - a.pts).slice(0, 30);
-  const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+p.pts, 0) / faPool.length : 40;
-
-  const isProspect = p => { const a=calcAge(p)??99; const mx=PROSPECT_MAX_AGE[posGroup(p.pos)]??22; return a<=mx && (p.cap||0)<=ELC_MAX_2627; };
-  const deficit = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts>0&&p.cap>0&&fn) ? fn(p.cap)-p.pts : Infinity; };
-  // ABP=0 override — see algoDrops() for the backtested rationale.
-  const abpMap627cd = computeABP(allPlayers);
-  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)]; return (p.pts||0)>=DROP_VALUE_FLOOR||(fn?(p.pts||0)-fn(p.cap)>=0:false)||(abpMap627cd.get(p.id)??99)===0; };
-
+  // Quick indicator badge (shown before the real button is clicked) — runs the exact same
+  // shared _runAlgoDrops core as algoDrops(), on a throwaway virtual copy so this preview
+  // never mutates the live roster.
+  const vp = allPlayers.map(p => ({...p}));
+  const teams = [...new Set(vp.map(p => p.start2627).filter(Boolean))];
+  _runAlgoDrops({
+    players: vp, teams, startField: 'start2627',
+    ppts: p => p.pts||0, getCap: p => p.cap||0,
+    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
+    elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
+    elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
+    computeABPFn: computeABP,
+    useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
+  });
   const dropIds = new Set();
-  const ftNames = [...new Set(allPlayers.map(p=>p.start2627).filter(Boolean))];
-
-  for(const ft of ftNames){
-    const roster = allPlayers.filter(p => p.start2627 === ft);
-
-    const mandatory = roster.filter(p => ELC_MANDATORY_DROPS_2627.has(normName(p.name).toLowerCase()));
-    const mandatoryIds = new Set(mandatory.map(p => p.id));
-
-    const remaining = roster.filter(p => !mandatoryIds.has(p.id));
-    const rCapD2=remaining.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap||0):s,0);
-    const rCapTot2=remaining.reduce((s,p)=>s+(p.cap||0),0);
-    const dExcess2=rCapTot2>0?Math.max(0,rCapD2/rCapTot2-OPT_POS_FRACS.D):0;
-    const rebalBonus2=p=>posGroup(p.pos)==='D'?dExcess2*rCapTot2:0;
-    const isUntouchable = p => (abpMap627cd.get(p.id)??99)===0;
-    const lowVal   = remaining.filter(p => !isUntouchable(p) && !isProspect(p) && !isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus2(b)) - (deficit(a)+rebalBonus2(a)));
-    const highVal  = remaining.filter(p => !isUntouchable(p) && !isProspect(p) &&  isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus2(b)) - (deficit(a)+rebalBonus2(a)));
-    const prospects = remaining.filter(p => !isUntouchable(p) && isProspect(p)).sort((a,b) => deficit(b) - deficit(a));
-    const untouchable = remaining.filter(p => isUntouchable(p)).sort((a,b) => deficit(b) - deficit(a));
-    const candidates = [...lowVal, ...highVal, ...prospects, ...untouchable];
-
-    mandatory.forEach(p => dropIds.add(p.id));
-    let keptPts = remaining.reduce((s,p) => s + (p.pts||0), 0);
-    let keptCap = remaining.reduce((s,p) => s + (p.cap||0), 0);
-    let numDropped = mandatory.length;
-    let droppedF = mandatory.filter(p => posGroup(p.pos) === 'F').length;
-    let droppedD = mandatory.filter(p => posGroup(p.pos) === 'D').length;
-
-    for(const p of candidates){
-      const pg = posGroup(p.pos);
-      const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
-      if(numDropped >= maxDropsPreseason && posMinsMet) break;
-      const capOk = keptCap <= CAP_LIMIT - numDropped * DRAFT_RESERVE_2627;
-      const isValuable = isHighVal(p) || isProspect(p);
-      if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
-      if(!isValuable && numDropped >= minDropsPreseason && keptPts + numDropped * avgFAPts >= ptsTarget && capOk && posMinsMet) break;
-      dropIds.add(p.id);
-      keptPts -= (p.pts || 0);
-      keptCap -= (p.cap || 0);
-      numDropped++;
-      if(pg === 'F') droppedF++;
-      else if(pg === 'D') droppedD++;
-    }
-  }
+  for(const p of vp) if(!p.start2627) dropIds.add(p.id);
   return dropIds;
 }
 
@@ -6587,8 +6541,28 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
     G: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
   };
-  const faPool = players.filter(p => !p[startField] && ppts(p) > 0).sort((a,b) => ppts(b)-ppts(a)).slice(0, 30);
-  const avgFAPts = faPool.length ? faPool.reduce((s,p) => s+ppts(p), 0) / faPool.length : 40;
+  // Free agent pool, split by position — a flat league-wide average blended F+D+G and drawn
+  // from the top 30 by points regardless of cost badly overstated what's realistically
+  // achievable: those top scorers are mostly expensive, and a team down to its last few
+  // million with several open slots can't actually sign them. Filtered fresh per team below
+  // to whatever's affordable at that team's actual remaining-cap-per-slot.
+  const faPoolByPos = { F: [], D: [], G: [] };
+  for(const p of players){
+    if(p[startField] || ppts(p) <= 0) continue;
+    const pg = posGroup(p.pos);
+    if(pg in faPoolByPos) faPoolByPos[pg].push(p);
+  }
+  for(const pg of ['F','D','G']) faPoolByPos[pg].sort((a,b) => ppts(b)-ppts(a));
+  // Average points among the top-30 (by points) free agents at this position who cost no
+  // more than `budget` — the realistic replacement value at whatever this team can actually
+  // spend per remaining slot, not an unconstrained best-case. Falls back to a modest
+  // replacement-level floor if literally nothing at that position is affordable.
+  const avgAffordableFAPts = (pg, budget) => {
+    const pool = faPoolByPos[pg] || [];
+    const affordable = budget > 0 ? pool.filter(p => (getCap(p)||0) <= budget) : pool;
+    const top = affordable.slice(0, 30);
+    return top.length ? top.reduce((s,p) => s+ppts(p), 0) / top.length : 15;
+  };
 
   const isProspect = p => { const a = calcAgeForSim(p) ?? 99; const mx = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22; return a<=mx && (getCap(p)||0)<=elcMax; };
   const isProtectedProspect = p => isProspect(p) && !injurySet.has(normName(p.name).toLowerCase());
@@ -6634,6 +6608,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     let numDropped = dropList.length;
     let droppedF = mandatory.filter(p => posGroup(p.pos)==='F').length;
     let droppedD = mandatory.filter(p => posGroup(p.pos)==='D').length;
+    let droppedG = mandatory.filter(p => posGroup(p.pos)==='G').length;
 
     for(const p of candidates){
       const pg = posGroup(p.pos);
@@ -6642,10 +6617,19 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       const capOk = keptCap <= capLimit - numDropped*draftReserve;
       const isValuable = isHighVal(p) || isProspect(p);
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
-      if(!isValuable && numDropped >= minDropsPreseason && keptPts+numDropped*avgFAPts >= ptsTarget && capOk && posMinsMet) break;
+      // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
+      // remaining cap headroom across the actual remaining open slots) and position-aware
+      // (F/D/G each drawn from their own free-agent pool), instead of a single flat league-wide
+      // average applied regardless of what this specific team can afford to spend per slot.
+      const openSlots = droppedF+droppedD+droppedG;
+      const perSlotBudget = openSlots>0 ? (capLimit-keptCap)/openSlots : 0;
+      const assumedReplacementPts = droppedF*avgAffordableFAPts('F', perSlotBudget)
+                                   + droppedD*avgAffordableFAPts('D', perSlotBudget)
+                                   + droppedG*avgAffordableFAPts('G', perSlotBudget);
+      if(!isValuable && numDropped >= minDropsPreseason && keptPts+assumedReplacementPts >= ptsTarget && capOk && posMinsMet) break;
       dropList.push(p);
       keptPts -= ppts(p); keptCap -= (getCap(p)||0); numDropped++;
-      if(pg==='F') droppedF++; else if(pg==='D') droppedD++;
+      if(pg==='F') droppedF++; else if(pg==='D') droppedD++; else if(pg==='G') droppedG++;
     }
 
     // Enforce minimum drops: if candidates ran out before minimum, force-drop lowest-value remaining
