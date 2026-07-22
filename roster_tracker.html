@@ -280,6 +280,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2425()" title="Load actual 24-25 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
       <button class="btn btn-blue-outline" onclick="runMyAlgoDraft2425()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
+      <button class="btn btn-indigo-light" onclick="compareDrafts2425()" title="Compare Simulate Draft's picks per team against the real 24-25 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
     </div>
   </div>
 </div>
@@ -364,6 +365,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-blue-outline" onclick="runDraftSim2324()" title="Simulate full 23-24 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2324()" title="Load actual 23-24 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
       <button class="btn btn-blue-outline" onclick="runMyAlgoDraft2324()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
+      <button class="btn btn-indigo-light" onclick="compareDrafts2324()" title="Compare Simulate Draft's picks per team against the real 23-24 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
     </div>
   </div>
 </div>
@@ -455,6 +457,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2526()" title="Load actual 25-26 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
       <button class="btn btn-blue-outline" onclick="runMyAlgoDraft2526()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
+      <button class="btn btn-indigo-light" onclick="compareDrafts2526()" title="Compare Simulate Draft's picks per team against the real 25-26 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn2526" onclick="setDraftSubMode2526('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
         <button id="draftSubBestBtn2526" onclick="setDraftSubMode2526('bestAvail')" style="border:none;padding:5px 9px;background:#e0e7ff;color:#6366f1;cursor:pointer">Best Available</button>
@@ -1126,7 +1129,7 @@ tr:hover td{background:#fafaf8}
 
 <div class="modal-bg" id="compareDraftsModal" style="display:none" onclick="if(event.target===this)closeCompareDraftsModal()">
 <div class="modal" style="width:720px;max-width:96vw">
-  <h2>📋 Simulated vs Actual 25-26 Draft Picks</h2>
+  <h2 id="compareDraftsTitle">📋 Simulated vs Actual 25-26 Draft Picks</h2>
   <div id="compareDraftsSummary" style="font-size:13px;color:#555;margin-bottom:1rem;padding:8px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb"></div>
   <div id="compareDraftsBody" style="font-size:13px"></div>
   <div class="modal-actions">
@@ -4993,7 +4996,7 @@ function compareDrops2526(){
 
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
-    `Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
+    `25-26 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
     `Target: <strong>${ptsTarget}pts</strong>` +
     (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
     (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '') +
@@ -6945,6 +6948,8 @@ function runDraftSim2425(){
     elcMax:        ELC_MAX_2425,
     applyChanges: true,
     renderFn:     render2425,
+    boardDraftState: draftState2425,
+    boardLsKey:      LS_DRAFT_2425,
   });
 }
 
@@ -6968,6 +6973,8 @@ function runDraftSim2324(){
     elcMax:        ELC_MAX_2324,
     applyChanges: true,
     renderFn:     render2324,
+    boardDraftState: draftState2324,
+    boardLsKey:      LS_DRAFT_2324,
   });
 }
 
@@ -6991,6 +6998,8 @@ function runDraftSim2526(){
     elcMax:        ELC_MAX_2526,
     applyChanges: true,
     renderFn:     render2526,
+    boardDraftState: draftState2526,
+    boardLsKey:      LS_DRAFT_2526,
   });
 }
 
@@ -7362,14 +7371,17 @@ function compareDrafts2526(){
     toast('No actual draft data yet. Populate POSTDRAFT_ROSTER_2526 in the source (normName → team) to enable comparison.');
     return;
   }
-  if(!draftState2526.picks.length){
-    toast('No simulated picks found. Run Draft Mode first to generate algorithm picks.');
+  if(!draftState2526.simPicks?.length){
+    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
     return;
   }
 
-  // Build algo picks per team from draftState2526
+  // Build algo picks per team from draftState2526.simPicks (the automated Simulate Draft
+  // output) — deliberately NOT draftState2526.picks, which is the separate manual Draft
+  // Mode click-through state and answers a different question ("how did my own picks do").
   const algoByTeam = {};
-  for(const pick of draftState2526.picks){
+  for(const pick of draftState2526.simPicks){
+    if(!pick.player) continue; // unfilled/passed slot placeholder
     (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
   }
 
@@ -7415,6 +7427,34 @@ function compareDrafts2526(){
       algoProj, actualProj, algoAct, actualAct});
   }
 
+  // League-wide aggregate (regardless of which team got the player in each scenario) —
+  // the per-team view above scatters cases where two teams' independent simulations both
+  // wanted the same real player but only one could actually have him (e.g. algo assigns
+  // Dahlin to Team A, reality gives him to Team B — shows as a "miss" on both team cards).
+  // This answers a cleaner question: did the real draft, as a whole, correctly identify
+  // this player as worth taking at all, independent of who took him?
+  const allAlgoKeys = new Set();
+  for(const team of allTeams) for(const k of (algoByTeam[team]||[])) allAlgoKeys.add(k);
+  const allActualKeys = new Set();
+  for(const team of allTeams) for(const k of (actualByTeam[team]||[])) allActualKeys.add(k);
+
+  const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
+  for(const k of allAlgoKeys){
+    const p = findPlayer(k);
+    if(!p) continue;
+    if(allActualKeys.has(k)) leagueMatched.push(p);
+    else leagueAlgoOnly.push(p);
+  }
+  for(const k of allActualKeys){
+    if(allAlgoKeys.has(k)) continue;
+    const p = findPlayer(k);
+    if(p) leagueActualOnly.push(p);
+  }
+  leagueMatched.sort((a,b) => ppts2526blend(b) - ppts2526blend(a));
+  leagueAlgoOnly.sort((a,b) => ppts2526blend(b) - ppts2526blend(a));
+  leagueActualOnly.sort((a,b) => ppts2526blend(b) - ppts2526blend(a));
+
+
   const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
   const actDelta  = lgAlgoActual - lgActualActual;
@@ -7443,25 +7483,273 @@ function compareDrafts2526(){
       `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
   };
 
-  const rows = teamResults.map(r => {
-    const pd = r.algoProj - r.actualProj;
-    const ad = r.algoAct  - r.actualAct;
-    let html  = `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-    html += `<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
-    html += `<strong style="font-size:13px">${r.team}</strong>`;
-    html += `<span style="font-size:12px;display:flex;gap:12px">`;
-    html += `<span>Proj <strong style="color:${col(pd)}">${sign(pd)} pts</strong></span>`;
-    if(hasActuals) html += `<span>Actual <strong style="color:${col(ad)}">${sign(ad)} pts</strong>*</span>`;
-    html += `<span style="color:#6b7280">${r.algoPicks.length} algo / ${r.actualPicks.length} actual picks</span>`;
-    html += `</span></div><div style="padding:8px 12px">`;
-    html += section('Matched picks', '#16a34a', '✓', r.matched.map(playerLabel));
-    html += section('Algo recommended — not actually picked', '#6366f1', '◆', r.algoOnly.map(playerLabel));
-    html += section('Actually picked — algo skipped', '#d97706', '△', r.actualOnly.map(playerLabel));
-    html += `</div></div>`;
-    return html;
-  }).join('');
+  let leagueHtml = `<div style="margin-bottom:1.5rem;border:2px solid #6366f1;border-radius:8px;overflow:hidden">`;
+  leagueHtml += `<div style="padding:8px 12px;background:#eef2ff"><strong style="font-size:13px;color:#4338ca">League-wide (regardless of team)</strong></div>`;
+  leagueHtml += `<div style="padding:8px 12px">`;
+  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched.map(playerLabel));
+  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly.map(playerLabel));
+  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly.map(playerLabel));
+  leagueHtml += `</div></div>`;
 
-  document.getElementById('compareDraftsBody').innerHTML = rows;
+
+  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 25-26 Draft Picks';
+  document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
+  document.getElementById('compareDraftsModal').style.display = 'flex';
+}
+
+function compareDrafts2425(){
+  const hasActualData = Object.keys(POSTDRAFT_ROSTER_2425).length > 0;
+  if(!hasActualData){
+    toast('No actual draft data yet. Populate POSTDRAFT_ROSTER_2425 in the source (normName → team) to enable comparison.');
+    return;
+  }
+  if(!draftState2425.simPicks?.length){
+    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
+    return;
+  }
+
+  const algoByTeam = {};
+  for(const pick of draftState2425.simPicks){
+    if(!pick.player) continue; // unfilled/passed slot placeholder
+    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
+  }
+
+  const actualByTeam = {};
+  for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2425)){
+    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+  }
+
+  const findPlayer = key => players.find(p => { const n=normName(p.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+  const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
+  const hasActuals = players.some(p => (p.pts2425||0) > 0);
+
+  const teamResults = [];
+  let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
+  let totalMatches = 0, totalSlots = 0;
+
+  for(const team of allTeams){
+    const algoKeys  = algoByTeam[team]   || [];
+    const actualKeys = actualByTeam[team] || [];
+
+    const algoPicks   = algoKeys.map(findPlayer).filter(Boolean);
+    const actualPicks = actualKeys.map(findPlayer).filter(Boolean);
+
+    const actualKeySet = new Set(actualKeys);
+    const algoKeySet   = new Set(algoKeys);
+
+    const matched    = algoPicks.filter(p => actualKeySet.has(normName(p.name).toLowerCase()));
+    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(normName(p.name).toLowerCase()));
+    const actualOnly = actualPicks.filter(p => !algoKeySet.has(normName(p.name).toLowerCase()));
+
+    const algoProj   = algoPicks.reduce((s,p) => s + ppts2425blend(p), 0);
+    const actualProj = actualPicks.reduce((s,p) => s + ppts2425blend(p), 0);
+    const algoAct    = algoPicks.reduce((s,p) => s + (p.pts2425||0), 0);
+    const actualAct  = actualPicks.reduce((s,p) => s + (p.pts2425||0), 0);
+
+    lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
+    lgAlgoActual += algoAct;    lgActualActual += actualAct;
+    totalMatches += matched.length;
+    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
+
+    teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
+      algoProj, actualProj, algoAct, actualAct});
+  }
+
+  // League-wide aggregate (regardless of which team got the player in each scenario) —
+  // the per-team view above scatters cases where two teams' independent simulations both
+  // wanted the same real player but only one could actually have him (e.g. algo assigns
+  // Dahlin to Team A, reality gives him to Team B — shows as a "miss" on both team cards).
+  // This answers a cleaner question: did the real draft, as a whole, correctly identify
+  // this player as worth taking at all, independent of who took him?
+  const allAlgoKeys = new Set();
+  for(const team of allTeams) for(const k of (algoByTeam[team]||[])) allAlgoKeys.add(k);
+  const allActualKeys = new Set();
+  for(const team of allTeams) for(const k of (actualByTeam[team]||[])) allActualKeys.add(k);
+
+  const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
+  for(const k of allAlgoKeys){
+    const p = findPlayer(k);
+    if(!p) continue;
+    if(allActualKeys.has(k)) leagueMatched.push(p);
+    else leagueAlgoOnly.push(p);
+  }
+  for(const k of allActualKeys){
+    if(allAlgoKeys.has(k)) continue;
+    const p = findPlayer(k);
+    if(p) leagueActualOnly.push(p);
+  }
+  leagueMatched.sort((a,b) => ppts2425blend(b) - ppts2425blend(a));
+  leagueAlgoOnly.sort((a,b) => ppts2425blend(b) - ppts2425blend(a));
+  leagueActualOnly.sort((a,b) => ppts2425blend(b) - ppts2425blend(a));
+
+
+  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
+  const projDelta = lgAlgoProj - lgActualProj;
+  const actDelta  = lgAlgoActual - lgActualActual;
+  const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
+  const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
+
+  document.getElementById('compareDraftsSummary').innerHTML =
+    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
+    `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
+    `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
+    (hasActuals
+      ? ` &nbsp;|&nbsp; Actual pts* — Algo: <strong>${Math.round(lgAlgoActual)}</strong> vs Actual: <strong>${Math.round(lgActualActual)}</strong> ` +
+        `<span style="color:${col(actDelta)};font-weight:600">(${sign(actDelta)})</span> ` +
+        `<span style="color:#9ca3af;font-size:11px">*totals shift mid-year with roster moves</span>`
+      : '');
+
+  const playerLabel = p => {
+    const proj = Math.round(ppts2425blend(p));
+    const act  = p.pts2425 > 0 ? `, ${p.pts2425}act` : '';
+    return `${p.name} (${posGroup(p.pos)}, $${getCap2425(p).toFixed(2)}M, ${proj}proj${act})`;
+  };
+
+  const section = (label, color, icon, items) => {
+    if(!items.length) return '';
+    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+  };
+
+  let leagueHtml = `<div style="margin-bottom:1.5rem;border:2px solid #6366f1;border-radius:8px;overflow:hidden">`;
+  leagueHtml += `<div style="padding:8px 12px;background:#eef2ff"><strong style="font-size:13px;color:#4338ca">League-wide (regardless of team)</strong></div>`;
+  leagueHtml += `<div style="padding:8px 12px">`;
+  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched.map(playerLabel));
+  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly.map(playerLabel));
+  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly.map(playerLabel));
+  leagueHtml += `</div></div>`;
+
+
+  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 24-25 Draft Picks';
+  document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
+  document.getElementById('compareDraftsModal').style.display = 'flex';
+}
+
+function compareDrafts2324(){
+  const hasActualData = Object.keys(POSTDRAFT_ROSTER_2324).length > 0;
+  if(!hasActualData){
+    toast('No actual draft data yet. Populate POSTDRAFT_ROSTER_2324 in the source (normName → team) to enable comparison.');
+    return;
+  }
+  if(!draftState2324.simPicks?.length){
+    toast('No simulated picks found. Run ⬆ Simulate Draft first to generate algorithm picks.');
+    return;
+  }
+
+  const algoByTeam = {};
+  for(const pick of draftState2324.simPicks){
+    if(!pick.player) continue; // unfilled/passed slot placeholder
+    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
+  }
+
+  const actualByTeam = {};
+  for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2324)){
+    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+  }
+
+  const findPlayer = key => players.find(p => { const n=normName(p.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+  const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
+  const hasActuals = players.some(p => (p.pts2324||0) > 0);
+
+  const teamResults = [];
+  let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
+  let totalMatches = 0, totalSlots = 0;
+
+  for(const team of allTeams){
+    const algoKeys  = algoByTeam[team]   || [];
+    const actualKeys = actualByTeam[team] || [];
+
+    const algoPicks   = algoKeys.map(findPlayer).filter(Boolean);
+    const actualPicks = actualKeys.map(findPlayer).filter(Boolean);
+
+    const actualKeySet = new Set(actualKeys);
+    const algoKeySet   = new Set(algoKeys);
+
+    const matched    = algoPicks.filter(p => actualKeySet.has(normName(p.name).toLowerCase()));
+    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(normName(p.name).toLowerCase()));
+    const actualOnly = actualPicks.filter(p => !algoKeySet.has(normName(p.name).toLowerCase()));
+
+    const algoProj   = algoPicks.reduce((s,p) => s + ppts2324blend(p), 0);
+    const actualProj = actualPicks.reduce((s,p) => s + ppts2324blend(p), 0);
+    const algoAct    = algoPicks.reduce((s,p) => s + (p.pts2324||0), 0);
+    const actualAct  = actualPicks.reduce((s,p) => s + (p.pts2324||0), 0);
+
+    lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
+    lgAlgoActual += algoAct;    lgActualActual += actualAct;
+    totalMatches += matched.length;
+    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
+
+    teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
+      algoProj, actualProj, algoAct, actualAct});
+  }
+
+  // League-wide aggregate (regardless of which team got the player in each scenario) —
+  // the per-team view above scatters cases where two teams' independent simulations both
+  // wanted the same real player but only one could actually have him (e.g. algo assigns
+  // Dahlin to Team A, reality gives him to Team B — shows as a "miss" on both team cards).
+  // This answers a cleaner question: did the real draft, as a whole, correctly identify
+  // this player as worth taking at all, independent of who took him?
+  const allAlgoKeys = new Set();
+  for(const team of allTeams) for(const k of (algoByTeam[team]||[])) allAlgoKeys.add(k);
+  const allActualKeys = new Set();
+  for(const team of allTeams) for(const k of (actualByTeam[team]||[])) allActualKeys.add(k);
+
+  const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
+  for(const k of allAlgoKeys){
+    const p = findPlayer(k);
+    if(!p) continue;
+    if(allActualKeys.has(k)) leagueMatched.push(p);
+    else leagueAlgoOnly.push(p);
+  }
+  for(const k of allActualKeys){
+    if(allAlgoKeys.has(k)) continue;
+    const p = findPlayer(k);
+    if(p) leagueActualOnly.push(p);
+  }
+  leagueMatched.sort((a,b) => ppts2324blend(b) - ppts2324blend(a));
+  leagueAlgoOnly.sort((a,b) => ppts2324blend(b) - ppts2324blend(a));
+  leagueActualOnly.sort((a,b) => ppts2324blend(b) - ppts2324blend(a));
+
+
+  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
+  const projDelta = lgAlgoProj - lgActualProj;
+  const actDelta  = lgAlgoActual - lgActualActual;
+  const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
+  const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
+
+  document.getElementById('compareDraftsSummary').innerHTML =
+    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
+    `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
+    `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
+    (hasActuals
+      ? ` &nbsp;|&nbsp; Actual pts* — Algo: <strong>${Math.round(lgAlgoActual)}</strong> vs Actual: <strong>${Math.round(lgActualActual)}</strong> ` +
+        `<span style="color:${col(actDelta)};font-weight:600">(${sign(actDelta)})</span> ` +
+        `<span style="color:#9ca3af;font-size:11px">*totals shift mid-year with roster moves</span>`
+      : '');
+
+  const playerLabel = p => {
+    const proj = Math.round(ppts2324blend(p));
+    const act  = p.pts2324 > 0 ? `, ${p.pts2324}act` : '';
+    return `${p.name} (${posGroup(p.pos)}, $${getCap2324(p).toFixed(2)}M, ${proj}proj${act})`;
+  };
+
+  const section = (label, color, icon, items) => {
+    if(!items.length) return '';
+    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+  };
+
+  let leagueHtml = `<div style="margin-bottom:1.5rem;border:2px solid #6366f1;border-radius:8px;overflow:hidden">`;
+  leagueHtml += `<div style="padding:8px 12px;background:#eef2ff"><strong style="font-size:13px;color:#4338ca">League-wide (regardless of team)</strong></div>`;
+  leagueHtml += `<div style="padding:8px 12px">`;
+  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched.map(playerLabel));
+  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly.map(playerLabel));
+  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly.map(playerLabel));
+  leagueHtml += `</div></div>`;
+
+
+  document.getElementById('compareDraftsTitle').textContent = '📋 Simulated vs Actual 23-24 Draft Picks';
+  document.getElementById('compareDraftsBody').innerHTML = leagueHtml;
   document.getElementById('compareDraftsModal').style.display = 'flex';
 }
 
