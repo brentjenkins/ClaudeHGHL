@@ -6440,6 +6440,9 @@ function algoDraft2627(){
     renderFn:     render,
     boardDraftState: draftState2627,
     boardLsKey:   LS_DRAFT_2627,
+    computeABPFn: computeABP,
+    contractYearAnchor: NHL_SEASON_YEAR,
+    srcNFn: p => (p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0),
   });
   renderBigBoard();
 }
@@ -6474,6 +6477,9 @@ function algoDraft2425(){
     renderFn:     render2425,
     boardDraftState: draftState2425,
     boardLsKey:      LS_DRAFT_2425,
+    computeABPFn: computeABP2425,
+    contractYearAnchor: 2025,
+    srcNFn: p => (p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
   });
 }
 
@@ -6505,6 +6511,9 @@ function algoDraft2324(){
     renderFn:     render2324,
     boardDraftState: draftState2324,
     boardLsKey:      LS_DRAFT_2324,
+    computeABPFn: computeABP2324,
+    contractYearAnchor: 2024,
+    srcNFn: p => (p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0),
   });
 }
 
@@ -6536,6 +6545,9 @@ function algoDraft2526(){
     renderFn:     render2526,
     boardDraftState: draftState2526,
     boardLsKey:      LS_DRAFT_2526,
+    computeABPFn: computeABP2526,
+    contractYearAnchor: 2026,
+    srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0),
   });
 }
 
@@ -6683,9 +6695,27 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
   return dropped;
 }
 
-function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, computeABPFn, srcNFn, contractYearAnchor }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
+
+  // Richer scoring — matches the "SCORE" column shown in Draft Mode's player table and the
+  // team card's top-5 list (lastAllScored2X2Y / _ds2X2Y). Before 2026-07-22 the actual pick
+  // logic below only used tPPTS + prospect bonus, a much narrower formula than what was
+  // displayed — this adds the remaining terms the display always had: scarcity (ABP-based),
+  // points-per-dollar efficiency, peak-trajectory/age, projection-source agreement, and
+  // above-curve bonus. Computed once here, before any picks are made, from the live pre-draft
+  // roster/free-agent state (same snapshot timing the display uses). Backtested against real
+  // draft outcomes before shipping: league-wide Matched count held flat in 23-24 and improved
+  // in 24-25 (28->34) and 25-26 (28->35), no regressions — see project_richscore_algodraft memory.
+  const abpMapRich = computeABPFn(players);
+  const rosteredNow = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
+  const curveFnsRich = {
+    F: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
+    D: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
+    G: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
+  };
+  const scRich = n => n===0?3:n<=2?2:n<=5?1:0;
 
   // Snapshot: track each player's current team assignment
   const assigned = {}; // id → team or null
@@ -6764,15 +6794,29 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     const scored = fas.map(p => {
       const pg = posGroup(p.pos);
       const pp = ppts(p);
+      const cap0 = getCap(p) || 0;
       const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressure[pg]||0) - 1));
+      // Extra terms matching the display's richer SCORE, added on top of the base pp*pos*press
+      // term below.
+      const scV = scRich(abpMapRich.get(p.id) ?? 99);
+      const tSc = scV * draftWeights.wtScarcity;
+      const tPPTSM = (pp>0 && cap0>0) ? pp/cap0*draftWeights.wtPPTSM : 0;
+      const ageForYouth = calcAgeForSim(p) ?? 99;
+      const yrsRaw = p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0;
+      const youthRaw = peakTrajectoryScore(ageForYouth < 99 ? ageForYouth : null, pg, yrsRaw);
+      const tYouth = youthRaw * draftWeights.wtAge;
+      const srcN = srcNFn(p);
+      const tConf = Math.max(0, srcN-1) * draftWeights.wtSourceConf;
+      const tDelta = _deltaCurveBonus(pp, cap0, curveFnsRich[pg], elcMax, draftWeights.deltaCurveThreshold, draftWeights.wtDeltaCurve);
+      const richExtra = tSc + tPPTSM + tYouth + tConf + tDelta;
       let score;
       if(mode === 'prospect'){
         const age = calcAgeForSim(p) ?? 99;
         const cap = getCap(p) || 0;
         const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp);
-        score = pp * (pm[pg]||1) * pressMult + prospect;
+        score = pp * (pm[pg]||1) * pressMult + prospect + richExtra;
       } else {
-        score = pp * pressMult;
+        score = pp * pressMult + richExtra;
         const prospectWeight = prospectRoundWeight(round);
         if(prospectWeight > 0){
           const age = calcAgeForSim(p) ?? 99;
