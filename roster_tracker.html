@@ -279,7 +279,6 @@ tr:hover td{background:#fafaf8}
       </span>
       <button class="btn btn-blue-outline" onclick="runDraftSim2425()" title="Simulate full 24-25 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2425()" title="Load actual 24-25 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
-      <button class="btn btn-blue-outline" onclick="runMyAlgoDraft2425()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
       <button class="btn btn-indigo-light" onclick="compareDrafts2425()" title="Compare Simulate Draft's picks per team against the real 24-25 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
     </div>
   </div>
@@ -364,7 +363,6 @@ tr:hover td{background:#fafaf8}
       </span>
       <button class="btn btn-blue-outline" onclick="runDraftSim2324()" title="Simulate full 23-24 draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2324()" title="Load actual 23-24 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
-      <button class="btn btn-blue-outline" onclick="runMyAlgoDraft2324()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
       <button class="btn btn-indigo-light" onclick="compareDrafts2324()" title="Compare Simulate Draft's picks per team against the real 23-24 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
     </div>
   </div>
@@ -456,7 +454,6 @@ tr:hover td{background:#fafaf8}
 
       <button class="btn btn-blue-outline" onclick="runDraftSim2526()" title="Simulate full draft from actual drops (R1 value, R2+ best available) and compare to actual picks by projected pts">⬆ Simulate Draft</button>
       <button class="btn btn-green-outline" onclick="loadActualDraft2526()" title="Load actual 25-26 post-draft rosters and populate Big Board with real picks">⬆ Actual Draft</button>
-      <button class="btn btn-blue-outline" onclick="runMyAlgoDraft2526()" title="Run algo draft for My HGHL Team only — pool restricted to players you actually drafted + undrafted FAs">⬆ My Algo Draft</button>
       <button class="btn btn-indigo-light" onclick="compareDrafts2526()" title="Compare Simulate Draft's picks per team against the real 25-26 draft: matched / algo-wanted-but-not-drafted / actually-drafted-but-algo-skipped">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl2526" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
         <button id="draftSubProspectBtn2526" onclick="setDraftSubMode2526('prospect')" style="border:none;padding:5px 9px;background:#6366f1;color:#fff;cursor:pointer">Prospect</button>
@@ -1071,25 +1068,11 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Simulation and My Algo Draft settings.</span></div>
+    <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Simulation settings.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Simulate Draft Prospect rounds</span>
         <input type="number" id="s-draftProspectRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftProspectRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">My HGHL Team <span style="color:#6b7280">(for My Algo Draft)</span></span>
-        <select id="s-myHGHLTeam" onchange="updateSetting('myHGHLTeam',this.value)" style="max-width:220px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;background:#fff">
-          <option>Bossy Posse</option>
-          <option>Blue Line Bangers</option>
-          <option>Damage Inc.</option>
-          <option>Dumb and Goalie To</option>
-          <option>Killer Whales</option>
-          <option>Motor City Wings</option>
-          <option selected>Muller Time!</option>
-          <option>Pernicious Puckers</option>
-          <option>Silence of the Lamb</option>
-        </select>
       </div>
     </div>
   </div>
@@ -1344,7 +1327,6 @@ let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
 let draftProspectRounds = 1;
-let myHGHLTeam = 'Muller Time!';
 let ptsTarget = 1150, curveMinPts = 15;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 // Draft dates — used to calculate the drop/add window (date + 2 days) for Yahoo transaction fetches
@@ -1486,6 +1468,20 @@ function findPlayerByNamePos(name, posHint){
 function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??null; }
 // Look up a name+pos keyed dict (e.g. MANUAL_CAPS_2425) with alias fallback.
 function _dictLookupPos(name, pos, dict){ const n=normName(name).toLowerCase(),pg=posGroup(pos); return dict[`${n}_${pg}`]??(_nameAlias(n)?dict[`${_nameAlias(n)}_${pg}`]:null)??null; }
+// Build a compareDrafts-style match key: bare normalized name, except for names shared
+// by 2+ live players (e.g. Elias Pettersson F/D, Sebastian Aho F/D), which get a position
+// suffix — matching the same qualify-only-when-needed convention POSTDRAFT_ROSTER_2X2Y uses.
+function _draftKey(name, pos){
+  const n = normName(name).toLowerCase();
+  const collision = players.filter(p => normName(p.name).toLowerCase()===n).length > 1;
+  return collision ? `${n}_${posGroup(pos)}` : n;
+}
+// Resolve a compareDrafts key (bare or position-qualified) back to a player object.
+function _findDraftPlayer(key){
+  const m = key.match(/^(.*)_([FDG])$/);
+  if(m) return findPlayerByNamePos(m[1], m[2]) || players.find(p => normName(p.name).toLowerCase()===key) || null;
+  return findPlayerByName(key);
+}
 
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
 function lsSet(k,v){
@@ -3858,7 +3854,6 @@ function syncSettings(){
   set('s-deltaCurveThreshold', W.deltaCurveThreshold);
   set('s-wtPosAlloc', W.wtPosAlloc??1.0);
   set('s-draftProspectRounds', draftProspectRounds);
-  set('s-myHGHLTeam', myHGHLTeam);
   set('s-minDropsPreseason', minDropsPreseason); set('s-maxDropsPreseason', maxDropsPreseason);
   set('s-minDropsSupp', minDropsSupp); set('s-maxDropsSupp', maxDropsSupp);
   set('s-ptsTarget', ptsTarget);
@@ -3902,8 +3897,7 @@ function updateProjWeight(key, val){
   render();
 }
 function updateSetting(key, val){
-  if(key === 'myHGHLTeam')           myHGHLTeam = val;
-  else if(key === 'draftProspectRounds') draftProspectRounds = val;
+  if(key === 'draftProspectRounds') draftProspectRounds = val;
   else if(key === 'minDropsPreseason')     minDropsPreseason = val;
   else if(key === 'maxDropsPreseason') maxDropsPreseason = val;
   else if(key === 'minDropsSupp')      minDropsSupp = val;
@@ -6698,239 +6692,17 @@ function runDraftSim2627(){
   renderBigBoard();
 }
 
-// ── My Algo Draft ─────────────────────────────────────────────────────────────
-// Runs the algo draft for myHGHLTeam only. Other teams' picks are locked to
-// POSTDRAFT_ROSTER_*. My team's pool is restricted to: players I actually drafted
-// OR players nobody drafted — excluding players taken by other teams.
-
-function _runMyAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, actualPts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim, elcMax, renderFn }){
-  const myTeam = myHGHLTeam.trim();
-  if(!myTeam){ toast('Set "My HGHL Team" in Settings → Draft first.'); return; }
-  if(!allTeams.includes(myTeam)){ toast(`"${myTeam}" not found in ${season} rosters — check spelling in Settings.`); return; }
-
-  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
-
-  const assigned = {};
-  for(const p of players) assigned[p.id] = p[startField] || null;
-  const initialAssigned = {...assigned};
-
-  const need = {}, teamCap = {};
-  const teamSpotsLeft = {}; // team → total roster spots remaining (hard cap, position-agnostic)
-  for(const t of allTeams){
-    const ks = players.filter(p => assigned[p.id] === t);
-    need[t] = {
-      F: Math.max(0, DRAFT_ROSTER_MAX.F - ks.filter(p=>posGroup(p.pos)==='F').length),
-      D: Math.max(0, DRAFT_ROSTER_MAX.D - ks.filter(p=>posGroup(p.pos)==='D').length),
-      G: Math.max(0, DRAFT_ROSTER_MAX.G - ks.filter(p=>posGroup(p.pos)==='G').length),
-    };
-    teamCap[t] = ks.reduce((s,p) => s + getCap(p), 0);
-    teamSpotsLeft[t] = Math.max(0, DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G - ks.length);
-  }
-
-  const mySpots = teamSpotsLeft[myTeam] || 0;
-  if(!mySpots){ toast('No open roster spots for your team — run Actual Drops or Reset first.'); return; }
-
-  // Pre-assign other teams' actual picks (marks players as unavailable)
-  const otherActualKeys = new Set();
-  for(const [key, team] of Object.entries(actualDraft)){
-    if(team === myTeam) continue;
-    otherActualKeys.add(key);
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
-    if(!p) continue;
-    assigned[p.id] = team;
-    const pg = posGroup(p.pos);
-    if(need[team]) need[team][pg] = Math.max(0, (need[team][pg]||0) - 1);
-    if(teamSpotsLeft[team] !== undefined) teamSpotsLeft[team] = Math.max(0, teamSpotsLeft[team] - 1);
-    teamCap[team] = (teamCap[team]||0) + getCap(p);
-  }
-
-  // Run the sequence — only act on myTeam picks
-  const seq = buildSeq();
-  const teamPickNum = {};
-  const myPicks = [];
-
-  for(const team of seq){
-    const pickNum = (teamPickNum[team] = (teamPickNum[team]||0));
-    teamPickNum[team]++;
-    if(team !== myTeam) continue;
-
-    const round = pickNum + 1;
-    const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
-    if((teamSpotsLeft[team]||0) <= 0) continue;
-    const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
-    if(spotsLeft <= 0) continue;
-    const maxPickCap = capLimit - (teamCap[team]||0) - Math.max(0, spotsLeft-1) * draftReserve;
-
-    const fas = players.filter(p => {
-      if(assigned[p.id]) return false;
-      if(ppts(p) <= 0) return false;
-      if(getCap(p) <= 0) return false;  // no contract = not draftable
-      if(getCap(p) > maxPickCap) return false;
-      const pg = posGroup(p.pos);
-      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
-      if(otherActualKeys.has(normName(p.name).toLowerCase())) return false;
-      return (need[team]?.[pg]||0) > 0;
-    });
-
-    if(!fas.length) continue;
-
-    // Dynamic position pressure (same as _runDraftSim)
-    const leagueNeedM = {F:0, D:0, G:0};
-    for(const t of allTeams){ leagueNeedM.F+=(need[t]?.F||0); leagueNeedM.D+=(need[t]?.D||0); leagueNeedM.G+=(need[t]?.G||0); }
-    const availM = {F:0, D:0, G:0};
-    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0&&getCap(p)>0){ const g=posGroup(p.pos); if(g in availM) availM[g]++; } }
-    const rawPM = { F:leagueNeedM.F/Math.max(1,availM.F), D:leagueNeedM.D/Math.max(1,availM.D), G:leagueNeedM.G/Math.max(1,availM.G) };
-    const maxPM = Math.max(rawPM.F, rawPM.D, rawPM.G, 0.0001);
-    const simPressureM = { F:rawPM.F/maxPM, D:rawPM.D/maxPM, G:rawPM.G/maxPM };
-
-    const scored = fas.map(p => {
-      const pg = posGroup(p.pos);
-      const pp = ppts(p);
-      const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressureM[pg]||0) - 1));
-      let score;
-      if(mode === 'prospect'){
-        const age = calcAgeForSim(p) ?? 99;
-        const cap = getCap(p) || 0;
-        const prospect = prospectBonus(age, pg, cap, elcMax, draftWeights.wtProspect, pp);
-        score = pp * (pm[pg]||1) * pressMult + prospect;
-      } else {
-        score = pp * pressMult;
-        const prospectWeight = prospectRoundWeight(round);
-        if(prospectWeight > 0){
-          const age = calcAgeForSim(p) ?? 99;
-          const cap = getCap(p) || 0;
-          score += prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp) * prospectWeight;
-        }
-      }
-      return {p, score, pp};
-    }).sort((a,b) => b.score - a.score);
-
-    const pick = scored[0];
-    assigned[pick.p.id] = myTeam;
-    const pg = posGroup(pick.p.pos);
-    need[myTeam][pg] = Math.max(0, (need[myTeam][pg]||0) - 1);
-    teamSpotsLeft[myTeam] = Math.max(0, (teamSpotsLeft[myTeam]||0) - 1);
-    teamCap[myTeam] = (teamCap[myTeam]||0) + (getCap(pick.p)||0);
-    myPicks.push({round, player: pick.p.name, pos: pg, ppts: pick.pp, apts: actualPts(pick.p)||0, cap: getCap(pick.p)||0, mode});
-  }
-
-  // Apply my picks to player data
-  for(const p of players){
-    if(!initialAssigned[p.id] && assigned[p.id] === myTeam) p[startField] = myTeam;
-  }
-  lsSet(LS_PLAYERS, players);
-  if(renderFn) renderFn();
-
-  // Actual picks for my team (insertion order = draft order)
-  const myActualPicks = [];
-  for(const [key, team] of Object.entries(actualDraft)){
-    if(team !== myTeam) continue;
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
-    myActualPicks.push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0, apts: p?actualPts(p):0});
-  }
-
-  // Render modal
-  const posBg = {F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol = {F:'#1e40af',D:'#166534',G:'#92400e'};
-  const badge = (pg,name) => `<span style="background:${posBg[pg]||'#f3f4f6'};color:${posCol[pg]||'#374151'};border-radius:3px;padding:0 4px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${esc(name)}`;
-  const modeTag = r => r<=draftProspectRounds
-    ? '<span style="background:#e0e7ff;color:#4338ca;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Prospect</span>'
-    : '<span style="background:#f3f4f6;color:#6b7280;border-radius:3px;padding:0 5px;font-size:10px;font-weight:600">Best Avail</span>';
-
-  const algoTotal = myPicks.reduce((s,r)=>s+r.ppts, 0);
-  const actTotal  = myActualPicks.reduce((s,r)=>s+r.ppts, 0);
-  const diff = algoTotal - actTotal;
-  const diffCol = diff>=0?'#16a34a':'#dc2626';
-
-  const algoActualTotal = myPicks.reduce((s,r)=>s+(r.apts||0), 0);
-  const actActualTotal  = myActualPicks.reduce((s,r)=>s+(r.apts||0), 0);
-  const diffActual = algoActualTotal - actActualTotal;
-  const diffActualCol = diffActual>=0?'#16a34a':'#dc2626';
-
-  document.getElementById('draftSimTitle').textContent = `⬆ My Algo Draft — ${myTeam} (${season})`;
-  document.getElementById('draftSimSummary').innerHTML =
-    `${myPicks.length} picks &nbsp;|&nbsp; `+
-    `Algo: <strong>${Math.round(algoTotal)} proj</strong> · <strong>${Math.round(algoActualTotal)} actual</strong> &nbsp;|&nbsp; `+
-    `Actual: <strong>${Math.round(actTotal)} proj</strong> · <strong>${Math.round(actActualTotal)} actual</strong> &nbsp;|&nbsp; `+
-    `<span style="color:${diffCol};font-weight:600">${diff>=0?'+':''}${Math.round(diff)} proj</span> &nbsp; `+
-    `<span style="color:${diffActualCol};font-weight:600">${diffActual>=0?'+':''}${Math.round(diffActual)} actual</span><br>`+
-    `<span style="color:#9ca3af;font-size:11px">Pool: your actual picks + undrafted FAs — excludes other teams' picks &nbsp;·&nbsp; `+
-    `${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}=Prospect`:'All rounds=Best Avail'} then Best Available</span>`;
-
-  let html = `<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-  html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-  html += `<tr style="background:#fafafa;border-bottom:1px solid #e5e7eb">`+
-    `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500;white-space:nowrap">Pick</th>`+
-    `<th style="padding:5px 10px;text-align:left;color:#6366f1;font-weight:500">Algo</th>`+
-    `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Proj</th>`+
-    `<th style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:500;font-size:10px">Act</th>`+
-    `<th style="padding:5px 10px;text-align:left;color:#9ca3af;font-weight:500">Actual pick</th>`+
-    `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Proj</th>`+
-    `<th style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:500;font-size:10px">Act</th>`+
-    `<th style="padding:5px 8px;text-align:right;font-weight:500;font-size:10px">Δ Act</th></tr>`;
-  for(let i=0; i<myPicks.length; i++){
-    const sp = myPicks[i], ap = myActualPicks[i] || {name:'—',pos:'?',ppts:0,apts:0};
-    const dAct  = (sp.apts||0) - (ap.apts||0);
-    const dcAct = dAct>5?'#16a34a':dAct<-5?'#dc2626':'#9ca3af';
-    const dsAct = (dAct>=0?'+':'')+Math.round(dAct);
-    html += `<tr style="border-bottom:1px solid #f3f4f6">`;
-    html += `<td style="padding:5px 10px;color:#9ca3af;font-weight:500;white-space:nowrap">${i+1} ${modeTag(sp.round)}</td>`;
-    html += `<td style="padding:5px 10px"><span style="display:inline-flex;gap:4px;align-items:center">${badge(sp.pos,sp.player)}</span></td>`;
-    html += `<td style="padding:5px 4px;text-align:right;color:#6366f1">${Math.round(sp.ppts)}</td>`;
-    html += `<td style="padding:5px 4px;text-align:right;color:#6366f1;font-weight:600">${sp.apts||0}</td>`;
-    html += `<td style="padding:5px 10px;color:#9ca3af"><span style="display:inline-flex;gap:4px;align-items:center">${badge(ap.pos,ap.name)}</span></td>`;
-    html += `<td style="padding:5px 4px;text-align:right;color:#9ca3af">${Math.round(ap.ppts)}</td>`;
-    html += `<td style="padding:5px 4px;text-align:right;color:#9ca3af;font-weight:600">${ap.apts||0}</td>`;
-    html += `<td style="padding:5px 8px;text-align:right;color:${dcAct};font-weight:600;font-size:11px">${dsAct}</td>`;
-    html += `</tr>`;
-  }
-  html += `</table></div>`;
-
-  document.getElementById('draftSimBody').innerHTML = html;
-  document.getElementById('draftSimModal').style.display = 'flex';
-}
-
-function runMyAlgoDraft2425(){
-  if(!Object.keys(POSTDRAFT_ROSTER_2425).length){ toast('Populate POSTDRAFT_ROSTER_2425 first.'); return; }
-  _runMyAlgoDraft({
-    season: '24-25', actualDraft: POSTDRAFT_ROSTER_2425,
-    allTeams: [...new Set(players.filter(p=>p.start2425).map(p=>p.start2425))].sort(),
-    buildSeq: buildDraftSeq2425, startField: 'start2425',
-    ppts: p => ppts2425blend(p), actualPts: p => p.pts2425||0, getCap: p => getCap2425(p),
-    capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
-    draftWeights, calcAgeForSim: calcAge2425, elcMax: ELC_MAX_2425,
-    renderFn: render2425,
-  });
-}
-
-function runMyAlgoDraft2324(){
-  if(!Object.keys(POSTDRAFT_ROSTER_2324).length){ toast('Populate POSTDRAFT_ROSTER_2324 first.'); return; }
-  _runMyAlgoDraft({
-    season: '23-24', actualDraft: POSTDRAFT_ROSTER_2324,
-    allTeams: [...new Set(players.filter(p=>p.start2324).map(p=>p.start2324))].sort(),
-    buildSeq: buildDraftSeq2324, startField: 'start2324',
-    ppts: p => ppts2324blend(p), actualPts: p => p.pts2324||0, getCap: p => getCap2324(p),
-    capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324,
-    draftWeights, calcAgeForSim: calcAge2324, elcMax: ELC_MAX_2324,
-    renderFn: render2324,
-  });
-}
-
-function runMyAlgoDraft2526(){
-  if(!Object.keys(POSTDRAFT_ROSTER_2526).length){ toast('Populate POSTDRAFT_ROSTER_2526 first.'); return; }
-  _runMyAlgoDraft({
-    season: '25-26', actualDraft: POSTDRAFT_ROSTER_2526,
-    allTeams: [...new Set(players.filter(p=>p.start2526).map(p=>p.start2526))].sort(),
-    buildSeq: buildDraftSeq2526, startField: 'start2526',
-    ppts: p => ppts2526blend(p), actualPts: p => p.pts2526||0, getCap: p => getCap2526(p),
-    capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
-    draftWeights, calcAgeForSim: calcAge2526, elcMax: ELC_MAX_2526,
-    renderFn: render2526,
-  });
-}
-
 function runDraftSim2425(){
   if(!Object.keys(POSTDRAFT_ROSTER_2425).length){
     toast('Populate POSTDRAFT_ROSTER_2425 first.'); return;
+  }
+  // Always seed from the real actual post-drop state (POSTDROP_ROSTER_2425), not whatever
+  // start2425 currently holds — real draft day always follows real Actual Drops, never the
+  // algo's own hypothetical Simulate Drops output, so Compare Drafts must match that too.
+  for(const p of players){
+    const base = normName(p.name).toLowerCase();
+    const pg = posGroup(p.pos);
+    p.start2425 = POSTDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2425) ?? null;
   }
   _runDraftSim({
     season:       '24-25',
@@ -6957,6 +6729,12 @@ function runDraftSim2324(){
   if(!Object.keys(POSTDRAFT_ROSTER_2324).length){
     toast('Populate POSTDRAFT_ROSTER_2324 first.'); return;
   }
+  // Always seed from the real actual post-drop state — see runDraftSim2425() for why.
+  for(const p of players){
+    const base = normName(p.name).toLowerCase();
+    const pg = posGroup(p.pos);
+    p.start2324 = POSTDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2324) ?? null;
+  }
   _runDraftSim({
     season:       '23-24',
     actualDraft:  POSTDRAFT_ROSTER_2324,
@@ -6981,6 +6759,12 @@ function runDraftSim2324(){
 function runDraftSim2526(){
   if(!Object.keys(POSTDRAFT_ROSTER_2526).length){
     toast('Populate POSTDRAFT_ROSTER_2526 first.'); return;
+  }
+  // Always seed from the real actual post-drop state — see runDraftSim2425() for why.
+  for(const p of players){
+    const base = normName(p.name).toLowerCase();
+    const pg = posGroup(p.pos);
+    p.start2526 = POSTDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2526) ?? null;
   }
   _runDraftSim({
     season:       '25-26',
@@ -7382,7 +7166,7 @@ function compareDrafts2526(){
   const algoByTeam = {};
   for(const pick of draftState2526.simPicks){
     if(!pick.player) continue; // unfilled/passed slot placeholder
-    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
+    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(_draftKey(pick.player, pick.pos));
   }
 
   // Build actual picks per team from POSTDRAFT_ROSTER_2526
@@ -7391,7 +7175,7 @@ function compareDrafts2526(){
     (actualByTeam[team] = actualByTeam[team] || []).push(key);
   }
 
-  const findPlayer = key => players.find(p => { const n=normName(p.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+  const findPlayer = _findDraftPlayer;
   const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
   const hasActuals = players.some(p => (p.pts2526||0) > 0);
 
@@ -7409,9 +7193,9 @@ function compareDrafts2526(){
     const actualKeySet = new Set(actualKeys);
     const algoKeySet   = new Set(algoKeys);
 
-    const matched    = algoPicks.filter(p => actualKeySet.has(normName(p.name).toLowerCase()));
-    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(normName(p.name).toLowerCase()));
-    const actualOnly = actualPicks.filter(p => !algoKeySet.has(normName(p.name).toLowerCase()));
+    const matched    = algoPicks.filter(p => actualKeySet.has(_draftKey(p.name, p.pos)));
+    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(_draftKey(p.name, p.pos)));
+    const actualOnly = actualPicks.filter(p => !algoKeySet.has(_draftKey(p.name, p.pos)));
 
     const algoProj   = algoPicks.reduce((s,p) => s + ppts2526blend(p), 0);
     const actualProj = actualPicks.reduce((s,p) => s + ppts2526blend(p), 0);
@@ -7511,7 +7295,7 @@ function compareDrafts2425(){
   const algoByTeam = {};
   for(const pick of draftState2425.simPicks){
     if(!pick.player) continue; // unfilled/passed slot placeholder
-    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
+    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(_draftKey(pick.player, pick.pos));
   }
 
   const actualByTeam = {};
@@ -7519,7 +7303,7 @@ function compareDrafts2425(){
     (actualByTeam[team] = actualByTeam[team] || []).push(key);
   }
 
-  const findPlayer = key => players.find(p => { const n=normName(p.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+  const findPlayer = _findDraftPlayer;
   const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
   const hasActuals = players.some(p => (p.pts2425||0) > 0);
 
@@ -7537,9 +7321,9 @@ function compareDrafts2425(){
     const actualKeySet = new Set(actualKeys);
     const algoKeySet   = new Set(algoKeys);
 
-    const matched    = algoPicks.filter(p => actualKeySet.has(normName(p.name).toLowerCase()));
-    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(normName(p.name).toLowerCase()));
-    const actualOnly = actualPicks.filter(p => !algoKeySet.has(normName(p.name).toLowerCase()));
+    const matched    = algoPicks.filter(p => actualKeySet.has(_draftKey(p.name, p.pos)));
+    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(_draftKey(p.name, p.pos)));
+    const actualOnly = actualPicks.filter(p => !algoKeySet.has(_draftKey(p.name, p.pos)));
 
     const algoProj   = algoPicks.reduce((s,p) => s + ppts2425blend(p), 0);
     const actualProj = actualPicks.reduce((s,p) => s + ppts2425blend(p), 0);
@@ -7639,7 +7423,7 @@ function compareDrafts2324(){
   const algoByTeam = {};
   for(const pick of draftState2324.simPicks){
     if(!pick.player) continue; // unfilled/passed slot placeholder
-    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(normName(pick.player).toLowerCase());
+    (algoByTeam[pick.team] = algoByTeam[pick.team] || []).push(_draftKey(pick.player, pick.pos));
   }
 
   const actualByTeam = {};
@@ -7647,7 +7431,7 @@ function compareDrafts2324(){
     (actualByTeam[team] = actualByTeam[team] || []).push(key);
   }
 
-  const findPlayer = key => players.find(p => { const n=normName(p.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+  const findPlayer = _findDraftPlayer;
   const allTeams = [...new Set([...Object.keys(algoByTeam), ...Object.keys(actualByTeam)])].sort();
   const hasActuals = players.some(p => (p.pts2324||0) > 0);
 
@@ -7665,9 +7449,9 @@ function compareDrafts2324(){
     const actualKeySet = new Set(actualKeys);
     const algoKeySet   = new Set(algoKeys);
 
-    const matched    = algoPicks.filter(p => actualKeySet.has(normName(p.name).toLowerCase()));
-    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(normName(p.name).toLowerCase()));
-    const actualOnly = actualPicks.filter(p => !algoKeySet.has(normName(p.name).toLowerCase()));
+    const matched    = algoPicks.filter(p => actualKeySet.has(_draftKey(p.name, p.pos)));
+    const algoOnly   = algoPicks.filter(p => !actualKeySet.has(_draftKey(p.name, p.pos)));
+    const actualOnly = actualPicks.filter(p => !algoKeySet.has(_draftKey(p.name, p.pos)));
 
     const algoProj   = algoPicks.reduce((s,p) => s + ppts2324blend(p), 0);
     const actualProj = actualPicks.reduce((s,p) => s + ppts2324blend(p), 0);
