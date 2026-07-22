@@ -7121,7 +7121,6 @@ function compareDrafts2526(){
 
   const teamResults = [];
   let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
-  let totalMatches = 0, totalSlots = 0;
 
   for(const team of allTeams){
     const algoKeys  = algoByTeam[team]   || [];
@@ -7144,8 +7143,6 @@ function compareDrafts2526(){
 
     lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
     lgAlgoActual += algoAct;    lgActualActual += actualAct;
-    totalMatches += matched.length;
-    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
 
     teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
       algoProj, actualProj, algoAct, actualAct});
@@ -7191,14 +7188,12 @@ function compareDrafts2526(){
   const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
     .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
-  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
   const actDelta  = lgAlgoActual - lgActualActual;
   const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
   const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
 
   document.getElementById('compareDraftsSummary').innerHTML =
-    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
     `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
     `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
     (hasActuals
@@ -7283,7 +7278,6 @@ function compareDrafts2627(){
 
   const teamResults = [];
   let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
-  let totalMatches = 0, totalSlots = 0;
 
   for(const team of allTeams){
     const algoKeys  = algoByTeam[team]   || [];
@@ -7306,8 +7300,6 @@ function compareDrafts2627(){
 
     lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
     lgAlgoActual += algoAct;    lgActualActual += actualAct;
-    totalMatches += matched.length;
-    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
 
     teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
       algoProj, actualProj, algoAct, actualAct});
@@ -7346,14 +7338,12 @@ function compareDrafts2627(){
   const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
     .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
-  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
   const actDelta  = lgAlgoActual - lgActualActual;
   const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
   const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
 
   document.getElementById('compareDraftsSummary').innerHTML =
-    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
     `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
     `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
     (hasActuals
@@ -7434,7 +7424,6 @@ function compareDrafts2425(){
 
   const teamResults = [];
   let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
-  let totalMatches = 0, totalSlots = 0;
 
   for(const team of allTeams){
     const algoKeys  = algoByTeam[team]   || [];
@@ -7457,8 +7446,6 @@ function compareDrafts2425(){
 
     lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
     lgAlgoActual += algoAct;    lgActualActual += actualAct;
-    totalMatches += matched.length;
-    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
 
     teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
       algoProj, actualProj, algoAct, actualAct});
@@ -7504,14 +7491,12 @@ function compareDrafts2425(){
   const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
     .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
-  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
   const actDelta  = lgAlgoActual - lgActualActual;
   const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
   const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
 
   document.getElementById('compareDraftsSummary').innerHTML =
-    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
     `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
     `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
     (hasActuals
@@ -7593,7 +7578,6 @@ function compareDrafts2324(){
 
   const teamResults = [];
   let lgAlgoProj = 0, lgActualProj = 0, lgAlgoActual = 0, lgActualActual = 0;
-  let totalMatches = 0, totalSlots = 0;
 
   for(const team of allTeams){
     const algoKeys  = algoByTeam[team]   || [];
@@ -7616,8 +7600,6 @@ function compareDrafts2324(){
 
     lgAlgoProj   += algoProj;   lgActualProj  += actualProj;
     lgAlgoActual += algoAct;    lgActualActual += actualAct;
-    totalMatches += matched.length;
-    totalSlots   += Math.max(algoPicks.length, actualPicks.length);
 
     teamResults.push({team, algoPicks, actualPicks, matched, algoOnly, actualOnly,
       algoProj, actualProj, algoAct, actualAct});
@@ -7663,14 +7645,12 @@ function compareDrafts2324(){
   const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
     .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
-  const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
   const actDelta  = lgAlgoActual - lgActualActual;
   const sign = d => (d >= 0 ? '+' : '') + Math.round(d);
   const col  = d => d >= 0 ? '#16a34a' : '#dc2626';
 
   document.getElementById('compareDraftsSummary').innerHTML =
-    `Pick overlap: <strong>${totalMatches}/${totalSlots} (${overlapPct}%)</strong> &nbsp;|&nbsp; ` +
     `Proj pts — Algo: <strong>${Math.round(lgAlgoProj)}</strong> vs Actual: <strong>${Math.round(lgActualProj)}</strong> ` +
     `<span style="color:${col(projDelta)};font-weight:600">(${sign(projDelta)})</span>` +
     (hasActuals
