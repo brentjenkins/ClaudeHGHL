@@ -1344,6 +1344,13 @@ let draftDateSupplemental2526 = '2026-01-10';
 let draftDatePreseason2627    = '2026-10-02';
 let draftDateSupplemental2627 = '2027-01-10';
 const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
+// A player clearing DROP_VALUE_FLOOR/curve (or flagged a prospect) normally earns an automatic
+// stop-cutting pass once quotas/cap are satisfied — unless their ABP is this high, meaning the
+// free-agent pool has this many same-position players scoring more for the same or less money.
+// That's a "reach": the algo's own draft logic would never actually pick them over the field,
+// so clearing the value floor alone shouldn't buy them protection. Backtested 2026-07-22 via
+// Blue Line Bangers 24-25 (Chandler Stephenson ABP=18, Elias Lindholm ABP=12).
+const REACH_ABP_THRESHOLD = 6;
 // ── 24-25 season constants ────────────────────────────────────────────────────
 let CAP_LIMIT_2324 = 83.5;
 let CAP_LIMIT_2425 = 88;
@@ -6615,7 +6622,13 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       if(numDropped >= maxDropsPreseason && posMinsMet) break;
       const capOk = keptCap <= capLimit - numDropped*draftReserve;
-      const isValuable = isHighVal(p) || isProspect(p);
+      // Clearing the value floor/curve or looking like a prospect normally earns an automatic
+      // stop-cutting pass — unless this specific player is a "reach" (REACH_ABP_THRESHOLD+ same-
+      // position free agents cost the same or less and score more), in which case the algo's own
+      // draft logic would never actually pick them over the field, so the value floor alone
+      // shouldn't buy them protection — they're evaluated like any other candidate instead.
+      const isReach = (abpMap.get(p.id) ?? 0) >= REACH_ABP_THRESHOLD;
+      const isValuable = (isHighVal(p) || isProspect(p)) && !isReach;
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
       // remaining cap headroom across the actual remaining open slots) and position-aware
