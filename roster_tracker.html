@@ -7222,22 +7222,34 @@ function compareDrafts2526(){
   const allActualKeys = new Set();
   for(const team of allTeams) for(const k of (actualByTeam[team]||[])) allActualKeys.add(k);
 
+  const actualTeamOf = {};
+  for(const team of allTeams) for(const k of (actualByTeam[team]||[])) actualTeamOf[k] = team;
+  const algoTeamOf = {};
+  for(const team of allTeams) for(const k of (algoByTeam[team]||[])) algoTeamOf[k] = team;
+
   const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
   for(const k of allAlgoKeys){
     const p = findPlayer(k);
     if(!p) continue;
-    if(allActualKeys.has(k)) leagueMatched.push(p);
-    else leagueAlgoOnly.push(p);
+    if(allActualKeys.has(k)) leagueMatched.push({p, k});
+    else leagueAlgoOnly.push({p, k});
   }
   for(const k of allActualKeys){
     if(allAlgoKeys.has(k)) continue;
     const p = findPlayer(k);
-    if(p) leagueActualOnly.push(p);
+    if(p) leagueActualOnly.push({p, k});
   }
-  leagueMatched.sort((a,b) => ppts2526blend(b) - ppts2526blend(a));
-  leagueAlgoOnly.sort((a,b) => ppts2526blend(b) - ppts2526blend(a));
-  leagueActualOnly.sort((a,b) => ppts2526blend(b) - ppts2526blend(a));
+  leagueMatched.sort((a,b) => ppts2526blend(b.p) - ppts2526blend(a.p));
+  leagueAlgoOnly.sort((a,b) => ppts2526blend(b.p) - ppts2526blend(a.p));
+  leagueActualOnly.sort((a,b) => ppts2526blend(b.p) - ppts2526blend(a.p));
 
+  // GM profile — matched (algo agreed) vs reaches (algo never wanted, anywhere), per real team.
+  const teamProfile = {};
+  for(const team of allTeams) teamProfile[team] = {matched:0, reach:0};
+  for(const it of leagueMatched){ const t = actualTeamOf[it.k]; if(t && teamProfile[t]) teamProfile[t].matched++; }
+  for(const it of leagueActualOnly){ const t = actualTeamOf[it.k]; if(t && teamProfile[t]) teamProfile[t].reach++; }
+  const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
+    .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
   const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
@@ -7261,18 +7273,37 @@ function compareDrafts2526(){
     return `${p.name} (${posGroup(p.pos)}, $${getCap2526(p).toFixed(2)}M, ${proj}proj${act})`;
   };
 
-  const section = (label, color, icon, items) => {
+  const section = (label, color, icon, items, teamOf) => {
     if(!items.length) return '';
-    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
-      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+    if(!teamOf){
+      return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+        `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(it => `<li style="color:#374151;font-size:12px;line-height:1.6">${playerLabel(it.p)}</li>`).join('')}</ul></div>`;
+    }
+    const byTeam = {};
+    for(const it of items){ const t = teamOf(it.k) || 'Unknown'; (byTeam[t] = byTeam[t] || []).push(it.p); }
+    const teamNames = Object.keys(byTeam).sort();
+    let body = '';
+    for(const t of teamNames){
+      body += `<div style="margin:4px 0 2px 4px"><span style="font-weight:600;font-size:11px;color:#4b5563">${esc(t)} (${byTeam[t].length})</span>` +
+        `<ul style="margin:2px 0 4px 14px;padding:0;list-style:disc">${byTeam[t].map(p => `<li style="color:#374151;font-size:12px;line-height:1.6">${playerLabel(p)}</li>`).join('')}</ul></div>`;
+    }
+    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>${body}</div>`;
   };
+
+  const profileHtml = `<div style="padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb">` +
+    `<strong style="font-size:12px;color:#4b5563">GM profile — by the book vs. rolls the dice</strong>` +
+    `<table style="width:100%;font-size:12px;margin-top:4px;border-collapse:collapse">` +
+    `<tr style="color:#9ca3af"><th style="text-align:left;font-weight:500;padding:2px 6px">Team</th><th style="text-align:right;font-weight:500;padding:2px 6px">✓ Matched</th><th style="text-align:right;font-weight:500;padding:2px 6px">⚠ Reaches</th></tr>` +
+    profileRows.map(r => `<tr style="border-top:1px solid #f3f4f6"><td style="padding:2px 6px">${esc(r.team)}</td><td style="text-align:right;padding:2px 6px;color:#16a34a">${r.matched}</td><td style="text-align:right;padding:2px 6px;color:#dc2626">${r.reach}</td></tr>`).join('') +
+    `</table></div>`;
 
   let leagueHtml = `<div style="margin-bottom:1.5rem;border:2px solid #6366f1;border-radius:8px;overflow:hidden">`;
   leagueHtml += `<div style="padding:8px 12px;background:#eef2ff"><strong style="font-size:13px;color:#4338ca">League-wide (regardless of team)</strong></div>`;
+  leagueHtml += profileHtml;
   leagueHtml += `<div style="padding:8px 12px">`;
-  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched.map(playerLabel));
-  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly.map(playerLabel));
-  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly.map(playerLabel));
+  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched, k => actualTeamOf[k] || algoTeamOf[k]);
+  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly);
+  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly, k => actualTeamOf[k]);
   leagueHtml += `</div></div>`;
 
 
@@ -7350,22 +7381,34 @@ function compareDrafts2425(){
   const allActualKeys = new Set();
   for(const team of allTeams) for(const k of (actualByTeam[team]||[])) allActualKeys.add(k);
 
+  const actualTeamOf = {};
+  for(const team of allTeams) for(const k of (actualByTeam[team]||[])) actualTeamOf[k] = team;
+  const algoTeamOf = {};
+  for(const team of allTeams) for(const k of (algoByTeam[team]||[])) algoTeamOf[k] = team;
+
   const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
   for(const k of allAlgoKeys){
     const p = findPlayer(k);
     if(!p) continue;
-    if(allActualKeys.has(k)) leagueMatched.push(p);
-    else leagueAlgoOnly.push(p);
+    if(allActualKeys.has(k)) leagueMatched.push({p, k});
+    else leagueAlgoOnly.push({p, k});
   }
   for(const k of allActualKeys){
     if(allAlgoKeys.has(k)) continue;
     const p = findPlayer(k);
-    if(p) leagueActualOnly.push(p);
+    if(p) leagueActualOnly.push({p, k});
   }
-  leagueMatched.sort((a,b) => ppts2425blend(b) - ppts2425blend(a));
-  leagueAlgoOnly.sort((a,b) => ppts2425blend(b) - ppts2425blend(a));
-  leagueActualOnly.sort((a,b) => ppts2425blend(b) - ppts2425blend(a));
+  leagueMatched.sort((a,b) => ppts2425blend(b.p) - ppts2425blend(a.p));
+  leagueAlgoOnly.sort((a,b) => ppts2425blend(b.p) - ppts2425blend(a.p));
+  leagueActualOnly.sort((a,b) => ppts2425blend(b.p) - ppts2425blend(a.p));
 
+  // GM profile — matched (algo agreed) vs reaches (algo never wanted, anywhere), per real team.
+  const teamProfile = {};
+  for(const team of allTeams) teamProfile[team] = {matched:0, reach:0};
+  for(const it of leagueMatched){ const t = actualTeamOf[it.k]; if(t && teamProfile[t]) teamProfile[t].matched++; }
+  for(const it of leagueActualOnly){ const t = actualTeamOf[it.k]; if(t && teamProfile[t]) teamProfile[t].reach++; }
+  const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
+    .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
   const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
@@ -7389,18 +7432,37 @@ function compareDrafts2425(){
     return `${p.name} (${posGroup(p.pos)}, $${getCap2425(p).toFixed(2)}M, ${proj}proj${act})`;
   };
 
-  const section = (label, color, icon, items) => {
+  const section = (label, color, icon, items, teamOf) => {
     if(!items.length) return '';
-    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
-      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+    if(!teamOf){
+      return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+        `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(it => `<li style="color:#374151;font-size:12px;line-height:1.6">${playerLabel(it.p)}</li>`).join('')}</ul></div>`;
+    }
+    const byTeam = {};
+    for(const it of items){ const t = teamOf(it.k) || 'Unknown'; (byTeam[t] = byTeam[t] || []).push(it.p); }
+    const teamNames = Object.keys(byTeam).sort();
+    let body = '';
+    for(const t of teamNames){
+      body += `<div style="margin:4px 0 2px 4px"><span style="font-weight:600;font-size:11px;color:#4b5563">${esc(t)} (${byTeam[t].length})</span>` +
+        `<ul style="margin:2px 0 4px 14px;padding:0;list-style:disc">${byTeam[t].map(p => `<li style="color:#374151;font-size:12px;line-height:1.6">${playerLabel(p)}</li>`).join('')}</ul></div>`;
+    }
+    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>${body}</div>`;
   };
+
+  const profileHtml = `<div style="padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb">` +
+    `<strong style="font-size:12px;color:#4b5563">GM profile — by the book vs. rolls the dice</strong>` +
+    `<table style="width:100%;font-size:12px;margin-top:4px;border-collapse:collapse">` +
+    `<tr style="color:#9ca3af"><th style="text-align:left;font-weight:500;padding:2px 6px">Team</th><th style="text-align:right;font-weight:500;padding:2px 6px">✓ Matched</th><th style="text-align:right;font-weight:500;padding:2px 6px">⚠ Reaches</th></tr>` +
+    profileRows.map(r => `<tr style="border-top:1px solid #f3f4f6"><td style="padding:2px 6px">${esc(r.team)}</td><td style="text-align:right;padding:2px 6px;color:#16a34a">${r.matched}</td><td style="text-align:right;padding:2px 6px;color:#dc2626">${r.reach}</td></tr>`).join('') +
+    `</table></div>`;
 
   let leagueHtml = `<div style="margin-bottom:1.5rem;border:2px solid #6366f1;border-radius:8px;overflow:hidden">`;
   leagueHtml += `<div style="padding:8px 12px;background:#eef2ff"><strong style="font-size:13px;color:#4338ca">League-wide (regardless of team)</strong></div>`;
+  leagueHtml += profileHtml;
   leagueHtml += `<div style="padding:8px 12px">`;
-  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched.map(playerLabel));
-  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly.map(playerLabel));
-  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly.map(playerLabel));
+  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched, k => actualTeamOf[k] || algoTeamOf[k]);
+  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly);
+  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly, k => actualTeamOf[k]);
   leagueHtml += `</div></div>`;
 
 
@@ -7478,22 +7540,34 @@ function compareDrafts2324(){
   const allActualKeys = new Set();
   for(const team of allTeams) for(const k of (actualByTeam[team]||[])) allActualKeys.add(k);
 
+  const actualTeamOf = {};
+  for(const team of allTeams) for(const k of (actualByTeam[team]||[])) actualTeamOf[k] = team;
+  const algoTeamOf = {};
+  for(const team of allTeams) for(const k of (algoByTeam[team]||[])) algoTeamOf[k] = team;
+
   const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
   for(const k of allAlgoKeys){
     const p = findPlayer(k);
     if(!p) continue;
-    if(allActualKeys.has(k)) leagueMatched.push(p);
-    else leagueAlgoOnly.push(p);
+    if(allActualKeys.has(k)) leagueMatched.push({p, k});
+    else leagueAlgoOnly.push({p, k});
   }
   for(const k of allActualKeys){
     if(allAlgoKeys.has(k)) continue;
     const p = findPlayer(k);
-    if(p) leagueActualOnly.push(p);
+    if(p) leagueActualOnly.push({p, k});
   }
-  leagueMatched.sort((a,b) => ppts2324blend(b) - ppts2324blend(a));
-  leagueAlgoOnly.sort((a,b) => ppts2324blend(b) - ppts2324blend(a));
-  leagueActualOnly.sort((a,b) => ppts2324blend(b) - ppts2324blend(a));
+  leagueMatched.sort((a,b) => ppts2324blend(b.p) - ppts2324blend(a.p));
+  leagueAlgoOnly.sort((a,b) => ppts2324blend(b.p) - ppts2324blend(a.p));
+  leagueActualOnly.sort((a,b) => ppts2324blend(b.p) - ppts2324blend(a.p));
 
+  // GM profile — matched (algo agreed) vs reaches (algo never wanted, anywhere), per real team.
+  const teamProfile = {};
+  for(const team of allTeams) teamProfile[team] = {matched:0, reach:0};
+  for(const it of leagueMatched){ const t = actualTeamOf[it.k]; if(t && teamProfile[t]) teamProfile[t].matched++; }
+  for(const it of leagueActualOnly){ const t = actualTeamOf[it.k]; if(t && teamProfile[t]) teamProfile[t].reach++; }
+  const profileRows = allTeams.map(t => ({team:t, matched:teamProfile[t].matched, reach:teamProfile[t].reach}))
+    .sort((a,b) => b.reach - a.reach || a.matched - b.matched);
 
   const overlapPct = totalSlots > 0 ? Math.round(100 * totalMatches / totalSlots) : 0;
   const projDelta = lgAlgoProj - lgActualProj;
@@ -7517,18 +7591,37 @@ function compareDrafts2324(){
     return `${p.name} (${posGroup(p.pos)}, $${getCap2324(p).toFixed(2)}M, ${proj}proj${act})`;
   };
 
-  const section = (label, color, icon, items) => {
+  const section = (label, color, icon, items, teamOf) => {
     if(!items.length) return '';
-    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
-      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s => `<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
+    if(!teamOf){
+      return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
+        `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(it => `<li style="color:#374151;font-size:12px;line-height:1.6">${playerLabel(it.p)}</li>`).join('')}</ul></div>`;
+    }
+    const byTeam = {};
+    for(const it of items){ const t = teamOf(it.k) || 'Unknown'; (byTeam[t] = byTeam[t] || []).push(it.p); }
+    const teamNames = Object.keys(byTeam).sort();
+    let body = '';
+    for(const t of teamNames){
+      body += `<div style="margin:4px 0 2px 4px"><span style="font-weight:600;font-size:11px;color:#4b5563">${esc(t)} (${byTeam[t].length})</span>` +
+        `<ul style="margin:2px 0 4px 14px;padding:0;list-style:disc">${byTeam[t].map(p => `<li style="color:#374151;font-size:12px;line-height:1.6">${playerLabel(p)}</li>`).join('')}</ul></div>`;
+    }
+    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>${body}</div>`;
   };
+
+  const profileHtml = `<div style="padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb">` +
+    `<strong style="font-size:12px;color:#4b5563">GM profile — by the book vs. rolls the dice</strong>` +
+    `<table style="width:100%;font-size:12px;margin-top:4px;border-collapse:collapse">` +
+    `<tr style="color:#9ca3af"><th style="text-align:left;font-weight:500;padding:2px 6px">Team</th><th style="text-align:right;font-weight:500;padding:2px 6px">✓ Matched</th><th style="text-align:right;font-weight:500;padding:2px 6px">⚠ Reaches</th></tr>` +
+    profileRows.map(r => `<tr style="border-top:1px solid #f3f4f6"><td style="padding:2px 6px">${esc(r.team)}</td><td style="text-align:right;padding:2px 6px;color:#16a34a">${r.matched}</td><td style="text-align:right;padding:2px 6px;color:#dc2626">${r.reach}</td></tr>`).join('') +
+    `</table></div>`;
 
   let leagueHtml = `<div style="margin-bottom:1.5rem;border:2px solid #6366f1;border-radius:8px;overflow:hidden">`;
   leagueHtml += `<div style="padding:8px 12px;background:#eef2ff"><strong style="font-size:13px;color:#4338ca">League-wide (regardless of team)</strong></div>`;
+  leagueHtml += profileHtml;
   leagueHtml += `<div style="padding:8px 12px">`;
-  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched.map(playerLabel));
-  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly.map(playerLabel));
-  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly.map(playerLabel));
+  leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched, k => actualTeamOf[k] || algoTeamOf[k]);
+  leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly);
+  leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly, k => actualTeamOf[k]);
   leagueHtml += `</div></div>`;
 
 
