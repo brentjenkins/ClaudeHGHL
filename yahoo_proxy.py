@@ -2395,6 +2395,29 @@ def player_page_contracts():
             return [], "no contract tab panel found"
         raw_opts = m.group(1).replace("\\/", "/")
         options  = json.loads(raw_opts)
+
+        # The tab-panel "cap_hit" string above is PuckPedia's own display-rounded value
+        # ("$1.13M"), losing real precision (actual $1,125,000) — confirmed 2026-07-22 via
+        # Nicklaus Perbix, whose true cap hit is exactly $1,125,000 but round-tripped through
+        # the 2-decimal string it becomes 1.13, a different number ($1.13M != $1.125M) that
+        # then drifted from a separately-scraped $1.125M source, spawning a duplicate player
+        # record. The page's per-season stats table (below the tab panel) carries the exact
+        # unrounded dollar figure in a data-extract_ch attribute instead — one row per season
+        # played, all seasons within a single contract sharing the identical cap-hit figure
+        # (a fixed-AAV rule, not a coincidence), so any one matching season row gives the true
+        # value for the whole contract. Used as an override below when a matching row exists;
+        # falls back to the display-rounded value otherwise (e.g. a signed-but-not-yet-played
+        # future contract has no season row yet).
+        season_cap_by_year = {}
+        for season_yr_str, cap_cents_str in _re.findall(
+            r'<tr class=" contract\d+ ">\s*<td data-extract_ch="(\d{4})-\d{4}">.*?<td data-extract_ch=\'(\d+)\'>',
+            resp.text, _re.DOTALL,
+        ):
+            try:
+                season_cap_by_year[int(season_yr_str)] = int(cap_cents_str)
+            except ValueError:
+                continue
+
         contracts = []
         for o in options:
             title   = o.get("title", "")
@@ -2417,6 +2440,10 @@ def player_page_contracts():
                 end_yr   = int(parts[1]) if len(parts) > 1 else start_yr + length
             except (ValueError, IndexError):
                 continue
+            for yr in range(start_yr, end_yr):
+                if yr in season_cap_by_year:
+                    cap = round(season_cap_by_year[yr] / 1_000_000, 4)
+                    break
             contracts.append({
                 "name":      name,
                 "pos":       pos,
