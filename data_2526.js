@@ -926,7 +926,7 @@ const NHL_PROJ_2526 = {
   'vladimir tarasenko_F':48, 'vladislav gavrikov_D':35, 'warren foegele_F':45, 'will cuylle_F':53,
   'will smith_F':56, 'william eklund_F':56, 'william karlsson_F':54, 'william nylander_F':84,
   'wyatt johnston_F':81, 'yanni gourde_F':42, 'yegor chinakhov_F':47, 'zach benson_F':45,
-  'zach bolduc_F':45, 'zach hyman_F':68, 'zach werenski_D':84, 'zayne parekh_D':43,
+  'zachary bolduc_F':45, 'zach hyman_F':68, 'zach werenski_D':84, 'zayne parekh_D':43,
   'zeev buium_D':45,
   // Goalies (missing from the original NHL.com scrape entirely — that article format
   // only lists forwards/defensemen, never goalies)
@@ -1051,7 +1051,7 @@ const POSTDRAFT_ROSTER_2526 = {
   'mason lohrei':'Blue Line Bangers',
   'matthew savoie':'Blue Line Bangers',
   'rickard rakell':'Blue Line Bangers',
-  'sebastian aho':'Blue Line Bangers',
+  'sebastian aho_F':'Blue Line Bangers',  // F (CAR) — disambiguates from Sebastian Aho D (SEA)
   'tyson foerster':'Blue Line Bangers',
   // Bossy Posse (9 picks)
   'adin hill':'Bossy Posse',
@@ -1076,7 +1076,7 @@ const POSTDRAFT_ROSTER_2526 = {
   'nick blankenburg':'Dumb and Goalie To',
   'rasmus dahlin':'Dumb and Goalie To',
   'sam rinzel':'Dumb and Goalie To',
-  'zack bolduc':'Dumb and Goalie To',
+  'zachary bolduc':'Dumb and Goalie To',
   // Killer Whales (5 picks)
   'frank nazar':'Killer Whales',
   'john klingberg':'Killer Whales',
@@ -2197,7 +2197,7 @@ const PROJ2526_CBS = {
   'zachary lheureux_F': 7,
   'zachary werenski_D': 81,
   'zachary whitecloud_D': 16,
-  'zack bolduc_F': 35,
+  'zachary bolduc_F': 35,
   'zack macewen_F': 3,
   'zack ostapchuk_F': 5,
   'zakhar bardakov_F': 51,

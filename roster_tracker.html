@@ -1422,6 +1422,13 @@ const KNOWN_NAME_OVERRIDE_PAIRS = [
   // no space substitution, fusing it into "charlesalexis" — never matches the
   // space-separated live key otherwise.
   ['charles alexis legault', 'charlesalexis legault'],
+  // "Zack" isn't in FIRST_NAME_ALIASES (only "Zach"/"Zachary" are paired), so a
+  // "Zack Bolduc" record (from an early sync before his NHL ID was ever matched)
+  // never converged with the canonical "Zachary Bolduc" record. Pairs to "zach
+  // bolduc" (not "zachary bolduc") so both spellings' dedup() canonicalization
+  // converges on the exact same value FIRST_NAME_ALIASES already produces for the
+  // "zachary" spelling — found 2026-07-22 via a Compare Drafts name mismatch.
+  ['zack bolduc', 'zach bolduc'],
 ];
 function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
