@@ -1352,6 +1352,17 @@ const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-
 // so clearing the value floor alone shouldn't buy them protection. Backtested 2026-07-22 via
 // Blue Line Bangers 24-25 (Chandler Stephenson ABP=18, Elias Lindholm ABP=12).
 const REACH_ABP_THRESHOLD = 6;
+// ABP=0 ("no better/cheaper free agent exists") used to grant unconditional "untouchable" drop
+// protection on its own. Backtested 2026-07-23 against all 3 real predrop->postdrop transitions
+// (531 players): 25 of 208 ABP=0 cases were real drops anyway, clustering at meaningfully negative
+// curve delta (avg -2.81) vs the 183 correctly-kept cases (avg +8.74) — teams cash out a below-
+// curve contract even with no specific replacement lined up, since the freed cap can chase ANY
+// above-curve player, not just a direct swap. UNTOUCHABLE_DELTA_FLOOR requires delta not be too
+// negative; UNTOUCHABLE_ELITE_PTS is an escape hatch for genuine elite scorers, since the curve
+// fit is thin/unreliable at the very top of the cap range (few $11M+ data points) and a big
+// negative delta there is as likely a curve-fitting artifact as a real "overpaid" signal.
+const UNTOUCHABLE_DELTA_FLOOR = -6;
+const UNTOUCHABLE_ELITE_PTS = 90;
 // ── 24-25 season constants ────────────────────────────────────────────────────
 let CAP_LIMIT_2324 = 83.5;
 let CAP_LIMIT_2425 = 88;
@@ -6345,13 +6356,35 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
 
   const isProspect = p => { const a = calcAgeForSim(p) ?? 99; const mx = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22; return a<=mx && (getCap(p)||0)<=elcMax; };
   const isProtectedProspect = p => isProspect(p) && !injurySet.has(normName(p.name).toLowerCase());
-  const deficit = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts(p),c=getCap(p); return (pp>0&&c>0&&fn)?fn(c)-pp:Infinity; };
-  // ABP=0 override — backtested rationale: every "algo dropped, should have kept" miss in the
-  // 23-24/24-25/25-26 historical data with zero better/cheaper alternatives (ABP=0) turned out
-  // to be a correct manager keep. Protect unconditionally regardless of curve deficit or floor.
   const abpMap = computeABPFn(players);
-  const isHighVal = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts(p); return pp>=DROP_VALUE_FLOOR||(fn?pp-fn(getCap(p))>=0:false)||(abpMap.get(p.id)??99)===0; };
-  const isUntouchable = p => (abpMap.get(p.id)??99)===0;
+  const deltaOf = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts(p),c=getCap(p); return (fn && pp>0 && c>0) ? pp-fn(c) : -Infinity; };
+  const deficit = p => -deltaOf(p);
+  // ABP=0 / DROP_VALUE_FLOOR overrides — backtested rationale: most "algo dropped, should have
+  // kept" misses in the 23-24/24-25/25-26 historical data with zero better/cheaper alternatives
+  // (ABP=0) turned out to be a correct manager keep, and most rostered players clear the raw-pts
+  // floor regardless of price. Refined 2026-07-23: neither escape is sufficient alone — a real
+  // GM will cash out a below-curve $6-9M "name" (Stamkos/Zibanejad/Tkachuk/Meier/Caufield, all
+  // ABP=0 or comfortably above DROP_VALUE_FLOOR, all real drops) to fund a better fit elsewhere,
+  // even with no specific cheaper replacement lined up. UNTOUCHABLE_ELITE_PTS is a separate, much
+  // higher escape hatch for genuine elite scorers, since the curve fit is thin/unreliable at the
+  // very top of the cap range (few $11M+ data points) and a big negative delta there is as
+  // likely a curve-fitting artifact as a real "overpaid" signal.
+  const isHighVal = p => {
+    const pp = ppts(p);
+    if(pp >= UNTOUCHABLE_ELITE_PTS) return true;
+    if(deltaOf(p) >= 0) return true;
+    // Both remaining escapes (ABP=0, raw-pts floor) require the same delta floor as
+    // isUntouchable — an unconditional ABP=0 branch here was the exact same gap just fixed on
+    // isUntouchable, still shielding Zibanejad/Stamkos (both ABP=0) after the first pass.
+    if(deltaOf(p) < UNTOUCHABLE_DELTA_FLOOR) return false;
+    return (abpMap.get(p.id)??99)===0 || pp>=DROP_VALUE_FLOOR;
+  };
+  const isUntouchable = p => {
+    if((abpMap.get(p.id)??99)!==0) return false;
+    const pp = ppts(p);
+    if(pp >= UNTOUCHABLE_ELITE_PTS) return true;
+    return deltaOf(p) >= UNTOUCHABLE_DELTA_FLOOR;
+  };
 
   let dropped = 0;
   for(const team of teams){
