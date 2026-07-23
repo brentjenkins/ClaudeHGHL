@@ -712,6 +712,13 @@ def muller_image():
     return _sf(path, mimetype="image/webp")
 
 
+@app.route("/favicon.ico")
+def favicon():
+    from flask import send_file as _sf
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "favicon.ico")
+    return _sf(path, mimetype="image/x-icon")
+
+
 @app.route("/data_2324.js")
 def data_2324_js():
     from flask import send_file as _sf

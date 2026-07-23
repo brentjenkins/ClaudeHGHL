@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026-27 Draft</title>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:100%}
@@ -5762,9 +5763,12 @@ function updateStats2425(){
     const need={F:fRem,D:dRem,G:gRem};
     if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2425;
     const round=(draftState2425.picks||[]).filter(pk=>pk.team===team).length+1;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    let futureReserve2425=0;
+    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2425+=_expectedRoundCost(fr,CAP_LIMIT_2425,DRAFT_RESERVE_2425);
+    futureReserve2425=Math.min(futureReserve2425,Math.max(0,rem-ELC_MAX_2425));
+    const maxPickCap=rem-futureReserve2425;
     const teamRoster=players.filter(p=>p.start2425===team);
     const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2425(p),0)};
     const teamCapByPos={[team]:{F:0,D:0,G:0}};
@@ -6072,9 +6076,12 @@ function updateStats2324(){
     const need={F:fRem,D:dRem,G:gRem};
     if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2324;
     const round=(draftState2324.picks||[]).filter(pk=>pk.team===team).length+1;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    let futureReserve2324=0;
+    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2324+=_expectedRoundCost(fr,CAP_LIMIT_2324,DRAFT_RESERVE_2324);
+    futureReserve2324=Math.min(futureReserve2324,Math.max(0,rem-ELC_MAX_2324));
+    const maxPickCap=rem-futureReserve2324;
     const teamRoster=players.filter(p=>p.start2324===team);
     const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2324(p),0)};
     const teamCapByPos={[team]:{F:0,D:0,G:0}};
@@ -6451,6 +6458,20 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
   return dropped;
 }
 
+// Empirical mean cap hit ($M) by draft round, measured across all 3 completed real drafts
+// (23-24/24-25/25-26 combined, 172 picks) — see the 2026-07-23 cap-by-round analysis. Anchored
+// to the blended cap limit across those 3 seasons ((83.5+88+95.5)/3 ≈ 89) and scaled by the
+// season's actual capLimit wherever it's used, since cap inflation means "the going rate for a
+// round-4 pick" isn't a fixed dollar figure over time. Rounds beyond 10 (deep supplemental
+// picks with no real data) fall back to whatever flat reserve the caller supplies.
+const ROUND_EXPECTED_CAP_REF = {1:1.50, 2:2.75, 3:3.54, 4:4.44, 5:4.06, 6:4.27, 7:5.21, 8:1.93, 9:2.93, 10:7.80};
+const ROUND_EXPECTED_CAP_REF_CAPLIMIT = 89.0;
+function _expectedRoundCost(round, capLimit, fallbackFlat){
+  const base = ROUND_EXPECTED_CAP_REF[round];
+  if(base == null) return fallbackFlat;
+  return base * (capLimit / ROUND_EXPECTED_CAP_REF_CAPLIMIT);
+}
+
 // Shared draft pressure/need state — league-wide position supply vs demand. Used identically
 // by the actual Algo Draft pick engine (_runAlgoDraft) AND every season's live team-summary
 // bubble/SCORE column, so the two can never again independently drift on what "scarce" means.
@@ -6577,8 +6598,23 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
 
     // Remaining picks for this team after this one (for reserve calculation)
     const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
-    // Max cap this pick can use: full remaining headroom minus reserve for future picks
-    const maxPickCap = capLimit - (teamCap[team]||0) - Math.max(0, spotsLeft - 1) * draftReserve;
+    // Max cap this pick can use: full remaining headroom minus a ROUND-AWARE reserve for future
+    // picks — each future pick (round+1, round+2, ...) reserves that round's real empirical
+    // market rate (_expectedRoundCost), not a flat ELC-level constant. Before this, a flat
+    // `draftReserve` per remaining pick let the algo dramatically overspend in rounds 2-3
+    // (real GMs pay ~$1-3M there on average; the algo was paying $6-7M) and then crash to
+    // near-ELC-floor picks for the rest of the draft once cap ran out — found 2026-07-23 by
+    // comparing Algo Draft's own simulated cap-by-round curve against the real one.
+    let futureReserve = 0;
+    for(let fr = round + 1; fr < round + spotsLeft; fr++) futureReserve += _expectedRoundCost(fr, capLimit, draftReserve);
+    // Clamp: never reserve so much that THIS pick can't afford even a cheap ELC-tier player —
+    // teams with heavy pre-existing keeper cap could otherwise see the summed future-round
+    // reserve exceed their entire remaining room, making maxPickCap negative and excluding every
+    // free agent (including $0.75M prospects), silently benching that team for the whole draft.
+    // Guarantees the same feasibility floor the old flat reserve always had.
+    const roomAvailable = capLimit - (teamCap[team]||0);
+    futureReserve = Math.min(futureReserve, Math.max(0, roomAvailable - elcMax));
+    const maxPickCap = roomAvailable - futureReserve;
 
     // Available FAs this team can still draft (within cap and position need)
     const fas = players.filter(p => {
@@ -7144,8 +7180,11 @@ function updateStats2526(){
     const need={F:fRem,D:dRem,G:gRem};
     if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2526;
     const round=(draftState2526.picks||[]).filter(pk=>pk.team===team).length+1;
+    let futureReserve2526=0;
+    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2526+=_expectedRoundCost(fr,CAP_LIMIT_2526,DRAFT_RESERVE_2526);
+    futureReserve2526=Math.min(futureReserve2526,Math.max(0,rem-ELC_MAX_2526));
+    const maxPickCap=rem-futureReserve2526;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
     const { pressure: pressure2526 } = _draftPressureState(players, DRAFT_TEAMS_2526, p=>p.start2526||null, ppts2526blend, getCap2526);
     const teamRoster=players.filter(p=>p.start2526===team);
@@ -8122,9 +8161,12 @@ function updateStats(){
     const need={F:fRem,D:dRem,G:gRem};
     if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2627;
     const round=(draftState2627.picks||[]).filter(pk=>pk.team===team).length+1;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    let futureReserve2627=0;
+    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2627+=_expectedRoundCost(fr,CAP_LIMIT,DRAFT_RESERVE_2627);
+    futureReserve2627=Math.min(futureReserve2627,Math.max(0,rem-ELC_MAX_2627));
+    const maxPickCap=rem-futureReserve2627;
     const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap||0);
     const teamRoster=players.filter(p=>p.start2627===team);
     const teamCap={[team]:teamRoster.reduce((s,p)=>s+(p.cap||0),0)};
