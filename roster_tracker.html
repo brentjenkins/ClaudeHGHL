@@ -2210,17 +2210,12 @@ function assignCapFromSignings(){
   const raw = lsGet(LS_SIGNINGS_RAW);
   if(!raw) return;
   for(const p of players){
-    const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-    // Alias fallback: a player's live-pool name and PuckPedia's own spelling can differ
-    // by a hop the scrape-time alias emission doesn't cover (e.g. "Tommy" Novak's live
-    // record vs "Thomas"/"Tom" Novak in the signings store) — bare raw[key] silently
-    // leaves cap2324/2425/2526 null, which getCap*() then treats as 0, which in turn
-    // satisfies "cap <= ELC_MAX" and misclassifies a real veteran as an ELC prospect.
-    const aliasKey = _nameAlias(key);
-    const n = normName(p.name).toLowerCase();
-    const overrideAlt = _knownNameOverride(n);
-    const overrideKey = overrideAlt ? `${overrideAlt}_${posGroup(p.pos)}` : null;
-    const contracts = raw[key] || (aliasKey && raw[aliasKey]) || (overrideKey && raw[overrideKey]) || [];
+    // Alias/override fallback: a player's live-pool name and PuckPedia's own spelling can
+    // differ (e.g. "Tommy" Novak's live record vs "Thomas"/"Tom" Novak in the signings
+    // store) — a bare-key-only lookup silently leaves cap2324/2425/2526 null, which
+    // getCap*() then treats as 0, which in turn satisfies "cap <= ELC_MAX" and
+    // misclassifies a real veteran as an ELC prospect.
+    const contracts = _dictLookupPos(p.name, p.pos, raw) || [];
     if(!contracts.length) continue;
     // contracts stored sign_date DESC; first match = most recently signed active contract
     const c2324 = contracts.find(c => c.start_yr <= 2023 && c.exp >= '2023-2024');
@@ -2336,12 +2331,9 @@ async function syncSigningsAll(e){
     let matched = 0;
     const matchedKeys = new Set();
     for(const p of players){
-      const key = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
-      // Alias fallback — see assignCapFromSignings() for why (Tommy/Thomas/Tom Novak etc.)
-      const aliasKey = _nameAlias(key);
-      const overrideAlt = _knownNameOverride(normName(p.name).toLowerCase());
-      const overrideKey = overrideAlt ? `${overrideAlt}_${posGroup(p.pos)}` : null;
-      const contracts = raw[key] || (aliasKey && raw[aliasKey]) || (overrideKey && raw[overrideKey]) || [];
+      const pg = posGroup(p.pos);
+      // Alias/override fallback — see assignCapFromSignings() for why (Tommy/Thomas/Tom Novak etc.)
+      const contracts = _dictLookupPos(p.name, p.pos, raw) || [];
       if(!contracts.length) continue;
       const c2324 = contracts.find(c => c.start_yr <= 2023 && c.exp >= '2023-2024');
       const c2425 = contracts.find(c => c.start_yr <= 2024 && c.exp >= '2024-2025');
@@ -2365,9 +2357,7 @@ async function syncSigningsAll(e){
       } else {
         p.cap = 0; p.contractTerm = 0; p.expYear = 0;
       }
-      matchedKeys.add(key);
-      if(aliasKey) matchedKeys.add(aliasKey);
-      if(overrideKey) matchedKeys.add(overrideKey);
+      for(const v of _nameVariants(p.name)) matchedKeys.add(`${v}_${pg}`);
       matched++;
     }
 
@@ -2376,14 +2366,14 @@ async function syncSigningsAll(e){
     let nextId = Math.max(0, ...players.map(p => p.id ?? 0)) + 1;
     const seenIds = new Set();
     for(const [key, contracts] of Object.entries(raw)){
-      // Also check this raw key's own alias against matchedKeys — covers 3-spelling
-      // chains a single alias hop can't bridge directly (e.g. live "Tommy" Novak matches
-      // via "thomas novak_F" in the loop above, but raw also has a separate "tom novak_F"
-      // key one hop *from* thomas rather than from tommy; without this check it'd still
-      // read as "not yet in our list" and spawn a phantom duplicate).
-      const keyOverrideAlt = _knownNameOverride(key.slice(0, key.lastIndexOf('_')));
-      const keyOverride = keyOverrideAlt ? `${keyOverrideAlt}_${key.slice(key.lastIndexOf('_')+1)}` : null;
-      if(matchedKeys.has(key) || matchedKeys.has(_nameAlias(key)) || (keyOverride && matchedKeys.has(keyOverride)) || !contracts.length) continue;
+      // Check every name-variant of this raw key's name against matchedKeys — covers
+      // 3-spelling chains a single alias/override hop can't bridge directly (e.g. live
+      // "Tommy" Novak matches via "thomas novak_F" in the loop above, but raw also has a
+      // separate "tom novak_F" key one hop *from* thomas rather than from tommy; without
+      // this check it'd still read as "not yet in our list" and spawn a phantom duplicate).
+      const sep = key.lastIndexOf('_');
+      const isMatched = [..._nameVariants(key.slice(0, sep))].some(v => matchedKeys.has(`${v}_${key.slice(sep+1)}`));
+      if(isMatched || !contracts.length) continue;
       const latest = contracts[0];
       const uid = latest.nhl_id || latest.name;
       if(seenIds.has(uid)) continue;
@@ -3384,8 +3374,7 @@ function _seedStart2627(){
   const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2627){
-    const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
+    if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
@@ -4577,8 +4566,7 @@ function _seedStart2526(){
   const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2526){
-    const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
+    if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2526:null,
@@ -4685,8 +4673,7 @@ function loadActualDraft2526(){
   for(let r=0;r<_maxR2526;r++) for(const t of DRAFT_TEAMS_2526) if(_byTeam2526[t]?.[r]) _ord2526.push(_byTeam2526[t][r]);
   for(const [rawKey, team] of _ord2526){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
-    const ka = _nameAlias(bk);
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
+    const p = findPlayerByNamePos(bk, wantPG);
     if(p){ p.start2526 = p.end2526 = team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2526(p), projPts:ppts2526blend(p)}); }
     else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
   }
@@ -4714,7 +4701,7 @@ async function _applyYahooDraft(leagueKey, startField, renderFn){
     let applied=0; const unmatched=[];
     for(const pick of d.picks){
       const key = normName(pick.player).toLowerCase();
-      const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+      const p = _findDraftPlayer(key);
       if(p){ p[startField] = pick.team; applied++; }
       else unmatched.push(`${pick.player} (${pick.team} R${pick.round})`);
     }
@@ -4734,7 +4721,7 @@ async function _applyYahooDrops(leagueKey, before, startField, renderFn){
     let applied=0; const unmatched=[];
     for(const drop of d.drops){
       const key = normName(drop.player).toLowerCase();
-      const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+      const p = _findDraftPlayer(key);
       if(p){ p[startField] = null; applied++; }
       else unmatched.push(drop.player);
     }
@@ -5131,8 +5118,7 @@ function _seedStart2425(){
   const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2425){
-    const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
+    if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2425:null,
@@ -5198,8 +5184,7 @@ function loadActualDraft2425(){
   for(let r=0;r<_maxR2425;r++) for(const t of DRAFT_TEAMS_2425) if(_byTeam2425[t]?.[r]) _ord2425.push(_byTeam2425[t][r]);
   for(const [rawKey, team] of _ord2425){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
-    const ka = _nameAlias(bk);
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
+    const p = findPlayerByNamePos(bk, wantPG);
     if(p){ p.start2425=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2425(p), projPts:ppts2425blend(p)}); }
     else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
   }
@@ -5298,8 +5283,7 @@ function _seedStart2324(){
   const matched = new Set(players.map(p => normName(p.name).toLowerCase()));
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2324){
-    const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
+    if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2324:null, cap2425:null,
@@ -5364,8 +5348,7 @@ function loadActualDraft2324(){
   for(let r=0;r<_maxR2324;r++) for(const t of DRAFT_TEAMS_2324) if(_byTeam2324[t]?.[r]) _ord2324.push(_byTeam2324[t][r]);
   for(const [rawKey, team] of _ord2324){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
-    const ka = _nameAlias(bk);
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(); return (n===bk||_nameAlias(n)===bk||(ka&&n===ka))&&(!wantPG||posGroup(x.pos)===wantPG); });
+    const p = findPlayerByNamePos(bk, wantPG);
     if(p){ p.start2324=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2324(p), projPts:ppts2324blend(p)}); }
     else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
   }
@@ -5723,7 +5706,7 @@ function showTeamCurveModal(view, team){
     ? (() => {
         const real = players.filter(p => p[startField] !== team && _wasPreDropKeeper(p, team, predropDict));
         const realMatched = new Set(players.map(p => normName(p.name).toLowerCase()));
-        const _stubIsMatched = stub => { const k = normName(stub.name).toLowerCase(); return realMatched.has(k) || (_nameAlias(k) && realMatched.has(_nameAlias(k))); };
+        const _stubIsMatched = stub => [..._nameVariants(stub.name)].some(v => realMatched.has(v));
         const stubs = (predropStubs || [])
           .filter(stub => !_stubIsMatched(stub) && _dictLookup(stub.name, predropDict) === team)
           .map(stub => _stubCurvePlayer(stub.name, stub.pos, team));
@@ -6674,7 +6657,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
   // Build actual picks per team in insertion order from actualDraft (which should be in draft order)
   const actualByTeam = {};
   for(const [key, team] of Object.entries(actualDraft)){
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+    const p = _findDraftPlayer(key);
     if(!actualByTeam[team]) actualByTeam[team] = [];
     actualByTeam[team].push({name: p?.name||key, pos: p?posGroup(p.pos):'?', ppts: p?ppts(p):0});
   }
@@ -6811,12 +6794,13 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
   // Actual draft totals per team — skip anyone already counted as a real post-drop keeper
   const actDraftTotals = {};
   for(const [key, team] of Object.entries(actualDraft)){
-    const p = players.find(x => { const n=normName(x.name).toLowerCase(),ka=_nameAlias(key); return n===key||_nameAlias(n)===key||(ka&&n===ka); });
+    const p = _findDraftPlayer(key);
     if(!actDraftTotals[team]) actDraftTotals[team] = {F:0,D:0,G:0,cap:0};
     if(p && actualKeeperIds.has(p.id)) continue; // already in actualKeeperTotals — skip
-    const pg = p ? posGroup(p.pos) : 'F';
+    if(!p){ console.warn(`_runAlgoDraft actDraftTotals: unresolved key "${key}" (${team}) — excluded from Team Totals`); continue; }
+    const pg = posGroup(p.pos);
     actDraftTotals[team][pg]++;
-    actDraftTotals[team].cap += p ? getCap(p) : 0;
+    actDraftTotals[team].cap += getCap(p);
   }
 
   html += `<div style="margin-top:1rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
