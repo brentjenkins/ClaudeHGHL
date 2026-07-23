@@ -1565,11 +1565,22 @@ function dedup(){
     // same real player often carry COMPLEMENTARY data (one has the correct cap, the other
     // has real season stats the other never had populated at all), so picking one whole
     // record and discarding the other silently drops whatever only the loser had. The
-    // winner's own non-null fields still take priority (this isn't a blind combine —
-    // conflicting values resolve in the winner's favor via srcRank as before), but any
-    // field the winner is missing gets backfilled from the loser first.
+    // winner's own non-null/non-zero fields still take priority (this isn't a blind
+    // combine — conflicting values resolve in the winner's favor via srcRank as before),
+    // but any field the winner is missing gets backfilled from the loser first. Numeric 0
+    // counts as "missing" too, not just undefined/null — this app already treats a 0
+    // cap/pts as a "not populated" sentinel everywhere else (e.g. getCap(p)<=0 means "no
+    // contract", not "confirmed zero"), and a source like PuckPedia that never tracks
+    // season stats at all leaves pts/gp fields defaulted to 0 rather than undefined,
+    // which silently blocked backfilling a real value from the losing record (found
+    // 2026-07-22: Nicklaus Perbix's merge kept the correct cap but dropped pts2526=13
+    // from the losing Nick Perbix record, since 0 !== undefined). Scoped to numbers only
+    // — booleans (capManual etc.) and strings keep the stricter undefined/null check, so
+    // a legitimate `false`/`''` isn't mistaken for missing.
     for(const k in loser){
-      if(winner[k] === undefined || winner[k] === null) winner[k] = loser[k];
+      const w = winner[k];
+      const isMissing = w === undefined || w === null || (typeof w === 'number' && w === 0);
+      if(isMissing) winner[k] = loser[k];
     }
     byId.set(idKey, winner);
   }
