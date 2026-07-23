@@ -1044,72 +1044,80 @@ const POSTDROP_ROSTER_2526 = {
 
 // Actual 25-26 draft picks (players added via draft, not in pre-draft rosters above).
 // Keys = normName(name).toLowerCase(), values = fantasy team name.
+// Entries below are in true round-by-round draft order per team (round-robin across all 9
+// teams each round) — required for loadActualDraft2526()/the Big Board round display/the Algo
+// Draft vs Actual round table, which all infer "round" purely from object insertion order. Was
+// previously alphabetized for 8 of 9 teams (everything but Muller Time!), which silently put
+// players in the wrong round everywhere that mattered (e.g. Matthew Schaefer, a real round-1
+// pick, showing as Bossy Posse's round-4 pick) — found/fixed 2026-07-23, real order supplied
+// by the user from the actual 25-26 draft results.
 const POSTDRAFT_ROSTER_2526 = {
   // Blue Line Bangers (7 picks — Ivan Demidov re-drafted after mandatory ELC drop)
-  'ivan demidov':'Blue Line Bangers',
-  'jordan binnington':'Blue Line Bangers',
-  'mason lohrei':'Blue Line Bangers',
-  'matthew savoie':'Blue Line Bangers',
-  'rickard rakell':'Blue Line Bangers',
-  'sebastian aho_F':'Blue Line Bangers',  // F (CAR) — disambiguates from Sebastian Aho D (SEA)
-  'tyson foerster':'Blue Line Bangers',
+  'ivan demidov':'Blue Line Bangers',       // R1
+  'mason lohrei':'Blue Line Bangers',       // R2
+  'matthew savoie':'Blue Line Bangers',     // R3
+  'tyson foerster':'Blue Line Bangers',     // R4
+  'jordan binnington':'Blue Line Bangers',  // R5
+  'rickard rakell':'Blue Line Bangers',     // R6
+  'sebastian aho_F':'Blue Line Bangers',    // R7 — F (CAR), disambiguates from Sebastian Aho D (SEA)
   // Bossy Posse (9 picks)
-  'adin hill':'Bossy Posse',
-  'jet greaves':'Bossy Posse',
-  'joel eriksson ek':'Bossy Posse',
-  'matthew schaefer':'Bossy Posse',
-  'mavrik bourque':'Bossy Posse',
-  'sam dickinson':'Bossy Posse',
-  'scott morrow':'Bossy Posse',
-  'ville koivunen':'Bossy Posse',
-  'zach benson':'Bossy Posse',
+  'matthew schaefer':'Bossy Posse',   // R1
+  'adin hill':'Bossy Posse',          // R2
+  'zach benson':'Bossy Posse',        // R3
+  'jet greaves':'Bossy Posse',        // R4
+  'mavrik bourque':'Bossy Posse',     // R5
+  'ville koivunen':'Bossy Posse',     // R6
+  'sam dickinson':'Bossy Posse',      // R7
+  'scott morrow':'Bossy Posse',       // R8
+  'joel eriksson ek':'Bossy Posse',   // R9
   // Damage Inc. (6 picks)
-  'anthony stolarz':'Damage Inc.',
-  'isaac howard':'Damage Inc.',
-  'kevin korchinski':'Damage Inc.',
-  'logan mailloux':'Damage Inc.',
-  'max shabanov':'Damage Inc.',
-  'william nylander':'Damage Inc.',
+  'logan mailloux':'Damage Inc.',     // R1
+  'anthony stolarz':'Damage Inc.',    // R2
+  'isaac howard':'Damage Inc.',       // R3
+  'max shabanov':'Damage Inc.',       // R4
+  'kevin korchinski':'Damage Inc.',   // R5
+  'william nylander':'Damage Inc.',   // R6
   // Dumb and Goalie To (6 picks)
-  'claude giroux':'Dumb and Goalie To',
-  'gabriel landeskog':'Dumb and Goalie To',
-  'nick blankenburg':'Dumb and Goalie To',
-  'rasmus dahlin':'Dumb and Goalie To',
-  'sam rinzel':'Dumb and Goalie To',
-  'zachary bolduc':'Dumb and Goalie To',
+  'sam rinzel':'Dumb and Goalie To',        // R1
+  'zachary bolduc':'Dumb and Goalie To',    // R2
+  'claude giroux':'Dumb and Goalie To',     // R3
+  'nick blankenburg':'Dumb and Goalie To',  // R4
+  'gabriel landeskog':'Dumb and Goalie To', // R5
+  'rasmus dahlin':'Dumb and Goalie To',     // R6
   // Killer Whales (5 picks)
-  'frank nazar':'Killer Whales',
-  'john klingberg':'Killer Whales',
-  'matias maccelli':'Killer Whales',
-  'morgan rielly':'Killer Whales',
-  'sean durzi':'Killer Whales',
+  'frank nazar':'Killer Whales',       // R1
+  'john klingberg':'Killer Whales',    // R2
+  'morgan rielly':'Killer Whales',     // R3
+  'matias maccelli':'Killer Whales',   // R4
+  'sean durzi':'Killer Whales',        // R5
   // Motor City Wings (5 picks)
-  'braden schneider':'Motor City Wings',
-  'brent burns':'Motor City Wings',
-  'jimmy snuggerud':'Motor City Wings',
-  'john gibson':'Motor City Wings',
-  'mackie samoskevich':'Motor City Wings',
-  // Muller Time! (7 picks) — in actual draft order
-  'zeev buium':'Muller Time!',
-  'wyatt johnston':'Muller Time!',
-  'roman josi':'Muller Time!',
-  'darcy kuemper':'Muller Time!',
-  'ryan leonard':'Muller Time!',
-  'ryan donato':'Muller Time!',
-  'karel vejmelka':'Muller Time!',
+  'jimmy snuggerud':'Motor City Wings',     // R1
+  'mackie samoskevich':'Motor City Wings',  // R2
+  'brent burns':'Motor City Wings',         // R3
+  'john gibson':'Motor City Wings',         // R4
+  'braden schneider':'Motor City Wings',    // R5
+  // Muller Time! (7 picks) — was already non-alphabetical but STILL not the true round order;
+  // corrected to match the user-supplied actual results below
+  'zeev buium':'Muller Time!',        // R1
+  'ryan leonard':'Muller Time!',      // R2
+  'darcy kuemper':'Muller Time!',     // R3
+  'wyatt johnston':'Muller Time!',    // R4
+  'ryan donato':'Muller Time!',       // R5
+  'karel vejmelka':'Muller Time!',    // R6
+  'roman josi':'Muller Time!',        // R7
   // Pernicious Puckers (5 picks)
-  'danila yurov':'Pernicious Puckers',
-  'dylan cozens':'Pernicious Puckers',
-  'jake walman':'Pernicious Puckers',
-  'john tavares':'Pernicious Puckers',
-  'liam ohgren':'Pernicious Puckers',
+  'john tavares':'Pernicious Puckers',   // R1
+  'jake walman':'Pernicious Puckers',    // R2
+  'danila yurov':'Pernicious Puckers',   // R3
+  'liam ohgren':'Pernicious Puckers',    // R4
+  'dylan cozens':'Pernicious Puckers',   // R5
   // Silence of the Lamb (6 picks)
-  'alexander nikishin':'Silence of the Lamb',
-  'andrei vasilevskiy':'Silence of the Lamb',
-  'jonathan toews':'Silence of the Lamb',
-  'michael misa':'Silence of the Lamb',
-  'noah hanifin':'Silence of the Lamb',
-  'pavel mintyukov':'Silence of the Lamb',
+  'michael misa':'Silence of the Lamb',         // R1
+  'alexander nikishin':'Silence of the Lamb',   // R2
+  'jonathan toews':'Silence of the Lamb',       // R3
+  'noah hanifin':'Silence of the Lamb',         // R4
+  'pavel mintyukov':'Silence of the Lamb',      // R5
+  'andrei vasilevskiy':'Silence of the Lamb',   // R6
 };
 
 // CBS Sports 25-26 preseason projections (captured 2026-06-12), keyed by normName_PG.
