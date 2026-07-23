@@ -1454,44 +1454,58 @@ function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
   return null;
 }
-// Was a player the algo recommended dropping (but the manager initially kept) dropped
-// by that same team later in the season anyway? Checks a baked MIDSEASON_DROPS_2x2y
-// dict (team -> [normalizedName_pg, ...]) — alias/override-aware, same lookup pattern
-// as every other name-keyed dict in this app.
-function _wasVindicated(midseasonDrops, team, name, pos){
-  const list = midseasonDrops[team];
-  if(!list) return false;
-  const pg = posGroup(pos);
+// ── Single source of truth for name matching ────────────────────────────────
+// Before 2026-07-22 this app had 8+ separate functions that each independently
+// reimplemented "does this name match that name, accounting for nicknames/overrides" —
+// findPlayerByName, findPlayerByNamePos, _dictLookup, _dictLookupPos, _draftKey,
+// _findDraftPlayer, dedup()'s own inline canonicalization, _wasVindicated — each with
+// slightly different coverage. The same real bug (an uncovered spelling variant, e.g.
+// Nick/Nicklaus Perbix, Zack/Zachary Bolduc) kept recurring because fixing one didn't
+// fix the others. Every name-matching function below is now a thin wrapper around
+// these two primitives — fixed once, here, inherited everywhere.
+
+// Every normalized spelling that should be treated as the same real player: the name
+// itself, its single-token nickname/formal alias (FIRST_NAME_ALIASES), and any explicit
+// full-name override (KNOWN_NAME_OVERRIDE_PAIRS, for cases the single-token alias map
+// can't express). Used for MATCHING (is there any overlap between two names' variant
+// sets) — not for picking a single canonical spelling; see _canonicalName for that.
+function _nameVariants(name){
   const n = normName(name).toLowerCase();
-  const key = `${n}_${pg}`;
-  if(list.includes(key)) return true;
+  const variants = new Set([n]);
   const alias = _nameAlias(n);
-  if(alias && list.includes(`${alias}_${pg}`)) return true;
-  const overrideAlt = _knownNameOverride(n);
-  if(overrideAlt && list.includes(`${overrideAlt}_${pg}`)) return true;
+  if(alias) variants.add(alias);
+  const override = _knownNameOverride(n);
+  if(override) variants.add(override);
+  return variants;
+}
+// Do two name strings refer to the same real player?
+function _namesMatch(nameA, nameB){
+  const va = _nameVariants(nameA);
+  for(const v of _nameVariants(nameB)) if(va.has(v)) return true;
   return false;
 }
-// Mirror of _wasVindicated for the opposite case: the algo recommended keeping a
-// player the manager actually dropped — was that same team re-acquired them later,
-// either via waiver (MIDSEASON_READDS_2x2y) or the supplemental draft
-// (POSTDRAFT_ROSTER_2x2y)? Either route is the same manager reversing their own call.
-function _wasReacquired(midseasonReadds, postDraftRoster, team, name, pos){
-  const pg = posGroup(pos);
+// The single deterministic canonical spelling for `name` — same output regardless of
+// which of a player's known spellings you start from (required for dedup()'s bucketing
+// and for build-a-comparable-key use cases like _draftKey). An explicit override always
+// wins over the generic single-token alias when both apply and disagree: "Nick" generically
+// aliases to "Nicholas" (correct for most real Nicks), but that's WRONG for Nicklaus
+// Perbix specifically — his override pair must take priority, or "Nick Perbix" and
+// "Nicklaus Perbix" canonicalize to two different strings and never converge (found
+// 2026-07-22, the bug that motivated this whole consolidation).
+function _canonicalName(name){
   const n = normName(name).toLowerCase();
-  const key = `${n}_${pg}`;
-  const draftedTeam = postDraftRoster[key] ?? _dictLookup(name, postDraftRoster) ?? null;
-  if(draftedTeam === team) return true;
-  return _wasVindicated(midseasonReadds, team, name, pos);
+  const override = _knownNameOverride(n);
+  if(override) return override < n ? override : n;
+  const alias = _nameAlias(n);
+  if(alias && alias < n) return alias;
+  return n;
 }
-// Find a player by name, trying the alias spelling if exact match fails.
-function findPlayerByName(name){ const n=normName(name).toLowerCase(); const alias=_nameAlias(n); const override=_knownNameOverride(n); return players.find(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||(override&&pn===override)||_nameAlias(pn)===n||_knownNameOverride(pn)===n; })||null; }
+// Find a player by name, trying every known-equivalent spelling.
+function findPlayerByName(name){ return findPlayerByNamePos(name, null); }
 // Like findPlayerByName, but if multiple players share the name (e.g. two "Elias Pettersson"s),
 // prefer the one whose position group matches posHint (from the source roster's pos field).
 function findPlayerByNamePos(name, posHint){
-  const n=normName(name).toLowerCase();
-  const alias=_nameAlias(n);
-  const override=_knownNameOverride(n);
-  const cands=players.filter(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||(override&&pn===override)||_nameAlias(pn)===n||_knownNameOverride(pn)===n; });
+  const cands = players.filter(p => _namesMatch(p.name, name));
   if(!cands.length) return null;
   if(!posHint) return cands[0];
   const posMatch = cands.find(p=>posGroup(p.pos)===posGroup(posHint));
@@ -1508,14 +1522,9 @@ function findPlayerByNamePos(name, posHint){
 // genuinely new" check — used by every sync path that can create a player record
 // (currently the Signings merge and NHL Rosters sync), so there's exactly one place
 // that decides this instead of each sync reimplementing its own version at varying
-// levels of correctness. This recurring bug class (Moser, Peterka, Gaudreau, Bolduc,
-// Perbix — a sync's incoming name spelling doesn't match any existing alias/override
-// entry, so a new duplicate record gets created even when the incoming data's NHL ID
-// already matches an existing player) kept recurring specifically because NHL-ID
-// checking had only ever been added to ONE of the creation sites (Signings), not
-// propagated to the others when they were built. NHL ID (string-normalized — PuckPedia
-// and the NHL API don't reliably agree on whether it's a number or a string) is tried
-// first as the strongest signal, then name/alias/override via findPlayerByNamePos.
+// levels of correctness. NHL ID (string-normalized — PuckPedia and the NHL API don't
+// reliably agree on whether it's a number or a string) is tried first as the strongest
+// signal, then name/alias/override via findPlayerByNamePos.
 function _findExistingPlayerForSync(name, pos, nhlId){
   if(nhlId){
     const idStr = String(nhlId);
@@ -1524,23 +1533,52 @@ function _findExistingPlayerForSync(name, pos, nhlId){
   }
   return findPlayerByNamePos(name, pos);
 }
-// Look up a name-keyed dict (e.g. PREDROP_ROSTER_2425) with alias fallback.
-function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??(_knownNameOverride(n)?dict[_knownNameOverride(n)]:null)??null; }
-// Look up a name+pos keyed dict (e.g. MANUAL_CAPS_2425) with alias fallback.
-function _dictLookupPos(name, pos, dict){ const n=normName(name).toLowerCase(),pg=posGroup(pos); return dict[`${n}_${pg}`]??(_nameAlias(n)?dict[`${_nameAlias(n)}_${pg}`]:null)??(_knownNameOverride(n)?dict[`${_knownNameOverride(n)}_${pg}`]:null)??null; }
-// Build a compareDrafts-style match key: bare normalized name, except for names shared
-// by 2+ live players (e.g. Elias Pettersson F/D, Sebastian Aho F/D), which get a position
-// suffix — matching the same qualify-only-when-needed convention POSTDRAFT_ROSTER_2X2Y uses.
+// Look up a name-keyed dict (e.g. PREDROP_ROSTER_2425) trying every known-equivalent spelling.
+function _dictLookup(name, dict){
+  for(const v of _nameVariants(name)){ if(dict[v] !== undefined && dict[v] !== null) return dict[v]; }
+  return null;
+}
+// Look up a name+pos keyed dict (e.g. MANUAL_CAPS_2425) trying every known-equivalent spelling.
+function _dictLookupPos(name, pos, dict){
+  const pg = posGroup(pos);
+  for(const v of _nameVariants(name)){ const val = dict[`${v}_${pg}`]; if(val !== undefined && val !== null) return val; }
+  return null;
+}
+// Build a compareDrafts/dedup-style match key: the canonical spelling, position-qualified
+// only when 2+ DIFFERENT real live players share that identity (e.g. Elias Pettersson F/D,
+// Sebastian Aho F/D — genuinely different people, not spelling variants of one) — matching
+// the same qualify-only-when-needed convention POSTDRAFT_ROSTER_2X2Y/MIDSEASON_*_2X2Y use.
+// Two different spellings of the SAME real player always produce the identical key,
+// regardless of which spelling you start from — verified 2026-07-22 via Nick/Nicklaus Perbix.
 function _draftKey(name, pos){
-  const n = normName(name).toLowerCase();
-  const collision = players.filter(p => normName(p.name).toLowerCase()===n).length > 1;
-  return collision ? `${n}_${posGroup(pos)}` : n;
+  const canonical = _canonicalName(name);
+  const collision = new Set(players.filter(p => _namesMatch(p.name, name)).map(p => p.id)).size > 1;
+  return collision ? `${canonical}_${posGroup(pos)}` : canonical;
 }
 // Resolve a compareDrafts key (bare or position-qualified) back to a player object.
 function _findDraftPlayer(key){
   const m = key.match(/^(.*)_([FDG])$/);
-  if(m) return findPlayerByNamePos(m[1], m[2]) || players.find(p => normName(p.name).toLowerCase()===key) || null;
+  if(m) return findPlayerByNamePos(m[1], m[2]);
   return findPlayerByName(key);
+}
+// Was a player the algo recommended dropping (but the manager initially kept) dropped
+// by that same team later in the season anyway? Checks a baked MIDSEASON_DROPS_2x2y
+// dict (team -> [normalizedName_pg, ...]).
+function _wasVindicated(midseasonDrops, team, name, pos){
+  const list = midseasonDrops[team];
+  if(!list) return false;
+  const pg = posGroup(pos);
+  for(const v of _nameVariants(name)){ if(list.includes(`${v}_${pg}`)) return true; }
+  return false;
+}
+// Mirror of _wasVindicated for the opposite case: the algo recommended keeping a
+// player the manager actually dropped — was that same team re-acquired them later,
+// either via waiver (MIDSEASON_READDS_2x2y) or the supplemental draft
+// (POSTDRAFT_ROSTER_2x2y)? Either route is the same manager reversing their own call.
+function _wasReacquired(midseasonReadds, postDraftRoster, team, name, pos){
+  const draftedTeam = _dictLookupPos(name, pos, postDraftRoster);
+  if(draftedTeam === team) return true;
+  return _wasVindicated(midseasonReadds, team, name, pos);
 }
 
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){return null;} }
@@ -1605,29 +1643,12 @@ function dedup(){
     byId.set(idKey, winner);
   }
 
-  // Stage 2: existing name+alias dedup, applied to the id-deduped survivors + no-id players
+  // Stage 2: name+alias/override dedup (via the shared _canonicalName — same function
+  // _draftKey uses, so dedup() and draft/drop comparison always converge identically),
+  // applied to the id-deduped survivors + no-id players
   const seen = new Map();
   for(const p of [...byId.values(), ...rest]){
-    const n = normName(p.name).toLowerCase();
-    const alias = _nameAlias(n);
-    const override = _knownNameOverride(n);
-    // Canonicalize formal/nickname alias pairs (e.g. "josh norris" / "joshua norris") to the
-    // same key so two records for the same real player under different name spellings get
-    // merged here, not just literal exact-name duplicates. An explicit override always wins
-    // over the generic single-token alias when both apply and disagree — e.g. "Nick" has a
-    // generic alias to "Nicholas" (correct for most Nicks) but Nicklaus Perbix's override
-    // pair points to "Nicklaus" instead; picking a blind min(n, alias, override) let "Nick
-    // Perbix" canonicalize via the generic alias to "nicholas perbix" while "Nicklaus Perbix"
-    // canonicalized via override to "nick perbix" — two different keys for the same real
-    // player that never converged. Only fall back to alias-based minimization when no
-    // override applies to this specific name.
-    let canonical = n;
-    if(override){
-      if(override < canonical) canonical = override;
-    } else if(alias && alias < canonical){
-      canonical = alias;
-    }
-    const k = `${canonical}_${posGroup(p.pos)}`;
+    const k = `${_canonicalName(p.name)}_${posGroup(p.pos)}`;
     if(!seen.has(k) || (srcRank[p.source]||0) > (srcRank[seen.get(k).source]||0))
       seen.set(k, p);
   }
@@ -7204,7 +7225,15 @@ function compareDrafts2526(){
   // Build actual picks per team from POSTDRAFT_ROSTER_2526
   const actualByTeam = {};
   for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2526)){
-    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+    // Resolve the raw file key to a live player first, then rebuild through _draftKey —
+    // guarantees this always uses the identical canonicalization algoByTeam already uses,
+    // regardless of what spelling happens to be baked into the historical data file (e.g.
+    // 'nick perbix' vs the live pool's 'Nicklaus Perbix'). Pushing the raw key unchanged
+    // let two spellings of the same real player show up as BOTH a false 'miss' and a
+    // false 'reach' simultaneously — found 2026-07-22 via Nick/Nicklaus Perbix.
+    const resolved = _findDraftPlayer(key);
+    const canonKey = resolved ? _draftKey(resolved.name, resolved.pos) : key;
+    (actualByTeam[team] = actualByTeam[team] || []).push(canonKey);
   }
 
   const findPlayer = _findDraftPlayer;
@@ -7361,7 +7390,15 @@ function compareDrafts2627(){
 
   const actualByTeam = {};
   for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2627)){
-    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+    // Resolve the raw file key to a live player first, then rebuild through _draftKey —
+    // guarantees this always uses the identical canonicalization algoByTeam already uses,
+    // regardless of what spelling happens to be baked into the historical data file (e.g.
+    // 'nick perbix' vs the live pool's 'Nicklaus Perbix'). Pushing the raw key unchanged
+    // let two spellings of the same real player show up as BOTH a false 'miss' and a
+    // false 'reach' simultaneously — found 2026-07-22 via Nick/Nicklaus Perbix.
+    const resolved = _findDraftPlayer(key);
+    const canonKey = resolved ? _draftKey(resolved.name, resolved.pos) : key;
+    (actualByTeam[team] = actualByTeam[team] || []).push(canonKey);
   }
 
   const findPlayer = _findDraftPlayer;
@@ -7507,7 +7544,15 @@ function compareDrafts2425(){
 
   const actualByTeam = {};
   for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2425)){
-    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+    // Resolve the raw file key to a live player first, then rebuild through _draftKey —
+    // guarantees this always uses the identical canonicalization algoByTeam already uses,
+    // regardless of what spelling happens to be baked into the historical data file (e.g.
+    // 'nick perbix' vs the live pool's 'Nicklaus Perbix'). Pushing the raw key unchanged
+    // let two spellings of the same real player show up as BOTH a false 'miss' and a
+    // false 'reach' simultaneously — found 2026-07-22 via Nick/Nicklaus Perbix.
+    const resolved = _findDraftPlayer(key);
+    const canonKey = resolved ? _draftKey(resolved.name, resolved.pos) : key;
+    (actualByTeam[team] = actualByTeam[team] || []).push(canonKey);
   }
 
   const findPlayer = _findDraftPlayer;
@@ -7661,7 +7706,15 @@ function compareDrafts2324(){
 
   const actualByTeam = {};
   for(const [key, team] of Object.entries(POSTDRAFT_ROSTER_2324)){
-    (actualByTeam[team] = actualByTeam[team] || []).push(key);
+    // Resolve the raw file key to a live player first, then rebuild through _draftKey —
+    // guarantees this always uses the identical canonicalization algoByTeam already uses,
+    // regardless of what spelling happens to be baked into the historical data file (e.g.
+    // 'nick perbix' vs the live pool's 'Nicklaus Perbix'). Pushing the raw key unchanged
+    // let two spellings of the same real player show up as BOTH a false 'miss' and a
+    // false 'reach' simultaneously — found 2026-07-22 via Nick/Nicklaus Perbix.
+    const resolved = _findDraftPlayer(key);
+    const canonKey = resolved ? _draftKey(resolved.name, resolved.pos) : key;
+    (actualByTeam[team] = actualByTeam[team] || []).push(canonKey);
   }
 
   const findPlayer = _findDraftPlayer;
