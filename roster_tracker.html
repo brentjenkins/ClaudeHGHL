@@ -1613,11 +1613,20 @@ function dedup(){
     const override = _knownNameOverride(n);
     // Canonicalize formal/nickname alias pairs (e.g. "josh norris" / "joshua norris") to the
     // same key so two records for the same real player under different name spellings get
-    // merged here, not just literal exact-name duplicates. Picking min(n, alias, override) is
-    // stable regardless of which spelling is processed first, since both maps are bidirectional.
+    // merged here, not just literal exact-name duplicates. An explicit override always wins
+    // over the generic single-token alias when both apply and disagree — e.g. "Nick" has a
+    // generic alias to "Nicholas" (correct for most Nicks) but Nicklaus Perbix's override
+    // pair points to "Nicklaus" instead; picking a blind min(n, alias, override) let "Nick
+    // Perbix" canonicalize via the generic alias to "nicholas perbix" while "Nicklaus Perbix"
+    // canonicalized via override to "nick perbix" — two different keys for the same real
+    // player that never converged. Only fall back to alias-based minimization when no
+    // override applies to this specific name.
     let canonical = n;
-    if(alias && alias < canonical) canonical = alias;
-    if(override && override < canonical) canonical = override;
+    if(override){
+      if(override < canonical) canonical = override;
+    } else if(alias && alias < canonical){
+      canonical = alias;
+    }
     const k = `${canonical}_${posGroup(p.pos)}`;
     if(!seen.has(k) || (srcRank[p.source]||0) > (srcRank[seen.get(k).source]||0))
       seen.set(k, p);
