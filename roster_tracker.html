@@ -4771,76 +4771,77 @@ function algoDrops2526(){
   toast(`25-26 algo drops — ${dropped} players dropped across ${teams.length} teams.`);
 }
 
-function compareDrops2526(){
-  if(!Object.keys(PREDROP_ROSTER_2526).length){
-    toast('Populate PREDROP_ROSTER_2526 to run compare drops.');
-    return;
-  }
-  // Virtual copy: seed start2526 from PREDROP_ROSTER_2526 (pre-season rosters)
+// Shared core for every season's Compare Drops — same consolidation as _runCompareDrafts,
+// same motivating bug class: 4 separate near-identical functions that had to be hand-edited
+// in parallel whenever one needed a fix. Runs _runAlgoDrops on a throwaway virtual copy,
+// compares the result to the real POSTDROP_ROSTER_2X2Y outcome, and renders the modal;
+// each season's compareDrops2X2Y() wrapper just supplies config.
+function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predropStubs, stubExtraFields,
+  startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet,
+  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey }){
+  for(const g of guards){ if(g.fail()){ toast(g.msg); return; } }
+
+  // Virtual copy: seed start field from predropRoster (pre-season rosters)
   const vp = players.map(p => {
     const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
-    return {...p, start2526: PREDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2526) ?? null};
+    return {...p, [startField]: predropRoster[`${base}_${pg}`] ?? _dictLookup(p.name, predropRoster) ?? null};
   });
   // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
   // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
   // silently absent from every bucket below instead of correctly counting as a predicted drop.
-  const vpMatched2526 = new Set(vp.map(p => normName(p.name).toLowerCase()));
-  for(const stub of PREDROP_STUBS_2526){
+  const vpMatched = new Set(vp.map(p => normName(p.name).toLowerCase()));
+  for(const stub of predropStubs){
     const key = normName(stub.name).toLowerCase();
-    if(vpMatched2526.has(key) || (_nameAlias(key) && vpMatched2526.has(_nameAlias(key)))) continue;
-    const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
-    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2526:null, pts:0, pts2526:0, start2526:team });
+    if([..._nameVariants(stub.name)].some(v => vpMatched.has(v))) continue;
+    const team = _dictLookup(stub.name, predropRoster) || null;
+    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, pts:0, [startField]:team, ...stubExtraFields });
   }
-  const teams = [...new Set(vp.map(p => p.start2526).filter(Boolean))].sort();
-  if(!teams.length){ toast('No 25-26 team assignments found.'); return; }
+  const teams = [...new Set(vp.map(p => p[startField]).filter(Boolean))].sort();
+  if(!teams.length){ toast(`No ${season} team assignments found.`); return; }
 
   // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy —
-  // see _runAlgoDrops for why this used to be a hand-copied duplicate that silently drifted out
-  // of sync with what the real button does.
+  // see _runAlgoDrops for why this used to be a hand-copied duplicate that silently drifted
+  // out of sync with what the real button does.
   _runAlgoDrops({
-    players: vp, teams, startField: 'start2526',
-    ppts: ppts2526blend, getCap: getCap2526,
-    capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
-    elcMax: ELC_MAX_2526, calcAgeForSim: calcAge2526,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526,
-    computeABPFn: computeABP2526,
-    useRebalBonus: true, useMinEnforcement: false, emptyMarker: null,
+    players: vp, teams, startField,
+    ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim,
+    elcMandatorySet, injurySet, computeABPFn, useRebalBonus, useMinEnforcement, emptyMarker: null,
   });
 
   // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
-  const keptPoolV = vp.filter(p => p.start2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
+  const keptPoolV = vp.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
   const curveFnsPostDrop = {
-    F: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
-    D: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
-    G: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
+    F: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
+    D: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
+    G: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
   };
-  const labelDelta2526 = p => { const pg=posGroup(p.pos),pp=ppts2526blend(p),c=getCap2526(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2526,curveFnsPostDrop[pg]); return base!=null?pp-base:null; };
+  const labelDelta = p => { const pg=posGroup(p.pos),pp=ppts(p),c=getCap(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,elcMax,curveFnsPostDrop[pg]); return base!=null?pp-base:null; };
 
-  // Compare virtual results to POSTDROP_ROSTER_2526
-  // A player is "actually kept" if they appear in POSTDROP_ROSTER_2526 for this team.
-  // A player is "sim kept" if their virtual start2526 is still set.
+  // Compare virtual results to postdropRoster.
+  // A player is "actually kept" if they appear in postdropRoster for this team.
+  // A player is "sim kept" if their virtual start field is still set.
   const teamResults = [];
   let totalCorrect = 0, totalAll = 0, totalCorrectOutcome = 0;
 
   for(const team of teams){
     const teamPlayers = vp.filter(p => {
       const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
-      return (PREDROP_ROSTER_2526[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2526) ?? null) === team;
+      return (predropRoster[`${base}_${pg}`] ?? _dictLookup(p.name, predropRoster) ?? null) === team;
     });
     const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], algoKeptReacquired=[], injuryExcused=[], elcMandatory=[];
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
       const pg = posGroup(p.pos);
-      const actuallyKept = (POSTDROP_ROSTER_2526[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2526) ?? null) === team;
-      const simKept = p.start2526 !== null;
-      const pp = ppts2526blend(p).toFixed(1);
-      const cap = getCap2526(p).toFixed(2);
-      const delta = labelDelta2526(p); const defStr = (delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
+      const actuallyKept = (postdropRoster[`${key}_${pg}`] ?? _dictLookup(p.name, postdropRoster) ?? null) === team;
+      const simKept = p[startField] !== null;
+      const pp = ppts(p).toFixed(1);
+      const cap = getCap(p).toFixed(2);
+      const delta = labelDelta(p); const defStr = (delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
       const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
 
       if(!simKept && !actuallyKept){
-        if(ELC_MANDATORY_DROPS_2526.has(key)) elcMandatory.push(label);
+        if(elcMandatorySet.has(key)) elcMandatory.push(label);
         else correctDrops.push(label);
       }
       else if(simKept && actuallyKept)  correctKeeps.push(label);
@@ -4848,14 +4849,14 @@ function compareDrops2526(){
         // Manager initially kept them, but did that same team drop them anyway later
         // in-season? That's real-outcome confirmation the algo's call was right, just
         // early — track it separately rather than counting it as a pure miss.
-        if(_wasVindicated(MIDSEASON_DROPS_2526, team, p.name, p.pos)) algoDroppedVindicated.push(label);
+        if(_wasVindicated(midseasonDrops, team, p.name, p.pos)) algoDroppedVindicated.push(label);
         else algoDroppedShouldKeep.push(label);
       }
       else if(simKept && !actuallyKept){
-        if(INJURY_DROPS_2526.has(key)) injuryExcused.push(label);
+        if(injurySet.has(key)) injuryExcused.push(label);
         // Mirror of the drop-side vindication: did the SAME team that dropped this
         // player (against the algo's advice) re-acquire them later that season?
-        else if(_wasReacquired(MIDSEASON_READDS_2526, POSTDRAFT_ROSTER_2526, team, p.name, p.pos)) algoKeptReacquired.push(label);
+        else if(_wasReacquired(midseasonReadds, postdropRoster, team, p.name, p.pos)) algoKeptReacquired.push(label);
         else algoKeptShouldDrop.push(label);
       }
     }
@@ -4867,7 +4868,7 @@ function compareDrops2526(){
     totalCorrect += correct; totalAll += total; totalCorrectOutcome += correctOutcome;
     teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, algoKeptReacquired, injuryExcused, elcMandatory, correct, correctOutcome, total});
   }
-  window.lastCompareResults2526 = teamResults;
+  window[resultsKey] = teamResults;
 
   const pct = totalAll>0 ? Math.round(100*totalCorrect/totalAll) : 0;
   const pctOutcome = totalAll>0 ? Math.round(100*totalCorrectOutcome/totalAll) : 0;
@@ -4878,7 +4879,7 @@ function compareDrops2526(){
 
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
-    `25-26 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
+    `${season} Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
     `Target: <strong>${ptsTarget}pts</strong>` +
     (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
     (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '') +
@@ -4913,142 +4914,42 @@ function compareDrops2526(){
     return html;
   }).join('');
 
-  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 25-26 Drops';
+  document.getElementById('compareDropsTitle').textContent=`📊 Algo vs Actual ${season} Drops`;
   document.getElementById('compareDropsBody').innerHTML = rows;
   document.getElementById('compareDropsModal').style.display = 'flex';
+}
+
+function compareDrops2526(){
+  _runCompareDrops({
+    season: '25-26',
+    guards: [{ fail: () => !Object.keys(PREDROP_ROSTER_2526).length, msg: 'Populate PREDROP_ROSTER_2526 to run compare drops.' }],
+    predropRoster: PREDROP_ROSTER_2526, postdropRoster: POSTDROP_ROSTER_2526, predropStubs: PREDROP_STUBS_2526,
+    stubExtraFields: { cap2526: null, pts2526: 0 },
+    startField: 'start2526', ppts: ppts2526blend, getCap: getCap2526,
+    capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526, elcMax: ELC_MAX_2526, calcAgeForSim: calcAge2526,
+    elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526, computeABPFn: computeABP2526,
+    useRebalBonus: true, useMinEnforcement: false,
+    midseasonDrops: MIDSEASON_DROPS_2526, midseasonReadds: MIDSEASON_READDS_2526,
+    resultsKey: 'lastCompareResults2526',
+  });
 }
 
 // 26-27 version — same shape as compareDrops2526, but real drop outcomes don't exist
 // until managers submit (POSTDROP_ROSTER_2627 stays empty until then). Guarded so the
 // greyed-out button is safe to click early; becomes fully functional once populated.
 function compareDrops2627(){
-  if(!Object.keys(POSTDROP_ROSTER_2627).length){
-    toast('No actual 26-27 drop data yet. Populate POSTDROP_ROSTER_2627 (normName_pos → team) once managers submit their drops.');
-    return;
-  }
-  const vp = players.map(p => {
-    const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
-    return {...p, start2627: PREDROP_ROSTER_2627[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2627) ?? null};
+  _runCompareDrops({
+    season: '26-27',
+    guards: [{ fail: () => !Object.keys(POSTDROP_ROSTER_2627).length, msg: 'No actual 26-27 drop data yet. Populate POSTDROP_ROSTER_2627 (normName_pos \u2192 team) once managers submit their drops.' }],
+    predropRoster: PREDROP_ROSTER_2627, postdropRoster: POSTDROP_ROSTER_2627, predropStubs: PREDROP_STUBS_2627,
+    stubExtraFields: {},
+    startField: 'start2627', ppts: p => p.pts||0, getCap: p => p.cap||0,
+    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
+    elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627, computeABPFn: computeABP,
+    useRebalBonus: true, useMinEnforcement: true,
+    midseasonDrops: MIDSEASON_DROPS_2627, midseasonReadds: MIDSEASON_READDS_2627,
+    resultsKey: 'lastCompareResults2627',
   });
-  const vpMatched2627 = new Set(vp.map(p => normName(p.name).toLowerCase()));
-  for(const stub of PREDROP_STUBS_2627){
-    const key = normName(stub.name).toLowerCase();
-    if(vpMatched2627.has(key) || (_nameAlias(key) && vpMatched2627.has(_nameAlias(key)))) continue;
-    const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
-    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, pts:0, start2627:team });
-  }
-  const teams = [...new Set(vp.map(p => p.start2627).filter(Boolean))].sort();
-  if(!teams.length){ toast('No 26-27 team assignments found.'); return; }
-
-  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy.
-  _runAlgoDrops({
-    players: vp, teams, startField: 'start2627',
-    ppts: p => p.pts||0, getCap: p => p.cap||0,
-    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
-    elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
-    computeABPFn: computeABP,
-    useRebalBonus: true, useMinEnforcement: true, emptyMarker: null,
-  });
-
-  const keptPoolV = vp.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
-  const curveFnsPostDrop = {
-    F: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
-    D: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
-    G: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
-  };
-  const labelDelta2627 = p => { const pg=posGroup(p.pos),pp=p.pts||0,c=p.cap||0; if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2627,curveFnsPostDrop[pg]); return base!=null?pp-base:null; };
-
-  const teamResults = [];
-  let totalCorrect = 0, totalAll = 0, totalCorrectOutcome = 0;
-
-  for(const team of teams){
-    const teamPlayers = vp.filter(p => {
-      const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
-      return (PREDROP_ROSTER_2627[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2627) ?? null) === team;
-    });
-    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], algoKeptReacquired=[], injuryExcused=[], elcMandatory=[];
-
-    for(const p of teamPlayers){
-      const key = normName(p.name).toLowerCase();
-      const pg = posGroup(p.pos);
-      const actuallyKept = (POSTDROP_ROSTER_2627[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2627) ?? null) === team;
-      const simKept = p.start2627 !== null;
-      const pp = (p.pts||0).toFixed(1);
-      const cap = (p.cap||0).toFixed(2);
-      const delta = labelDelta2627(p); const defStr = (delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
-      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
-
-      if(!simKept && !actuallyKept){
-        if(ELC_MANDATORY_DROPS_2627.has(key)) elcMandatory.push(label);
-        else correctDrops.push(label);
-      }
-      else if(simKept && actuallyKept)  correctKeeps.push(label);
-      else if(!simKept && actuallyKept){
-        if(_wasVindicated(MIDSEASON_DROPS_2627, team, p.name, p.pos)) algoDroppedVindicated.push(label);
-        else algoDroppedShouldKeep.push(label);
-      }
-      else if(simKept && !actuallyKept){
-        if(INJURY_DROPS_2627.has(key)) injuryExcused.push(label);
-        else if(_wasReacquired(MIDSEASON_READDS_2627, POSTDRAFT_ROSTER_2627, team, p.name, p.pos)) algoKeptReacquired.push(label);
-        else algoKeptShouldDrop.push(label);
-      }
-    }
-
-    const correct = correctDrops.length + correctKeeps.length + elcMandatory.length;
-    const correctOutcome = correct + algoDroppedVindicated.length + algoKeptReacquired.length;
-    const excused = injuryExcused.length;
-    const total = teamPlayers.length - excused;
-    totalCorrect += correct; totalAll += total; totalCorrectOutcome += correctOutcome;
-    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, algoKeptReacquired, injuryExcused, elcMandatory, correct, correctOutcome, total});
-  }
-  window.lastCompareResults2627 = teamResults;
-
-  const pct = totalAll>0 ? Math.round(100*totalCorrect/totalAll) : 0;
-  const pctOutcome = totalAll>0 ? Math.round(100*totalCorrectOutcome/totalAll) : 0;
-  const totalVindicated = teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length, 0);
-  const totalReacquired = teamResults.reduce((s,r)=>s+r.algoKeptReacquired.length, 0);
-  const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
-  const totalELC = teamResults.reduce((s,r)=>s+r.elcMandatory.length, 0);
-
-  document.getElementById('compareDropsSummary').innerHTML =
-    `26-27 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
-    `Target: <strong>${ptsTarget}pts</strong>` +
-    (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
-    (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '') +
-    ((totalVindicated||totalReacquired) ? ` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated, ${totalReacquired} reacquired</span>` : '');
-
-  const rows = teamResults.map(r => {
-    const pct2 = Math.round(100*r.correct/r.total);
-    const badgeColor = pct2>=80?'#16a34a':pct2>=60?'#d97706':'#dc2626';
-    let html = `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-    const algoDropCount = r.correctDrops.length + r.algoDroppedShouldKeep.length + r.algoDroppedVindicated.length + r.elcMandatory.length;
-    const actualDropCount = r.correctDrops.length + r.algoKeptShouldDrop.length + r.algoKeptReacquired.length + r.injuryExcused.length;
-    html += `<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
-    html += `<div><strong style="font-size:13px">${r.team}</strong><div style="font-size:11px;color:#6b7280;margin-top:2px">Algo Drops (${algoDropCount}) &nbsp;|&nbsp; Actual Drops (${actualDropCount})</div></div>`;
-    html += `<span style="font-size:12px;color:${badgeColor};font-weight:600">${r.correct}/${r.total} (${pct2}%)</span>`;
-    html += `</div><div style="padding:8px 12px">`;
-
-    const section = (label, color, icon, items) => {
-      if(!items.length) return '';
-      return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>` +
-        `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s=>`<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
-    };
-
-    html += section('Correctly dropped', '#16a34a', '✓', r.correctDrops);
-    html += section('Algo dropped — should have kept', '#dc2626', '✗', r.algoDroppedShouldKeep);
-    html += section('Algo dropped — kept, but dropped later anyway (vindicated)', '#0891b2', '⏱', r.algoDroppedVindicated);
-    html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
-    html += section('Algo kept — dropped, but re-acquired by same team later (vindicated)', '#0891b2', '⏱', r.algoKeptReacquired);
-    html += section('Dropped by rule — ELC', '#6366f1', '📋', r.elcMandatory);
-    html += section('Dropped for injury (excused)', '#9ca3af', '🏥', r.injuryExcused);
-    html += `</div></div>`;
-    return html;
-  }).join('');
-
-  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 26-27 Drops';
-  document.getElementById('compareDropsBody').innerHTML = rows;
-  document.getElementById('compareDropsModal').style.display = 'flex';
 }
 
 function closeCompareDropsModal(){
@@ -5358,139 +5259,21 @@ function algoDrops2425(){
 }
 
 function compareDrops2425(){
-  if(!Object.keys(PREDROP_ROSTER_2425).length){
-    toast('Populate PREDROP_ROSTER_2425 to run compare drops.');
-    return;
-  }
-  if(!Object.keys(POSTDROP_ROSTER_2425).length){
-    toast('Populate POSTDROP_ROSTER_2425 to run compare drops.');
-    return;
-  }
-
-  const vp = players.map(p=>{
-    const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
-    return {...p, start2425: PREDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2425) ?? null};
+  _runCompareDrops({
+    season: '24-25',
+    guards: [
+      { fail: () => !Object.keys(PREDROP_ROSTER_2425).length, msg: 'Populate PREDROP_ROSTER_2425 to run compare drops.' },
+      { fail: () => !Object.keys(POSTDROP_ROSTER_2425).length, msg: 'Populate POSTDROP_ROSTER_2425 to run compare drops.' },
+    ],
+    predropRoster: PREDROP_ROSTER_2425, postdropRoster: POSTDROP_ROSTER_2425, predropStubs: PREDROP_STUBS_2425,
+    stubExtraFields: { cap2425: null, pts2425: 0 },
+    startField: 'start2425', ppts: ppts2425blend, getCap: getCap2425,
+    capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425, elcMax: ELC_MAX_2425, calcAgeForSim: calcAge2425,
+    elcMandatorySet: ELC_MANDATORY_DROPS_2425, injurySet: INJURY_DROPS_2425, computeABPFn: computeABP2425,
+    useRebalBonus: false, useMinEnforcement: false,
+    midseasonDrops: MIDSEASON_DROPS_2425, midseasonReadds: MIDSEASON_READDS_2425,
+    resultsKey: 'lastCompareResults2425',
   });
-  // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
-  // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
-  // silently absent from every bucket below instead of correctly counting as a predicted drop.
-  const vpMatched = new Set(vp.map(p => normName(p.name).toLowerCase()));
-  for(const stub of PREDROP_STUBS_2425){
-    const key = normName(stub.name).toLowerCase();
-    if(vpMatched.has(key) || (_nameAlias(key) && vpMatched.has(_nameAlias(key)))) continue;
-    const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
-    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2425:null, pts:0, pts2425:0, start2425:team });
-  }
-  const teams = [...new Set(Object.values(PREDROP_ROSTER_2425))].sort();
-
-  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy.
-  _runAlgoDrops({
-    players: vp, teams, startField: 'start2425',
-    ppts: ppts2425blend, getCap: getCap2425,
-    capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
-    elcMax: ELC_MAX_2425, calcAgeForSim: calcAge2425,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2425, injurySet: INJURY_DROPS_2425,
-    computeABPFn: computeABP2425,
-    useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
-  });
-
-  // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
-  const keptPoolV2425 = vp.filter(p => p.start2425 && ppts2425blend(p) >= curveMinPts && getCap2425(p) > 0);
-  const curveFnsPostDrop2425 = {
-    F: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
-    D: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
-    G: fitQuadratic(keptPoolV2425.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2425(p), y: ppts2425blend(p)}))),
-  };
-  const labelDelta2425 = p => { const pg=posGroup(p.pos),pp=ppts2425blend(p),c=getCap2425(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2425,curveFnsPostDrop2425[pg]); return base!=null?pp-base:null; };
-
-  const teamResults=[];
-  let totalCorrect=0, totalAll=0, totalCorrectOutcome=0;
-
-  for(const team of teams){
-    const teamPlayers=vp.filter(p=>{
-      const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
-      return (PREDROP_ROSTER_2425[`${base}_${pg}`] ?? _dictLookup(p.name,PREDROP_ROSTER_2425) ?? null)===team;
-    });
-    const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoDroppedVindicated=[],algoKeptShouldDrop=[],algoKeptReacquired=[],injuryExcused=[],elcMandatory=[];
-
-    for(const p of teamPlayers){
-      const key=normName(p.name).toLowerCase();
-      const pg=posGroup(p.pos);
-      const actuallyKept=(POSTDROP_ROSTER_2425[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2425) ?? null) === team;
-      const simKept=p.start2425!==null;
-      const pp=ppts2425blend(p).toFixed(1);
-      const cap=getCap2425(p).toFixed(2);
-      const delta=labelDelta2425(p); const defStr=(delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
-      const label=`${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
-
-      if(!simKept && !actuallyKept){
-        if(ELC_MANDATORY_DROPS_2425.has(key)) elcMandatory.push(label);
-        else correctDrops.push(label);
-      }
-      else if(simKept && actuallyKept)   correctKeeps.push(label);
-      else if(!simKept && actuallyKept){
-        if(_wasVindicated(MIDSEASON_DROPS_2425, team, p.name, p.pos)) algoDroppedVindicated.push(label);
-        else algoDroppedShouldKeep.push(label);
-      }
-      else if(simKept && !actuallyKept){
-        if(INJURY_DROPS_2425.has(key)) injuryExcused.push(label);
-        else if(_wasReacquired(MIDSEASON_READDS_2425, POSTDRAFT_ROSTER_2425, team, p.name, p.pos)) algoKeptReacquired.push(label);
-        else algoKeptShouldDrop.push(label);
-      }
-    }
-    const correct=correctDrops.length+correctKeeps.length+elcMandatory.length;
-    const correctOutcome=correct+algoDroppedVindicated.length+algoKeptReacquired.length;
-    const excused=injuryExcused.length;
-    const total=teamPlayers.length-excused;
-    totalCorrect+=correct; totalAll+=total; totalCorrectOutcome+=correctOutcome;
-    teamResults.push({team,correctDrops,correctKeeps,algoDroppedShouldKeep,algoDroppedVindicated,algoKeptShouldDrop,algoKeptReacquired,injuryExcused,elcMandatory,correct,correctOutcome,total});
-  }
-  window.lastCompareResults2425 = teamResults;
-
-  const pct=totalAll>0?Math.round(100*totalCorrect/totalAll):0;
-  const pctOutcome=totalAll>0?Math.round(100*totalCorrectOutcome/totalAll):0;
-  const totalVindicated=teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length,0);
-  const totalReacquired=teamResults.reduce((s,r)=>s+r.algoKeptReacquired.length,0);
-  const totalExcused=teamResults.reduce((s,r)=>s+r.injuryExcused.length,0);
-  const totalELC=teamResults.reduce((s,r)=>s+r.elcMandatory.length,0);
-
-  document.getElementById('compareDropsSummary').innerHTML=
-    `24-25 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; `+
-    `Target: <strong>${ptsTarget}pts</strong>`+
-    (totalELC?` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>`:'')+
-    (totalExcused?` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>`:'')+
-    ((totalVindicated||totalReacquired)?` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated, ${totalReacquired} reacquired</span>`:'');
-
-  const section=(label,color,icon,items)=>{
-    if(!items.length) return '';
-    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>`+
-      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s=>`<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
-  };
-
-  const rows=teamResults.map(r=>{
-    const pct2=Math.round(100*r.correct/r.total);
-    const badgeColor=pct2>=80?'#16a34a':pct2>=60?'#d97706':'#dc2626';
-    let html=`<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-    const algoDropCount=r.correctDrops.length+r.algoDroppedShouldKeep.length+r.algoDroppedVindicated.length+r.elcMandatory.length;
-    const actualDropCount=r.correctDrops.length+r.algoKeptShouldDrop.length+r.algoKeptReacquired.length+r.injuryExcused.length;
-    html+=`<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
-    html+=`<div><strong style="font-size:13px">${r.team}</strong><div style="font-size:11px;color:#6b7280;margin-top:2px">Algo Drops (${algoDropCount}) &nbsp;|&nbsp; Actual Drops (${actualDropCount})</div></div>`;
-    html+=`<span style="font-size:12px;color:${badgeColor};font-weight:600">${r.correct}/${r.total} (${pct2}%)</span>`;
-    html+=`</div><div style="padding:8px 12px">`;
-    html+=section('Correctly dropped','#16a34a','✓',r.correctDrops);
-    html+=section('Algo dropped — should have kept','#dc2626','✗',r.algoDroppedShouldKeep);
-    html+=section('Algo dropped — kept, but dropped later anyway (vindicated)','#0891b2','⏱',r.algoDroppedVindicated);
-    html+=section('Algo kept — should have dropped','#d97706','△',r.algoKeptShouldDrop);
-    html+=section('Algo kept — dropped, but re-acquired by same team later (vindicated)','#0891b2','⏱',r.algoKeptReacquired);
-    html+=section('Dropped by rule — ELC','#6366f1','📋',r.elcMandatory);
-    html+=section('Dropped for injury (excused)','#9ca3af','🏥',r.injuryExcused);
-    html+=`</div></div>`;
-    return html;
-  }).join('');
-
-  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 24-25 Drops';
-  document.getElementById('compareDropsBody').innerHTML=rows;
-  document.getElementById('compareDropsModal').style.display='flex';
 }
 
 function dropSim2324(id){
@@ -5642,140 +5425,21 @@ function algoDrops2324(){
 }
 
 function compareDrops2324(){
-  if(!Object.keys(PREDROP_ROSTER_2324).length){
-    toast('Populate PREDROP_ROSTER_2324 to run compare drops.');
-    return;
-  }
-  if(!Object.keys(POSTDROP_ROSTER_2324).length){
-    toast('Populate POSTDROP_ROSTER_2324 to run compare drops.');
-    return;
-  }
-
-  const vp = players.map(p=>{
-    const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
-    return {...p, start2324: PREDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name, PREDROP_ROSTER_2324) ?? null};
+  _runCompareDrops({
+    season: '23-24',
+    guards: [
+      { fail: () => !Object.keys(PREDROP_ROSTER_2324).length, msg: 'Populate PREDROP_ROSTER_2324 to run compare drops.' },
+      { fail: () => !Object.keys(POSTDROP_ROSTER_2324).length, msg: 'Populate POSTDROP_ROSTER_2324 to run compare drops.' },
+    ],
+    predropRoster: PREDROP_ROSTER_2324, postdropRoster: POSTDROP_ROSTER_2324, predropStubs: PREDROP_STUBS_2324,
+    stubExtraFields: { cap2324: null, pts2324: 0 },
+    startField: 'start2324', ppts: ppts2324blend, getCap: getCap2324,
+    capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324, elcMax: ELC_MAX_2324, calcAgeForSim: calcAge2324,
+    elcMandatorySet: ELC_MANDATORY_DROPS_2324, injurySet: INJURY_DROPS_2324, computeABPFn: computeABP2324,
+    useRebalBonus: false, useMinEnforcement: false,
+    midseasonDrops: MIDSEASON_DROPS_2324, midseasonReadds: MIDSEASON_READDS_2324,
+    resultsKey: 'lastCompareResults2324',
   });
-  // Include virtual stubs for any PREDROP player missing from the live pool entirely (e.g.
-  // veterans who retired and never appear in any later NHL/Yahoo sync) — otherwise they're
-  // silently absent from every bucket below instead of correctly counting as a predicted drop.
-  const vpMatched2324 = new Set(vp.map(p => normName(p.name).toLowerCase()));
-  for(const stub of PREDROP_STUBS_2324){
-    const key = normName(stub.name).toLowerCase();
-    if(vpMatched2324.has(key) || (_nameAlias(key) && vpMatched2324.has(_nameAlias(key)))) continue;
-    const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
-    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, cap2324:null, pts:0, pts2324:0, start2324:team });
-  }
-  const teams = [...new Set(vp.map(p=>p.start2324).filter(Boolean))].sort();
-
-  // Run the exact same core algorithm "Algo Drops" uses, on this throwaway virtual copy.
-  _runAlgoDrops({
-    players: vp, teams, startField: 'start2324',
-    ppts: ppts2324blend, getCap: getCap2324,
-    capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324,
-    elcMax: ELC_MAX_2324, calcAgeForSim: calcAge2324,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2324, injurySet: INJURY_DROPS_2324,
-    computeABPFn: computeABP2324,
-    useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
-  });
-
-  // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
-  const keptPoolV2324 = vp.filter(p => p.start2324 && ppts2324blend(p) >= curveMinPts && getCap2324(p) > 0);
-  const curveFnsPostDrop2324 = {
-    F: fitQuadratic(keptPoolV2324.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2324(p), y: ppts2324blend(p)}))),
-    D: fitQuadratic(keptPoolV2324.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2324(p), y: ppts2324blend(p)}))),
-    G: fitQuadratic(keptPoolV2324.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap2324(p), y: ppts2324blend(p)}))),
-  };
-  const labelDelta2324 = p => { const pg=posGroup(p.pos),pp=ppts2324blend(p),c=getCap2324(p); if(!(pp>0&&c>0)) return null; const base=_curveBaseline(pg,c,ELC_MAX_2324,curveFnsPostDrop2324[pg]); return base!=null?pp-base:null; };
-
-  const teamResults=[];
-  let totalCorrect=0, totalAll=0, totalCorrectOutcome=0;
-
-  for(const team of teams){
-    const teamPlayers=vp.filter(p=>{
-      const base=normName(p.name).toLowerCase(), pg=posGroup(p.pos);
-      return (PREDROP_ROSTER_2324[`${base}_${pg}`] ?? _dictLookup(p.name,PREDROP_ROSTER_2324) ?? null)===team;
-    });
-    const correctDrops=[],correctKeeps=[],algoDroppedShouldKeep=[],algoDroppedVindicated=[],algoKeptShouldDrop=[],algoKeptReacquired=[],injuryExcused=[],elcMandatory=[];
-
-    for(const p of teamPlayers){
-      const key=normName(p.name).toLowerCase();
-      const pg=posGroup(p.pos);
-      const actualTeam=POSTDROP_ROSTER_2324[`${key}_${pg}`] ?? _dictLookup(p.name, POSTDROP_ROSTER_2324) ?? null;
-      const actuallyKept=actualTeam===team;
-      const simKept=p.start2324!==null;
-      const pp=ppts2324blend(p).toFixed(1);
-      const cap=getCap2324(p).toFixed(2);
-      const delta=labelDelta2324(p); const defStr=(delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
-      const label=`${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
-
-      if(!simKept && !actuallyKept){
-        if(ELC_MANDATORY_DROPS_2324.has(key)) elcMandatory.push(label);
-        else correctDrops.push(label);
-      }
-      else if(simKept && actuallyKept)   correctKeeps.push(label);
-      else if(!simKept && actuallyKept){
-        if(_wasVindicated(MIDSEASON_DROPS_2324, team, p.name, p.pos)) algoDroppedVindicated.push(label);
-        else algoDroppedShouldKeep.push(label);
-      }
-      else if(simKept && !actuallyKept){
-        if(INJURY_DROPS_2324.has(key)) injuryExcused.push(label);
-        else if(_wasReacquired(MIDSEASON_READDS_2324, POSTDRAFT_ROSTER_2324, team, p.name, p.pos)) algoKeptReacquired.push(label);
-        else algoKeptShouldDrop.push(label);
-      }
-    }
-    const correct=correctDrops.length+correctKeeps.length+elcMandatory.length;
-    const correctOutcome=correct+algoDroppedVindicated.length+algoKeptReacquired.length;
-    const excused=injuryExcused.length;
-    const total=teamPlayers.length-excused;
-    totalCorrect+=correct; totalAll+=total; totalCorrectOutcome+=correctOutcome;
-    teamResults.push({team,correctDrops,correctKeeps,algoDroppedShouldKeep,algoDroppedVindicated,algoKeptShouldDrop,algoKeptReacquired,injuryExcused,elcMandatory,correct,correctOutcome,total});
-  }
-  window.lastCompareResults2324 = teamResults;
-
-  const pct=totalAll>0?Math.round(100*totalCorrect/totalAll):0;
-  const pctOutcome=totalAll>0?Math.round(100*totalCorrectOutcome/totalAll):0;
-  const totalVindicated=teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length,0);
-  const totalReacquired=teamResults.reduce((s,r)=>s+r.algoKeptReacquired.length,0);
-  const totalExcused=teamResults.reduce((s,r)=>s+r.injuryExcused.length,0);
-  const totalELC=teamResults.reduce((s,r)=>s+r.elcMandatory.length,0);
-
-  document.getElementById('compareDropsSummary').innerHTML=
-    `23-24 Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; `+
-    `Target: <strong>${ptsTarget}pts</strong>`+
-    (totalELC?` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>`:'')+
-    (totalExcused?` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>`:'')+
-    ((totalVindicated||totalReacquired)?` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated, ${totalReacquired} reacquired</span>`:'');
-
-  const section=(label,color,icon,items)=>{
-    if(!items.length) return '';
-    return `<div style="margin-bottom:6px"><span style="color:${color};font-weight:600;font-size:12px">${icon} ${label} (${items.length})</span>`+
-      `<ul style="margin:2px 0 0 14px;padding:0;list-style:disc">${items.map(s=>`<li style="color:#374151;font-size:12px;line-height:1.6">${s}</li>`).join('')}</ul></div>`;
-  };
-
-  const rows=teamResults.map(r=>{
-    const pct2=Math.round(100*r.correct/r.total);
-    const badgeColor=pct2>=80?'#16a34a':pct2>=60?'#d97706':'#dc2626';
-    let html=`<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-    const algoDropCount=r.correctDrops.length+r.algoDroppedShouldKeep.length+r.algoDroppedVindicated.length+r.elcMandatory.length;
-    const actualDropCount=r.correctDrops.length+r.algoKeptShouldDrop.length+r.algoKeptReacquired.length+r.injuryExcused.length;
-    html+=`<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
-    html+=`<div><strong style="font-size:13px">${r.team}</strong><div style="font-size:11px;color:#6b7280;margin-top:2px">Algo Drops (${algoDropCount}) &nbsp;|&nbsp; Actual Drops (${actualDropCount})</div></div>`;
-    html+=`<span style="font-size:12px;color:${badgeColor};font-weight:600">${r.correct}/${r.total} (${pct2}%)</span>`;
-    html+=`</div><div style="padding:8px 12px">`;
-    html+=section('Correctly dropped','#16a34a','✓',r.correctDrops);
-    html+=section('Algo dropped — should have kept','#dc2626','✗',r.algoDroppedShouldKeep);
-    html+=section('Algo dropped — kept, but dropped later anyway (vindicated)','#0891b2','⏱',r.algoDroppedVindicated);
-    html+=section('Algo kept — should have dropped','#d97706','△',r.algoKeptShouldDrop);
-    html+=section('Algo kept — dropped, but re-acquired by same team later (vindicated)','#0891b2','⏱',r.algoKeptReacquired);
-    html+=section('Dropped by rule — ELC','#6366f1','📋',r.elcMandatory);
-    html+=section('Dropped for injury (excused)','#9ca3af','🏥',r.injuryExcused);
-    html+=`</div></div>`;
-    return html;
-  }).join('');
-
-  document.getElementById('compareDropsTitle').textContent='📊 Algo vs Actual 23-24 Drops';
-  document.getElementById('compareDropsBody').innerHTML=rows;
-  document.getElementById('compareDropsModal').style.display='flex';
 }
 
 function render2425(){
