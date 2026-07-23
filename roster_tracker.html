@@ -2854,66 +2854,38 @@ function render(){
     const slotsLeft=need.F+need.D+need.G;
     const maxAffordable=draftFocusTeam?CAP_LIMIT-viewCapTot-Math.max(0,slotsLeft-1)*ELC_MAX_2627:Infinity;
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
-    const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
-    const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
-    // league-wide positional pressure: demand/supply ratio per position
-    const leagueNeed={F:0,D:0,G:0};
-    for(const t of DRAFT_TEAMS_2627){
-      const r=players.filter(p=>p.start2627===t);
-      leagueNeed.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
-      leagueNeed.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
-      leagueNeed.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
-    }
-    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
-    const avail={F:allUndrafted.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted.filter(p=>posGroup(p.pos)==='G').length};
-    const rawP={F:leagueNeed.F/Math.max(1,avail.F),D:leagueNeed.D/Math.max(1,avail.D),G:leagueNeed.G/Math.max(1,avail.G)};
-    const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
-    const pressure={F:rawP.F/maxP,D:rawP.D/maxP,G:rawP.G/maxP};
+    const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+    // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
+    // see _runAlgoDraft / render2425 for the drift history this is meant to end.
+    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap||0);
     lastPressure=pressure;
+    const genericRound2627 = draftProspectRounds + 3;
     // Score ALL free agents (full pool) for team-card top-picks — no per-team need filter here
     lastAllScored = players
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
       .map(p=>{
-        const pg=posGroup(p.pos);
-        const scV=sc(abpMap.get(p.id)??99);
-        const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
-        const youthRaw=peakTrajectoryScore(calcAge(p),pg,yrsRaw);
-        const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure[pg]-1));
-        const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult;
-        const tSc=sc(abpMap.get(p.id)??99)*draftWeights.wtScarcity;
-        const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
-        const tYouth=youthRaw*draftWeights.wtAge;
-        const ageRaw=calcAge(p)??99;
-        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect,p.pts||0);
-        const srcN=(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
-        const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
-        const tDelta=_deltaCurveBonus(p.pts||0,p.cap||0,curveFns2627[pg],ELC_MAX_2627,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
-        const _ds=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf+tDelta;
-        const _dsNormal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
-        return {id:p.id,name:p.name,pos:p.pos,pts:p.pts||0,cap:p.cap||0,_ds,_dsNormal};
+        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
+        const scoreArgs = { pg, pp, cap0, pressure, draftWeights, abpMap, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627 };
+        const _ds = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2627}).score;
+        const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
+        return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds,_dsNormal};
       });
+    const focusRound2627 = draftFocusTeam ? (draftState2627.picks||[]).filter(pk=>pk.team===draftFocusTeam).length+1 : genericRound2627;
+    const teamCap2627 = {[draftFocusTeam]: viewCapTot};
+    const teamCapByPos2627 = {[draftFocusTeam]: viewCapByPos};
     const allScored=rows
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap||0)<=maxAffordable))&&(p.pts||0)>0)
       .map(p=>{
-        const pg=posGroup(p.pos);
-        const scV=sc(abpMap.get(p.id)??99);
-        const yrsRaw=p.expYear>=NHL_SEASON_YEAR?p.expYear-NHL_SEASON_YEAR+1:0;
-        const youthRaw=peakTrajectoryScore(calcAge(p),pg,yrsRaw);
-        const pressRaw=pressure[pg];
-        const pressMult=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw-1));
-        const posAllocMult=(viewCapTot>10&&(draftWeights.wtPosAlloc||0)>0)?Math.max(0.5,1-Math.max(0,(viewCapByPos[pg]||0)/viewCapTot-(OPT_POS_FRACS[pg]||0))*(draftWeights.wtPosAlloc||1)*2):1;
-        const tPPTS=(p.pts||0)*(pm[pg]??1)*pressMult*posAllocMult;
-        const tSc=scV*draftWeights.wtScarcity;
-        const tPPTSM=(p.pts>0&&p.cap>0)?p.pts/p.cap*draftWeights.wtPPTSM:0;
-        const tYouth=youthRaw*draftWeights.wtAge;
-        const ageRaw=calcAge(p)??99;
-        const tProspect=prospectBonus(ageRaw,pg,p.cap||0,ELC_MAX_2627,draftWeights.wtProspect,p.pts||0);
-        const srcN=(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
-        const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
-        const tDelta=_deltaCurveBonus(p.pts||0,p.cap||0,curveFns2627[pg],ELC_MAX_2627,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
-        const _ds=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf+tDelta;
-        const _dsNormal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
-        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw,tProspect,srcN,tConf,tDelta,pressRaw,pressMult}});
+        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
+        const scoreArgs = {
+          pg, pp, cap0, pressure, round: focusRound2627, draftWeights,
+          abpMap, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627,
+          team: draftFocusTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
+        };
+        const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
+        const _ds = b.score;
+        const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
+        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw:b.ageRaw,tProspect:b.tProspect,srcN:b.srcN,tConf:b.tConf,tDelta:b.tDelta,pressRaw:b.pressRaw,pressMult:b.pressMult}});
       });
     rows=sortCol==='score'?(draftSubMode==='prospect'?allScored.sort((a,b)=>(b._ds-a._ds)*-sortDir):allScored.sort((a,b)=>(b._dsNormal-a._dsNormal)*-sortDir)):allScored;
   }
@@ -5492,23 +5464,12 @@ function render2425(){
   document.getElementById('th-group-last-2425').colSpan = draftMode2425 ? 2 : 1;
   toggleCurrentTeamCol('th-start2425', 'thg-2425-team', draftMode2425);
 
-  // Draft mode scoring for 24-25
+  // Draft mode scoring for 24-25 — shares _draftPressureState/_scoreDraftCandidate with the
+  // actual Algo Draft pick engine (_runAlgoDraft) so this SCORE column/bubble can't drift from
+  // what Algo Draft would really pick. See those functions' comments for the drift history.
   if(draftMode2425){
     const viewTeam2425 = draftFocusTeam2425;
-    const sc = n => n===0?3:n<=2?2:n<=5?1:0;
-    const pm = {F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
-    const leagueNeed2425={F:0,D:0,G:0};
-    for(const t of DRAFT_TEAMS_2425){
-      const r=players.filter(p=>p.start2425===t);
-      leagueNeed2425.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
-      leagueNeed2425.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
-      leagueNeed2425.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
-    }
-    const allUndrafted2425=players.filter(p=>!p.start2425&&ppts2425blend(p)>=abpMinPts);
-    const avail2425={F:allUndrafted2425.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted2425.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted2425.filter(p=>posGroup(p.pos)==='G').length};
-    const rawP2425={F:leagueNeed2425.F/Math.max(1,avail2425.F),D:leagueNeed2425.D/Math.max(1,avail2425.D),G:leagueNeed2425.G/Math.max(1,avail2425.G)};
-    const maxP2425=Math.max(rawP2425.F,rawP2425.D,rawP2425.G,0.0001);
-    const pressure2425={F:rawP2425.F/maxP2425,D:rawP2425.D/maxP2425,G:rawP2425.G/maxP2425};
+    const { pressure: pressure2425 } = _draftPressureState(players, DRAFT_TEAMS_2425, p=>p.start2425||null, ppts2425blend, getCap2425);
     lastPressure2425=pressure2425;
     const need2425 = viewTeam2425 ? (()=>{
       const r=players.filter(p=>p.start2425===viewTeam2425);
@@ -5517,24 +5478,20 @@ function render2425(){
     const focusCapUsed2425=viewTeam2425?players.filter(p=>p.start2425===viewTeam2425).reduce((s,p)=>s+getCap2425(p),0):0;
     const slotsLeft2425=need2425?need2425.F+need2425.D+need2425.G:0;
     const maxAffordable2425=viewTeam2425?CAP_LIMIT_2425-focusCapUsed2425-Math.max(0,slotsLeft2425-1)*ELC_MAX_2425:Infinity;
+    const srcNFn2425 = p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
+    // No specific team/round is in play for this flat, whole-pool listing — use a round past
+    // the prospect-weight decay window (see prospectRoundWeight) so the "Best Avail" score here
+    // matches the same no-residual-prospect-bonus baseline this column always showed. The
+    // per-team top-5 bubble (top5Html2425) recomputes with each team's REAL current round instead.
+    const genericRound = draftProspectRounds + 3;
     lastAllScored2425 = players.filter(p=>!p.start2425&&ppts2425blend(p)>0).map(p=>{
-      const pg=posGroup(p.pos); const pp=ppts2425blend(p);
-      const scV=sc(abpMap2425.get(p.id)??99);
-      const yrsRaw=p.expYear>=2025?p.expYear-2025+1:0;
-      const youthRaw=peakTrajectoryScore(calcAge2425(p),pg,yrsRaw);
-      const pressMult2425=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2425[pg]-1));
-      const tPPTS=pp*(pm[pg]??1)*pressMult2425;
-      const tSc=scV*draftWeights.wtScarcity;
-      const tPPTSM=(pp>0&&getCap2425(p)>0)?pp/getCap2425(p)*draftWeights.wtPPTSM:0;
-      const tYouth=youthRaw*draftWeights.wtAge;
-      const ageRaw2425=calcAge2425(p)??99;
-      const tProspect2425=prospectBonus(ageRaw2425,pg,getCap2425(p),ELC_MAX_2425,draftWeights.wtProspect,pp);
-      const srcN=(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
-      const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
-      const tDelta=_deltaCurveBonus(pp,getCap2425(p),curveFns2425[pg],ELC_MAX_2425,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
-      const _ds2425=tPPTS+tSc+tPPTSM+tYouth+tProspect2425+tConf+tDelta;
-      const _ds2425Normal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
-      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2425,tProspect2425,srcN,tConf,pressRaw2425:pressure2425[pg],pressMult2425}});
+      const pg=posGroup(p.pos); const pp=ppts2425blend(p); const cap0=getCap2425(p)||0;
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2425, draftWeights, abpMap: abpMap2425, calcAgeForSim: calcAge2425, contractYearAnchor: 2025, curveFns: curveFns2425, elcMax: ELC_MAX_2425, srcNFn: srcNFn2425 };
+      const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound});
+      const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound});
+      const _ds2425=prospectScore.score, _ds2425Normal=normalScore.score;
+      const b = prospectScore;
+      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,srcN:b.srcN,tConf:b.tConf,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
     });
     rows = lastAllScored2425.filter(p=>{
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
@@ -5787,18 +5744,49 @@ function updateStats2425(){
   });
   if(!allTeams.length){ document.getElementById('statCards2425').innerHTML=''; return; }
 
+  const abpMap2425 = computeABP2425(players);
+  const rosteredPool2425 = players.filter(p=>p.start2425 && ppts2425blend(p)>=curveMinPts && getCap2425(p)>0);
+  const curveFns2425 = {
+    F: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
+    D: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
+    G: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
+  };
   const posBg2425={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2425={F:'#1e40af',D:'#166534',G:'#92400e'};
-  const top5Html2425=(fRem,dRem,gRem,rem)=>{
-    if(!draftMode2425||!lastAllScored2425) return '';
-    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
-    if(!need.size) return '';
+  // Recomputes eligibility + score fresh from this team's REAL current state (real cap reserve,
+  // real getCap>0/DRAFT_NEVER eligibility, this team's actual pick count for round/mode) via the
+  // same _draftPressureState/_scoreDraftCandidate _runAlgoDraft itself uses — so "top of bubble
+  // for the on-clock team" is guaranteed to equal what Algo Draft's pick engine would select if
+  // run from this exact state, not a separately-approximated preview of it.
+  const top5Html2425=(team,fRem,dRem,gRem,rem)=>{
+    if(!draftMode2425||!lastPressure2425) return '';
+    const need={F:fRem,D:dRem,G:gRem};
+    if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored2425].filter(p=>need.has(posGroup(p.pos))&&getCap2425(p)<=maxCap)
-      .sort((a,b)=>draftSubMode2425==='prospect'?b._ds2425-a._ds2425:b._ds2425Normal-a._ds2425Normal).slice(0,5);
+    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2425;
+    const round=(draftState2425.picks||[]).filter(pk=>pk.team===team).length+1;
+    const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    const teamRoster=players.filter(p=>p.start2425===team);
+    const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2425(p),0)};
+    const teamCapByPos={[team]:{F:0,D:0,G:0}};
+    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2425(p); }
+    const srcNFn2425=p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
+    const fas=players.filter(p=>{
+      if(p.start2425) return false;
+      if(ppts2425blend(p)<=0) return false;
+      if(getCap2425(p)<=0) return false;
+      if(getCap2425(p)>maxPickCap) return false;
+      const pg=posGroup(p.pos);
+      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      return (need[pg]||0)>0;
+    });
+    const picks=fas.map(p=>{
+      const pg=posGroup(p.pos), pp=ppts2425blend(p), cap0=getCap2425(p)||0;
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2425,mode,round,draftWeights,abpMap:abpMap2425,calcAgeForSim:calcAge2425,contractYearAnchor:2025,curveFns:curveFns2425,elcMax:ELC_MAX_2425,srcNFn:srcNFn2425,team,teamCap,teamCapByPos});
+      return {p,score};
+    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2425==='prospect'?'prospect':'Best Avail'}</div>
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2425[pg]};color:${posCol2425[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2425blend(p))}</span></div>`;}).join('')}
     </div>`;
   };
@@ -5872,7 +5860,7 @@ function updateStats2425(){
       </div>
       ${_capGapRow(tp, getCap2425, CAP_LIMIT_2425)}
       ${_curveDeltaLabel(teamCurveDelta2425(t), '2425', t)}
-      ${top5Html2425(fRem,dRem,gRem,rem)}
+      ${top5Html2425(t,fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
@@ -5944,23 +5932,11 @@ function render2324(){
   document.getElementById('th-group-last-2324').colSpan = draftMode2324 ? 2 : 1;
   toggleCurrentTeamCol('th-start2324', 'thg-2324-team', draftMode2324);
 
-  // Draft mode scoring for 23-24
+  // Draft mode scoring for 23-24 — shares _draftPressureState/_scoreDraftCandidate with the
+  // actual Algo Draft pick engine; see _runAlgoDraft / render2425 for the drift history.
   if(draftMode2324){
     const viewTeam2324 = draftFocusTeam2324;
-    const sc = n => n===0?3:n<=2?2:n<=5?1:0;
-    const pm = {F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
-    const leagueNeed2324={F:0,D:0,G:0};
-    for(const t of DRAFT_TEAMS_2324){
-      const r=players.filter(p=>p.start2324===t);
-      leagueNeed2324.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
-      leagueNeed2324.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
-      leagueNeed2324.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
-    }
-    const allUndrafted2324=players.filter(p=>!p.start2324&&ppts2324blend(p)>=abpMinPts);
-    const avail2324={F:allUndrafted2324.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted2324.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted2324.filter(p=>posGroup(p.pos)==='G').length};
-    const rawP2324={F:leagueNeed2324.F/Math.max(1,avail2324.F),D:leagueNeed2324.D/Math.max(1,avail2324.D),G:leagueNeed2324.G/Math.max(1,avail2324.G)};
-    const maxP2324=Math.max(rawP2324.F,rawP2324.D,rawP2324.G,0.0001);
-    const pressure2324={F:rawP2324.F/maxP2324,D:rawP2324.D/maxP2324,G:rawP2324.G/maxP2324};
+    const { pressure: pressure2324 } = _draftPressureState(players, DRAFT_TEAMS_2324, p=>p.start2324||null, ppts2324blend, getCap2324);
     lastPressure2324=pressure2324;
     const need2324 = viewTeam2324 ? (()=>{
       const r=players.filter(p=>p.start2324===viewTeam2324);
@@ -5969,24 +5945,16 @@ function render2324(){
     const focusCapUsed2324=viewTeam2324?players.filter(p=>p.start2324===viewTeam2324).reduce((s,p)=>s+getCap2324(p),0):0;
     const slotsLeft2324=need2324?need2324.F+need2324.D+need2324.G:0;
     const maxAffordable2324=viewTeam2324?CAP_LIMIT_2324-focusCapUsed2324-Math.max(0,slotsLeft2324-1)*ELC_MAX_2324:Infinity;
+    const srcNFn2324 = p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0);
+    const genericRound2324 = draftProspectRounds + 3;
     lastAllScored2324 = players.filter(p=>!p.start2324&&ppts2324blend(p)>0).map(p=>{
-      const pg=posGroup(p.pos); const pp=ppts2324blend(p);
-      const scV=sc(abpMap2324.get(p.id)??99);
-      const yrsRaw=p.expYear>=2024?p.expYear-2024+1:0;
-      const youthRaw=peakTrajectoryScore(calcAge2324(p),pg,yrsRaw);
-      const pressMult2324=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2324[pg]-1));
-      const tPPTS=pp*(pm[pg]??1)*pressMult2324;
-      const tSc=scV*draftWeights.wtScarcity;
-      const tPPTSM=(pp>0&&getCap2324(p)>0)?pp/getCap2324(p)*draftWeights.wtPPTSM:0;
-      const tYouth=youthRaw*draftWeights.wtAge;
-      const ageRaw2324=calcAge2324(p)??99;
-      const tProspect2324=prospectBonus(ageRaw2324,pg,getCap2324(p),ELC_MAX_2324,draftWeights.wtProspect,pp);
-      const srcN=(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0);
-      const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
-      const tDelta=_deltaCurveBonus(pp,getCap2324(p),curveFns2324[pg],ELC_MAX_2324,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
-      const _ds2324=tPPTS+tSc+tPPTSM+tYouth+tProspect2324+tConf+tDelta;
-      const _ds2324Normal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
-      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2324,tProspect2324,srcN,tConf,pressRaw2324:pressure2324[pg],pressMult2324}});
+      const pg=posGroup(p.pos); const pp=ppts2324blend(p); const cap0=getCap2324(p)||0;
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights, abpMap: abpMap2324, calcAgeForSim: calcAge2324, contractYearAnchor: 2024, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324 };
+      const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2324});
+      const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
+      const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
+      const b = prospectScore;
+      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,srcN:b.srcN,tConf:b.tConf,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
     });
     rows = lastAllScored2324.filter(p=>{
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
@@ -6089,18 +6057,46 @@ function updateStats2324(){
   });
   if(!allTeams.length){ document.getElementById('statCards2324').innerHTML=''; return; }
 
+  const abpMap2324 = computeABP2324(players);
+  const rosteredPool2324 = players.filter(p=>p.start2324 && ppts2324blend(p)>=curveMinPts && getCap2324(p)>0);
+  const curveFns2324 = {
+    F: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
+    D: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
+    G: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
+  };
   const posBg2324={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2324={F:'#1e40af',D:'#166534',G:'#92400e'};
-  const top5Html2324=(fRem,dRem,gRem,rem)=>{
-    if(!draftMode2324||!lastAllScored2324) return '';
-    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
-    if(!need.size) return '';
+  // Recomputes eligibility + score fresh from this team's REAL current state, same shared
+  // primitives as _runAlgoDraft — see render2425's top5Html2425 for the full rationale.
+  const top5Html2324=(team,fRem,dRem,gRem,rem)=>{
+    if(!draftMode2324||!lastPressure2324) return '';
+    const need={F:fRem,D:dRem,G:gRem};
+    if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored2324].filter(p=>need.has(posGroup(p.pos))&&getCap2324(p)<=maxCap)
-      .sort((a,b)=>draftSubMode2324==='prospect'?b._ds2324-a._ds2324:b._ds2324Normal-a._ds2324Normal).slice(0,5);
+    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2324;
+    const round=(draftState2324.picks||[]).filter(pk=>pk.team===team).length+1;
+    const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    const teamRoster=players.filter(p=>p.start2324===team);
+    const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2324(p),0)};
+    const teamCapByPos={[team]:{F:0,D:0,G:0}};
+    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2324(p); }
+    const srcNFn2324=p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0);
+    const fas=players.filter(p=>{
+      if(p.start2324) return false;
+      if(ppts2324blend(p)<=0) return false;
+      if(getCap2324(p)<=0) return false;
+      if(getCap2324(p)>maxPickCap) return false;
+      const pg=posGroup(p.pos);
+      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      return (need[pg]||0)>0;
+    });
+    const picks=fas.map(p=>{
+      const pg=posGroup(p.pos), pp=ppts2324blend(p), cap0=getCap2324(p)||0;
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2324,mode,round,draftWeights,abpMap:abpMap2324,calcAgeForSim:calcAge2324,contractYearAnchor:2024,curveFns:curveFns2324,elcMax:ELC_MAX_2324,srcNFn:srcNFn2324,team,teamCap,teamCapByPos});
+      return {p,score};
+    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2324==='prospect'?'prospect':'Best Avail'}</div>
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
       ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2324[pg]};color:${posCol2324[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2324blend(p))}</span></div>`;}).join('')}
     </div>`;
   };
@@ -6174,7 +6170,7 @@ function updateStats2324(){
       </div>
       ${_capGapRow(tp, getCap2324, CAP_LIMIT_2324)}
       ${_curveDeltaLabel(teamCurveDelta2324(t), '2324', t)}
-      ${top5Html2324(fRem,dRem,gRem,rem)}
+      ${top5Html2324(t,fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
@@ -6455,27 +6451,84 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
   return dropped;
 }
 
+// Shared draft pressure/need state — league-wide position supply vs demand. Used identically
+// by the actual Algo Draft pick engine (_runAlgoDraft) AND every season's live team-summary
+// bubble/SCORE column, so the two can never again independently drift on what "scarce" means.
+// `isAssignedFn(p)` returns the team a player currently belongs to (or falsy), abstracting over
+// whether the caller means "really on a roster right now" (live bubble) or "assigned within this
+// in-progress simulated draft" (_runAlgoDraft's per-pick loop).
+function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
+  const need = {};
+  for(const t of allTeams){
+    const r = players.filter(p => isAssignedFn(p) === t);
+    need[t] = {
+      F: Math.max(0, DRAFT_ROSTER_MAX.F - r.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, DRAFT_ROSTER_MAX.D - r.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, DRAFT_ROSTER_MAX.G - r.filter(p=>posGroup(p.pos)==='G').length),
+    };
+  }
+  const leagueNeed = {F:0,D:0,G:0};
+  for(const t of allTeams){ leagueNeed.F+=need[t].F; leagueNeed.D+=need[t].D; leagueNeed.G+=need[t].G; }
+  const avail = {F:0,D:0,G:0};
+  for(const p of players){
+    if(isAssignedFn(p)) continue;
+    if(!(ppts(p)>0) || !(getCap(p)>0)) continue;
+    const g = posGroup(p.pos);
+    if(g in avail) avail[g]++;
+  }
+  const raw = {F:leagueNeed.F/Math.max(1,avail.F), D:leagueNeed.D/Math.max(1,avail.D), G:leagueNeed.G/Math.max(1,avail.G)};
+  const maxP = Math.max(raw.F,raw.D,raw.G,0.0001);
+  const pressure = {F:raw.F/maxP, D:raw.D/maxP, G:raw.G/maxP};
+  return {need, leagueNeed, avail, pressure};
+}
+
+// Shared per-candidate SCORE — the exact formula behind the SCORE column, every season's
+// team-summary bubble, and _runAlgoDraft's actual pick selection. Before this existed each of
+// those was a separately hand-copied implementation of "the same" formula; they'd already
+// drifted twice (avail's cap>0 filter present in the pick engine but missing from the bubble;
+// the bestAvail-mode formula silently applying the F/D/G position multiplier in the display but
+// NOT in the real pick engine, inflating D scores ~26% in every non-prospect round of every
+// bubble/table view relative to what actually got picked). `mode`/`round` select prospect vs
+// best-available scoring; posAlloc (D-cap-share correction) only applies in bestAvail mode and
+// only when a specific team's cap context is supplied — a generic "score every free agent" call
+// (no team) skips it, matching this formula's pre-existing, intentional team-agnostic display use.
+function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, abpMap, calcAgeForSim, contractYearAnchor, curveFns, elcMax, srcNFn, team, teamCap, teamCapByPos }){
+  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
+  const scRich = n => n===0?3:n<=2?2:n<=5?1:0;
+  const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(pressure[pg]||0) - 1));
+  const scV = scRich(abpMap.get(p.id) ?? 99);
+  const tSc = scV * draftWeights.wtScarcity;
+  const tPPTSM = (pp>0 && cap0>0) ? pp/cap0*draftWeights.wtPPTSM : 0;
+  const age = calcAgeForSim(p) ?? 99;
+  const yrsRaw = p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0;
+  const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
+  const tYouth = youthRaw * draftWeights.wtAge;
+  const srcN = srcNFn(p);
+  const tConf = Math.max(0, srcN-1) * draftWeights.wtSourceConf;
+  const tDelta = _deltaCurveBonus(pp, cap0, curveFns[pg], elcMax, draftWeights.deltaCurveThreshold, draftWeights.wtDeltaCurve);
+  const richExtra = tSc + tPPTSM + tYouth + tConf + tDelta;
+  const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, draftWeights.wtProspect, pp);
+  const tPPTS = pp * (mode==='prospect' ? (pm[pg]||1) : 1) * pressMult;
+  let score;
+  if(mode === 'prospect'){
+    score = tPPTS + prospect + richExtra;
+  } else {
+    score = tPPTS + richExtra;
+    const prospectWeight = prospectRoundWeight(round||1);
+    if(prospectWeight > 0) score += prospect * prospectWeight;
+    if((draftWeights.wtPosAlloc||0) > 0 && team && teamCap && teamCapByPos){
+      const capTot = teamCap[team] || 0;
+      if(capTot > 10){
+        const posAllocMult = Math.max(0.5, 1 - Math.max(0, (teamCapByPos[team]?.[pg]||0)/capTot - (OPT_POS_FRACS[pg]||0)) * (draftWeights.wtPosAlloc||1) * 2);
+        score *= posAllocMult;
+      }
+    }
+  }
+  return { score, tPPTS, scV, tSc, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, tConf, tDelta, pressRaw: pressure[pg], pressMult };
+}
+
 function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, computeABPFn, srcNFn, contractYearAnchor }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
-  const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
-
-  // Richer scoring — matches the "SCORE" column shown in Draft Mode's player table and the
-  // team card's top-5 list (lastAllScored2X2Y / _ds2X2Y). Before 2026-07-22 the actual pick
-  // logic below only used tPPTS + prospect bonus, a much narrower formula than what was
-  // displayed — this adds the remaining terms the display always had: scarcity (ABP-based),
-  // points-per-dollar efficiency, peak-trajectory/age, projection-source agreement, and
-  // above-curve bonus. Computed once here, before any picks are made, from the live pre-draft
-  // roster/free-agent state (same snapshot timing the display uses). Backtested against real
-  // draft outcomes before shipping: league-wide Matched count held flat in 23-24 and improved
-  // in 24-25 (28->34) and 25-26 (28->35), no regressions — see project_richscore_algodraft memory.
-  const abpMapRich = computeABPFn(players);
-  const rosteredNow = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
-  const curveFnsRich = {
-    F: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
-    D: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
-    G: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
-  };
-  const scRich = n => n===0?3:n<=2?2:n<=5?1:0;
 
   // Snapshot: track each player's current team assignment
   const assigned = {}; // id → team or null
@@ -6541,62 +6594,42 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     if(!fas.length) { teamPickNum[team]++; boardPicks.push(null); continue; }
 
     // Dynamic position pressure: league-wide need vs available supply per position.
-    // Recomputed each pick so pressure rises as scarce positions get taken.
-    const leagueNeed = {F:0, D:0, G:0};
-    for(const t of allTeams){ leagueNeed.F+=(need[t]?.F||0); leagueNeed.D+=(need[t]?.D||0); leagueNeed.G+=(need[t]?.G||0); }
-    const avail = {F:0, D:0, G:0};
-    for(const p of players){ if(!assigned[p.id]&&ppts(p)>0&&getCap(p)>0){ const g=posGroup(p.pos); if(g in avail) avail[g]++; } }
-    const rawP = { F:leagueNeed.F/Math.max(1,avail.F), D:leagueNeed.D/Math.max(1,avail.D), G:leagueNeed.G/Math.max(1,avail.G) };
-    const maxP = Math.max(rawP.F, rawP.D, rawP.G, 0.0001);
-    const simPressure = { F:rawP.F/maxP, D:rawP.D/maxP, G:rawP.G/maxP };
+    // Recomputed each pick so pressure rises as scarce positions get taken. Shared with the
+    // live team-summary bubble via _draftPressureState — see that function's comment.
+    const { pressure: simPressure } = _draftPressureState(players, allTeams, p => assigned[p.id] || null, ppts, getCap);
 
-    // Score and pick best
+    // ABP (scarcity) and the value curves also need to reflect picks THIS simulation has
+    // already made, not just the pre-draft snapshot — computeABPFn/fitQuadratic read the real
+    // p[startField], which we keep in sync with `assigned` below precisely so this stays live.
+    // Before this, both were computed once before the loop began, so a team's scarcity/curve
+    // terms never reflected earlier picks in the SAME simulated draft — confirmed via a live
+    // UI-driven walkthrough (manually drafting the bubble's #1 pick each turn) diverging from
+    // Algo Draft starting at pick 4 in 23-24, on a case where a departed forward's absence
+    // should have raised another forward's scarcity score but the frozen snapshot never saw it.
+    const abpMapRich = computeABPFn(players);
+    const rosteredNow = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
+    const curveFnsRich = {
+      F: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
+      D: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
+      G: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
+    };
+
+    // Score and pick best — shared with the SCORE column/bubble via _scoreDraftCandidate.
     const scored = fas.map(p => {
       const pg = posGroup(p.pos);
       const pp = ppts(p);
       const cap0 = getCap(p) || 0;
-      const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(simPressure[pg]||0) - 1));
-      // Extra terms matching the display's richer SCORE, added on top of the base pp*pos*press
-      // term below.
-      const scV = scRich(abpMapRich.get(p.id) ?? 99);
-      const tSc = scV * draftWeights.wtScarcity;
-      const tPPTSM = (pp>0 && cap0>0) ? pp/cap0*draftWeights.wtPPTSM : 0;
-      const ageForYouth = calcAgeForSim(p) ?? 99;
-      const yrsRaw = p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0;
-      const youthRaw = peakTrajectoryScore(ageForYouth < 99 ? ageForYouth : null, pg, yrsRaw);
-      const tYouth = youthRaw * draftWeights.wtAge;
-      const srcN = srcNFn(p);
-      const tConf = Math.max(0, srcN-1) * draftWeights.wtSourceConf;
-      const tDelta = _deltaCurveBonus(pp, cap0, curveFnsRich[pg], elcMax, draftWeights.deltaCurveThreshold, draftWeights.wtDeltaCurve);
-      const richExtra = tSc + tPPTSM + tYouth + tConf + tDelta;
-      let score;
-      if(mode === 'prospect'){
-        const age = calcAgeForSim(p) ?? 99;
-        const cap = getCap(p) || 0;
-        const prospect = prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp);
-        score = pp * (pm[pg]||1) * pressMult + prospect + richExtra;
-      } else {
-        score = pp * pressMult + richExtra;
-        const prospectWeight = prospectRoundWeight(round);
-        if(prospectWeight > 0){
-          const age = calcAgeForSim(p) ?? 99;
-          const cap = getCap(p) || 0;
-          score += prospectBonus(age < 99 ? age : null, pg, cap, elcMax, draftWeights.wtProspect, pp) * prospectWeight;
-        }
-        // Positional budget correction: penalize picks that push D share past knapsack-optimal 35%
-        if((draftWeights.wtPosAlloc||0) > 0){
-          const capTot = teamCap[team] || 0;
-          if(capTot > 10){
-            const posAllocMult = Math.max(0.5, 1 - Math.max(0, (teamCapByPos[team]?.[pg]||0)/capTot - (OPT_POS_FRACS[pg]||0)) * (draftWeights.wtPosAlloc||1) * 2);
-            score *= posAllocMult;
-          }
-        }
-      }
+      const { score } = _scoreDraftCandidate(p, {
+        pg, pp, cap0, pressure: simPressure, mode, round, draftWeights,
+        abpMap: abpMapRich, calcAgeForSim, contractYearAnchor, curveFns: curveFnsRich, elcMax, srcNFn,
+        team, teamCap, teamCapByPos,
+      });
       return {p, score, pp};
     }).sort((a,b) => b.score - a.score);
 
     const pick = scored[0];
     assigned[pick.p.id] = team;
+    pick.p[startField] = team; // keep the real field in sync so the next pick's ABP/curve recompute sees this one
     const pg = posGroup(pick.p.pos);
     if(need[team]) need[team][pg] = Math.max(0, (need[team][pg]||0) - 1);
     teamSpotsLeft[team] = Math.max(0, (teamSpotsLeft[team]||0) - 1);
@@ -7096,19 +7129,48 @@ function updateStats2526(){
     </div>`;
   }
 
+  const abpMap2526 = computeABP2526(players);
+  const rosteredPool2526 = players.filter(p=>p.start2526 && ppts2526blend(p)>=curveMinPts && getCap2526(p)>0);
+  const curveFns2526 = {
+    F: fitQuadratic(rosteredPool2526.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
+    D: fitQuadratic(rosteredPool2526.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
+    G: fitQuadratic(rosteredPool2526.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
+  };
   const posBg2526={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2526={F:'#1e40af',D:'#166534',G:'#92400e'};
-  const top5Html2526=(fRem,dRem,gRem,rem)=>{
-    if(!draftMode2526||!lastAllScored2526) return '';
-    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
-    if(!need.size) return '';
+  // Recomputes eligibility + score fresh from this team's REAL current state, same shared
+  // primitives as _runAlgoDraft — see render2425's top5Html2425 for the full rationale.
+  const top5Html2526=(team,fRem,dRem,gRem,rem)=>{
+    if(!draftMode2526) return '';
+    const need={F:fRem,D:dRem,G:gRem};
+    if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored2526].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
-      .sort((a,b)=>draftSubMode2526==='prospect'?b._ds2526-a._ds2526:b._ds2526Normal-a._ds2526Normal).slice(0,5);
+    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2526;
+    const round=(draftState2526.picks||[]).filter(pk=>pk.team===team).length+1;
+    const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    const { pressure: pressure2526 } = _draftPressureState(players, DRAFT_TEAMS_2526, p=>p.start2526||null, ppts2526blend, getCap2526);
+    const teamRoster=players.filter(p=>p.start2526===team);
+    const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2526(p),0)};
+    const teamCapByPos={[team]:{F:0,D:0,G:0}};
+    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2526(p); }
+    const srcNFn2526=p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
+    const fas=players.filter(p=>{
+      if(p.start2526) return false;
+      if(ppts2526blend(p)<=0) return false;
+      if(getCap2526(p)<=0) return false;
+      if(getCap2526(p)>maxPickCap) return false;
+      const pg=posGroup(p.pos);
+      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      return (need[pg]||0)>0;
+    });
+    const picks=fas.map(p=>{
+      const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:pressure2526,mode,round,draftWeights,abpMap:abpMap2526,calcAgeForSim:calcAge2526,contractYearAnchor:2026,curveFns:curveFns2526,elcMax:ELC_MAX_2526,srcNFn:srcNFn2526,team,teamCap,teamCapByPos});
+      return {p,score};
+    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode2526==='prospect'?'prospect':'Best Avail'}</div>
-      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
+      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2526blend(p))}</span></div>`;}).join('')}
     </div>`;
   };
   const teamCurveDelta2526 = _makeTeamCurveDeltaFn('start2526', ppts2526blend, getCap2526);
@@ -7147,7 +7209,7 @@ function updateStats2526(){
       </div>
       ${_capGapRow(tp, getCap2526, CAP_LIMIT_2526)}
       ${_curveDeltaLabel(teamCurveDelta2526(t), '2526', t)}
-      ${top5Html2526(fRem,dRem,gRem,rem)}
+      ${top5Html2526(t,fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
@@ -7231,66 +7293,38 @@ function render2526(){
     const teamCapUsed2526=draftFocusTeam2526?teamRoster.reduce((s,p)=>s+getCap2526(p),0):0;
     const slotsLeft2526=need.F+need.D+need.G;
     const maxAffordable2526=draftFocusTeam2526?CAP_LIMIT_2526-teamCapUsed2526-Math.max(0,slotsLeft2526-1)*ELC_MAX_2526:Infinity;
-    const sc=n=>n===0?3:n<=2?2:n<=5?1:0;
-    const pm={F:draftWeights.multF,D:draftWeights.multD,G:draftWeights.multG};
-    // league-wide positional pressure for 25-26
-    const leagueNeed2526={F:0,D:0,G:0};
-    for(const t of DRAFT_TEAMS_2526){
-      const r=players.filter(p=>p.start2526===t);
-      leagueNeed2526.F+=Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);
-      leagueNeed2526.D+=Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);
-      leagueNeed2526.G+=Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);
-    }
-    const allUndrafted2526=players.filter(p=>!p.start2526&&ppts2526blend(p)>=abpMinPts);
-    const avail2526={F:allUndrafted2526.filter(p=>posGroup(p.pos)==='F').length,D:allUndrafted2526.filter(p=>posGroup(p.pos)==='D').length,G:allUndrafted2526.filter(p=>posGroup(p.pos)==='G').length};
-    const rawP2526={F:leagueNeed2526.F/Math.max(1,avail2526.F),D:leagueNeed2526.D/Math.max(1,avail2526.D),G:leagueNeed2526.G/Math.max(1,avail2526.G)};
-    const maxP2526=Math.max(rawP2526.F,rawP2526.D,rawP2526.G,0.0001);
-    const pressure2526={F:rawP2526.F/maxP2526,D:rawP2526.D/maxP2526,G:rawP2526.G/maxP2526};
+    const srcNFn2526 = p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
+    // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
+    // see _runAlgoDraft / render2425 for the drift history this is meant to end.
+    const { pressure: pressure2526 } = _draftPressureState(players, DRAFT_TEAMS_2526, p=>p.start2526||null, ppts2526blend, getCap2526);
     lastPressure2526=pressure2526;
+    const genericRound2526 = draftProspectRounds + 3;
     lastAllScored2526 = players
       .filter(p=>!p.start2526&&ppts2526blend(p)>0)
       .map(p=>{
-        const pg=posGroup(p.pos);
-        const pp=ppts2526blend(p);
-        const scV=sc(abpMap2526.get(p.id)??99);
-        const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
-        const youthRaw=peakTrajectoryScore(calcAge2526(p),pg,yrsRaw);
-        const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressure2526[pg]-1));
-        const tPPTS=pp*(pm[pg]??1)*pressMult2526;
-        const tSc=scV*draftWeights.wtScarcity;
-        const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
-        const tYouth=youthRaw*draftWeights.wtAge;
-        const ageRaw=calcAge2526(p)??99;
-        const tProspect=prospectBonus(ageRaw,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect,pp);
-        const srcN=(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
-        const tConf=Math.max(0,srcN-1)*draftWeights.wtSourceConf;
-        const tDelta=_deltaCurveBonus(pp,getCap2526(p),curveFns2526[pg],ELC_MAX_2526,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
-        const _ds2526=tPPTS+tSc+tPPTSM+tYouth+tProspect+tConf+tDelta;
-        const _ds2526Normal=tPPTS+tSc+tPPTSM+tYouth+tConf+tDelta;
-        return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:getCap2526(p)||0,_ds2526,_ds2526Normal};
+        const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
+        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights, abpMap: abpMap2526, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526 };
+        const _ds2526 = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2526}).score;
+        const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2526}).score;
+        return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds2526,_ds2526Normal};
       });
+    const focusRound2526 = draftFocusTeam2526 ? (draftState2526.picks||[]).filter(pk=>pk.team===draftFocusTeam2526).length+1 : genericRound2526;
+    const teamCap2526 = {[draftFocusTeam2526]: teamCapUsed2526};
+    const teamCapByPos2526 = {[draftFocusTeam2526]: {F:0,D:0,G:0}};
+    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos2526[draftFocusTeam2526]) teamCapByPos2526[draftFocusTeam2526][g]+=getCap2526(p); }
     const allScored2526=rows
       .filter(p=>!p.start2526&&(!draftFocusTeam2526||(need[posGroup(p.pos)]>0&&getCap2526(p)<=maxAffordable2526))&&ppts2526blend(p)>0)
       .map(p=>{
-        const pg=posGroup(p.pos);
-        const pp=ppts2526blend(p);
-        const scV=sc(abpMap2526.get(p.id)??99);
-        const yrsRaw=p.expYear>=2026?p.expYear-2026+1:0;
-        const youthRaw=peakTrajectoryScore(calcAge2526(p),pg,yrsRaw);
-        const pressRaw2526=pressure2526[pg];
-        const pressMult2526=Math.max(0.1,1+draftWeights.wtPressure*(2*pressRaw2526-1));
-        const tPPTS=pp*(pm[pg]??1)*pressMult2526;
-        const tSc=scV*draftWeights.wtScarcity;
-        const tPPTSM=(pp>0&&getCap2526(p)>0)?pp/getCap2526(p)*draftWeights.wtPPTSM:0;
-        const tYouth=youthRaw*draftWeights.wtAge;
-        const ageRaw2526=calcAge2526(p)??99;
-        const tProspect2526=prospectBonus(ageRaw2526,pg,getCap2526(p),ELC_MAX_2627,draftWeights.wtProspect,pp);
-        const srcN2526d=(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
-        const tConf2526=Math.max(0,srcN2526d-1)*draftWeights.wtSourceConf;
-        const tDelta2526=_deltaCurveBonus(pp,getCap2526(p),curveFns2526[pg],ELC_MAX_2526,draftWeights.deltaCurveThreshold,draftWeights.wtDeltaCurve);
-        const _ds2526=tPPTS+tSc+tPPTSM+tYouth+tProspect2526+tConf2526+tDelta2526;
-        const _ds2526Normal=tPPTS+tSc+tPPTSM+tYouth+tConf2526+tDelta2526;
-        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS,scV,tSc,tPPTSM,yrsRaw,youthRaw,tYouth,ageRaw2526,tProspect2526,srcN2526d,tConf2526,tDelta:tDelta2526,pressRaw2526,pressMult2526}});
+        const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
+        const scoreArgs = {
+          pg, pp, cap0, pressure: pressure2526, round: focusRound2526, draftWeights,
+          abpMap: abpMap2526, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526,
+          team: draftFocusTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526,
+        };
+        const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
+        const _ds2526 = b.score;
+        const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
+        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2526:b.ageRaw,tProspect2526:b.tProspect,srcN2526d:b.srcN,tConf2526:b.tConf,tDelta:b.tDelta,pressRaw2526:b.pressRaw,pressMult2526:b.pressMult}});
       });
     rows=sortCol2526==='ppts2526blend'?(draftSubMode2526==='prospect'?allScored2526.sort((a,b)=>b._ds2526-a._ds2526):allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal)):allScored2526;
   }
@@ -8073,19 +8107,48 @@ function updateStats(){
     </div>`;
   }
 
+  const abpMap = computeABP(players);
+  const rosteredPool2627 = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && p.cap > 0);
+  const curveFns2627 = {
+    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
+    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
+    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
+  };
   const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
-  const top5Html=(fRem,dRem,gRem,rem)=>{
-    if(!draftMode||!lastAllScored) return '';
-    const need=new Set([...(fRem>0?['F']:[]),...(dRem>0?['D']:[]),...(gRem>0?['G']:[])]);
-    if(!need.size) return '';
+  // Recomputes eligibility + score fresh from this team's REAL current state, same shared
+  // primitives as _runAlgoDraft — see render2425's top5Html2425 for the full rationale.
+  const top5Html=(team,fRem,dRem,gRem,rem)=>{
+    if(!draftMode) return '';
+    const need={F:fRem,D:dRem,G:gRem};
+    if(!fRem&&!dRem&&!gRem) return '';
     const spotsLeft=fRem+dRem+gRem;
-    const maxCap=rem-(spotsLeft-1)*0.9;
-    const picks=[...lastAllScored].filter(p=>need.has(posGroup(p.pos))&&p.cap<=maxCap)
-      .sort((a,b)=>draftSubMode==='prospect'?b._ds-a._ds:b._dsNormal-a._dsNormal).slice(0,5);
+    const maxPickCap=rem-Math.max(0,spotsLeft-1)*DRAFT_RESERVE_2627;
+    const round=(draftState2627.picks||[]).filter(pk=>pk.team===team).length+1;
+    const mode=round<=draftProspectRounds?'prospect':'bestAvail';
+    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap||0);
+    const teamRoster=players.filter(p=>p.start2627===team);
+    const teamCap={[team]:teamRoster.reduce((s,p)=>s+(p.cap||0),0)};
+    const teamCapByPos={[team]:{F:0,D:0,G:0}};
+    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=(p.cap||0); }
+    const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+    const fas=players.filter(p=>{
+      if(p.start2627) return false;
+      if((p.pts||0)<=0) return false;
+      if((p.cap||0)<=0) return false;
+      if((p.cap||0)>maxPickCap) return false;
+      const pg=posGroup(p.pos);
+      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      return (need[pg]||0)>0;
+    });
+    const picks=fas.map(p=>{
+      const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure,mode,round,draftWeights,abpMap,calcAgeForSim:calcAge,contractYearAnchor:NHL_SEASON_YEAR,curveFns:curveFns2627,elcMax:ELC_MAX_2627,srcNFn:srcNFn2627,team,teamCap,teamCapByPos});
+      return {p,score};
+    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${draftSubMode==='prospect'?'prospect':'Best Avail'}</div>
-      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts)}</span></div>`;}).join('')}
+      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
+      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts||0)}</span></div>`;}).join('')}
     </div>`;
   };
   const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.pts||0, p=>p.cap||0);
@@ -8124,7 +8187,7 @@ function updateStats(){
       </div>
       ${_capGapRow(tp, p=>p.cap||0, CAP_LIMIT)}
       ${_curveDeltaLabel(teamCurveDelta(t), '2627', t)}
-      ${top5Html(fRem,dRem,gRem,rem)}
+      ${top5Html(t,fRem,dRem,gRem,rem)}
     </div>`;
   }).join('');
 }
