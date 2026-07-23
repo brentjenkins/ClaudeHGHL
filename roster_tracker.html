@@ -1429,6 +1429,26 @@ const KNOWN_NAME_OVERRIDE_PAIRS = [
   // converges on the exact same value FIRST_NAME_ALIASES already produces for the
   // "zachary" spelling — found 2026-07-22 via a Compare Drafts name mismatch.
   ['zack bolduc', 'zach bolduc'],
+  // Found via the same Nick/Nicklaus Perbix bug (2026-07-22) that motivated a systematic
+  // audit of every data_2X2Y.js file + baked constant for other uncovered formal/nickname
+  // pairs among real HGHL-relevant players. Verified individually against real NHL rosters
+  // before adding — three other audit hits (Anders/Andre Lee, Jaycob/Jayson Megna,
+  // Colin/Colton White) were confirmed to be genuinely DIFFERENT real players sharing a
+  // last name, not spelling variants, and were deliberately excluded from this list.
+  ['nick perbix', 'nicklaus perbix'],
+  ['arsh bains', 'arshdeep bains'],
+  ['sammy blais', 'samuel blais'],
+  ['mike eyssimont', 'mikey eyssimont'],
+  ['daniil gushchin', 'danil gushchin'],
+  ['zac jones', 'zachary jones'],
+  ['matt knies', 'matty knies'],
+  ['matias maccelli', 'mattias maccelli'],
+  ['alexander nylander', 'alexandre nylander'],
+  ['nic petan', 'nicolas petan'],
+  ['cal petersen', 'calvin petersen'],
+  ['matt tkachuk', 'matty tkachuk'],
+  ['dmitri voronkov', 'dmitry voronkov'],
+  ['alexander wennberg', 'alexandre wennberg'],
 ];
 function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
@@ -1505,9 +1525,9 @@ function _findExistingPlayerForSync(name, pos, nhlId){
   return findPlayerByNamePos(name, pos);
 }
 // Look up a name-keyed dict (e.g. PREDROP_ROSTER_2425) with alias fallback.
-function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??null; }
+function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??(_knownNameOverride(n)?dict[_knownNameOverride(n)]:null)??null; }
 // Look up a name+pos keyed dict (e.g. MANUAL_CAPS_2425) with alias fallback.
-function _dictLookupPos(name, pos, dict){ const n=normName(name).toLowerCase(),pg=posGroup(pos); return dict[`${n}_${pg}`]??(_nameAlias(n)?dict[`${_nameAlias(n)}_${pg}`]:null)??null; }
+function _dictLookupPos(name, pos, dict){ const n=normName(name).toLowerCase(),pg=posGroup(pos); return dict[`${n}_${pg}`]??(_nameAlias(n)?dict[`${_nameAlias(n)}_${pg}`]:null)??(_knownNameOverride(n)?dict[`${_knownNameOverride(n)}_${pg}`]:null)??null; }
 // Build a compareDrafts-style match key: bare normalized name, except for names shared
 // by 2+ live players (e.g. Elias Pettersson F/D, Sebastian Aho F/D), which get a position
 // suffix — matching the same qualify-only-when-needed convention POSTDRAFT_ROSTER_2X2Y uses.
@@ -3335,7 +3355,7 @@ function _seedStart2627(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2627){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
@@ -4528,7 +4548,7 @@ function _seedStart2526(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2526){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2526:null,
@@ -5181,7 +5201,7 @@ function _seedStart2425(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2425){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2425:null,
@@ -5466,7 +5486,7 @@ function _seedStart2324(){
   let nextId = Math.max(0, ...players.map(p=>p.id??0)) + 1;
   for(const stub of PREDROP_STUBS_2324){
     const key = normName(stub.name).toLowerCase();
-    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key)))) continue;
+    if(matched.has(key) || (_nameAlias(key) && matched.has(_nameAlias(key))) || (_knownNameOverride(key) && matched.has(_knownNameOverride(key)))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2324:null, cap2425:null,
