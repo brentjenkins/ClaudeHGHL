@@ -1464,13 +1464,14 @@ function _wasReacquired(midseasonReadds, postDraftRoster, team, name, pos){
   return _wasVindicated(midseasonReadds, team, name, pos);
 }
 // Find a player by name, trying the alias spelling if exact match fails.
-function findPlayerByName(name){ const n=normName(name).toLowerCase(); const alias=_nameAlias(n); return players.find(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; })||null; }
+function findPlayerByName(name){ const n=normName(name).toLowerCase(); const alias=_nameAlias(n); const override=_knownNameOverride(n); return players.find(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||(override&&pn===override)||_nameAlias(pn)===n||_knownNameOverride(pn)===n; })||null; }
 // Like findPlayerByName, but if multiple players share the name (e.g. two "Elias Pettersson"s),
 // prefer the one whose position group matches posHint (from the source roster's pos field).
 function findPlayerByNamePos(name, posHint){
   const n=normName(name).toLowerCase();
   const alias=_nameAlias(n);
-  const cands=players.filter(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||_nameAlias(pn)===n; });
+  const override=_knownNameOverride(n);
+  const cands=players.filter(p=>{ const pn=normName(p.name).toLowerCase(); return pn===n||(alias&&pn===alias)||(override&&pn===override)||_nameAlias(pn)===n||_knownNameOverride(pn)===n; });
   if(!cands.length) return null;
   if(!posHint) return cands[0];
   const posMatch = cands.find(p=>posGroup(p.pos)===posGroup(posHint));
@@ -1482,6 +1483,26 @@ function findPlayerByNamePos(name, posHint){
   // hasn't been added yet — returning cands[0] here would silently merge two distinct
   // real players into one corrupted record instead of letting the caller add a second one.
   return cands.length>1 ? cands[0] : null;
+}
+// Shared "does this incoming sync record already exist as a live player, or is it
+// genuinely new" check — used by every sync path that can create a player record
+// (currently the Signings merge and NHL Rosters sync), so there's exactly one place
+// that decides this instead of each sync reimplementing its own version at varying
+// levels of correctness. This recurring bug class (Moser, Peterka, Gaudreau, Bolduc,
+// Perbix — a sync's incoming name spelling doesn't match any existing alias/override
+// entry, so a new duplicate record gets created even when the incoming data's NHL ID
+// already matches an existing player) kept recurring specifically because NHL-ID
+// checking had only ever been added to ONE of the creation sites (Signings), not
+// propagated to the others when they were built. NHL ID (string-normalized — PuckPedia
+// and the NHL API don't reliably agree on whether it's a number or a string) is tried
+// first as the strongest signal, then name/alias/override via findPlayerByNamePos.
+function _findExistingPlayerForSync(name, pos, nhlId){
+  if(nhlId){
+    const idStr = String(nhlId);
+    const byId = players.find(p => p.nhlId && String(p.nhlId) === idStr);
+    if(byId) return byId;
+  }
+  return findPlayerByNamePos(name, pos);
 }
 // Look up a name-keyed dict (e.g. PREDROP_ROSTER_2425) with alias fallback.
 function _dictLookup(name, dict){ const n=normName(name).toLowerCase(); return dict[n]??(_nameAlias(n)?dict[_nameAlias(n)]:null)??null; }
@@ -1513,7 +1534,12 @@ function lsSet(k,v){
 }
 
 function dedup(){
-  const srcRank = {yahoo:3, nhl:2, manual:1};
+  // 'puckpedia' ranks alongside 'yahoo' — it's this app's authoritative cap/contract
+  // source, so a puckpedia-sourced record's cap fields shouldn't lose to a same-ranked
+  // 'nhl' roster-sync record that's carrying a stale/rounded cap value (found 2026-07-22
+  // via Nick/Nicklaus Perbix: the nhl-sourced duplicate had cap2324=1.13, wrong; the
+  // puckpedia-sourced one had the correct 1.125).
+  const srcRank = {yahoo:3, puckpedia:3, nhl:2, manual:1};
   const before = players.length;
 
   // Stage 1: merge by NHL player ID first — the strongest possible signal, since it
@@ -1525,8 +1551,27 @@ function dedup(){
   const rest = [];
   for(const p of players){
     if(!p.nhlId){ rest.push(p); continue; }
-    const existing = byId.get(p.nhlId);
-    if(!existing || (srcRank[p.source]||0) > (srcRank[existing.source]||0)) byId.set(p.nhlId, p);
+    // String-normalize — PuckPedia and the NHL API don't reliably agree on whether nhlId
+    // comes through as a number or a string, and Map keys use strict equality, so
+    // 8480246 (number) and "8480246" (string) silently never merge otherwise. Found
+    // 2026-07-22 via Nick/Nicklaus Perbix: both records already shared the same real
+    // ID by value, but dedup() kept treating them as unrelated.
+    const idKey = String(p.nhlId);
+    const existing = byId.get(idKey);
+    if(!existing){ byId.set(idKey, p); continue; }
+    const winner = (srcRank[p.source]||0) > (srcRank[existing.source]||0) ? p : existing;
+    const loser  = winner === p ? existing : p;
+    // Field-by-field merge, not whole-record replacement — two duplicate records for the
+    // same real player often carry COMPLEMENTARY data (one has the correct cap, the other
+    // has real season stats the other never had populated at all), so picking one whole
+    // record and discarding the other silently drops whatever only the loser had. The
+    // winner's own non-null fields still take priority (this isn't a blind combine —
+    // conflicting values resolve in the winner's favor via srcRank as before), but any
+    // field the winner is missing gets backfilled from the loser first.
+    for(const k in loser){
+      if(winner[k] === undefined || winner[k] === null) winner[k] = loser[k];
+    }
+    byId.set(idKey, winner);
   }
 
   // Stage 2: existing name+alias dedup, applied to the id-deduped survivors + no-id players
@@ -2269,11 +2314,6 @@ async function syncSigningsAll(e){
     let added = 0, idMatched = 0;
     let nextId = Math.max(0, ...players.map(p => p.id ?? 0)) + 1;
     const seenIds = new Set();
-    // NHL player ID is a stronger signal than any name/alias match — catches a contract
-    // whose name spelling doesn't match any existing alias/override entry at all (the
-    // root cause behind the Moser/Peterka/Gaudreau phantom-duplicate bugs), without
-    // needing a new hand-added override for every future case of the same shape.
-    const byNhlId = new Map(players.filter(p => p.nhlId).map(p => [String(p.nhlId), p]));
     for(const [key, contracts] of Object.entries(raw)){
       // Also check this raw key's own alias against matchedKeys — covers 3-spelling
       // chains a single alias hop can't bridge directly (e.g. live "Tommy" Novak matches
@@ -2292,7 +2332,12 @@ async function syncSigningsAll(e){
       const c2526 = contracts.find(c => c.start_yr <= 2025 && c.exp >= '2025-2026');
       const c2627 = contracts.find(c => c.start_yr <= 2026 && c.exp >= '2026-2027');
 
-      const existingById = latest.nhl_id && byNhlId.get(String(latest.nhl_id));
+      // NHL player ID is a stronger signal than any name/alias match — catches a contract
+      // whose name spelling doesn't match any existing alias/override entry at all (the
+      // root cause behind the Moser/Peterka/Gaudreau/Bolduc/Perbix phantom-duplicate bugs).
+      // Shared with syncAllNHL() via _findExistingPlayerForSync so there's one canonical
+      // "does this already exist" check instead of each sync reimplementing its own.
+      const existingById = _findExistingPlayerForSync(latest.name, latest.pos, latest.nhl_id);
       if(existingById){
         existingById.cap2324   = c2324?.cap ?? existingById.cap2324 ?? null;
         existingById.cap2425   = c2425?.cap ?? existingById.cap2425 ?? null;
@@ -2409,7 +2454,7 @@ async function syncAllNHL(){
       // Skip alias keys — only process the canonical key for each player to avoid duplicates
       const canonKey = `${normName(p.name).toLowerCase()}_${posGroup(p.pos)}`;
       if(key !== canonKey) continue;
-      const ex = findPlayerByNamePos(p.name, p.pos);
+      const ex = _findExistingPlayerForSync(p.name, p.pos, p.nhlId);
       if(ex){
         ex.status = 'roster';
         if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
