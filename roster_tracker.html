@@ -1040,12 +1040,8 @@ tr:hover td{background:#fafaf8}
             <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding-top:8px;border-top:1px solid #bbf7d0">
               <span style="color:#9ca3af;padding-bottom:6px">+</span>
               <div style="display:flex;flex-direction:column;gap:3px">
-                <span style="font-size:11px;color:#9ca3af" title="Bonus for pts above curve — 0 at ELC, ramps to full at threshold">△ Curve bonus ×</span>
-                <input type="number" id="s-wtDeltaCurve" value="10" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
-              </div>
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span style="font-size:11px;color:#9ca3af">full at cap &gt; <span style="color:#1a1a18">X</span> × ELC max</span>
-                <input type="number" id="s-deltaCurveThreshold" value="1.5" min="1.1" max="5" step="0.1" onchange="updateDraftWeight('deltaCurveThreshold',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <span style="font-size:11px;color:#9ca3af" title="Bonus for pts above curve — full weight at every cap level including ELC (coverage discount already tempers thin-sample ELC risk upstream)">△ Curve bonus ×</span>
+                <input type="number" id="s-wtDeltaCurve" value="8" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
             </div>
             <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding-top:8px;border-top:1px solid #bbf7d0">
@@ -1254,21 +1250,35 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, algoDropsApplied = false, draftMode = false, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 10, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
-// Delta-to-curve bonus: rewards players above the position efficiency curve,
-// ramping from 0 at ELC cap to full at deltaCurveThreshold (default $4M).
-// Below-curve gets no penalty (floor 0) — tPPTSM/tSc already handle that.
-// threshold is a multiplier of elcMax (default 2.0 = 2× ELC).
-// Ramp: 0 at cap=elcMax, 1 at cap=threshold×elcMax.
-function _deltaCurveBonus(pts, cap, curveFn, elcMax, threshold, wt){
-  if(!curveFn || pts <= 0 || cap <= 0 || wt <= 0) return 0;
-  const delta = pts - curveFn(cap);
+// Delta-to-curve bonus: rewards players above the position efficiency curve, at full weight
+// across the entire cap range including ELC. Below-curve gets no penalty (floor 0) — tPPTSM/tSc
+// already handle that. Used to ramp from 0 at ELC cap to full at a cap-relative threshold,
+// specifically to avoid rewarding a thin-sample ELC player's raw delta at full strength — but
+// that risk is now handled upstream by wtCoverageDiscount (shrinks the pts this function
+// receives before the curve comparison even happens), so gating on cap alone was redundant with
+// a more targeted, already-existing safeguard. Removed 2026-07-24 (see
+// project_delta_curve_elc_ramp_removal memory) once that reasoning held up: prospectBonus still
+// separately rewards age/ELC-trajectory upside, so this isn't double-counting the same thing.
+//
+// Uses _curveBaseline (same function the displayed △ column uses), not curveFn(cap) directly —
+// found the same day the ramp was removed: the displayed △ column already special-cases cap <=
+// elcMax to a stable per-position "ELC expected pts" constant (_elcExp), since the raw quadratic
+// fit is noisy/sparse at that end of the cap range. _deltaCurveBonus was bypassing that entirely
+// and using the raw (unstable) fit, so an ELC player's SCORE bonus had no relationship to their
+// own displayed △ value — could be zero for a real riser (Ivan Demidov, +22 displayed, $0 scored)
+// while another similar player got a wildly oversized bonus purely from curve-fit noise landing
+// the other way (Lane Hutson, delta=37 -> tDelta=370 at wt=10, dwarfing the rest of the score).
+function _deltaCurveBonus(pts, cap, pg, elcMax, curveFn, wt){
+  if(pts <= 0 || cap <= 0 || wt <= 0) return 0;
+  const base = _curveBaseline(pg, cap, elcMax, curveFn);
+  if(base == null) return 0;
+  const delta = pts - base;
   if(delta <= 0) return 0;
-  const ramp = Math.min(1, Math.max(0, (cap / elcMax - 1) / Math.max(0.01, threshold - 1)));
-  return delta * ramp * wt;
+  return delta * wt;
 }
 
 // Prospect age thresholds (Athletic definition): under 23 for F, under 24 for D, under 25 for G.
@@ -2967,7 +2977,7 @@ function render(){
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2627
@@ -3833,7 +3843,6 @@ function syncSettings(){
   set('s-wtPressure', W.wtPressure);
   set('s-wtScarcity', W.wtScarcity);
   set('s-wtDeltaCurve', W.wtDeltaCurve);
-  set('s-deltaCurveThreshold', W.deltaCurveThreshold);
   set('s-wtPosAlloc', W.wtPosAlloc??1.0);
   set('s-draftProspectRounds', draftProspectRounds);
   set('s-minDropsPreseason', minDropsPreseason); set('s-maxDropsPreseason', maxDropsPreseason);
@@ -3863,8 +3872,7 @@ function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
   if(draftWeights.wtCoverageDiscount === undefined) draftWeights.wtCoverageDiscount = 0.25;
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
-  if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 10;
-  if(draftWeights.deltaCurveThreshold === undefined) draftWeights.deltaCurveThreshold = 2.0;
+  if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 8;
   if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 35;
   if(draftWeights.elcExpD === undefined) draftWeights.elcExpD = 25;
   if(draftWeights.elcExpG === undefined) draftWeights.elcExpG = 35;
@@ -5584,7 +5592,7 @@ function render2425(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2425>0?p.gp2425:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2425>0?p.pts2425:'—'}</td>
       ${(()=>{const s=curveDeltaActual2425(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="24-25 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}${draftSubMode2425==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}${draftSubMode2425==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2425
@@ -6049,7 +6057,7 @@ function render2324(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2324>0?p.gp2324:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2324>0?p.pts2324:'—'}</td>
       ${(()=>{const s=curveDeltaActual2324(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="23-24 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${b.tProspect2324.toFixed(1)}${draftSubMode2324==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${b.tProspect2324.toFixed(1)}${draftSubMode2324==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2324
@@ -6593,7 +6601,7 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   const yrsRaw = p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0;
   const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
   const tYouth = youthRaw * draftWeights.wtAge;
-  const tDelta = _deltaCurveBonus(ppEff, cap0, curveFns[pg], elcMax, draftWeights.deltaCurveThreshold, draftWeights.wtDeltaCurve);
+  const tDelta = _deltaCurveBonus(ppEff, cap0, pg, elcMax, curveFns[pg], draftWeights.wtDeltaCurve);
   const richExtra = tSc + tPPTSM + tYouth + tDelta;
   const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, draftWeights.wtProspect, ppEff);
   const tPPTS = ppEff * (mode==='prospect' ? (pm[pg]||1) : 1) * pressMult;
@@ -7501,7 +7509,7 @@ function render2526(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×ramp×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}${draftSubMode2526==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(${b.youthRaw.toFixed(1)})×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}\n+ Scarcity(${b.scV})×${draftWeights.wtScarcity}: ${b.tSc.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}${draftSubMode2526==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
