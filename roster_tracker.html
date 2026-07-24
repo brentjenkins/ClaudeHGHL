@@ -6401,14 +6401,22 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     const mandatoryIds = new Set(mandatory.map(p => p.id));
     const remaining = roster.filter(p => !mandatoryIds.has(p.id));
 
-    // Positional rebalancing: D cap > 35% optimal → bump D players' effective deficit so an
-    // over-invested blue line gets trimmed even when no single D looks bad enough on its own.
+    // Positional rebalancing: any position's cap share > its knapsack-optimal fraction
+    // (OPT_POS_FRACS) bumps THAT position's players' effective deficit, so an over-invested
+    // position gets trimmed even when no single player there looks bad enough on its own. Was
+    // D-only (blue line); generalized to F/G too 2026-07-24, prompted by a real drop the user
+    // made for exactly this reason on a goalie (expensive G on a bad team, cap better spent on
+    // F) that the algo's D-only version had no way to reason about directly — the mechanism had
+    // simply never been extended past its original D use case. Backtested via Compare Drops
+    // 2025-26 (the only season with this flag on and real outcome data): 142/180 -> 143/180.
     let rebalBonus = () => 0;
     if(useRebalBonus){
-      const rCapD = remaining.reduce((s,p) => posGroup(p.pos)==='D' ? s+(getCap(p)||0) : s, 0);
       const rCapTot = remaining.reduce((s,p) => s+(getCap(p)||0), 0);
-      const dExcess = rCapTot>0 ? Math.max(0, rCapD/rCapTot - OPT_POS_FRACS.D) : 0;
-      rebalBonus = p => posGroup(p.pos)==='D' ? dExcess*rCapTot : 0;
+      const rCapByPos = {F:0, D:0, G:0};
+      for(const p of remaining) rCapByPos[posGroup(p.pos)] = (rCapByPos[posGroup(p.pos)]||0) + (getCap(p)||0);
+      const excessByPos = {};
+      for(const pg of ['F','D','G']) excessByPos[pg] = rCapTot>0 ? Math.max(0, rCapByPos[pg]/rCapTot - (OPT_POS_FRACS[pg]||0)) : 0;
+      rebalBonus = p => (excessByPos[posGroup(p.pos)]||0) * rCapTot;
     }
 
     // Four tiers: low-value non-prospects first, high-value non-prospects second (last resort),
