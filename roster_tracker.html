@@ -3494,49 +3494,39 @@ function undoLastPick2324(){
 function simulateBestPick(){
   const team = buildDraftSeq2627()[draftState2627.picks.length];
   if(!team) return;
-  const teamPicks = draftState2627.picks.filter(p => p.team === team);
-  const fN = teamPicks.filter(p => posGroup(p.pos) === 'F').length;
-  const dN = teamPicks.filter(p => posGroup(p.pos) === 'D').length;
-  const gN = teamPicks.filter(p => posGroup(p.pos) === 'G').length;
+
+  // Picks with the exact same _pickBestFA/_scoreDraftCandidate engine _runAlgoDraft uses —
+  // this button used to run its own separate, unconsolidated 2-term formula (with a hardcoded
+  // 6x ABP inflation for goalies that had no basis in the data). Now it's just "what would Algo
+  // Draft pick right here, right now" for the team on the clock.
+  const roster = players.filter(p => p.start2627 === team);
   const need = {
-    F: Math.max(0, DRAFT_ROSTER_MAX.F - fN),
-    D: Math.max(0, DRAFT_ROSTER_MAX.D - dN),
-    G: Math.max(0, DRAFT_ROSTER_MAX.G - gN),
+    F: Math.max(0, DRAFT_ROSTER_MAX.F - roster.filter(p=>posGroup(p.pos)==='F').length),
+    D: Math.max(0, DRAFT_ROSTER_MAX.D - roster.filter(p=>posGroup(p.pos)==='D').length),
+    G: Math.max(0, DRAFT_ROSTER_MAX.G - roster.filter(p=>posGroup(p.pos)==='G').length),
   };
+  const teamCapByPos = {F:0,D:0,G:0};
+  for(const p of roster) teamCapByPos[posGroup(p.pos)] += (p.cap||0);
+  const teamCapTot = teamCapByPos.F + teamCapByPos.D + teamCapByPos.G;
+  const round = (draftState2627.picks||[]).filter(pk=>pk.team===team).length + 1;
+  const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
+  const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
 
-  const drafted = new Set(draftState2627.picks.map(p => normName(p.player).toLowerCase()));
-  const posMult = { F: draftWeights.multF, D: draftWeights.multD, G: draftWeights.multG };
-  const abpMap  = computeABP(players);
-  const scarcity = abp => abp===0?1.3:abp<=2?1.15:abp<=5?1.05:abp<=8?0.9:abp<=12?0.8:abp<=16?0.7:0.6;
+  const pick = _pickBestFA(team, round, mode, {
+    players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
+    ppts: p => p.pts || 0, getCap: p => p.cap || 0,
+    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights,
+    calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
+    computeABPFn: computeABP, srcNFn: srcNFn2627,
+    allTeams: DRAFT_TEAMS_2627, need: {[team]: need}, teamCap: {[team]: teamCapTot}, teamCapByPos: {[team]: teamCapByPos},
+  });
 
-  const available = players.filter(p =>
-    !p.start2627 &&
-    !drafted.has(normName(p.name).toLowerCase()) &&
-    need[posGroup(p.pos)] > 0
-  );
-
-  if(!available.length){
+  if(!pick){
     toast('No available players at needed positions.');
     return;
   }
 
-  available.sort((a, b) => {
-    const score = p => {
-      const adjPts  = (p.pts||0) * (posMult[posGroup(p.pos)] ?? 1.0) * scarcity((abpMap.get(p.id)??99)*(posGroup(p.pos)==='G'?6:1));
-      const ptsPerM = (p.pts > 0 && p.cap > 0) ? (p.pts / p.cap) * draftWeights.wtPPTSM : 0;
-      const age2    = calcAge(p) ?? 99;
-      const yrs2    = p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0;
-      const youth   = peakTrajectoryScore(age2 < 99 ? age2 : null, posGroup(p.pos), yrs2) * draftWeights.wtAge;
-      const prospect2 = prospectBonus(age2 < 99 ? age2 : null, posGroup(p.pos), p.cap||0, ELC_MAX_2627, draftWeights.wtProspect, p.pts||0);
-      const srcN2   = (p.ptsAth > 0 ? 1 : 0) + (p.ptsDFO > 0 ? 1 : 0) + (p.ptsDTZ > 0 ? 1 : 0) + (p.ptsESPN > 0 ? 1 : 0) + (p.ptsCBS > 0 ? 1 : 0);
-      const conf2   = Math.max(0, srcN2 - 1) * draftWeights.wtSourceConf;
-      return adjPts + ptsPerM + youth + prospect2 + conf2;
-    };
-    return score(b) - score(a);
-  });
-
-  const pick = available[0];
-  makeDraftPick(pick.name, pick.pos, pick.team||'—', pick.cap||0, pick.pts||0);
+  makeDraftPick(pick.p.name, pick.p.pos, pick.p.team||'—', pick.p.cap||0, pick.pp);
 }
 
 function setDraftFocus(t){
@@ -6581,6 +6571,58 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   return { score, tPPTS, scV, tSc, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, tConf, tDelta, pressRaw: pressure[pg], pressMult };
 }
 
+// Selects the single best free-agent pick for `team` at `round`/`mode` — round-aware cap
+// reserve, live scarcity/ABP/curve state, and the shared SCORE formula. Factored out of
+// _runAlgoDraft's per-pick loop so the on-the-clock "Best Pick" button (simulateBestPick) calls
+// the exact same selection logic instead of a separately hand-maintained formula — the button
+// previously had its own 2-term score plus a hardcoded 6x ABP inflation for goalies that had no
+// basis in the data and directly contradicted the goalie-volatility backtest (goalie proj R^2
+// far below F/D; no goalie is a reliable "sure thing" — see project_goalie_volatility memory).
+function _pickBestFA(team, round, mode, ctx){
+  const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
+          draftWeights, calcAgeForSim, contractYearAnchor, elcMax, computeABPFn, srcNFn,
+          allTeams, need, teamCap, teamCapByPos } = ctx;
+
+  const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
+  let futureReserve = 0;
+  for(let fr = round + 1; fr < round + spotsLeft; fr++) futureReserve += _expectedRoundCost(fr, capLimit, draftReserve);
+  const roomAvailable = capLimit - (teamCap[team]||0);
+  futureReserve = Math.min(futureReserve, Math.max(0, roomAvailable - elcMax));
+  const maxPickCap = roomAvailable - futureReserve;
+
+  const fas = players.filter(p => {
+    if(getAssignedTeam(p)) return false;
+    if(ppts(p) <= 0) return false;
+    if(getCap(p) <= 0) return false;
+    if(getCap(p) > maxPickCap) return false;
+    const pg = posGroup(p.pos);
+    if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+    return (need[team]?.[pg]||0) > 0;
+  });
+  if(!fas.length) return null;
+
+  const { pressure } = _draftPressureState(players, allTeams, getAssignedTeam, ppts, getCap);
+  const abpMapRich = computeABPFn(players);
+  const rosteredNow = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
+  const curveFnsRich = {
+    F: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
+    D: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
+    G: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
+  };
+
+  return fas.map(p => {
+    const pg = posGroup(p.pos);
+    const pp = ppts(p);
+    const cap0 = getCap(p) || 0;
+    const { score } = _scoreDraftCandidate(p, {
+      pg, pp, cap0, pressure, mode, round, draftWeights,
+      abpMap: abpMapRich, calcAgeForSim, contractYearAnchor, curveFns: curveFnsRich, elcMax, srcNFn,
+      team, teamCap, teamCapByPos,
+    });
+    return {p, score, pp};
+  }).sort((a,b) => b.score - a.score)[0];
+}
+
 function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, computeABPFn, srcNFn, contractYearAnchor }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
 
@@ -6629,74 +6671,17 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     // per-position need (guards against per-position miscounts on carried-forward rosters)
     if((teamSpotsLeft[team]||0) <= 0){ teamPickNum[team]++; boardPicks.push(null); continue; }
 
-    // Remaining picks for this team after this one (for reserve calculation)
-    const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
-    // Max cap this pick can use: full remaining headroom minus a ROUND-AWARE reserve for future
-    // picks — each future pick (round+1, round+2, ...) reserves that round's real empirical
-    // market rate (_expectedRoundCost), not a flat ELC-level constant. Before this, a flat
-    // `draftReserve` per remaining pick let the algo dramatically overspend in rounds 2-3
-    // (real GMs pay ~$1-3M there on average; the algo was paying $6-7M) and then crash to
-    // near-ELC-floor picks for the rest of the draft once cap ran out — found 2026-07-23 by
-    // comparing Algo Draft's own simulated cap-by-round curve against the real one.
-    let futureReserve = 0;
-    for(let fr = round + 1; fr < round + spotsLeft; fr++) futureReserve += _expectedRoundCost(fr, capLimit, draftReserve);
-    // Clamp: never reserve so much that THIS pick can't afford even a cheap ELC-tier player —
-    // teams with heavy pre-existing keeper cap could otherwise see the summed future-round
-    // reserve exceed their entire remaining room, making maxPickCap negative and excluding every
-    // free agent (including $0.75M prospects), silently benching that team for the whole draft.
-    // Guarantees the same feasibility floor the old flat reserve always had.
-    const roomAvailable = capLimit - (teamCap[team]||0);
-    futureReserve = Math.min(futureReserve, Math.max(0, roomAvailable - elcMax));
-    const maxPickCap = roomAvailable - futureReserve;
-
-    // Available FAs this team can still draft (within cap and position need)
-    const fas = players.filter(p => {
-      if(assigned[p.id]) return false;
-      if(ppts(p) <= 0) return false;
-      if(getCap(p) <= 0) return false;  // no contract = not draftable
-      if(getCap(p) > maxPickCap) return false;
-      const pg = posGroup(p.pos);
-      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
-      return (need[team]?.[pg]||0) > 0;
+    // Remaining picks for this team after this one — round-aware cap reserve, live
+    // scarcity/ABP/curve state, and the SCORE formula all live in _pickBestFA now (shared with
+    // the on-the-clock "Best Pick" button via simulateBestPick).
+    const pick = _pickBestFA(team, round, mode, {
+      players, getAssignedTeam: p => assigned[p.id] || null, startField, ppts, getCap,
+      capLimit, draftReserve, draftWeights, calcAgeForSim, contractYearAnchor, elcMax,
+      computeABPFn, srcNFn, allTeams, need, teamCap, teamCapByPos,
     });
 
-    if(!fas.length) { teamPickNum[team]++; boardPicks.push(null); continue; }
+    if(!pick) { teamPickNum[team]++; boardPicks.push(null); continue; }
 
-    // Dynamic position pressure: league-wide need vs available supply per position.
-    // Recomputed each pick so pressure rises as scarce positions get taken. Shared with the
-    // live team-summary bubble via _draftPressureState — see that function's comment.
-    const { pressure: simPressure } = _draftPressureState(players, allTeams, p => assigned[p.id] || null, ppts, getCap);
-
-    // ABP (scarcity) and the value curves also need to reflect picks THIS simulation has
-    // already made, not just the pre-draft snapshot — computeABPFn/fitQuadratic read the real
-    // p[startField], which we keep in sync with `assigned` below precisely so this stays live.
-    // Before this, both were computed once before the loop began, so a team's scarcity/curve
-    // terms never reflected earlier picks in the SAME simulated draft — confirmed via a live
-    // UI-driven walkthrough (manually drafting the bubble's #1 pick each turn) diverging from
-    // Algo Draft starting at pick 4 in 23-24, on a case where a departed forward's absence
-    // should have raised another forward's scarcity score but the frozen snapshot never saw it.
-    const abpMapRich = computeABPFn(players);
-    const rosteredNow = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
-    const curveFnsRich = {
-      F: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
-      D: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
-      G: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: ppts(p)}))),
-    };
-
-    // Score and pick best — shared with the SCORE column/bubble via _scoreDraftCandidate.
-    const scored = fas.map(p => {
-      const pg = posGroup(p.pos);
-      const pp = ppts(p);
-      const cap0 = getCap(p) || 0;
-      const { score } = _scoreDraftCandidate(p, {
-        pg, pp, cap0, pressure: simPressure, mode, round, draftWeights,
-        abpMap: abpMapRich, calcAgeForSim, contractYearAnchor, curveFns: curveFnsRich, elcMax, srcNFn,
-        team, teamCap, teamCapByPos,
-      });
-      return {p, score, pp};
-    }).sort((a,b) => b.score - a.score);
-
-    const pick = scored[0];
     assigned[pick.p.id] = team;
     pick.p[startField] = team; // keep the real field in sync so the next pick's ABP/curve recompute sees this one
     const pg = posGroup(pick.p.pos);
