@@ -5515,7 +5515,7 @@ function render2425(){
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound});
       const _ds2425=prospectScore.score, _ds2425Normal=normalScore.score;
       const b = prospectScore;
-      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
+      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
     });
     rows = lastAllScored2425.filter(p=>{
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
@@ -5981,7 +5981,7 @@ function render2324(){
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
       const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
       const b = prospectScore;
-      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
+      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,scV:b.scV,tSc:b.tSc,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
     });
     rows = lastAllScored2324.filter(p=>{
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
