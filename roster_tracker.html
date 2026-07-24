@@ -6494,13 +6494,22 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
   return dropped;
 }
 
-// Empirical mean cap hit ($M) by draft round, measured across all 3 completed real drafts
+// Empirical MEDIAN cap hit ($M) by draft round, measured across all 3 completed real drafts
 // (23-24/24-25/25-26 combined, 172 picks) — see the 2026-07-23 cap-by-round analysis. Anchored
 // to the blended cap limit across those 3 seasons ((83.5+88+95.5)/3 ≈ 89) and scaled by the
 // season's actual capLimit wherever it's used, since cap inflation means "the going rate for a
 // round-4 pick" isn't a fixed dollar figure over time. Rounds beyond 10 (deep supplemental
 // picks with no real data) fall back to whatever flat reserve the caller supplies.
-const ROUND_EXPECTED_CAP_REF = {1:1.50, 2:2.75, 3:3.54, 4:4.44, 5:4.06, 6:4.27, 7:5.21, 8:1.93, 9:2.93, 10:7.80};
+//
+// Uses the MEDIAN, not the mean — early rounds are heavily right-skewed (R1: median $0.95M,
+// mean $1.50M, max $12.60M) since most early picks are cheap value plays with rare expensive
+// stars mixed in. Reserving the MEAN for every future round compounds across many remaining
+// picks and silently prices out those rare stars even when a team has real room for one — found
+// 2026-07-24 when Nathan MacKinnon ($12.60M, the actual R1 max) went undrafted: Bossy Posse had
+// $23.83M room for 5 remaining picks (real actual-drops state), but the mean-based reserve capped
+// their pick at $9.96M. The median-based reserve raises that to $14.59M — comfortably affordable,
+// matching what Bossy Posse actually did in the real draft.
+const ROUND_EXPECTED_CAP_REF = {1:0.95, 2:1.10, 3:1.50, 4:3.75, 5:3.50, 6:4.09, 7:5.20, 8:1.45, 9:2.60, 10:7.80};
 const ROUND_EXPECTED_CAP_REF_CAPLIMIT = 89.0;
 function _expectedRoundCost(round, capLimit, fallbackFlat){
   const base = ROUND_EXPECTED_CAP_REF[round];
