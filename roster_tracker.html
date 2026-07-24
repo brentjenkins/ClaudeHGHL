@@ -1024,7 +1024,7 @@ tr:hover td{background:#fafaf8}
             <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px">
               <div style="display:flex;flex-direction:column;gap:3px">
                 <span style="font-size:11px;color:#9ca3af">PPTS/$M ×</span>
-                <input type="number" id="s-wtPPTSM" value="1" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtPPTSM',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <input type="number" id="s-wtPPTSM" value="0.75" min="0" max="20" step="0.25" onchange="updateDraftWeight('wtPPTSM',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
               <span style="color:#9ca3af;padding-bottom:6px">+</span>
               <div style="display:flex;flex-direction:column;gap:3px">
@@ -1041,7 +1041,7 @@ tr:hover td{background:#fafaf8}
               <span style="color:#9ca3af;padding-bottom:6px">+</span>
               <div style="display:flex;flex-direction:column;gap:3px">
                 <span style="font-size:11px;color:#9ca3af" title="Bonus for pts above curve — 0 at ELC, ramps to full at threshold">△ Curve bonus ×</span>
-                <input type="number" id="s-wtDeltaCurve" value="4.0" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <input type="number" id="s-wtDeltaCurve" value="10" min="0" max="20" step="0.5" onchange="updateDraftWeight('wtDeltaCurve',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
               <div style="display:flex;flex-direction:column;gap:3px">
                 <span style="font-size:11px;color:#9ca3af">full at cap &gt; <span style="color:#1a1a18">X</span> × ELC max</span>
@@ -1254,7 +1254,7 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, algoDropsApplied = false, draftMode = false, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 10, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
@@ -3863,7 +3863,7 @@ function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
   if(draftWeights.wtCoverageDiscount === undefined) draftWeights.wtCoverageDiscount = 0.25;
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
-  if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 4.0;
+  if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 10;
   if(draftWeights.deltaCurveThreshold === undefined) draftWeights.deltaCurveThreshold = 2.0;
   if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 35;
   if(draftWeights.elcExpD === undefined) draftWeights.elcExpD = 25;
@@ -7054,6 +7054,12 @@ function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppt
   leagueMatched.sort((a,b) => ppts(b.p) - ppts(a.p));
   leagueAlgoOnly.sort((a,b) => ppts(b.p) - ppts(a.p));
   leagueActualOnly.sort((a,b) => ppts(b.p) - ppts(a.p));
+
+  // Exposes matched/algoOnly/actualOnly counts for scripted parameter-sweep backtests (console)
+  // instead of requiring a human to read them off the rendered modal each time — see
+  // BTJ_predraft_checks.js's "Compare Draft" note and feedback_console_scripts memory.
+  window.lastCompareDraftsResults = window.lastCompareDraftsResults || {};
+  window.lastCompareDraftsResults[season] = { matched: leagueMatched.length, algoOnly: leagueAlgoOnly.length, actualOnly: leagueActualOnly.length };
 
   // GM profile — matched (algo agreed) vs reaches (algo never wanted, anywhere), per real team.
   const teamProfile = {};
