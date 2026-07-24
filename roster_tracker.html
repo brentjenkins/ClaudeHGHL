@@ -251,6 +251,8 @@ tr:hover td{background:#fafaf8}
 <div id="view-roster2425" style="display:none">
 <div class="header">
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <button class="btn" id="syncProjToggleBtn2425" onclick="toggleSyncProjRow()" title="Show/hide Sync and Projections buttons" style="font-size:11px;padding:0 8px;height:28px;color:#9ca3af;border-color:#e5e7eb">▾ Sync/Proj</button>
+    <div id="syncProjRow2425" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-puckpedia" id="histCapsBtn" onclick="fetchHistoricalCaps()" title="Scrape PuckPedia player pages for full contract history — covers any player HGHL-rostered in 23-24 through 26-27, filling gaps the main Signings sync misses (e.g. old/expired deals PuckPedia's signings feed doesn't carry)" style="opacity:.75">📜 Historical Caps</button>
@@ -265,6 +267,7 @@ tr:hover td{background:#fafaf8}
       <input type="file" id="dtz2425FileInput" accept=".csv" multiple style="display:none" onchange="syncDTZ2425(this)">
       <button class="btn btn-dtz" id="dtz2425Btn" onclick="document.getElementById('dtz2425FileInput').click()" title="Import DTZ 2024-25 projections — select both the skater and goalie CSV exports together">📈 DTZ 24-25</button>
       <button class="btn btn-nhl" id="nhl2425ProjBtn" onclick="syncNHL2425()" title="Load NHL 2024-25 projections (frozen snapshot — the season is over)" style="opacity:.75">📈 NHL 24-25</button>
+    </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
@@ -347,11 +350,14 @@ tr:hover td{background:#fafaf8}
 <div id="view-roster2324" style="display:none">
 <div class="header">
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <button class="btn" id="syncProjToggleBtn2324" onclick="toggleSyncProjRow()" title="Show/hide Sync and Projections buttons" style="font-size:11px;padding:0 8px;height:28px;color:#9ca3af;border-color:#e5e7eb">▾ Sync/Proj</button>
+    <div id="syncProjRow2324" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-nhl" id="stats2324Btn" onclick="syncStats2324()" title="Pull 2023-24 actual NHL stats">📊 NHL 23-24</button>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;flex-basis:100%">
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
       <button class="btn btn-red-outline" onclick="resetSim2324()" title="Reset 23-24 rosters to 22-23 year-end (start2324 = end2223, from PREDROP_ROSTER_2324)">Reset</button>
       <button class="btn btn-blue-outline" onclick="algoDrops2324();compareDrops2324()" title="Run Algo Drops then compare against actual 23-24 drops">⬇ Algo Drops</button>
@@ -431,6 +437,8 @@ tr:hover td{background:#fafaf8}
 <div id="view-roster2526" style="display:none">
 <div class="header">
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <button class="btn" id="syncProjToggleBtn2526" onclick="toggleSyncProjRow()" title="Show/hide Sync and Projections buttons" style="font-size:11px;padding:0 8px;height:28px;color:#9ca3af;border-color:#e5e7eb">▾ Sync/Proj</button>
+    <div id="syncProjRow2526" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-nhl" id="statsBtn2526" onclick="syncStats()" title="Pull 2025-26 actual season stats (G+A for skaters, W+SO for goalies) from the NHL API">📊 NHL 25-26</button>
@@ -445,6 +453,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-dtz" id="dtz2526Btn" onclick="document.getElementById('dtz2526FileInput').click()" title="Import DTZ 2025-26 projections — select both the skater and goalie CSV exports together">📈 DTZ 25-26</button>
       <button class="btn btn-espn" id="espn2526Btn" onclick="syncESPN2526()" title="Load ESPN 2025-26 projections (frozen snapshot — the season is over)">📈 ESPN 25-26</button>
       <button class="btn btn-nhl" id="nhlProj2526Btn" onclick="syncNHLProj2526()" title="Load NHL.com 2025-26 forward &amp; defenseman point projections (frozen snapshot — the season is over)">📈 NHL 25-26</button>
+    </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
@@ -591,6 +600,8 @@ tr:hover td{background:#fafaf8}
 <div id="leagueLabel" style="display:none"></div>
 <div class="header">
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <button class="btn" id="syncProjToggleBtn2627" onclick="toggleSyncProjRow()" title="Show/hide Sync and Projections buttons" style="font-size:11px;padding:0 8px;height:28px;color:#9ca3af;border-color:#e5e7eb">▾ Sync/Proj</button>
+    <div id="syncProjRow2627" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-nhl" id="nhlBtn" onclick="syncAllNHL()" title="Update NHL roster status (active vs non-roster) and birth dates from the NHL API">🏒 NHL Rosters</button>
@@ -607,6 +618,7 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
       <button class="btn btn-cbs" id="cbsBtn" onclick="syncCBS()" title="Scrape CBS Sports 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~25s)">📈 CBS 26-27</button>
       <button class="btn btn-nhl" id="nhlProj2627Btn" onclick="syncNHLProj2627()" title="Pull NHL.com 2026-27 forward &amp; defenseman point projections (available ~Oct 2026)" style="opacity:.5">📈 NHL 26-27</button>
+    </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
@@ -857,7 +869,7 @@ tr:hover td{background:#fafaf8}
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$88M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$95.5M</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$104M</div>
-      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d1d5db;background:#fafafa;font-size:12px">—</div>
+      <input type="number" id="s-capLimit2728" placeholder="TBD" min="0" max="300" step="0.1" onchange="updateSetting('capLimit2728',+this.value)" style="width:100%;box-sizing:border-box;height:32px;border:1px solid #185FA5;border-radius:8px;padding:0 4px;font-size:12px;text-align:center;color:#1a1a18">
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">ELC max</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">$0.950M</div>
@@ -1239,7 +1251,7 @@ const LS_XACTIONS_2425 = 'hghl_xactions_2425';
 const LS_XACTIONS_2526 = 'hghl_xactions_2526';
 const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 
-let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, algoDropsApplied = false, draftMode = false, draftModeTop = 50, draftSubMode = 'prospect';
+let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, algoDropsApplied = false, draftMode = false, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
 let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtScarcity: 10, wtPPTSM: 1, wtAge: 1, wtProspect: 12, wtSourceConf: 5, wtPressure: 0.3, wtDeltaCurve: 4.0, deltaCurveThreshold: 1.5, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
@@ -1368,6 +1380,7 @@ let CAP_LIMIT_2324 = 83.5;
 let CAP_LIMIT_2425 = 88;
 let CAP_LIMIT_2526 = 95.5;
 let CAP_LIMIT = 104;
+let CAP_LIMIT_2728 = null; // not yet announced — editable in Settings once known
 const ELC_MAX_2324 = 0.950;
 const ELC_MAX_2425 = 0.975;
 const ELC_MAX_2526 = 0.975; // ELC max cap hit 2025-26 (league min + $175k)
@@ -3064,7 +3077,7 @@ let draftState2627 = {picks: []};  // picks: [{team, player, pos, nhlTeam}]
 let draftState2526 = {picks: []};
 let draftState2425 = {picks: []};
 let draftState2324 = {picks: []};
-let draftMode2526 = false, draftModeTop2526 = 50, draftSubMode2526 = 'prospect';
+let draftMode2526 = false, draftSubMode2526 = 'prospect';
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let sortCol2425 = 'ppts2425blend', sortDir2425 = -1;
 let sortCol2324 = 'ppts2324blend', sortDir2324 = -1;
@@ -3812,7 +3825,7 @@ function syncSettings(){
   const W = draftWeights;
   const set = (id, v) => { const el=document.getElementById(id); if(el) el.value=v; };
   set('s-multF', W.multF);    set('s-multD', W.multD);    set('s-multG', W.multG);
-  set('s-wtPPTSM', W.wtPPTSM); set('s-wtYrs', W.wtYrs);  set('s-wtAge', W.wtAge);
+  set('s-wtPPTSM', W.wtPPTSM); set('s-wtAge', W.wtAge);
   set('s-wtProspect', W.wtProspect);
   set('s-elcExpF', W.elcExpF); set('s-elcExpD', W.elcExpD); set('s-elcExpG', W.elcExpG);
   set('s-wtSourceConf', W.wtSourceConf);
@@ -3827,8 +3840,8 @@ function syncSettings(){
   set('s-ptsTarget', ptsTarget);
   set('s-minDropF', minDropF); set('s-minDropD', minDropD);
   set('s-curveMinPts', curveMinPts);
+  if(CAP_LIMIT_2728 != null) set('s-capLimit2728', CAP_LIMIT_2728);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
-  set('s-draftTop', draftModeTop);
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
   set('s-wAthletic', PROJ_SOURCE_WEIGHTS.athletic); set('s-wDFO', PROJ_SOURCE_WEIGHTS.dfo);
   set('s-wDTZ', PROJ_SOURCE_WEIGHTS.dtz);
@@ -3875,7 +3888,7 @@ function updateSetting(key, val){
   else if(key === 'ptsTarget')    ptsTarget = val;
   else if(key === 'capLimit')     CAP_LIMIT = val;
   else if(key === 'capLimit2526') CAP_LIMIT_2526 = val;
-  else if(key === 'draftTop')     { draftModeTop = val; draftModeTop2526 = val; if(draftMode) render(); if(draftMode2526) render2526(); }
+  else if(key === 'capLimit2728') CAP_LIMIT_2728 = val;
   else if(key === 'abpMinGP')     abpMinGP = val;
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
@@ -8337,10 +8350,24 @@ function toast(msg){
   el.textContent=msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),3500);
 }
+
+let syncProjCollapsed = lsGet('hghl_syncproj_collapsed') || false;
+function toggleSyncProjRow(force){
+  syncProjCollapsed = force !== undefined ? force : !syncProjCollapsed;
+  lsSet('hghl_syncproj_collapsed', syncProjCollapsed);
+  const label = syncProjCollapsed ? '▸ Sync/Proj' : '▾ Sync/Proj';
+  for(const suffix of ['2324','2425','2526','2627']){
+    const row = document.getElementById('syncProjRow'+suffix);
+    const btn = document.getElementById('syncProjToggleBtn'+suffix);
+    if(row) row.style.display = syncProjCollapsed ? 'none' : 'flex';
+    if(btn) btn.textContent = label;
+  }
+}
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
 updateSigningsBtn();
 updateYahooDropBtnTooltips();
+toggleSyncProjRow(syncProjCollapsed);
 updateDraftTab();
 
 // Cross-tab live sync: when another tab (e.g. the one actually making draft
