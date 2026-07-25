@@ -969,6 +969,10 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
         <input type="number" id="s-ptsTarget" value="1150" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
+        <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
     </div>
   </div>
 
@@ -979,10 +983,7 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Min pts to include in curve fit</span>
         <input type="number" id="s-curveMinPts" value="15" min="0" max="50" step="1" onchange="updateSetting('curveMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
-        <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
+      <div></div>
       <div style="grid-column:1/-1;margin-top:6px">
         <canvas id="curveChart" height="220" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;background:#fafafa;display:block"></canvas>
       </div>
