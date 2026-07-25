@@ -979,7 +979,10 @@ tr:hover td{background:#fafaf8}
         <span style="font-size:11px;color:#9ca3af">Min pts to include in curve fit</span>
         <input type="number" id="s-curveMinPts" value="15" min="0" max="50" step="1" onchange="updateSetting('curveMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
-      <div></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
+        <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+      </div>
       <div style="grid-column:1/-1;margin-top:6px">
         <canvas id="curveChart" height="220" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;background:#fafafa;display:block"></canvas>
       </div>
@@ -1357,6 +1360,12 @@ let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSup
 let draftProspectRounds = 1;
 let ptsTarget = 1150, curveMinPts = 15;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
+// Players at or above this pts threshold are last-resort drops. Was a hardcoded const=50 (an
+// eyeballed guess from 2026-05-27) until this was promoted to a real setting and backtested via
+// Compare Drops across all 3 completed seasons on 2026-07-25: results are flat from 0-25 (423/536,
+// 78.9%) then drop off at 30+ — the real breakpoint sits between 25-30, so 15 is a safe middle
+// value, clear of the edge, and a real accuracy improvement over 50 (414/536, 77.2%).
+let dropValueFloor = 15;
 // Draft dates — used to calculate the drop/add window (date + 2 days) for Yahoo transaction fetches
 let draftDatePreseason2324    = '2023-10-13';
 let draftDateSupplemental2324 = '2024-01-06';
@@ -1366,8 +1375,7 @@ let draftDatePreseason2526    = '2025-09-27';
 let draftDateSupplemental2526 = '2026-01-10';
 let draftDatePreseason2627    = '2026-10-02';
 let draftDateSupplemental2627 = '2027-01-10';
-const DROP_VALUE_FLOOR = 50; // players at or above this pts threshold are last-resort drops
-// A player clearing DROP_VALUE_FLOOR/curve (or flagged a prospect) normally earns an automatic
+// A player clearing dropValueFloor/curve (or flagged a prospect) normally earns an automatic
 // stop-cutting pass once quotas/cap are satisfied — unless their ABP is this high, meaning the
 // free-agent pool has this many same-position players scoring more for the same or less money.
 // That's a "reach": the algo's own draft logic would never actually pick them over the field,
@@ -3054,13 +3062,21 @@ const DRAFT_RESERVE_2324 = 1.5 * (ELC_MAX_2324 - 0.175); // cap to reserve per d
 
 // Brandon Montour & Aaron Ekblad (Panthers D): both recovering from offseason shoulder surgery
 // after the grueling 2023 Stanley Cup Final run, targeting a mid-December 2023 return.
-const INJURY_DROPS_2324       = new Set(['brandon montour', 'aaron ekblad']);
+// Andrei Vasilevskiy (G, Lightning): back surgery Sept 28, 2023, expected to miss the first
+// ~2 months of the season (opened Oct 10, 2023) — found via a value-anomaly sweep of the real
+// 23-24 dropped-player list (top proj-pts drops), confirmed via NHL.com/CBS Sports reporting.
+const INJURY_DROPS_2324       = new Set(['brandon montour', 'aaron ekblad', 'andrei vasilevskiy']);
 const ELC_MANDATORY_DROPS_2324 = new Set([]);
 
 
 // ── 25-26 season injury / mandatory drops ────────────────────────────────────
-// Players dropped for injury reasons — algorithm can't know about these, so excluded from accuracy.
-const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty']);
+// Players dropped for injury (or other unforeseeable absence) reasons — algorithm can't know
+// about these, so excluded from accuracy. Joseph Woll: not an injury — an indefinite personal
+// family leave of absence starting Sept 23, 2025, just before drops/draft (Bossy Posse dropped him).
+// Zach Hyman (F, Oilers): offseason wrist surgery (dislocated wrist from a May 27, 2025 playoff
+// collision), targeted to return Nov 1, 2025 — reported as uncertain for the season opener as of
+// Sept 18, 2025, right before drops/draft. Found via the same value-anomaly sweep as Vasilevskiy.
+const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty', 'joseph woll', 'zach hyman']);
 
 // Players who must be dropped per league rules: ELC signed after the trade deadline (Mar 7, 2025).
 // These are mandatory pre-drops — counted as correct in compareDrops2526.
@@ -3856,6 +3872,7 @@ function syncSettings(){
   set('s-ptsTarget', ptsTarget);
   set('s-minDropF', minDropF); set('s-minDropD', minDropD);
   set('s-curveMinPts', curveMinPts);
+  set('s-dropValueFloor', dropValueFloor);
   if(CAP_LIMIT_2728 != null) set('s-capLimit2728', CAP_LIMIT_2728);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
@@ -3908,6 +3925,7 @@ function updateSetting(key, val){
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
   else if(key === 'curveMinPts')           { curveMinPts = val; renderCurveChart(); }
+  else if(key === 'dropValueFloor') dropValueFloor = val;
   else if(key === 'draftDatePreseason2324')    { draftDatePreseason2324    = val; }
   else if(key === 'draftDateSupplemental2324') { draftDateSupplemental2324 = val; }
   else if(key === 'draftDatePreseason2425')    { draftDatePreseason2425    = val; updateYahooDropBtnTooltips(); }
@@ -6387,12 +6405,12 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
   const abpMap = computeABPFn(players);
   const deltaOf = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts(p),c=getCap(p); return (fn && pp>0 && c>0) ? pp-fn(c) : -Infinity; };
   const deficit = p => -deltaOf(p);
-  // ABP=0 / DROP_VALUE_FLOOR overrides — backtested rationale: most "algo dropped, should have
+  // ABP=0 / dropValueFloor overrides — backtested rationale: most "algo dropped, should have
   // kept" misses in the 23-24/24-25/25-26 historical data with zero better/cheaper alternatives
   // (ABP=0) turned out to be a correct manager keep, and most rostered players clear the raw-pts
   // floor regardless of price. Refined 2026-07-23: neither escape is sufficient alone — a real
   // GM will cash out a below-curve $6-9M "name" (Stamkos/Zibanejad/Tkachuk/Meier/Caufield, all
-  // ABP=0 or comfortably above DROP_VALUE_FLOOR, all real drops) to fund a better fit elsewhere,
+  // ABP=0 or comfortably above dropValueFloor, all real drops) to fund a better fit elsewhere,
   // even with no specific cheaper replacement lined up. UNTOUCHABLE_ELITE_PTS is a separate, much
   // higher escape hatch for genuine elite scorers, since the curve fit is thin/unreliable at the
   // very top of the cap range (few $11M+ data points) and a big negative delta there is as
@@ -6405,7 +6423,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     // isUntouchable — an unconditional ABP=0 branch here was the exact same gap just fixed on
     // isUntouchable, still shielding Zibanejad/Stamkos (both ABP=0) after the first pass.
     if(deltaOf(p) < UNTOUCHABLE_DELTA_FLOOR) return false;
-    return (abpMap.get(p.id)??99)===0 || pp>=DROP_VALUE_FLOOR;
+    return (abpMap.get(p.id)??99)===0 || pp>=dropValueFloor;
   };
   const isUntouchable = p => {
     if((abpMap.get(p.id)??99)!==0) return false;
