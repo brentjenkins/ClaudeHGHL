@@ -3035,7 +3035,10 @@ const DRAFT_TEAMS_2627 = Object.entries(FINAL_STANDINGS_2526)
 
 // PREDROP_ROSTER_2425, MANUAL_CAPS_2425, PREDROP_STUBS_2425, POSTDROP_ROSTER_2425, POSTDRAFT_ROSTER_2425 moved to data_2425.js
 
-const INJURY_DROPS_2425       = new Set([]);
+// Players injured at draft/keep time — used to excuse legitimate injury-driven misses in both
+// Compare Drops (team dropped them) and Compare Drafts (nobody drafted them). Artyom Levshunov:
+// right-foot injury from Sept 11, 2024, missed camp/early season, didn't debut until Mar 10, 2025.
+const INJURY_DROPS_2425       = new Set(['artyom levshunov']);
 const ELC_MANDATORY_DROPS_2425 = new Set([]);
 
 // ── 23-24 season ──────────────────────────────────────────────────────────────
@@ -3049,7 +3052,9 @@ const DRAFT_RESERVE_2324 = 1.5 * (ELC_MAX_2324 - 0.175); // cap to reserve per d
 
 // POSTDROP_ROSTER_2324, POSTDRAFT_ROSTER_2324 moved to data_2324.js
 
-const INJURY_DROPS_2324       = new Set([]);
+// Brandon Montour & Aaron Ekblad (Panthers D): both recovering from offseason shoulder surgery
+// after the grueling 2023 Stanley Cup Final run, targeting a mid-December 2023 return.
+const INJURY_DROPS_2324       = new Set(['brandon montour', 'aaron ekblad']);
 const ELC_MANDATORY_DROPS_2324 = new Set([]);
 
 
@@ -3543,6 +3548,7 @@ function simulateBestPick(){
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
     computeABPFn: computeABP, srcNFn: srcNFn2627, maxSrc: 5,
     allTeams: DRAFT_TEAMS_2627, need: {[team]: need}, teamCap: {[team]: teamCapTot}, teamCapByPos: {[team]: teamCapByPos},
+    injurySet: INJURY_DROPS_2627,
   });
 
   if(!pick){
@@ -5804,6 +5810,7 @@ function updateStats2425(){
       if(getCap2425(p)>maxPickCap) return false;
       const pg=posGroup(p.pos);
       if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      if(INJURY_DROPS_2425.has(normName(p.name).toLowerCase())) return false;
       return (need[pg]||0)>0;
     });
     const picks=fas.map(p=>{
@@ -6117,6 +6124,7 @@ function updateStats2324(){
       if(getCap2324(p)>maxPickCap) return false;
       const pg=posGroup(p.pos);
       if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      if(INJURY_DROPS_2324.has(normName(p.name).toLowerCase())) return false;
       return (need[pg]||0)>0;
     });
     const picks=fas.map(p=>{
@@ -6230,6 +6238,7 @@ function algoDraft2627(){
     contractYearAnchor: NHL_SEASON_YEAR,
     srcNFn: p => (p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0),
     maxSrc: 5,
+    injurySet: INJURY_DROPS_2627,
   });
   renderBigBoard();
 }
@@ -6268,6 +6277,7 @@ function algoDraft2425(){
     contractYearAnchor: 2025,
     srcNFn: p => (p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
     maxSrc: 4,
+    injurySet: INJURY_DROPS_2425,
   });
 }
 
@@ -6303,6 +6313,7 @@ function algoDraft2324(){
     contractYearAnchor: 2024,
     srcNFn: p => (p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0),
     maxSrc: 3,
+    injurySet: INJURY_DROPS_2324,
   });
 }
 
@@ -6338,6 +6349,7 @@ function algoDraft2526(){
     contractYearAnchor: 2026,
     srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0),
     maxSrc: 4,
+    injurySet: INJURY_DROPS_2526,
   });
 }
 
@@ -6633,7 +6645,8 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
 function _pickBestFA(team, round, mode, ctx){
   const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
           draftWeights, calcAgeForSim, contractYearAnchor, elcMax, computeABPFn, srcNFn, maxSrc,
-          allTeams, need, teamCap, teamCapByPos } = ctx;
+          allTeams, need, teamCap, teamCapByPos, injurySet } = ctx;
+  const injSet = injurySet || new Set();
 
   const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
   let futureReserve = 0;
@@ -6649,6 +6662,7 @@ function _pickBestFA(team, round, mode, ctx){
     if(getCap(p) > maxPickCap) return false;
     const pg = posGroup(p.pos);
     if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+    if(injSet.has(normName(p.name).toLowerCase())) return false; // known long-term-injured at draft time — no real GM would pick them
     return (need[team]?.[pg]||0) > 0;
   });
   if(!fas.length) return null;
@@ -6675,7 +6689,7 @@ function _pickBestFA(team, round, mode, ctx){
   }).sort((a,b) => b.score - a.score)[0];
 }
 
-function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, computeABPFn, srcNFn, maxSrc, contractYearAnchor }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, computeABPFn, srcNFn, maxSrc, contractYearAnchor, injurySet }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
 
   // Snapshot: track each player's current team assignment
@@ -6729,7 +6743,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     const pick = _pickBestFA(team, round, mode, {
       players, getAssignedTeam: p => assigned[p.id] || null, startField, ppts, getCap,
       capLimit, draftReserve, draftWeights, calcAgeForSim, contractYearAnchor, elcMax,
-      computeABPFn, srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos,
+      computeABPFn, srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet,
     });
 
     if(!pick) { teamPickNum[team]++; boardPicks.push(null); continue; }
@@ -6995,7 +7009,8 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
 // same duplication risk _runAlgoDrops/_runAlgoDraft already existed to prevent on the
 // simulation side. Builds the league-wide Matched/Real-value-missed/Real-reaches breakdown
 // and renders the modal; each season's compareDrafts2X2Y() wrapper just supplies config.
-function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppts, getCap, actualPtsField }){
+function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppts, getCap, actualPtsField, injurySet }){
+  injurySet = injurySet || new Set();
   const hasActualData = Object.keys(postdraftRoster).length > 0;
   if(!hasActualData){ toast(noDataMsg); return; }
   if(!draftState.simPicks?.length){
@@ -7055,11 +7070,12 @@ function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppt
   const algoTeamOf = {};
   for(const team of allTeams) for(const k of (algoByTeam[team]||[])) algoTeamOf[k] = team;
 
-  const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [];
+  const leagueMatched = [], leagueAlgoOnly = [], leagueActualOnly = [], leagueInjuryExcused = [];
   for(const k of allAlgoKeys){
     const p = findPlayer(k);
     if(!p) continue;
     if(allActualKeys.has(k)) leagueMatched.push({p, k});
+    else if(injurySet.has(normName(p.name).toLowerCase())) leagueInjuryExcused.push({p, k});
     else leagueAlgoOnly.push({p, k});
   }
   for(const k of allActualKeys){
@@ -7070,12 +7086,13 @@ function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppt
   leagueMatched.sort((a,b) => ppts(b.p) - ppts(a.p));
   leagueAlgoOnly.sort((a,b) => ppts(b.p) - ppts(a.p));
   leagueActualOnly.sort((a,b) => ppts(b.p) - ppts(a.p));
+  leagueInjuryExcused.sort((a,b) => ppts(b.p) - ppts(a.p));
 
   // Exposes matched/algoOnly/actualOnly counts for scripted parameter-sweep backtests (console)
   // instead of requiring a human to read them off the rendered modal each time — see
   // BTJ_predraft_checks.js's "Compare Draft" note and feedback_console_scripts memory.
   window.lastCompareDraftsResults = window.lastCompareDraftsResults || {};
-  window.lastCompareDraftsResults[season] = { matched: leagueMatched.length, algoOnly: leagueAlgoOnly.length, actualOnly: leagueActualOnly.length };
+  window.lastCompareDraftsResults[season] = { matched: leagueMatched.length, algoOnly: leagueAlgoOnly.length, actualOnly: leagueActualOnly.length, injuryExcused: leagueInjuryExcused.length };
 
   // GM profile — matched (algo agreed) vs reaches (algo never wanted, anywhere), per real team.
   const teamProfile = {};
@@ -7136,6 +7153,7 @@ function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppt
   leagueHtml += section('Matched — algo and real draft both took them', '#16a34a', '✓', leagueMatched, k => actualTeamOf[k] || algoTeamOf[k]);
   leagueHtml += section('Real value missed — algo wanted them, nobody actually drafted them', '#6366f1', '◆', leagueAlgoOnly);
   leagueHtml += section('Real reaches — somebody drafted them, no algo simulation ever wanted them', '#dc2626', '⚠', leagueActualOnly, k => actualTeamOf[k]);
+  leagueHtml += section('Injury excused — algo wanted them, but they were hurt at draft time', '#9ca3af', '🩹', leagueInjuryExcused);
   leagueHtml += `</div></div>`;
 
   document.getElementById('compareDraftsTitle').textContent = `📋 Algo vs Actual ${season} Draft Picks`;
@@ -7148,6 +7166,7 @@ function compareDrafts2526(){
     season: '25-26', postdraftRoster: POSTDRAFT_ROSTER_2526,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2526 in the source (normName → team) to enable comparison.',
     draftState: draftState2526, ppts: ppts2526blend, getCap: getCap2526, actualPtsField: 'pts2526',
+    injurySet: INJURY_DROPS_2526,
   });
 }
 
@@ -7159,6 +7178,7 @@ function compareDrafts2627(){
     season: '26-27', postdraftRoster: POSTDRAFT_ROSTER_2627,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2627 (normName → team) once the real 26-27 draft happens.',
     draftState: draftState2627, ppts: p => p.pts||0, getCap: p => p.cap||0, actualPtsField: 'pts2627',
+    injurySet: INJURY_DROPS_2627,
   });
 }
 
@@ -7167,6 +7187,7 @@ function compareDrafts2425(){
     season: '24-25', postdraftRoster: POSTDRAFT_ROSTER_2425,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2425 in the source (normName \u2192 team) to enable comparison.',
     draftState: draftState2425, ppts: ppts2425blend, getCap: getCap2425, actualPtsField: 'pts2425',
+    injurySet: INJURY_DROPS_2425,
   });
 }
 
@@ -7175,6 +7196,7 @@ function compareDrafts2324(){
     season: '23-24', postdraftRoster: POSTDRAFT_ROSTER_2324,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2324 in the source (normName \u2192 team) to enable comparison.',
     draftState: draftState2324, ppts: ppts2324blend, getCap: getCap2324, actualPtsField: 'pts2324',
+    injurySet: INJURY_DROPS_2324,
   });
 }
 
@@ -7276,6 +7298,7 @@ function updateStats2526(){
       if(getCap2526(p)>maxPickCap) return false;
       const pg=posGroup(p.pos);
       if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      if(INJURY_DROPS_2526.has(normName(p.name).toLowerCase())) return false;
       return (need[pg]||0)>0;
     });
     const picks=fas.map(p=>{
@@ -8257,6 +8280,7 @@ function updateStats(){
       if((p.cap||0)>maxPickCap) return false;
       const pg=posGroup(p.pos);
       if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+      if(INJURY_DROPS_2627.has(normName(p.name).toLowerCase())) return false;
       return (need[pg]||0)>0;
     });
     const picks=fas.map(p=>{
