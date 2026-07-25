@@ -1249,16 +1249,6 @@ const LS_XACTIONS_2627 = 'hghl_xactions_2627';
 let players = [], transactions = [], teamLogos = {}, editId = null, sortCol = 'pts', sortDir = -1, proxyOk = false, algoDropsApplied = false, draftMode = false, draftSubMode = 'prospect';
 let xactions2425 = [], xactions2526 = [], xactions2627 = [];
 let sortColSignings = 'sign_date', sortDirSignings = -1;
-// The ABP-based scarcity term (wtScarcity/tSc) was removed entirely on 2026-07-25 — backtested via
-// Compare Drafts across all 3 completed seasons and every nonzero value underperformed disabling it
-// (100 vs 104 matched at 0). The scarcity bucket maxed out at ABP=0 for both genuine $11M+
-// superstars AND cheap thin-pool role players with no directly comparable alternative, handing them
-// the same score and letting the latter crowd out the former for cap space. Confirmed via
-// pick-level trace: Nikolaj Ehlers got a false scarcity-driven "want" in both 23-24 and 24-25 (no
-// real GM ever took him either year), while Matthews/Suzuki/Stutzle/Kyrou/Dahlin/Rielly/Wyatt
-// Johnston — all real actual draft picks — were being crowded out and only appeared once scarcity
-// was removed. Rather than leave it as a dead always-0 setting, removed the term, its Settings
-// slider, and its tooltip line entirely.
 let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 35, elcExpD: 25, elcExpG: 35, wtPosAlloc: 1.0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
@@ -1381,13 +1371,6 @@ let draftDatePreseason2526    = '2025-09-27';
 let draftDateSupplemental2526 = '2026-01-10';
 let draftDatePreseason2627    = '2026-10-02';
 let draftDateSupplemental2627 = '2027-01-10';
-// A player clearing dropValueFloor/curve (or flagged a prospect) normally earns an automatic
-// stop-cutting pass once quotas/cap are satisfied — unless their ABP is this high, meaning the
-// free-agent pool has this many same-position players scoring more for the same or less money.
-// That's a "reach": the algo's own draft logic would never actually pick them over the field,
-// so clearing the value floor alone shouldn't buy them protection. Backtested 2026-07-22 via
-// Blue Line Bangers 24-25 (Chandler Stephenson ABP=18, Elias Lindholm ABP=12).
-const REACH_ABP_THRESHOLD = 6;
 // ABP=0 ("no better/cheaper free agent exists") used to grant unconditional "untouchable" drop
 // protection on its own. Backtested 2026-07-23 against all 3 real predrop->postdrop transitions
 // (531 players): 25 of 208 ABP=0 cases were real drops anyway, clustering at meaningfully negative
@@ -6493,13 +6476,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       const posMinsMet = droppedF >= minDropF && droppedD >= minDropD;
       if(numDropped >= maxDropsPreseason && posMinsMet) break;
       const capOk = keptCap <= capLimit - numDropped*draftReserve;
-      // Clearing the value floor/curve or looking like a prospect normally earns an automatic
-      // stop-cutting pass — unless this specific player is a "reach" (REACH_ABP_THRESHOLD+ same-
-      // position free agents cost the same or less and score more), in which case the algo's own
-      // draft logic would never actually pick them over the field, so the value floor alone
-      // shouldn't buy them protection — they're evaluated like any other candidate instead.
-      const isReach = (abpMap.get(p.id) ?? 0) >= REACH_ABP_THRESHOLD;
-      const isValuable = (isHighVal(p) || isProspect(p)) && !isReach;
+      const isValuable = isHighVal(p) || isProspect(p);
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
       // remaining cap headroom across the actual remaining open slots) and position-aware
