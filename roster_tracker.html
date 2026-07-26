@@ -1086,16 +1086,8 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">ABP <span class="section-line"></span><span class="section-desc">Available Better Players: unrostered players at same position with cap ≤ (this player's cap + wiggle%) and more pts. Min GP filters fringe call-ups via last season's GP. Low ABP = scarce position = draft premium.</span></div>
+    <div class="section-label">ABP <span class="section-line"></span><span class="section-desc">Available Better Players: unrostered players at same position with cap ≤ (this player's cap + wiggle%) and more pts. Low ABP = scarce position = draft premium.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min GP</span>
-        <input type="number" id="s-abpMinGP" value="5" min="1" max="82" step="1" onchange="updateSetting('abpMinGP',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min pts</span>
-        <input type="number" id="s-abpMinPts" value="15" min="0" max="200" step="1" onchange="updateSetting('abpMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Cap wiggle (% of cap)</span>
         <input type="number" id="s-abpWiggle" value="0.5" min="0" max="5" step="0.1" onchange="updateSetting('abpWiggle',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -3857,7 +3849,7 @@ function syncSettings(){
   set('s-dropValueFloor', dropValueFloor);
   if(CAP_LIMIT_2728 != null) set('s-capLimit2728', CAP_LIMIT_2728);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
-  set('s-abpMinGP', abpMinGP); set('s-abpMinPts', abpMinPts); set('s-abpWiggle', abpWiggle);
+  set('s-abpWiggle', abpWiggle);
   set('s-wAthletic', PROJ_SOURCE_WEIGHTS.athletic); set('s-wDFO', PROJ_SOURCE_WEIGHTS.dfo);
   set('s-wDTZ', PROJ_SOURCE_WEIGHTS.dtz);
   set('s-wCBS', PROJ_SOURCE_WEIGHTS.cbs); set('s-wNHL', PROJ_SOURCE_WEIGHTS.nhl);
@@ -3903,8 +3895,6 @@ function updateSetting(key, val){
   else if(key === 'capLimit')     CAP_LIMIT = val;
   else if(key === 'capLimit2526') CAP_LIMIT_2526 = val;
   else if(key === 'capLimit2728') CAP_LIMIT_2728 = val;
-  else if(key === 'abpMinGP')     abpMinGP = val;
-  else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
   else if(key === 'dropValueFloor') dropValueFloor = val;
   else if(key === 'draftDatePreseason2324')    { draftDatePreseason2324    = val; }
@@ -5822,7 +5812,7 @@ function updateStats2425(){
     const lnF=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2425===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
     const lnD=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2425===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
     const lnG=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2425===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
-    const allU2425=players.filter(p=>!p.start2425&&ppts2425blend(p)>=abpMinPts);
+    const allU2425=players.filter(p=>!p.start2425&&ppts2425blend(p)>0);
     const avF=allU2425.filter(p=>posGroup(p.pos)==='F').length,avD=allU2425.filter(p=>posGroup(p.pos)==='D').length,avG=allU2425.filter(p=>posGroup(p.pos)==='G').length;
     const rawP={F:lnF/Math.max(1,avF),D:lnD/Math.max(1,avD),G:lnG/Math.max(1,avG)};
     const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
@@ -6136,7 +6126,7 @@ function updateStats2324(){
     const lnF=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2324===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
     const lnD=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2324===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
     const lnG=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2324===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
-    const allU2324=players.filter(p=>!p.start2324&&ppts2324blend(p)>=abpMinPts);
+    const allU2324=players.filter(p=>!p.start2324&&ppts2324blend(p)>0);
     const avF=allU2324.filter(p=>posGroup(p.pos)==='F').length,avD=allU2324.filter(p=>posGroup(p.pos)==='D').length,avG=allU2324.filter(p=>posGroup(p.pos)==='G').length;
     const rawP={F:lnF/Math.max(1,avF),D:lnD/Math.max(1,avD),G:lnG/Math.max(1,avG)};
     const maxP=Math.max(rawP.F,rawP.D,rawP.G,0.0001);
@@ -7215,7 +7205,7 @@ function updateStats2526(){
     const lnF=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.F-r.filter(p=>posGroup(p.pos)==='F').length);},0);
     const lnD=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
     const lnG=allTeams.reduce((s,t)=>{const r=players.filter(p=>p.start2526===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
-    const allUndrafted2526=players.filter(p=>!p.start2526&&ppts2526blend(p)>=abpMinPts);
+    const allUndrafted2526=players.filter(p=>!p.start2526&&ppts2526blend(p)>0);
     const avF=allUndrafted2526.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted2526.filter(p=>posGroup(p.pos)==='D').length;
     const avG=allUndrafted2526.filter(p=>posGroup(p.pos)==='G').length;
@@ -7748,9 +7738,7 @@ function renderDraftSearch(){
 }
 
 // ABP config — updated live by the controls row
-let abpMinGP  = 5;
 let abpWiggle = 0.5;   // % of cap limit
-let abpMinPts = 15;
 
 function ppts2526blend(p){
   const W = PROJ_SOURCE_WEIGHTS;
@@ -7956,7 +7944,7 @@ function trendBadge(p, view){
 }
 
 function computeABP2425(allPlayers){
-  const fas = allPlayers.filter(p=>!p.start2425 && getCap2425(p)>0 && ppts2425blend(p)>=abpMinPts);
+  const fas = allPlayers.filter(p=>!p.start2425 && getCap2425(p)>0 && ppts2425blend(p)>0);
   const abpMap = new Map();
   for(const p of allPlayers){
     const cap=getCap2425(p); const pp=ppts2425blend(p);
@@ -7970,7 +7958,7 @@ function computeABP2425(allPlayers){
 }
 
 function computeABP2324(allPlayers){
-  const fas = allPlayers.filter(p=>!p.start2324 && getCap2324(p)>0 && ppts2324blend(p)>=abpMinPts);
+  const fas = allPlayers.filter(p=>!p.start2324 && getCap2324(p)>0 && ppts2324blend(p)>0);
   const abpMap = new Map();
   for(const p of allPlayers){
     const cap=getCap2324(p); const pp=ppts2324blend(p);
@@ -7984,8 +7972,7 @@ function computeABP2324(allPlayers){
 }
 
 function computeABP2526(allPlayers){
-  const fas = allPlayers.filter(p => !p.start2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0 &&
-    (abpMinGP <= 0 || (p.gp2526||0) >= abpMinGP));
+  const fas = allPlayers.filter(p => !p.start2526 && getCap2526(p) > 0 && ppts2526blend(p) > 0);
   const abpMap = new Map();
   for(const p of allPlayers){
     const pp = ppts2526blend(p);
@@ -8001,11 +7988,7 @@ function computeABP2526(allPlayers){
 }
 
 function computeABP(allPlayers){
-  const fas = allPlayers.filter(p =>
-    !p.start2627 && p.cap > 0 && p.pts > 0 &&
-    (abpMinPts <= 0 || p.pts >= abpMinPts) &&
-    (abpMinGP  <= 0 || (p.gp2526||0) >= abpMinGP)
-  );
+  const fas = allPlayers.filter(p => !p.start2627 && p.cap > 0 && p.pts > 0);
   const abpMap = new Map();
   for(const p of allPlayers){
     if(!(p.pts > 0) || p.cap <= 0){ abpMap.set(p.id, null); continue; }
@@ -8025,7 +8008,6 @@ function showABPModal(playerId, view) {
   const getPts   = view==='2627' ? x=>x.pts        : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
   const isFa     = view==='2627' ? x=>!x.start2627 : view==='2526' ? x=>!x.start2526 : view==='2425' ? x=>!x.start2425 : x=>!x.start2324;
   const isStart  = view==='2627' ? x=>x.start2627  : view==='2526' ? x=>x.start2526  : view==='2425' ? x=>x.start2425  : x=>x.start2324;
-  const getGP    = view==='2627' ? x=>x.gp2526||0  : view==='2526' ? x=>x.gp2526||0  : view==='2425' ? x=>x.gp2425||0  : x=>x.gp2324||0;
   const getRank  = view==='2627' ? x=>x.rank        : view==='2526' ? x=>x.rank2526   : view==='2425' ? x=>x.rank2425   : x=>x.rank2324;
   const capLimit = view==='2627' ? CAP_LIMIT : view==='2526' ? CAP_LIMIT_2526 : view==='2425' ? CAP_LIMIT_2425 : CAP_LIMIT_2324;
   const elcMax   = view==='2627' ? ELC_MAX_2627 : view==='2526' ? ELC_MAX_2526 : view==='2425' ? ELC_MAX_2425 : ELC_MAX_2324;
@@ -8048,9 +8030,7 @@ function showABPModal(playerId, view) {
   const allBetterFAs = players
     .filter(fa =>
       fa.id !== p.id && isFa(fa) && getCap(fa) > 0 &&
-      posGroup(fa.pos) === pg && getCap(fa) <= capCeil && getPts(fa) > pPts &&
-      (abpMinGP <= 0 || getGP(fa) >= abpMinGP) &&
-      (abpMinPts <= 0 || getPts(fa) >= abpMinPts)
+      posGroup(fa.pos) === pg && getCap(fa) <= capCeil && getPts(fa) > pPts
     )
     .sort((a, b) => getPts(b) - getPts(a));
   const betterFAs = allBetterFAs.slice(0, 5);
@@ -8098,9 +8078,7 @@ function showABPModal(playerId, view) {
     const closeAlts = players
       .filter(fa =>
         fa.id !== p.id && isFa(fa) && getCap(fa) > 0 && getPts(fa) > 0 &&
-        posGroup(fa.pos) === pg &&
-        (abpMinGP <= 0 || getGP(fa) >= abpMinGP) &&
-        (abpMinPts <= 0 || getPts(fa) >= abpMinPts)
+        posGroup(fa.pos) === pg
       )
       .sort((a, b) => Math.abs(getPts(a) - pPts) - Math.abs(getPts(b) - pPts))
       .slice(0, 5);
@@ -8197,7 +8175,7 @@ function updateStats(){
     const lnD=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
     const lnG=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
-    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>=abpMinPts);
+    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0);
     const avF=allUndrafted.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted.filter(p=>posGroup(p.pos)==='D').length;
     const avG=allUndrafted.filter(p=>posGroup(p.pos)==='G').length;
