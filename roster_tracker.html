@@ -977,13 +977,8 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Efficiency Curve <span class="section-line"></span><span class="section-desc">Quadratic pts vs cap fit, per position (F/D/G). Players below curveMinPts are excluded. The △ column shows pts above (+) or below (−) the average for their position at their cap. Drives drop tier placement and sort order.</span></div>
+    <div class="section-label">Efficiency Curve <span class="section-line"></span><span class="section-desc">Quadratic pts vs cap fit, per position (F/D/G). The △ column shows pts above (+) or below (−) the average for their position at their cap. Drives drop tier placement and sort order.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min pts to include in curve fit</span>
-        <input type="number" id="s-curveMinPts" value="15" min="0" max="50" step="1" onchange="updateSetting('curveMinPts',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
-      </div>
-      <div></div>
       <div style="grid-column:1/-1;margin-top:6px">
         <canvas id="curveChart" height="220" style="width:100%;border-radius:8px;border:1px solid #e5e7eb;background:#fafafa;display:block"></canvas>
       </div>
@@ -1354,7 +1349,7 @@ let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
 let draftProspectRounds = 1;
-let ptsTarget = 1150, curveMinPts = 15;
+let ptsTarget = 1150;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 // Players at or above this pts threshold are last-resort drops. Was a hardcoded const=50 (an
 // eyeballed guess from 2026-05-27) until this was promoted to a real setting and backtested via
@@ -2830,7 +2825,7 @@ function render(){
   const dropIds = algoDropsApplied ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
   const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
-  const rosteredPool2627 = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && p.cap > 0);
+  const rosteredPool2627 = players.filter(p => p.start2627 && p.cap > 0);
   const curveFns2627 = {
     F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
@@ -2846,7 +2841,7 @@ function render(){
   // matching curveDeltaActual2425/2324/2526. NOT curveFns2627/p.cap (this year's curve/
   // cap): a player's cap can change year to year (new contract, ELC graduating), so
   // judging last year's output against this year's price would conflate the two.
-  const rosteredPool2526ForActual = players.filter(p => p.start2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
+  const rosteredPool2526ForActual = players.filter(p => p.start2526 && getCap2526(p) > 0);
   const curveFns2526ForActual = {
     F: fitQuadratic(rosteredPool2526ForActual.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
     D: fitQuadratic(rosteredPool2526ForActual.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
@@ -2918,7 +2913,7 @@ function render(){
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
         const _ds = b.score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
-        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw:b.ageRaw,tProspect:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw:b.pressRaw,pressMult:b.pressMult}});
+        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw:b.ageRaw,tProspect:b.tProspect,round:focusRound2627,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw:b.pressRaw,pressMult:b.pressMult}});
       });
     rows=sortCol==='score'?(draftSubMode==='prospect'?allScored.sort((a,b)=>(b._ds-a._ds)*-sortDir):allScored.sort((a,b)=>(b._dsNormal-a._dsNormal)*-sortDir)):allScored;
   }
@@ -2974,7 +2969,7 @@ function render(){
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${b.tProspect.toFixed(1)}${draftSubMode==='bestAvail'?' (ignored)':''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const pw=draftSubMode==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2627
@@ -3859,7 +3854,6 @@ function syncSettings(){
   set('s-minDropsSupp', minDropsSupp); set('s-maxDropsSupp', maxDropsSupp);
   set('s-ptsTarget', ptsTarget);
   set('s-minDropF', minDropF); set('s-minDropD', minDropD);
-  set('s-curveMinPts', curveMinPts);
   set('s-dropValueFloor', dropValueFloor);
   if(CAP_LIMIT_2728 != null) set('s-capLimit2728', CAP_LIMIT_2728);
   const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
@@ -3912,7 +3906,6 @@ function updateSetting(key, val){
   else if(key === 'abpMinGP')     abpMinGP = val;
   else if(key === 'abpMinPts')    abpMinPts = val;
   else if(key === 'abpWiggle')    abpWiggle = val;
-  else if(key === 'curveMinPts')           { curveMinPts = val; renderCurveChart(); }
   else if(key === 'dropValueFloor') dropValueFloor = val;
   else if(key === 'draftDatePreseason2324')    { draftDatePreseason2324    = val; }
   else if(key === 'draftDateSupplemental2324') { draftDateSupplemental2324 = val; }
@@ -4089,7 +4082,7 @@ function renderXactions2425(){ _renderXactionsView(xactions2425, draftDatePresea
 // droppedPlayers (optional array of player objects, not in pool since they're no longer
 // rostered): drawn as a red X at their own cap/pts, so cut players still show where they sat
 // on the curve.
-function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, minPtsLine, highlightIds=null, pickIds=null, droppedPlayers=null){
+function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, highlightIds=null, pickIds=null, droppedPlayers=null){
   if(!canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.clientWidth || 520;
@@ -4108,7 +4101,7 @@ function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, minPtsLine, hig
 
   if(!pool.length){
     ctx.fillStyle = '#9ca3af'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('No rostered players meet the min-pts/cap threshold yet', W/2, H/2);
+    ctx.fillText('No rostered players meet the cap threshold yet', W/2, H/2);
     return;
   }
 
@@ -4126,16 +4119,6 @@ function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, minPtsLine, hig
   for(let i=1; i<=4; i++){
     const y = PAD.top + (i/5)*iH;
     ctx.beginPath(); ctx.moveTo(PAD.left,y); ctx.lineTo(W-PAD.right,y); ctx.stroke();
-  }
-
-  // threshold line
-  const thY = ty(minPtsLine);
-  if(thY > PAD.top && thY < H - PAD.bottom){
-    ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.moveTo(PAD.left,thY); ctx.lineTo(W-PAD.right,thY); ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle='#d97706'; ctx.font='9px sans-serif'; ctx.textAlign='left';
-    ctx.fillText(`min ${minPtsLine}`, PAD.left+3, thY-3);
   }
 
   // dots — highlighted (or all, if no highlight set given) drawn full-size/opaque; the rest
@@ -4212,7 +4195,7 @@ function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, minPtsLine, hig
 function renderCurveChart(){
   const canvas = document.getElementById('curveChart');
   if(!canvas) return;
-  const pool = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && (p.cap||0) > 0);
+  const pool = players.filter(p => p.start2627 && (p.cap||0) > 0);
   if(!pool.length){
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.clientWidth || 520, H = 220;
@@ -4228,7 +4211,7 @@ function renderCurveChart(){
     D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
     G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap,y:p.pts}))),
   };
-  _drawCurveChart(canvas, pool, p=>p.cap, p=>p.pts, curveFns, curveMinPts);
+  _drawCurveChart(canvas, pool, p=>p.cap, p=>p.pts, curveFns);
 }
 
 // ── PP Signings ───────────────────────────────────────────────────────────────
@@ -4804,7 +4787,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
   });
 
   // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
-  const keptPoolV = vp.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
+  const keptPoolV = vp.filter(p => p[startField] && getCap(p) > 0);
   const curveFnsPostDrop = {
     F: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
     D: fitQuadratic(keptPoolV.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
@@ -5441,7 +5424,7 @@ function render2425(){
   const fsim = document.getElementById('filterSim2425')?.value||'';
 
   // Build curve fits on start2425 rostered pool
-  const rosteredPool2425 = players.filter(p=>p.start2425 && ppts2425blend(p)>=curveMinPts && getCap2425(p)>0);
+  const rosteredPool2425 = players.filter(p=>p.start2425 && getCap2425(p)>0);
   const curveFns2425 = {
     F: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
     D: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
@@ -5527,7 +5510,7 @@ function render2425(){
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound});
       const _ds2425=prospectScore.score, _ds2425Normal=normalScore.score;
       const b = prospectScore;
-      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
+      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,round:genericRound,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
     });
     rows = lastAllScored2425.filter(p=>{
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
@@ -5604,7 +5587,7 @@ function render2425(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2425>0?p.gp2425:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2425>0?p.pts2425:'—'}</td>
       ${(()=>{const s=curveDeltaActual2425(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="24-25 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2425}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${b.tProspect2425.toFixed(1)}${draftSubMode2425==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const pw=draftSubMode2425==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2425*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2425}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2425
@@ -5621,7 +5604,7 @@ function render2425(){
 
 // Returns a function t → total curve delta (pts above/below per-pos quadratic) for a team's roster.
 function _makeTeamCurveDeltaFn(startField, pptsF, getCapF){
-  const rp = players.filter(p=>p[startField]&&pptsF(p)>=curveMinPts&&getCapF(p)>0);
+  const rp = players.filter(p=>p[startField]&&getCapF(p)>0);
   const cf = {
     F: fitQuadratic(rp.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCapF(p),y:pptsF(p)}))),
     D: fitQuadratic(rp.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCapF(p),y:pptsF(p)}))),
@@ -5674,7 +5657,7 @@ function showTeamCurveModal(view, team){
 
   // League-wide pool + curve fit — identical filter/fit logic to _makeTeamCurveDeltaFn so this
   // modal's chart and deltas match whatever number the team card's "△ vs curve" label showed.
-  const pool = players.filter(p => p[startField] && pptsF(p) >= curveMinPts && getCapF(p) > 0);
+  const pool = players.filter(p => p[startField] && getCapF(p) > 0);
   const curveFns = {
     F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCapF(p),y:pptsF(p)}))),
     D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCapF(p),y:pptsF(p)}))),
@@ -5708,7 +5691,7 @@ function showTeamCurveModal(view, team){
     : [];
 
   document.getElementById('teamCurveModalTitle').textContent = `${team} — Efficiency Curve (${label})`;
-  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, curveMinPts, highlightIds, pickIds, droppedPlayers);
+  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, highlightIds, pickIds, droppedPlayers);
 
   const posColor = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
   const rowsKept = teamPlayers.map(p => {
@@ -5781,7 +5764,7 @@ function updateStats2425(){
   if(!allTeams.length){ document.getElementById('statCards2425').innerHTML=''; return; }
 
   const abpMap2425 = computeABP2425(players);
-  const rosteredPool2425 = players.filter(p=>p.start2425 && ppts2425blend(p)>=curveMinPts && getCap2425(p)>0);
+  const rosteredPool2425 = players.filter(p=>p.start2425 && getCap2425(p)>0);
   const curveFns2425 = {
     F: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
     D: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
@@ -5913,7 +5896,7 @@ function render2324(){
   const fsim = document.getElementById('filterSim2324')?.value||'';
 
   // Build curve fits on start2324 rostered pool
-  const rosteredPool2324 = players.filter(p=>p.start2324 && ppts2324blend(p)>=curveMinPts && getCap2324(p)>0);
+  const rosteredPool2324 = players.filter(p=>p.start2324 && getCap2324(p)>0);
   const curveFns2324 = {
     F: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
     D: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
@@ -5994,7 +5977,7 @@ function render2324(){
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
       const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
       const b = prospectScore;
-      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
+      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,round:genericRound2324,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
     });
     rows = lastAllScored2324.filter(p=>{
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
@@ -6070,7 +6053,7 @@ function render2324(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2324>0?p.gp2324:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2324>0?p.pts2324:'—'}</td>
       ${(()=>{const s=curveDeltaActual2324(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="23-24 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2324}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${b.tProspect2324.toFixed(1)}${draftSubMode2324==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const pw=draftSubMode2324==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2324*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2324}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2324
@@ -6098,7 +6081,7 @@ function updateStats2324(){
   if(!allTeams.length){ document.getElementById('statCards2324').innerHTML=''; return; }
 
   const abpMap2324 = computeABP2324(players);
-  const rosteredPool2324 = players.filter(p=>p.start2324 && ppts2324blend(p)>=curveMinPts && getCap2324(p)>0);
+  const rosteredPool2324 = players.filter(p=>p.start2324 && getCap2324(p)>0);
   const curveFns2324 = {
     F: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
     D: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
@@ -6366,7 +6349,7 @@ function algoDraft2526(){
 // Mutates only p[startField] on the given `players` array; every other side effect (persistence,
 // rendering, toasts) stays in each season's own wrapper function, called after this returns.
 function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null }){
-  const rosteredPool = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
+  const rosteredPool = players.filter(p => p[startField] && getCap(p) > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
     D: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
@@ -6661,7 +6644,7 @@ function _pickBestFA(team, round, mode, ctx){
   if(!fas.length) return null;
 
   const { pressure } = _draftPressureState(players, allTeams, getAssignedTeam, ppts, getCap);
-  const rosteredNow = players.filter(p => p[startField] && ppts(p) >= curveMinPts && getCap(p) > 0);
+  const rosteredNow = players.filter(p => p[startField] && getCap(p) > 0);
   const curveFnsRich = {
     F: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
     D: fitQuadratic(rosteredNow.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: ppts(p)}))),
@@ -7257,7 +7240,7 @@ function updateStats2526(){
   }
 
   const abpMap2526 = computeABP2526(players);
-  const rosteredPool2526 = players.filter(p=>p.start2526 && ppts2526blend(p)>=curveMinPts && getCap2526(p)>0);
+  const rosteredPool2526 = players.filter(p=>p.start2526 && getCap2526(p)>0);
   const curveFns2526 = {
     F: fitQuadratic(rosteredPool2526.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
     D: fitQuadratic(rosteredPool2526.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
@@ -7353,7 +7336,7 @@ function render2526(){
   const ft2526 = document.getElementById('filterFT2526').value;
 
   const abpMap2526 = computeABP2526(players);
-  const rosteredPool2526 = players.filter(p => p.start2526 && ppts2526blend(p) >= curveMinPts && getCap2526(p) > 0);
+  const rosteredPool2526 = players.filter(p => p.start2526 && getCap2526(p) > 0);
   const curveFns2526 = {
     F: fitQuadratic(rosteredPool2526.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
     D: fitQuadratic(rosteredPool2526.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap2526(p), y: ppts2526blend(p)}))),
@@ -7455,7 +7438,7 @@ function render2526(){
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
         const _ds2526 = b.score;
         const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
-        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2526:b.ageRaw,tProspect2526:b.tProspect,srcN2526d:b.srcN,coverageMult2526:b.coverageMult,tDelta:b.tDelta,pressRaw2526:b.pressRaw,pressMult2526:b.pressMult}});
+        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2526:b.ageRaw,tProspect2526:b.tProspect,round:focusRound2526,srcN2526d:b.srcN,coverageMult2526:b.coverageMult,tDelta:b.tDelta,pressRaw2526:b.pressRaw,pressMult2526:b.pressMult}});
       });
     rows=sortCol2526==='ppts2526blend'?(draftSubMode2526==='prospect'?allScored2526.sort((a,b)=>b._ds2526-a._ds2526):allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal)):allScored2526;
   }
@@ -7524,7 +7507,7 @@ function render2526(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${b.tProspect2526.toFixed(1)}${draftSubMode2526==='bestAvail'?' (ignored)':''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const pw=draftSubMode2526==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2526*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
@@ -8051,7 +8034,7 @@ function showABPModal(playerId, view) {
   const pPts = getPts(p);
   const capCeil = pCap + (abpWiggle / 100) * capLimit;
   // Build curve fits from the rostered pool for this view
-  const pool = players.filter(x => isStart(x) && getPts(x) >= curveMinPts && getCap(x) > 0);
+  const pool = players.filter(x => isStart(x) && getCap(x) > 0);
   const curveFns = {};
   for(const pos of ['F','D','G']){
     curveFns[pos] = fitQuadratic(pool.filter(x => posGroup(x.pos)===pos).map(x => ({x: getCap(x), y: getPts(x)})));
@@ -8239,7 +8222,7 @@ function updateStats(){
   }
 
   const abpMap = computeABP(players);
-  const rosteredPool2627 = players.filter(p => p.start2627 && (p.pts||0) >= curveMinPts && p.cap > 0);
+  const rosteredPool2627 = players.filter(p => p.start2627 && p.cap > 0);
   const curveFns2627 = {
     F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
     D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
