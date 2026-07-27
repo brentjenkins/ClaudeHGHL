@@ -2223,6 +2223,18 @@ function _signingYrStr(contract, seasonYear){
   return (yr >= 1 && yr <= contract.term) ? `Yr ${yr} / ${contract.term}` : '';
 }
 
+// Finds the contract immediately after the player's current (26-27) one, if already
+// signed — e.g. an ELC player's post-ELC extension, visible on PuckPedia before it's
+// active. Used for long-term value judgment calls (a cheap year left plus a known,
+// evaluable next-deal AAV/term is worth more than the same production with no known
+// next contract). Returns null if there's no current contract or no future one signed yet.
+function _findNextContract(contracts, curContract){
+  if(!curContract) return null;
+  const curExpStartYr = parseInt(curContract.exp?.split('-')[0]) || 0;
+  const future = (contracts || []).filter(c => c.start_yr > curExpStartYr).sort((a,b) => a.start_yr - b.start_yr);
+  return future[0] || null;
+}
+
 // Derive cap2425 / cap2526 / cap (26-27) from LS_SIGNINGS_RAW.
 // Always writes cap2425/cap2526 when the player is in the signings store —
 // null means "no contract active that season" (avoids stale / cascaded wrong values).
@@ -2260,6 +2272,10 @@ function assignCapFromSignings(){
     } else if(!p.capManual){
       p.cap = 0; p.contractTerm = 0; p.expYear = 0;
     }
+    const cNext = _findNextContract(contracts, c2627);
+    p.nextCap          = cNext?.cap ?? null;
+    p.nextContractTerm = cNext?.term ?? null;
+    p.nextStartYr      = cNext?.start_yr ?? null;
   }
 }
 
@@ -2377,6 +2393,10 @@ async function syncSigningsAll(e){
       } else {
         p.cap = 0; p.contractTerm = 0; p.expYear = 0;
       }
+      const cNext = _findNextContract(contracts, c2627);
+      p.nextCap          = cNext?.cap ?? null;
+      p.nextContractTerm = cNext?.term ?? null;
+      p.nextStartYr      = cNext?.start_yr ?? null;
       for(const v of _nameVariants(p.name)) matchedKeys.add(`${v}_${pg}`);
       matched++;
     }
@@ -2425,10 +2445,15 @@ async function syncSigningsAll(e){
           if(c2627.team && (!existingById.team || existingById.team==='—')) existingById.team = c2627.team;
           if(c2627.birthDate && !existingById.birthDate) existingById.birthDate = c2627.birthDate;
         }
+        const cNextExisting = _findNextContract(contracts, c2627);
+        existingById.nextCap          = cNextExisting?.cap ?? null;
+        existingById.nextContractTerm = cNextExisting?.term ?? null;
+        existingById.nextStartYr      = cNextExisting?.start_yr ?? null;
         idMatched++;
         continue;
       }
 
+      const cNextNew = _findNextContract(contracts, c2627);
       players.push({
         id: nextId++, name: latest.name, team: c2627?.team || latest.team || '',
         pos: latest.pos || 'C',
@@ -2439,6 +2464,7 @@ async function syncSigningsAll(e){
         capManual: false, ptsManual: false, rank: null,
         cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null, cap2324: c2324?.cap ?? null,
         nhlId: latest.nhl_id || null,
+        nextCap: cNextNew?.cap ?? null, nextContractTerm: cNextNew?.term ?? null, nextStartYr: cNextNew?.start_yr ?? null,
       });
       added++;
     }
@@ -2944,7 +2970,7 @@ function render(){
         </div>
       </td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap.toFixed(2)}</a>${p.capManual?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
-      <td style="color:#9ca3af;text-align:right">${p.cap>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}</td>
+      <td style="color:#9ca3af;text-align:right">${p.cap>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}${p.nextCap?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap.toFixed(2)}M × ${p.nextContractTerm}yr, starting ${p.nextStartYr}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
