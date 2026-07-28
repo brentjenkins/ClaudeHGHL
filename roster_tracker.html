@@ -2935,7 +2935,7 @@ function render(){
     const slotsLeft=need.F+need.D+need.G;
     const maxAffordable=draftFocusTeam?CAP_LIMIT-viewCapTot-Math.max(0,slotsLeft-1)*ELC_MAX_2627:Infinity;
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
-    const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+    const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0)+(p.ptsNHL>0?1:0);
     // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
     // see _runAlgoDraft / render2425 for the drift history this is meant to end.
     const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap||0);
@@ -2946,7 +2946,7 @@ function render(){
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
-        const scoreArgs = { pg, pp, cap0, pressure, draftWeights, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 5 };
+        const scoreArgs = { pg, pp, cap0, pressure, draftWeights, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 6 };
         const _ds = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2627}).score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds,_dsNormal};
@@ -2960,7 +2960,7 @@ function render(){
         const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
         const scoreArgs = {
           pg, pp, cap0, pressure, round: focusRound2627, draftWeights,
-          calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 5,
+          calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 6,
           team: draftFocusTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
@@ -3592,14 +3592,14 @@ function simulateBestPick(){
   const teamCapTot = teamCapByPos.F + teamCapByPos.D + teamCapByPos.G;
   const round = (draftState2627.picks||[]).filter(pk=>pk.team===team).length + 1;
   const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
-  const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+  const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0)+(p.ptsNHL>0?1:0);
 
   const pick = _pickBestFA(team, round, mode, {
     players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
     ppts: p => p.pts || 0, getCap: p => p.cap || 0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights,
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
-    srcNFn: srcNFn2627, maxSrc: 5,
+    srcNFn: srcNFn2627, maxSrc: 6,
     allTeams: DRAFT_TEAMS_2627, need: {[team]: need}, teamCap: {[team]: teamCapTot}, teamCapByPos: {[team]: teamCapByPos},
     injurySet: INJURY_DROPS_2627,
   });
@@ -6386,8 +6386,8 @@ function algoDraft2526(){
     boardLsKey:      LS_DRAFT_2526,
     contractYearAnchor: 2026,
     nextContractField: 'nextContractTerm2526',
-    srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0),
-    maxSrc: 4,
+    srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0),
+    maxSrc: 5,
     injurySet: INJURY_DROPS_2526,
   });
 }
@@ -7329,7 +7329,7 @@ function updateStats2526(){
     const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2526(p),0)};
     const teamCapByPos={[team]:{F:0,D:0,G:0}};
     for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2526(p); }
-    const srcNFn2526=p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
+    const srcNFn2526=p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0);
     const fas=players.filter(p=>{
       if(p.start2526) return false;
       if(ppts2526blend(p)<=0) return false;
@@ -7342,7 +7342,7 @@ function updateStats2526(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:pressure2526,mode,round,draftWeights,calcAgeForSim:calcAge2526,contractYearAnchor:2026,nextContractYrs:p.nextContractTerm2526||0,curveFns:curveFns2526,elcMax:ELC_MAX_2526,srcNFn:srcNFn2526,maxSrc:4,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:pressure2526,mode,round,draftWeights,calcAgeForSim:calcAge2526,contractYearAnchor:2026,nextContractYrs:p.nextContractTerm2526||0,curveFns:curveFns2526,elcMax:ELC_MAX_2526,srcNFn:srcNFn2526,maxSrc:5,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
@@ -7471,7 +7471,7 @@ function render2526(){
     const teamCapUsed2526=draftFocusTeam2526?teamRoster.reduce((s,p)=>s+getCap2526(p),0):0;
     const slotsLeft2526=need.F+need.D+need.G;
     const maxAffordable2526=draftFocusTeam2526?CAP_LIMIT_2526-teamCapUsed2526-Math.max(0,slotsLeft2526-1)*ELC_MAX_2526:Infinity;
-    const srcNFn2526 = p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0);
+    const srcNFn2526 = p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0);
     // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
     // see _runAlgoDraft / render2425 for the drift history this is meant to end.
     const { pressure: pressure2526 } = _draftPressureState(players, DRAFT_TEAMS_2526, p=>p.start2526||null, ppts2526blend, getCap2526);
@@ -7481,7 +7481,7 @@ function render2526(){
       .filter(p=>!p.start2526&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 4 };
+        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 5 };
         const _ds2526 = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2526}).score;
         const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2526}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds2526,_ds2526Normal};
@@ -7496,7 +7496,7 @@ function render2526(){
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
         const scoreArgs = {
           pg, pp, cap0, pressure: pressure2526, round: focusRound2526, draftWeights,
-          calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 4,
+          calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 5,
           team: draftFocusTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526,
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
@@ -8299,7 +8299,7 @@ function updateStats(){
     const teamCap={[team]:teamRoster.reduce((s,p)=>s+(p.cap||0),0)};
     const teamCapByPos={[team]:{F:0,D:0,G:0}};
     for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=(p.cap||0); }
-    const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0);
+    const srcNFn2627 = p=>(p.ptsAth>0?1:0)+(p.ptsDFO>0?1:0)+(p.ptsDTZ>0?1:0)+(p.ptsESPN>0?1:0)+(p.ptsCBS>0?1:0)+(p.ptsNHL>0?1:0);
     const fas=players.filter(p=>{
       if(p.start2627) return false;
       if((p.pts||0)<=0) return false;
@@ -8312,7 +8312,7 @@ function updateStats(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure,mode,round,draftWeights,calcAgeForSim:calcAge,contractYearAnchor:NHL_SEASON_YEAR,nextContractYrs:p.nextContractTerm||0,curveFns:curveFns2627,elcMax:ELC_MAX_2627,srcNFn:srcNFn2627,maxSrc:5,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure,mode,round,draftWeights,calcAgeForSim:calcAge,contractYearAnchor:NHL_SEASON_YEAR,nextContractYrs:p.nextContractTerm||0,curveFns:curveFns2627,elcMax:ELC_MAX_2627,srcNFn:srcNFn2627,maxSrc:6,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
