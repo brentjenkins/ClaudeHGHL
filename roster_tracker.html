@@ -3111,7 +3111,14 @@ const DRAFT_TEAMS_2627 = Object.entries(FINAL_STANDINGS_2526)
 // Players injured at draft/keep time — used to excuse legitimate injury-driven misses in both
 // Compare Drops (team dropped them) and Compare Drafts (nobody drafted them). Artyom Levshunov:
 // right-foot injury from Sept 11, 2024, missed camp/early season, didn't debut until Mar 10, 2025.
-const INJURY_DROPS_2425       = new Set(['artyom levshunov']);
+// The 4 below: known-unavailable as of the real 24-25 HGHL draft (10/5/2024), same "no real GM
+// could have drafted them" logic as the 23-24 additions. Thatcher Demko: publicized popliteus
+// (knee) injury from the playoffs, missed all of camp, ruled out ahead of the 10/8/2024 opener.
+// Dmitri Voronkov: officially placed on IR 10/4/2024 (preseason upper-body injury 10/3/2024).
+// Yegor Sharangovich: injured late in Calgary's final preseason game 10/4/2024, sidelined
+// week-to-week. Frank Nazar: officially assigned to AHL Rockford 10/2/2024 for top-line minutes.
+const INJURY_DROPS_2425       = new Set(['artyom levshunov', 'thatcher demko', 'dmitri voronkov',
+  'yegor sharangovich', 'frank nazar']);
 const ELC_MANDATORY_DROPS_2425 = new Set([]);
 
 // ── 23-24 season ──────────────────────────────────────────────────────────────
@@ -3149,7 +3156,11 @@ const ELC_MANDATORY_DROPS_2324 = new Set([]);
 // Zach Hyman (F, Oilers): offseason wrist surgery (dislocated wrist from a May 27, 2025 playoff
 // collision), targeted to return Nov 1, 2025 — reported as uncertain for the season opener as of
 // Sept 18, 2025, right before drops/draft. Found via the same value-anomaly sweep as Vasilevskiy.
-const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty', 'joseph woll', 'zach hyman']);
+// Filip Hallander: waived and assigned to the minors around 25-26 training camp cuts. Alec Regula:
+// long-term knee injury cost him the previous season, limiting his availability while rehabbing
+// back into the lineup — both known-unavailable as of the real 25-26 HGHL draft (9/27/2025).
+const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty', 'joseph woll', 'zach hyman',
+  'filip hallander', 'alec regula']);
 
 // Players who must be dropped per league rules: ELC signed after the trade deadline (Mar 7, 2025).
 // These are mandatory pre-drops — counted as correct in compareDrops2526.
