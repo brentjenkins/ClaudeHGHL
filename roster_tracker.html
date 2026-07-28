@@ -1790,7 +1790,7 @@ function rankPlayers(){
       const ppEff = p.pts * coverageMult;
       const scoreA = ppEff * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (ppEff / p.cap) * W.wtPPTSM;
-      const scoreD = peakTrajectoryScore(age, posGroup(p.pos), p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) * W.wtAge;
+      const scoreD = peakTrajectoryScore(age, posGroup(p.pos), (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) + (p.nextContractTerm||0)) * W.wtAge;
       const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, W.wtProspect, ppEff);
       return { p, score: scoreA + scoreB + scoreD + scoreE };
     })
@@ -2223,15 +2223,24 @@ function _signingYrStr(contract, seasonYear){
   return (yr >= 1 && yr <= contract.term) ? `Yr ${yr} / ${contract.term}` : '';
 }
 
-// Finds the contract immediately after the player's current (26-27) one, if already
-// signed — e.g. an ELC player's post-ELC extension, visible on PuckPedia before it's
-// active. Used for long-term value judgment calls (a cheap year left plus a known,
-// evaluable next-deal AAV/term is worth more than the same production with no known
-// next contract). Returns null if there's no current contract or no future one signed yet.
-function _findNextContract(contracts, curContract){
+// Finds the contract immediately after curContract, if already signed — e.g. an ELC
+// player's post-ELC extension, visible on PuckPedia before it's active. Used for
+// long-term value judgment calls (a cheap year left plus a known, evaluable next-deal
+// AAV/term is worth more than the same production with no known next contract).
+// asOfDate (YYYY-MM-DD), when given, restricts to contracts actually signed by that date —
+// real GMs at a historical draft could only know about deals signed before that draft day
+// (e.g. Bowen Byram's 2025-07-14 signing was common knowledge well before the 25-26
+// draft on 2025-09-27, so a 25-26 backtest should see it — but a contract signed AFTER
+// that draft date wasn't knowable yet and must be excluded). Omit asOfDate for "as of
+// today" (the live/current view) — anything already cached is by definition already known.
+// A contract with no recorded sign_date is treated as unknown-timing and excluded from any
+// dated query, since its actual sign date can't be confirmed to predate asOfDate.
+function _findNextContract(contracts, curContract, asOfDate){
   if(!curContract) return null;
   const curExpStartYr = parseInt(curContract.exp?.split('-')[0]) || 0;
-  const future = (contracts || []).filter(c => c.start_yr > curExpStartYr).sort((a,b) => a.start_yr - b.start_yr);
+  const future = (contracts || [])
+    .filter(c => c.start_yr > curExpStartYr && (!asOfDate || (c.sign_date && c.sign_date <= asOfDate)))
+    .sort((a,b) => a.start_yr - b.start_yr);
   return future[0] || null;
 }
 
@@ -2276,6 +2285,11 @@ function assignCapFromSignings(){
     p.nextCap          = cNext?.cap ?? null;
     p.nextContractTerm = cNext?.term ?? null;
     p.nextStartYr      = cNext?.start_yr ?? null;
+    // Historical-backtest versions — what a real GM could have known by that season's own
+    // draft day, not today's full knowledge. See _findNextContract's asOfDate docs.
+    p.nextContractTerm2324 = _findNextContract(contracts, c2324, draftDatePreseason2324)?.term ?? null;
+    p.nextContractTerm2425 = _findNextContract(contracts, c2425, draftDatePreseason2425)?.term ?? null;
+    p.nextContractTerm2526 = _findNextContract(contracts, c2526, draftDatePreseason2526)?.term ?? null;
   }
 }
 
@@ -2397,6 +2411,9 @@ async function syncSigningsAll(e){
       p.nextCap          = cNext?.cap ?? null;
       p.nextContractTerm = cNext?.term ?? null;
       p.nextStartYr      = cNext?.start_yr ?? null;
+      p.nextContractTerm2324 = _findNextContract(contracts, c2324, draftDatePreseason2324)?.term ?? null;
+      p.nextContractTerm2425 = _findNextContract(contracts, c2425, draftDatePreseason2425)?.term ?? null;
+      p.nextContractTerm2526 = _findNextContract(contracts, c2526, draftDatePreseason2526)?.term ?? null;
       for(const v of _nameVariants(p.name)) matchedKeys.add(`${v}_${pg}`);
       matched++;
     }
@@ -2449,6 +2466,9 @@ async function syncSigningsAll(e){
         existingById.nextCap          = cNextExisting?.cap ?? null;
         existingById.nextContractTerm = cNextExisting?.term ?? null;
         existingById.nextStartYr      = cNextExisting?.start_yr ?? null;
+        existingById.nextContractTerm2324 = _findNextContract(contracts, c2324, draftDatePreseason2324)?.term ?? null;
+        existingById.nextContractTerm2425 = _findNextContract(contracts, c2425, draftDatePreseason2425)?.term ?? null;
+        existingById.nextContractTerm2526 = _findNextContract(contracts, c2526, draftDatePreseason2526)?.term ?? null;
         idMatched++;
         continue;
       }
@@ -2460,6 +2480,9 @@ async function syncSigningsAll(e){
         cap: c2627?.cap || 0, contractTerm: c2627?.term || 0,
         expYear: c2627 ? parseInt(c2627.exp?.split('-')[0]) || 0 : 0,
         birthDate: latest.birthDate || '', source: 'puckpedia', status: 'roster',
+        nextContractTerm2324: _findNextContract(contracts, c2324, draftDatePreseason2324)?.term ?? null,
+        nextContractTerm2425: _findNextContract(contracts, c2425, draftDatePreseason2425)?.term ?? null,
+        nextContractTerm2526: _findNextContract(contracts, c2526, draftDatePreseason2526)?.term ?? null,
         start2627: '', end2526: '', pts: 0, pts2526: 0, gp2526: 0,
         capManual: false, ptsManual: false, rank: null,
         cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null, cap2324: c2324?.cap ?? null,
@@ -2911,7 +2934,7 @@ function render(){
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
-        const scoreArgs = { pg, pp, cap0, pressure, draftWeights, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 5 };
+        const scoreArgs = { pg, pp, cap0, pressure, draftWeights, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 5 };
         const _ds = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2627}).score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds,_dsNormal};
@@ -2925,7 +2948,7 @@ function render(){
         const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
         const scoreArgs = {
           pg, pp, cap0, pressure, round: focusRound2627, draftWeights,
-          calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 5,
+          calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: 5,
           team: draftFocusTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
@@ -5521,7 +5544,7 @@ function render2425(){
     const genericRound = draftProspectRounds + 3;
     lastAllScored2425 = players.filter(p=>!p.start2425&&ppts2425blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2425blend(p); const cap0=getCap2425(p)||0;
-      const scoreArgs = { pg, pp, cap0, pressure: pressure2425, draftWeights, calcAgeForSim: calcAge2425, contractYearAnchor: 2025, curveFns: curveFns2425, elcMax: ELC_MAX_2425, srcNFn: srcNFn2425, maxSrc: 4 };
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2425, draftWeights, calcAgeForSim: calcAge2425, contractYearAnchor: 2025, nextContractYrs: p.nextContractTerm2425||0, curveFns: curveFns2425, elcMax: ELC_MAX_2425, srcNFn: srcNFn2425, maxSrc: 4 };
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound});
       const _ds2425=prospectScore.score, _ds2425Normal=normalScore.score;
@@ -5820,7 +5843,7 @@ function updateStats2425(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=ppts2425blend(p), cap0=getCap2425(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2425,mode,round,draftWeights,calcAgeForSim:calcAge2425,contractYearAnchor:2025,curveFns:curveFns2425,elcMax:ELC_MAX_2425,srcNFn:srcNFn2425,maxSrc:4,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2425,mode,round,draftWeights,calcAgeForSim:calcAge2425,contractYearAnchor:2025,nextContractYrs:p.nextContractTerm2425||0,curveFns:curveFns2425,elcMax:ELC_MAX_2425,srcNFn:srcNFn2425,maxSrc:4,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
@@ -5988,7 +6011,7 @@ function render2324(){
     const genericRound2324 = draftProspectRounds + 3;
     lastAllScored2324 = players.filter(p=>!p.start2324&&ppts2324blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2324blend(p); const cap0=getCap2324(p)||0;
-      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights, calcAgeForSim: calcAge2324, contractYearAnchor: 2024, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324, maxSrc: 3 };
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights, calcAgeForSim: calcAge2324, contractYearAnchor: 2024, nextContractYrs: p.nextContractTerm2324||0, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324, maxSrc: 3 };
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2324});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
       const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
@@ -6134,7 +6157,7 @@ function updateStats2324(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=ppts2324blend(p), cap0=getCap2324(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2324,mode,round,draftWeights,calcAgeForSim:calcAge2324,contractYearAnchor:2024,curveFns:curveFns2324,elcMax:ELC_MAX_2324,srcNFn:srcNFn2324,maxSrc:3,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2324,mode,round,draftWeights,calcAgeForSim:calcAge2324,contractYearAnchor:2024,nextContractYrs:p.nextContractTerm2324||0,curveFns:curveFns2324,elcMax:ELC_MAX_2324,srcNFn:srcNFn2324,maxSrc:3,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
@@ -6278,6 +6301,7 @@ function algoDraft2425(){
     boardDraftState: draftState2425,
     boardLsKey:      LS_DRAFT_2425,
     contractYearAnchor: 2025,
+    nextContractField: 'nextContractTerm2425',
     srcNFn: p => (p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
     maxSrc: 4,
     injurySet: INJURY_DROPS_2425,
@@ -6313,6 +6337,7 @@ function algoDraft2324(){
     boardDraftState: draftState2324,
     boardLsKey:      LS_DRAFT_2324,
     contractYearAnchor: 2024,
+    nextContractField: 'nextContractTerm2324',
     srcNFn: p => (p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0),
     maxSrc: 3,
     injurySet: INJURY_DROPS_2324,
@@ -6348,6 +6373,7 @@ function algoDraft2526(){
     boardDraftState: draftState2526,
     boardLsKey:      LS_DRAFT_2526,
     contractYearAnchor: 2026,
+    nextContractField: 'nextContractTerm2526',
     srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0),
     maxSrc: 4,
     injurySet: INJURY_DROPS_2526,
@@ -6586,7 +6612,7 @@ function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
 // best-available scoring; posAlloc (D-cap-share correction) only applies in bestAvail mode and
 // only when a specific team's cap context is supplied — a generic "score every free agent" call
 // (no team) skips it, matching this formula's pre-existing, intentional team-agnostic display use.
-function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos }){
+function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos }){
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
   const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(pressure[pg]||0) - 1));
   const srcN = srcNFn(p);
@@ -6602,7 +6628,16 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   const ppEff = pp * coverageMult;
   const tPPTSM = (ppEff>0 && cap0>0) ? ppEff/cap0*draftWeights.wtPPTSM : 0;
   const age = calcAgeForSim(p) ?? 99;
-  const yrsRaw = p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0;
+  // Include an already-signed next contract's term — e.g. an ELC player with 1 year left
+  // whose extension is already on file has real known security through that deal too, not
+  // just the current one (found live via Ivan Demidov: 1yr left on his ELC + a signed
+  // $9.15M×8yr extension starting 27-28 — treated as 9 known years, not 1). nextContractYrs
+  // is supplied by the caller (season-specific — see p.nextContractTerm2324/2425/2526 vs the
+  // live p.nextContractTerm) rather than read from a single field here, since a real GM at a
+  // historical draft could only know about extensions signed before THAT draft day (e.g.
+  // Bowen Byram's 2025-07-14 signing was public well before the 25-26 draft), which a
+  // single "as of today" field can't distinguish from one signed only recently.
+  const yrsRaw = (p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0) + nextContractYrs;
   const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
   const tYouth = youthRaw * draftWeights.wtAge;
   const tDelta = _deltaCurveBonus(ppEff, cap0, pg, elcMax, curveFns[pg], draftWeights.wtDeltaCurve);
@@ -6637,7 +6672,8 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
 function _pickBestFA(team, round, mode, ctx){
   const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
           draftWeights, calcAgeForSim, contractYearAnchor, elcMax, srcNFn, maxSrc,
-          allTeams, need, teamCap, teamCapByPos, injurySet } = ctx;
+          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField } = ctx;
+  const nextContractFld = nextContractField || 'nextContractTerm';
   const injSet = injurySet || new Set();
 
   const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
@@ -6673,14 +6709,14 @@ function _pickBestFA(team, round, mode, ctx){
     const cap0 = getCap(p) || 0;
     const { score } = _scoreDraftCandidate(p, {
       pg, pp, cap0, pressure, mode, round, draftWeights,
-      calcAgeForSim, contractYearAnchor, curveFns: curveFnsRich, elcMax, srcNFn, maxSrc,
+      calcAgeForSim, contractYearAnchor, nextContractYrs: p[nextContractFld]||0, curveFns: curveFnsRich, elcMax, srcNFn, maxSrc,
       team, teamCap, teamCapByPos,
     });
     return {p, score, pp};
   }).sort((a,b) => b.score - a.score)[0];
 }
 
-function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn, maxSrc, contractYearAnchor, injurySet }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn, maxSrc, contractYearAnchor, injurySet, nextContractField }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
 
   // Snapshot: track each player's current team assignment
@@ -6734,7 +6770,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     const pick = _pickBestFA(team, round, mode, {
       players, getAssignedTeam: p => assigned[p.id] || null, startField, ppts, getCap,
       capLimit, draftReserve, draftWeights, calcAgeForSim, contractYearAnchor, elcMax,
-      srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet,
+      srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField,
     });
 
     if(!pick) { teamPickNum[team]++; boardPicks.push(null); continue; }
@@ -7198,7 +7234,7 @@ function rankPlayers2526(){
   eligible.forEach(p=>{
     const pg = posGroup(p.pos);
     const pp = ppts2526blend(p);
-    const yrs = p.expYear>=2026 ? p.expYear-2026+1 : 0;
+    const yrs = (p.expYear>=2026 ? p.expYear-2026+1 : 0) + (p.nextContractTerm2526||0);
     const ageS = calcAge2526(p) ?? 99;
     const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
     const srcNS = (p.proj2526_ath > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_dtz > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
@@ -7294,7 +7330,7 @@ function updateStats2526(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:pressure2526,mode,round,draftWeights,calcAgeForSim:calcAge2526,contractYearAnchor:2026,curveFns:curveFns2526,elcMax:ELC_MAX_2526,srcNFn:srcNFn2526,maxSrc:4,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:pressure2526,mode,round,draftWeights,calcAgeForSim:calcAge2526,contractYearAnchor:2026,nextContractYrs:p.nextContractTerm2526||0,curveFns:curveFns2526,elcMax:ELC_MAX_2526,srcNFn:srcNFn2526,maxSrc:4,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
@@ -7433,7 +7469,7 @@ function render2526(){
       .filter(p=>!p.start2526&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 4 };
+        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 4 };
         const _ds2526 = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2526}).score;
         const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2526}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds2526,_ds2526Normal};
@@ -7448,7 +7484,7 @@ function render2526(){
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
         const scoreArgs = {
           pg, pp, cap0, pressure: pressure2526, round: focusRound2526, draftWeights,
-          calcAgeForSim: calcAge2526, contractYearAnchor: 2026, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 4,
+          calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 4,
           team: draftFocusTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526,
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
@@ -8264,7 +8300,7 @@ function updateStats(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure,mode,round,draftWeights,calcAgeForSim:calcAge,contractYearAnchor:NHL_SEASON_YEAR,curveFns:curveFns2627,elcMax:ELC_MAX_2627,srcNFn:srcNFn2627,maxSrc:5,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure,mode,round,draftWeights,calcAgeForSim:calcAge,contractYearAnchor:NHL_SEASON_YEAR,nextContractYrs:p.nextContractTerm||0,curveFns:curveFns2627,elcMax:ELC_MAX_2627,srcNFn:srcNFn2627,maxSrc:5,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
