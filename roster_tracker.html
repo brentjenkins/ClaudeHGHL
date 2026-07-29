@@ -1016,6 +1016,10 @@ tr:hover td{background:#fafaf8}
               <span style="font-size:11px;color:#9ca3af" title="Shrinks the points used for scoring (not the displayed PPTS) when a player has few projection sources — a 1-source player gets a real haircut on its score, not just a missing bonus. Backtested 2026-07-24: low-coverage players bust ~2x as often and overproject ~3x as much as fully-covered ones.">Coverage discount (max, at 0 sources) ×</span>
               <input type="number" id="s-wtCoverageDiscount" value="0.25" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtCoverageDiscount',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
             </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-size:11px;color:#9ca3af" title="Hard floor: a free agent needs coverage from at least this fraction of that season's available projection sources to be draft-eligible at all (not just discounted). Backtested 2026-07-28 against all 3 real drafts: real GMs never drafted below ~1/3 coverage in any season (23-24 w/ 3 sources, 24-25 w/ 4, 25-26 w/ 6), while the algo's own 25-26 misses were 100% single-source (all CBS). 0-source players are already unscoreable (ppts=0) so this only bites the 'has SOME points, but from a lone uncorroborated source' case.">Min source coverage (fraction of season's sources)</span>
+              <input type="number" id="s-minSrcCoverage" value="0.33" min="0" max="1" step="0.01" onchange="updateDraftWeight('minSrcCoverage',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+            </div>
           </div>
         </div>
 
@@ -1248,7 +1252,7 @@ let sortColSignings = 'sign_date', sortDirSignings = -1;
 // but the user explicitly chose data-driven accuracy over draft-pick-matching as the priority
 // going forward. elcExpG left at 35 — its own projected-basis sample was tiny (n=6) and already
 // close to the guessed value.
-let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0 };
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.33 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
@@ -1291,6 +1295,18 @@ function _elcExp(pg){ return ({F: draftWeights.elcExpF, D: draftWeights.elcExpD,
 function _curveBaseline(pg, cap, elcMax, curveFn){
   if(cap > 0 && cap <= elcMax) return _elcExp(pg);
   return (curveFn && cap > 0) ? curveFn(cap) : null;
+}
+
+// Fits the per-position {F,D,G} quadratic curveFns used by _curveBaseline, from a rostered
+// pool + cap/pts accessors. Each render2X2Y function still inlines its own copy of this
+// exact 3-line pattern (pre-existing duplication, not touched here) — this is the shared
+// version for new callers like _runCompareDrafts's △ Curve column.
+function _buildCurveFns(pool, getCap, getPts){
+  return {
+    F: fitQuadratic(pool.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: getPts(p)}))),
+    D: fitQuadratic(pool.filter(p => posGroup(p.pos)==='D').map(p => ({x: getCap(p), y: getPts(p)}))),
+    G: fitQuadratic(pool.filter(p => posGroup(p.pos)==='G').map(p => ({x: getCap(p), y: getPts(p)}))),
+  };
 }
 
 // Returns prospect bonus score (0 if not a prospect).
@@ -3936,6 +3952,7 @@ function syncSettings(){
   set('s-wtProspect', W.wtProspect);
   set('s-elcExpF', W.elcExpF); set('s-elcExpD', W.elcExpD); set('s-elcExpG', W.elcExpG);
   set('s-wtCoverageDiscount', W.wtCoverageDiscount);
+  set('s-minSrcCoverage', W.minSrcCoverage??0.33);
   set('s-wtPressure', W.wtPressure);
   set('s-wtDeltaCurve', W.wtDeltaCurve);
   set('s-wtPosAlloc', W.wtPosAlloc??1.0);
@@ -3957,6 +3974,7 @@ function syncSettings(){
 function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
   if(draftWeights.wtCoverageDiscount === undefined) draftWeights.wtCoverageDiscount = 0.25;
+  if(draftWeights.minSrcCoverage === undefined) draftWeights.minSrcCoverage = 0.33;
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
   if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 8;
   if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 35;
@@ -6715,11 +6733,21 @@ function _pickBestFA(team, round, mode, ctx){
   futureReserve = Math.min(futureReserve, Math.max(0, roomAvailable - elcMax));
   const maxPickCap = roomAvailable - futureReserve;
 
+  // Hard coverage floor: real GMs never draft a player backed by less than ~1/3 of that
+  // season's available projection sources (23-24 w/ 3 sources: floor was 1/3; 24-25 w/ 4:
+  // floor was 2/4; 25-26 w/ 6: floor was 2/6 — same ratio every season). The algo's own
+  // wtCoverageDiscount only shrinks a low-coverage player's score, which wasn't enough to
+  // keep 25-26's 12 CBS-solo players from still winning empty late-round slots — see
+  // session_2026-07-28_min_src_coverage memory. 0-source players are already excluded above
+  // by the ppts(p)<=0 check (an uncovered player scores 0), so this only bites the "has SOME
+  // points, but from a single uncorroborated source" case.
+  const minCov = draftWeights.minSrcCoverage||0;
   const fas = players.filter(p => {
     if(getAssignedTeam(p)) return false;
     if(ppts(p) <= 0) return false;
     if(getCap(p) <= 0) return false;
     if(getCap(p) > maxPickCap) return false;
+    if(srcNFn && maxSrc > 0 && (srcNFn(p)/maxSrc) < minCov) return false;
     const pg = posGroup(p.pos);
     if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
     if(injSet.has(normName(p.name).toLowerCase())) return false; // known long-term-injured at draft time — no real GM would pick them
@@ -7068,7 +7096,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
 // same duplication risk _runAlgoDrops/_runAlgoDraft already existed to prevent on the
 // simulation side. Builds the league-wide Matched/Real-value-missed/Real-reaches breakdown
 // and renders the modal; each season's compareDrafts2X2Y() wrapper just supplies config.
-function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppts, getCap, actualPtsField, injurySet }){
+function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppts, getCap, actualPtsField, injurySet, curveFns, elcMax }){
   injurySet = injurySet || new Set();
   const hasActualData = Object.keys(postdraftRoster).length > 0;
   if(!hasActualData){ toast(noDataMsg); return; }
@@ -7176,9 +7204,19 @@ function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppt
       : '');
 
   const playerLabel = p => {
+    const pg = posGroup(p.pos), cap = getCap(p);
     const proj = Math.round(ppts(p));
     const act  = (p[actualPtsField]||0) > 0 ? `, ${p[actualPtsField]}act` : '';
-    return `${p.name} (${posGroup(p.pos)}, $${getCap(p).toFixed(2)}M, ${proj}proj${act})`;
+    let curveTxt = '';
+    if(curveFns && cap > 0){
+      const base = _curveBaseline(pg, cap, elcMax, curveFns[pg]);
+      if(base != null){
+        const delta = proj - base;
+        const sign = delta >= 0 ? '+' : '';
+        curveTxt = ` <span style="color:${curveSurplusColor(delta)}">(${sign}${Math.round(delta)}△)</span>`;
+      }
+    }
+    return `${p.name} (${pg}, $${cap.toFixed(2)}M, ${proj}proj${act})${curveTxt}`;
   };
 
   const section = (label, color, icon, items, teamOf) => {
@@ -7221,11 +7259,13 @@ function _runCompareDrafts({ season, postdraftRoster, noDataMsg, draftState, ppt
 }
 
 function compareDrafts2526(){
+  const pool = players.filter(p => p.start2526 && getCap2526(p) > 0);
   _runCompareDrafts({
     season: '25-26', postdraftRoster: POSTDRAFT_ROSTER_2526,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2526 in the source (normName → team) to enable comparison.',
     draftState: draftState2526, ppts: ppts2526blend, getCap: getCap2526, actualPtsField: 'pts2526',
     injurySet: INJURY_DROPS_2526,
+    curveFns: _buildCurveFns(pool, getCap2526, ppts2526blend), elcMax: ELC_MAX_2526,
   });
 }
 
@@ -7233,29 +7273,35 @@ function compareDrafts2526(){
 // actual draft (Oct 2, 2026), so POSTDRAFT_ROSTER_2627 stays empty until then. Uses p.pts/p.cap
 // directly (26-27's live projection/cap fields) rather than a season-suffixed blend function.
 function compareDrafts2627(){
+  const pool = players.filter(p => p.start2627 && (p.cap||0) > 0);
   _runCompareDrafts({
     season: '26-27', postdraftRoster: POSTDRAFT_ROSTER_2627,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2627 (normName → team) once the real 26-27 draft happens.',
     draftState: draftState2627, ppts: p => p.pts||0, getCap: p => p.cap||0, actualPtsField: 'pts2627',
     injurySet: INJURY_DROPS_2627,
+    curveFns: _buildCurveFns(pool, p => p.cap||0, p => p.pts||0), elcMax: ELC_MAX_2627,
   });
 }
 
 function compareDrafts2425(){
+  const pool = players.filter(p => p.start2425 && getCap2425(p) > 0);
   _runCompareDrafts({
     season: '24-25', postdraftRoster: POSTDRAFT_ROSTER_2425,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2425 in the source (normName \u2192 team) to enable comparison.',
     draftState: draftState2425, ppts: ppts2425blend, getCap: getCap2425, actualPtsField: 'pts2425',
     injurySet: INJURY_DROPS_2425,
+    curveFns: _buildCurveFns(pool, getCap2425, ppts2425blend), elcMax: ELC_MAX_2425,
   });
 }
 
 function compareDrafts2324(){
+  const pool = players.filter(p => p.start2324 && getCap2324(p) > 0);
   _runCompareDrafts({
     season: '23-24', postdraftRoster: POSTDRAFT_ROSTER_2324,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2324 in the source (normName \u2192 team) to enable comparison.',
     draftState: draftState2324, ppts: ppts2324blend, getCap: getCap2324, actualPtsField: 'pts2324',
     injurySet: INJURY_DROPS_2324,
+    curveFns: _buildCurveFns(pool, getCap2324, ppts2324blend), elcMax: ELC_MAX_2324,
   });
 }
 
