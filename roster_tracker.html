@@ -944,10 +944,6 @@ tr:hover td{background:#fafaf8}
   <div>
     <div class="section-label">Drops <span class="section-line"></span><span class="section-desc">Per-position curves classify players as above/below average for their cap. Below-curve players drop first by deficit; at/above-curve players are protected. Stops once min drops is met and projected pts reach the target.</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="s-useActuals" checked onchange="toggleUseActuals(this.checked)" style="accent-color:#d97706;width:15px;height:15px">
-        <label for="s-useActuals" style="font-size:12px;color:#d97706;font-weight:600;cursor:pointer">Use 25-26 actuals as 26-27 PPTS (temporary)</label>
-      </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
         <input type="number" id="s-minDropF" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropF',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -1049,7 +1045,7 @@ tr:hover td{background:#fafaf8}
             </div>
             <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding-top:8px;border-top:1px solid #bbf7d0">
               <div style="display:flex;flex-direction:column;gap:3px">
-                <span style="font-size:11px;color:#9ca3af">ELC expected pts (△ baseline &amp; prospect norm)</span>
+                <span style="font-size:11px;color:#9ca3af" title="△ Curve bonus requires pts strictly ABOVE this value (a player at exactly this value scores delta=0, no bonus). Prospect bonus is a continuous ratio (pts / this value) with no floor — it still gives partial credit below this value, scaled by age.">ELC expected pts (△ baseline &amp; prospect norm)</span>
                 <div style="display:flex;gap:6px">
                   <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">F<input type="number" id="s-elcExpF" value="41" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpF',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
                   <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af">D<input type="number" id="s-elcExpD" value="26" min="1" max="200" step="1" onchange="updateDraftWeight('elcExpD',+this.value)" style="width:56px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
@@ -1453,6 +1449,19 @@ const FIRST_NAME_ALIASES = {
   'johnjason':'jj','jj':'johnjason',
   'fedor':'fyodor','fyodor':'fedor',
   'john':'jack','jack':'john',
+  // Forward-only: the formal-side key ('zachary','samuel','michael') is already
+  // claimed by its own reverse entry above ('zach','sam','mike'), so a flat
+  // single-value dict can't also point it back at these variants. Not a problem —
+  // matching is overlap-based (_namesMatch) and a name's own identity variant is
+  // always included, so e.g. "Sammy Blais" -> {sammy blais, samuel blais} still
+  // overlaps "Samuel Blais" -> {samuel blais, sam blais} on "samuel blais".
+  'zack':'zachary','zac':'zachary','sammy':'samuel','mikey':'michael',
+  'matias':'mattias','mattias':'matias',
+  'nic':'nicolas','nicolas':'nic',
+  'dmitri':'dmitry','dmitry':'dmitri',
+  'cal':'calvin','calvin':'cal',
+  'arsh':'arshdeep','arshdeep':'arsh',
+  'daniil':'danil','danil':'daniil',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
@@ -1462,6 +1471,14 @@ function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; con
 // Moser — a key can only hold one alias value, so Moser's expansion needs its own
 // explicit pair rather than fighting Peterka's for the "jj" slot). Bare normalized
 // names (no _pos suffix), lowercase, matching FIRST_NAME_ALIASES' convention.
+// Only for cases FIRST_NAME_ALIASES structurally can't express: a flat single-value
+// dict can't give one first-name key two different expansions, so when a real
+// player's formal name collides with a MORE common name already claimed by that key
+// (e.g. "Nick" already means "Nicholas" for the vast majority of real Nicks), the
+// rare specific full name needs its own explicit override rather than fighting for
+// the shared key. Everything else (plain spelling/nickname variants with no key
+// collision, e.g. Sammy/Samuel, Zack/Zachary) belongs in FIRST_NAME_ALIASES instead —
+// see 2026-07-28 audit that moved 12 such pairs out of this list.
 const KNOWN_NAME_OVERRIDE_PAIRS = [
   ['jj moser', 'janis jerome moser'],
   // Live pool stores his name with a space ("Charles Alexis Legault"); PuckPedia's
@@ -1469,32 +1486,14 @@ const KNOWN_NAME_OVERRIDE_PAIRS = [
   // no space substitution, fusing it into "charlesalexis" — never matches the
   // space-separated live key otherwise.
   ['charles alexis legault', 'charlesalexis legault'],
-  // "Zack" isn't in FIRST_NAME_ALIASES (only "Zach"/"Zachary" are paired), so a
-  // "Zack Bolduc" record (from an early sync before his NHL ID was ever matched)
-  // never converged with the canonical "Zachary Bolduc" record. Pairs to "zach
-  // bolduc" (not "zachary bolduc") so both spellings' dedup() canonicalization
-  // converges on the exact same value FIRST_NAME_ALIASES already produces for the
-  // "zachary" spelling — found 2026-07-22 via a Compare Drafts name mismatch.
-  ['zack bolduc', 'zach bolduc'],
-  // Found via the same Nick/Nicklaus Perbix bug (2026-07-22) that motivated a systematic
-  // audit of every data_2X2Y.js file + baked constant for other uncovered formal/nickname
-  // pairs among real HGHL-relevant players. Verified individually against real NHL rosters
-  // before adding — three other audit hits (Anders/Andre Lee, Jaycob/Jayson Megna,
-  // Colin/Colton White) were confirmed to be genuinely DIFFERENT real players sharing a
-  // last name, not spelling variants, and were deliberately excluded from this list.
+  // "Nick" already means "Nicholas" for FIRST_NAME_ALIASES (the vast majority of
+  // real Nicks) — wrong for Nicklaus Perbix specifically, so his pair must override
+  // rather than share the claimed "nick" key. Found 2026-07-22.
   ['nick perbix', 'nicklaus perbix'],
-  ['arsh bains', 'arshdeep bains'],
-  ['sammy blais', 'samuel blais'],
-  ['mike eyssimont', 'mikey eyssimont'],
-  ['daniil gushchin', 'danil gushchin'],
-  ['zac jones', 'zachary jones'],
-  ['matt knies', 'matty knies'],
-  ['matias maccelli', 'mattias maccelli'],
+  // "Alexander" and "Alexandre" are BOTH already claimed by FIRST_NAME_ALIASES'
+  // "alex" key (the common nickname for either spelling) — can't also point them at
+  // each other in a flat single-value dict.
   ['alexander nylander', 'alexandre nylander'],
-  ['nic petan', 'nicolas petan'],
-  ['cal petersen', 'calvin petersen'],
-  ['matt tkachuk', 'matty tkachuk'],
-  ['dmitri voronkov', 'dmitry voronkov'],
   ['alexander wennberg', 'alexandre wennberg'],
 ];
 function _knownNameOverride(n){
@@ -1707,8 +1706,6 @@ function dedup(){
   }
 }
 
-let useActualsPts = true;
-
 // Per-source confidence weights for blending PPTS/PPP across projection sources.
 // Derived 2026-07-13 by backtesting each source's 25-26 preseason projection against
 // actual 25-26 results (r, MAE, RMSE on a common player pool covered by all 5 sources).
@@ -1749,7 +1746,7 @@ function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs 
 
 // Recompute p.pts from all available projection sources.
 // Priority: manual override > in-season nowcast (once 26-27 games exist) >
-// (actuals override if useActualsPts) > blend of external sources > 25-26 actuals fallback.
+// blend of external sources > 25-26 actuals fallback.
 //
 // This league applies drops/draft retroactively — whoever ends up rostering a
 // player after the Oct 2 draft gets credit for that player's ENTIRE season,
@@ -1765,7 +1762,7 @@ function reblendPts(p){
     [p.ptsAth, W.athletic], [p.ptsDFO, W.dfo], [p.ptsDTZ, W.dtz], [p.ptsESPN, W.espn],
     [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
   ]);
-  const preseasonProj = blended > 0 ? blended : (useActualsPts && p.pts2526 > 0 ? p.pts2526 : 0);
+  const preseasonProj = blended;
 
   if(p.gp2627 > 0){
     const banked = p.pts2627 || 0;
@@ -1780,18 +1777,11 @@ function reblendPts(p){
     return;
   }
 
-  if(useActualsPts && p.pts2526 > 0){ p.pts = p.pts2526; return; }
   if(preseasonProj > 0){
     p.pts = Math.round(preseasonProj);
   } else if(p.pts2526 > 0){
     p.pts = p.pts2526;
   }
-}
-
-function toggleUseActuals(val){
-  useActualsPts = val;
-  applyBlendedPts();
-  render();
 }
 
 function applyBlendedPts(){
@@ -3956,7 +3946,6 @@ function syncSettings(){
   set('s-minDropF', minDropF); set('s-minDropD', minDropD);
   set('s-dropValueFloor', dropValueFloor);
   if(CAP_LIMIT_2728 != null) set('s-capLimit2728', CAP_LIMIT_2728);
-  const ua = document.getElementById('s-useActuals'); if(ua) ua.checked = useActualsPts;
   set('s-abpWiggle', abpWiggle);
   set('s-wAthletic', PROJ_SOURCE_WEIGHTS.athletic); set('s-wDFO', PROJ_SOURCE_WEIGHTS.dfo);
   set('s-wDTZ', PROJ_SOURCE_WEIGHTS.dtz);
