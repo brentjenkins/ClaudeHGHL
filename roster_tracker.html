@@ -2944,7 +2944,7 @@ function render(){
   rows.sort((a,b)=>{
     let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='rank'?(a.rank??99999):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):(a[sortCol]??'');
     let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='rank'?(b.rank??99999):sortCol==='curvedelta'?(curveDelta(b)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(b)??-Infinity):(b[sortCol]??'');
-    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
@@ -5557,7 +5557,7 @@ function render2425(){
     else if(sortCol2425==='ptsperm2425'){ const ca=getCap2425(a),cb=getCap2425(b); av=ca>0?ppts2425blend(a)/ca:0; bv=cb>0?ppts2425blend(b)/cb:0; }
     else if(sortCol2425==='cap2425'){ av=getCap2425(a); bv=getCap2425(b); }
     else { av=a[sortCol2425]??''; bv=b[sortCol2425]??''; }
-    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
     return av<bv?-sortDir2425:av>bv?sortDir2425:0;
   });
 
@@ -5614,7 +5614,7 @@ function render2425(){
     if(sortCol2425==='ppts2425blend'){
       rows=draftSubMode2425==='prospect'?rows.sort((a,b)=>b._ds2425-a._ds2425):rows.sort((a,b)=>b._ds2425Normal-a._ds2425Normal);
     }else{
-      rows.sort((a,b)=>{let av,bv;if(sortCol2425==='age'){av=calcAge2425(a)??-1;bv=calcAge2425(b)??-1;}else if(sortCol2425==='abp2425'){av=abpMap2425.get(a.id)??-1;bv=abpMap2425.get(b.id)??-1;}else if(sortCol2425==='rank2425'){av=a.rank2425??99999;bv=b.rank2425??99999;}else if(sortCol2425==='curvedelta2425'){av=curveDelta2425(a)??-Infinity;bv=curveDelta2425(b)??-Infinity;}else if(sortCol2425==='curvedelta2425actual'){av=curveDeltaActual2425(a)??-Infinity;bv=curveDeltaActual2425(b)??-Infinity;}else if(sortCol2425==='ptsperm2425'){const ca=getCap2425(a),cb=getCap2425(b);av=ca>0?ppts2425blend(a)/ca:0;bv=cb>0?ppts2425blend(b)/cb:0;}else if(sortCol2425==='cap2425'){av=getCap2425(a);bv=getCap2425(b);}else{av=a[sortCol2425]??'';bv=b[sortCol2425]??'';}if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return av<bv?-sortDir2425:av>bv?sortDir2425:0;});
+      rows.sort((a,b)=>{let av,bv;if(sortCol2425==='age'){av=calcAge2425(a)??-1;bv=calcAge2425(b)??-1;}else if(sortCol2425==='abp2425'){av=abpMap2425.get(a.id)??-1;bv=abpMap2425.get(b.id)??-1;}else if(sortCol2425==='rank2425'){av=a.rank2425??99999;bv=b.rank2425??99999;}else if(sortCol2425==='curvedelta2425'){av=curveDelta2425(a)??-Infinity;bv=curveDelta2425(b)??-Infinity;}else if(sortCol2425==='curvedelta2425actual'){av=curveDeltaActual2425(a)??-Infinity;bv=curveDeltaActual2425(b)??-Infinity;}else if(sortCol2425==='ptsperm2425'){const ca=getCap2425(a),cb=getCap2425(b);av=ca>0?ppts2425blend(a)/ca:0;bv=cb>0?ppts2425blend(b)/cb:0;}else if(sortCol2425==='cap2425'){av=getCap2425(a);bv=getCap2425(b);}else{av=a[sortCol2425]??'';bv=b[sortCol2425]??'';}if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}return av<bv?-sortDir2425:av>bv?sortDir2425:0;});
     }
     const draftModeLabel2425=draftFocusTeam2425?`Viewing: ${draftFocusTeam2425}`:draftSubMode2425==='prospect'?'Prospect mode':'Best Available';
     var draftSectionHdr2425=`<tr><td colspan="99" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2425)}</td></tr>`;
@@ -6029,7 +6029,7 @@ function render2324(){
     else if(sortCol2324==='ptsperm2324'){ const ca=getCap2324(a),cb=getCap2324(b); av=ca>0?ppts2324blend(a)/ca:0; bv=cb>0?ppts2324blend(b)/cb:0; }
     else if(sortCol2324==='cap2324'){ av=getCap2324(a); bv=getCap2324(b); }
     else { av=a[sortCol2324]??''; bv=b[sortCol2324]??''; }
-    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
     return av<bv?-sortDir2324:av>bv?sortDir2324:0;
   });
 
@@ -6081,7 +6081,7 @@ function render2324(){
     if(sortCol2324==='ppts2324blend'){
       rows=draftSubMode2324==='prospect'?rows.sort((a,b)=>b._ds2324-a._ds2324):rows.sort((a,b)=>b._ds2324Normal-a._ds2324Normal);
     }else{
-      rows.sort((a,b)=>{let av,bv;if(sortCol2324==='age'){av=calcAge2324(a)??-1;bv=calcAge2324(b)??-1;}else if(sortCol2324==='abp2324'){av=abpMap2324.get(a.id)??-1;bv=abpMap2324.get(b.id)??-1;}else if(sortCol2324==='rank2324'){av=a.rank2324??99999;bv=b.rank2324??99999;}else if(sortCol2324==='curvedelta2324'){av=curveDelta2324(a)??-Infinity;bv=curveDelta2324(b)??-Infinity;}else if(sortCol2324==='curvedelta2324actual'){av=curveDeltaActual2324(a)??-Infinity;bv=curveDeltaActual2324(b)??-Infinity;}else if(sortCol2324==='ptsperm2324'){const ca=getCap2324(a),cb=getCap2324(b);av=ca>0?ppts2324blend(a)/ca:0;bv=cb>0?ppts2324blend(b)/cb:0;}else if(sortCol2324==='cap2324'){av=getCap2324(a);bv=getCap2324(b);}else{av=a[sortCol2324]??'';bv=b[sortCol2324]??'';}if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return av<bv?-sortDir2324:av>bv?sortDir2324:0;});
+      rows.sort((a,b)=>{let av,bv;if(sortCol2324==='age'){av=calcAge2324(a)??-1;bv=calcAge2324(b)??-1;}else if(sortCol2324==='abp2324'){av=abpMap2324.get(a.id)??-1;bv=abpMap2324.get(b.id)??-1;}else if(sortCol2324==='rank2324'){av=a.rank2324??99999;bv=b.rank2324??99999;}else if(sortCol2324==='curvedelta2324'){av=curveDelta2324(a)??-Infinity;bv=curveDelta2324(b)??-Infinity;}else if(sortCol2324==='curvedelta2324actual'){av=curveDeltaActual2324(a)??-Infinity;bv=curveDeltaActual2324(b)??-Infinity;}else if(sortCol2324==='ptsperm2324'){const ca=getCap2324(a),cb=getCap2324(b);av=ca>0?ppts2324blend(a)/ca:0;bv=cb>0?ppts2324blend(b)/cb:0;}else if(sortCol2324==='cap2324'){av=getCap2324(a);bv=getCap2324(b);}else{av=a[sortCol2324]??'';bv=b[sortCol2324]??'';}if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}return av<bv?-sortDir2324:av>bv?sortDir2324:0;});
     }
     const draftModeLabel2324=draftFocusTeam2324?`Viewing: ${draftFocusTeam2324}`:draftSubMode2324==='prospect'?'Prospect mode':'Best Available';
     var draftSectionHdr2324=`<tr><td colspan="99" style="background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:11px;padding:4px 10px;letter-spacing:.03em">${esc(draftModeLabel2324)}</td></tr>`;
@@ -7511,7 +7511,7 @@ function render2526(){
     else if(sortCol2526==='curvedelta2526'){ av=curveDelta2526(a)??-Infinity; bv=curveDelta2526(b)??-Infinity; }
     else if(sortCol2526==='curvedelta2526actual'){ av=curveDeltaActual2526(a)??-Infinity; bv=curveDeltaActual2526(b)??-Infinity; }
     else { av=a[sortCol2526]??''; bv=b[sortCol2526]??''; }
-    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
     return av<bv?-sortDir2526:av>bv?sortDir2526:0;
   });
 
