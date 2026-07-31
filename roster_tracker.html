@@ -6712,6 +6712,107 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, pressRaw: pressure[pg], pressMult };
 }
 
+// ── Fully-uncontested batch drafting ─────────────────────────────────────────
+// When EVERY position a team still needs is one only that team has any remaining need for
+// league-wide (not necessarily "every other team is 100% done" — just that nothing any other
+// team still needs overlaps with what this team needs), nothing about the rest of this team's
+// draft is competitive. Picking one position at a time — even with the single-position
+// deferral below — still makes an independent local decision per position. This solves for the
+// single best COMBINATION of remaining picks against the team's exact remaining budget: a
+// knapsack, not a sequence of locally-best choices. See _runAlgoDraft for where this gets
+// triggered and how it supersedes any single-position deferral already locked in.
+
+// Bounded 0/1 knapsack DP: for `candidates` ({p, cap, score}), returns an array `curve[d]` =
+// the best total score achievable choosing EXACTLY k of them with total cost <= d*step, for
+// every d from 0 to budgetBuckets. Used to compare different ways of splitting a shared
+// budget across position categories before committing to actual players.
+function _knapsackValueCurve(candidates, k, budgetBuckets, step){
+  if(k <= 0) return new Array(budgetBuckets+1).fill(0);
+  const NEG = -Infinity;
+  const dp = [];
+  for(let c=0; c<=k; c++) dp.push(new Array(budgetBuckets+1).fill(c===0 ? 0 : NEG));
+  for(const cand of candidates){
+    const costBucket = Math.ceil(cand.cap / step);
+    if(costBucket > budgetBuckets) continue; // can never afford this one at all
+    for(let c=k; c>=1; c--){
+      const prev = dp[c-1], cur = dp[c];
+      for(let d=budgetBuckets; d>=costBucket; d--){
+        const base = prev[d-costBucket];
+        if(base === NEG) continue;
+        const v = base + cand.score;
+        if(v > cur[d]) cur[d] = v;
+      }
+    }
+  }
+  return dp[k];
+}
+
+// Recovers the ACTUAL chosen players for one specific (k, budget) — a memoized recursive
+// solver, used only once the optimal cross-category budget split is already known (see
+// _solveTeamKnapsack), so it only ever runs a single query per category rather than one
+// per budget bucket.
+function _knapsackChooseExact(candidates, k, budgetBuckets, step){
+  if(k <= 0) return {score: 0, chosen: []};
+  const memo = new Map();
+  function solve(idx, remaining, budgetLeft){
+    if(remaining === 0) return {score: 0, chosen: []};
+    if(candidates.length - idx < remaining) return null; // not enough candidates left to reach `remaining`
+    const key = idx*1e7 + remaining*1e5 + budgetLeft;
+    if(memo.has(key)) return memo.get(key);
+    const skip = solve(idx+1, remaining, budgetLeft);
+    const costBucket = Math.ceil(candidates[idx].cap / step);
+    let take = null;
+    if(costBucket <= budgetLeft){
+      const rest = solve(idx+1, remaining-1, budgetLeft-costBucket);
+      if(rest) take = {score: rest.score + candidates[idx].score, chosen: [candidates[idx], ...rest.chosen]};
+    }
+    const best = (take && skip) ? (take.score >= skip.score ? take : skip) : (take || skip || null);
+    memo.set(key, best);
+    return best;
+  }
+  return solve(0, k, budgetBuckets) || {score: -Infinity, chosen: null};
+}
+
+// Orchestrates the joint knapsack across F/D/G: builds each needed category's value curve,
+// searches for the best way to split the team's total remaining budget across them (at most
+// 3 categories, so a direct nested search over 1-2 free dimensions — handing whatever's left
+// to the LAST category is always at least as good as holding any back, since every curve is
+// non-decreasing in budget), then reconstructs the actual chosen players for that split.
+// Returns a flat array of chosen player objects (order doesn't matter to the caller).
+function _solveTeamKnapsack(neededCounts, candidatesByPos, budget){
+  const STEP = 0.05; // $50k buckets — fine enough not to meaningfully distort real cap decisions
+  const budgetBuckets = Math.max(0, Math.floor(budget / STEP)); // floor, so bucketed spend never exceeds the real budget
+  const cats = ['F','D','G'].filter(pg => (neededCounts[pg]||0) > 0);
+  if(!cats.length) return [];
+
+  const curves = {};
+  for(const pg of cats) curves[pg] = _knapsackValueCurve(candidatesByPos[pg]||[], neededCounts[pg], budgetBuckets, STEP);
+
+  let bestSplit = null, bestScore = -Infinity;
+  const tryS = split => {
+    let total = 0;
+    for(const pg of cats){ const v = curves[pg][split[pg]]; if(v === -Infinity) return; total += v; }
+    if(total > bestScore){ bestScore = total; bestSplit = split; }
+  };
+  if(cats.length === 1){
+    tryS({[cats[0]]: budgetBuckets});
+  } else if(cats.length === 2){
+    for(let d0=0; d0<=budgetBuckets; d0++) tryS({[cats[0]]: d0, [cats[1]]: budgetBuckets-d0});
+  } else {
+    for(let d0=0; d0<=budgetBuckets; d0++)
+      for(let d1=0; d1<=budgetBuckets-d0; d1++)
+        tryS({[cats[0]]: d0, [cats[1]]: d1, [cats[2]]: budgetBuckets-d0-d1});
+  }
+  if(!bestSplit) return [];
+
+  const result = [];
+  for(const pg of cats){
+    const {chosen} = _knapsackChooseExact(candidatesByPos[pg]||[], neededCounts[pg], bestSplit[pg], STEP);
+    if(chosen) for(const c of chosen) result.push(c.p);
+  }
+  return result;
+}
+
 // Selects the single best free-agent pick for `team` at `round`/`mode` — round-aware cap
 // reserve, live curve state, and the shared SCORE formula. Factored out of
 // _runAlgoDraft's per-pick loop so the on-the-clock "Best Pick" button (simulateBestPick) calls
@@ -6850,6 +6951,22 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
   const deferredTarget = {};
   for(const t of allTeams) deferredTarget[t] = {F:null, D:null, G:null};
 
+  // Fully-uncontested batch drafting: once EVERY position a team still needs has zero
+  // competing demand from any other team league-wide (not necessarily "every other team is
+  // completely done" — e.g. a team needing only D is fully uncontested even while another
+  // team still has F picks left, as long as nothing else needs D), the rest of that team's
+  // draft is entirely uncontested at once. storedPicks[team] holds a one-time joint-knapsack
+  // plan (see _solveTeamKnapsack) for the best combination against the team's exact remaining
+  // budget, superseding any single-position deferredTarget already locked in — that decision
+  // had less information (didn't know the team would go fully uncontested) and a jointly
+  // optimal combination can differ from what looked best position-by-position in isolation.
+  // batchPlanned tracks whether the one-time solve has already run, independent of whether
+  // storedPicks still has entries left to pop (re-checking "fully uncontested" every turn
+  // until it first becomes true, but never re-solving once it has).
+  const storedPicks = {};
+  const batchPlanned = {};
+  for(const t of allTeams){ storedPicks[t] = []; batchPlanned[t] = false; }
+
   const simPicks = []; // [{round, team, player, pos, ppts, cap, mode}]
   const boardPicks = []; // parallel to seq; null entries = no eligible pick that slot
 
@@ -6872,83 +6989,136 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     // Position-awareness: figure out which of this team's still-needed positions should be
     // excluded from THIS pick because they're safe to defer (see deferredTarget comment above).
     const neededPgs = ['F','D','G'].filter(pg => (need[team]?.[pg]||0) > 0);
-    const isLastPickForTeam = teamSpotsLeft[team] === 1;
-    const excludePositions = new Set();
-    for(const pg of neededPgs) if(deferredTarget[team][pg]) excludePositions.add(pg); // already locked in — keep excluding until forced
 
-    // Two (or more) positions can each get deferred independently at DIFFERENT earlier picks
-    // — each individually left another position open at the time, so each was safe on its
-    // own — but once every OTHER need resolves, all of them can end up simultaneously
-    // deferred with nothing left to spend this pick on. Found live: Blue Line Bangers 24-25
-    // deferred both F and D at separate picks, then every remaining turn re-excluded both
-    // with an empty candidate pool, silently softlocking their last 2 picks (ended up 11F/5D
-    // instead of 12F/6D). Not just a last-pick problem — force one deferred target through
-    // the moment ALL remaining need is already deferred, regardless of how many picks are
-    // technically left, so the team keeps drafting instead of stalling out.
-    const allNeededAreDeferred = neededPgs.length > 0 && excludePositions.size === neededPgs.length;
-
-    if(!isLastPickForTeam && !allNeededAreDeferred){
-      let leagueNeedNow = null; // computed lazily, only if a defer candidate shows up
-      for(const pg of neededPgs){
-        if(excludePositions.has(pg)) continue;
-        // Never exclude the only position this pick could otherwise fill.
-        if(neededPgs.length - excludePositions.size <= 1) break;
-        leagueNeedNow = leagueNeedNow || (() => {
-          const ln = {F:0,D:0,G:0};
-          for(const t of allTeams) for(const p2 of ['F','D','G']) ln[p2] += (need[t]?.[p2]||0);
-          return ln;
-        })();
-        if((need[team][pg]||0) !== leagueNeedNow[pg]) continue; // other teams still competing for it — don't defer
-        // Sole remaining league-wide needer of this position, with picks left after this
-        // one — decide the target now (current best value at this position) and reserve
-        // its cap, but don't draft it yet. Uses the team's REAL, full need (not zeroed out
-        // for other positions) so the normal futureReserve math still holds back real
-        // budget for its other genuinely-contested needs (onlyPosition restricts candidates
-        // to pg here without hiding the cost of what else is still needed).
-        const reservedSoFar = ['F','D','G'].reduce((s,p2) => s + (deferredTarget[team][p2]?.p ? getCap(deferredTarget[team][p2].p) : 0), 0);
-        // The generic per-round reserve above is a rough historical average and isn't a hard
-        // guarantee — found live via Blue Line Bangers 24-25: it deferred William Nylander
-        // ($11.5M) as "best F" while a genuinely cheaper F existed, because the generic
-        // estimate alone wasn't nearly enough to protect its still-contested D need,
-        // leaving only $0.30M for a real D pick nothing could fill. Add a hard floor: reserve
-        // at least the cheapest currently-eligible free agent for every OTHER position this
-        // team still needs (not yet deferred), so a deferral can never price out a genuinely
-        // affordable option elsewhere.
-        const otherNeededPgs = neededPgs.filter(p2 => p2 !== pg && !excludePositions.has(p2));
-        const minOtherFloor = otherNeededPgs.reduce((sum, p2) => {
-          let cheapest = Infinity;
-          for(const p of players){
-            if(getAssignedTeam(p) || !(ppts(p) > 0) || !(getCap(p) > 0)) continue;
-            if(posGroup(p.pos) !== p2) continue;
-            if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${p2}`)) continue;
-            if((injurySet||new Set()).has(normName(p.name).toLowerCase())) continue;
-            if(getCap(p) < cheapest) cheapest = getCap(p);
-          }
-          return sum + (cheapest === Infinity ? 0 : cheapest);
-        }, 0);
-        const preview = _pickBestFA(team, round, mode, {
-          ...baseCtx, onlyPosition: pg, reservedCap: reservedSoFar + minOtherFloor,
-        });
-        if(preview){ deferredTarget[team][pg] = preview; excludePositions.add(pg); }
+    // Fully-uncontested batch drafting: check (every turn, until it first triggers) whether
+    // EVERY position this team still needs now has zero competing demand from any other team
+    // league-wide. If so, solve the joint knapsack ONCE for the best combination against the
+    // team's exact remaining budget, superseding any single-position deferral already locked
+    // in (that decision had less information — see storedPicks comment above).
+    if(!batchPlanned[team] && neededPgs.length > 0){
+      const leagueNeedForFull = { F:0, D:0, G:0 };
+      for(const t of allTeams) for(const p2 of ['F','D','G']) leagueNeedForFull[p2] += (need[t]?.[p2]||0);
+      const fullyUncontested = neededPgs.every(pg => (need[team][pg]||0) === leagueNeedForFull[pg]);
+      if(fullyUncontested){
+        const budget = capLimit - (teamCap[team]||0);
+        const { pressure } = _draftPressureState(players, allTeams, getAssignedTeam, ppts, getCap);
+        const rosteredNow = players.filter(p => p[startField] && getCap(p) > 0);
+        const curveFnsRich = {
+          F: fitQuadratic(rosteredNow.filter(p=>posGroup(p.pos)==='F').map(p=>({x:getCap(p),y:ppts(p)}))),
+          D: fitQuadratic(rosteredNow.filter(p=>posGroup(p.pos)==='D').map(p=>({x:getCap(p),y:ppts(p)}))),
+          G: fitQuadratic(rosteredNow.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap(p),y:ppts(p)}))),
+        };
+        const minCov = draftWeights.minSrcCoverage||0;
+        const candidatesByPos = {};
+        for(const pg of neededPgs){
+          candidatesByPos[pg] = players.filter(p => {
+            if(getAssignedTeam(p) || !(ppts(p) > 0) || !(getCap(p) > 0)) return false;
+            if(posGroup(p.pos) !== pg) return false;
+            if(srcNFn && maxSrc > 0 && (srcNFn(p)/maxSrc) < minCov) return false;
+            if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
+            if((injurySet||new Set()).has(normName(p.name).toLowerCase())) return false;
+            return true;
+          }).map(p => {
+            const cap0 = getCap(p)||0;
+            const { score } = _scoreDraftCandidate(p, {
+              pg, pp: ppts(p), cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor,
+              nextContractYrs: p[nextContractField||'nextContractTerm']||0, curveFns: curveFnsRich,
+              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos,
+            });
+            return { p, cap: cap0, score };
+          });
+        }
+        const neededCounts = {}; for(const pg of neededPgs) neededCounts[pg] = need[team][pg];
+        storedPicks[team] = _solveTeamKnapsack(neededCounts, candidatesByPos, budget);
+        for(const pg of ['F','D','G']) deferredTarget[team][pg] = null;
+        batchPlanned[team] = true;
       }
     }
 
     let pick = null;
-    if(isLastPickForTeam || allNeededAreDeferred){
-      // Forced: either this really is the team's last pick, or every remaining need is
-      // already deferred and there's nothing else this pick could go toward either way.
-      // Execute the ORIGINALLY decided player directly rather than re-scoring — that's the
-      // whole point of locking the decision in early. Any resolvable position works equally
-      // well here (none of them are contested by another team, or they wouldn't be deferred).
-      const forcedPg = neededPgs.find(pg => deferredTarget[team][pg]);
-      if(forcedPg) pick = deferredTarget[team][forcedPg];
-    }
-    if(!pick){
-      const reservedCap = ['F','D','G'].reduce((s,pg) => s + (excludePositions.has(pg) && deferredTarget[team][pg]?.p ? getCap(deferredTarget[team][pg].p) : 0), 0);
-      // Remaining picks for this team after this one — round-aware cap reserve, live
-      // curve state, and the SCORE formula all live in _pickBestFA now (shared with
-      // the on-the-clock "Best Pick" button via simulateBestPick).
-      pick = _pickBestFA(team, round, mode, { ...baseCtx, excludePositions, reservedCap });
+    if(storedPicks[team].length){
+      const nextPlayer = storedPicks[team].shift();
+      pick = { p: nextPlayer, score: 0, pp: ppts(nextPlayer) };
+    } else {
+      // Position-awareness: figure out which of this team's still-needed positions should be
+      // excluded from THIS pick because they're safe to defer (see deferredTarget comment above).
+      const isLastPickForTeam = teamSpotsLeft[team] === 1;
+      const excludePositions = new Set();
+      for(const pg of neededPgs) if(deferredTarget[team][pg]) excludePositions.add(pg); // already locked in — keep excluding until forced
+
+      // Two (or more) positions can each get deferred independently at DIFFERENT earlier picks
+      // — each individually left another position open at the time, so each was safe on its
+      // own — but once every OTHER need resolves, all of them can end up simultaneously
+      // deferred with nothing left to spend this pick on. Found live: Blue Line Bangers 24-25
+      // deferred both F and D at separate picks, then every remaining turn re-excluded both
+      // with an empty candidate pool, silently softlocking their last 2 picks (ended up 11F/5D
+      // instead of 12F/6D). Not just a last-pick problem — force one deferred target through
+      // the moment ALL remaining need is already deferred, regardless of how many picks are
+      // technically left, so the team keeps drafting instead of stalling out.
+      const allNeededAreDeferred = neededPgs.length > 0 && excludePositions.size === neededPgs.length;
+
+      if(!isLastPickForTeam && !allNeededAreDeferred){
+        let leagueNeedNow = null; // computed lazily, only if a defer candidate shows up
+        for(const pg of neededPgs){
+          if(excludePositions.has(pg)) continue;
+          // Never exclude the only position this pick could otherwise fill.
+          if(neededPgs.length - excludePositions.size <= 1) break;
+          leagueNeedNow = leagueNeedNow || (() => {
+            const ln = {F:0,D:0,G:0};
+            for(const t of allTeams) for(const p2 of ['F','D','G']) ln[p2] += (need[t]?.[p2]||0);
+            return ln;
+          })();
+          if((need[team][pg]||0) !== leagueNeedNow[pg]) continue; // other teams still competing for it — don't defer
+          // Sole remaining league-wide needer of this position, with picks left after this
+          // one — decide the target now (current best value at this position) and reserve
+          // its cap, but don't draft it yet. Uses the team's REAL, full need (not zeroed out
+          // for other positions) so the normal futureReserve math still holds back real
+          // budget for its other genuinely-contested needs (onlyPosition restricts candidates
+          // to pg here without hiding the cost of what else is still needed).
+          const reservedSoFar = ['F','D','G'].reduce((s,p2) => s + (deferredTarget[team][p2]?.p ? getCap(deferredTarget[team][p2].p) : 0), 0);
+          // The generic per-round reserve above is a rough historical average and isn't a hard
+          // guarantee — found live via Blue Line Bangers 24-25: it deferred William Nylander
+          // ($11.5M) as "best F" while a genuinely cheaper F existed, because the generic
+          // estimate alone wasn't nearly enough to protect its still-contested D need,
+          // leaving only $0.30M for a real D pick nothing could fill. Add a hard floor: reserve
+          // at least the cheapest currently-eligible free agent for every OTHER position this
+          // team still needs (not yet deferred), so a deferral can never price out a genuinely
+          // affordable option elsewhere.
+          const otherNeededPgs = neededPgs.filter(p2 => p2 !== pg && !excludePositions.has(p2));
+          const minOtherFloor = otherNeededPgs.reduce((sum, p2) => {
+            let cheapest = Infinity;
+            for(const p of players){
+              if(getAssignedTeam(p) || !(ppts(p) > 0) || !(getCap(p) > 0)) continue;
+              if(posGroup(p.pos) !== p2) continue;
+              if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${p2}`)) continue;
+              if((injurySet||new Set()).has(normName(p.name).toLowerCase())) continue;
+              if(getCap(p) < cheapest) cheapest = getCap(p);
+            }
+            return sum + (cheapest === Infinity ? 0 : cheapest);
+          }, 0);
+          const preview = _pickBestFA(team, round, mode, {
+            ...baseCtx, onlyPosition: pg, reservedCap: reservedSoFar + minOtherFloor,
+          });
+          if(preview){ deferredTarget[team][pg] = preview; excludePositions.add(pg); }
+        }
+      }
+
+      if(isLastPickForTeam || allNeededAreDeferred){
+        // Forced: either this really is the team's last pick, or every remaining need is
+        // already deferred and there's nothing else this pick could go toward either way.
+        // Execute the ORIGINALLY decided player directly rather than re-scoring — that's the
+        // whole point of locking the decision in early. Any resolvable position works equally
+        // well here (none of them are contested by another team, or they wouldn't be deferred).
+        const forcedPg = neededPgs.find(pg => deferredTarget[team][pg]);
+        if(forcedPg) pick = deferredTarget[team][forcedPg];
+      }
+      if(!pick){
+        const reservedCap = ['F','D','G'].reduce((s,pg) => s + (excludePositions.has(pg) && deferredTarget[team][pg]?.p ? getCap(deferredTarget[team][pg].p) : 0), 0);
+        // Remaining picks for this team after this one — round-aware cap reserve, live
+        // curve state, and the SCORE formula all live in _pickBestFA now (shared with
+        // the on-the-clock "Best Pick" button via simulateBestPick).
+        pick = _pickBestFA(team, round, mode, { ...baseCtx, excludePositions, reservedCap });
+      }
     }
 
     if(!pick) {
