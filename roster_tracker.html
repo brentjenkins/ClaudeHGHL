@@ -773,10 +773,10 @@ tr:hover td{background:#fafaf8}
     <option value="G">Goalies</option>
   </select>
   <select id="signingsSeason" onchange="renderSignings()">
+    <option value="all" selected>All contracts</option>
     <option value="2627">Active 26-27</option>
     <option value="2526">Active 25-26</option>
     <option value="2425">Active 24-25</option>
-    <option value="all">All contracts</option>
   </select>
   <select id="signingsHGHL" onchange="renderSignings()">
     <option value="">All HGHL teams</option>
@@ -4322,7 +4322,7 @@ function renderSignings(){
 
   const q       = (document.getElementById('signingsSearch')?.value || '').toLowerCase();
   const posF    = document.getElementById('signingsPos')?.value || '';
-  const season  = document.getElementById('signingsSeason')?.value || '2627';
+  const season  = document.getElementById('signingsSeason')?.value || 'all';
   const hghlF   = document.getElementById('signingsHGHL')?.value || '';
 
   // Build HGHL team lookup from players[]
@@ -6923,6 +6923,21 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     }
   }
 
+  // League-wide algo/actual key sets (same canonicalization Compare Drafts uses) — lets each
+  // row flag a "real value missed" algo pick (💎 nobody in the real draft ever took them,
+  // anywhere) or a "real reach"/stretch actual pick (🏹 no algo simulation ever wanted them,
+  // anywhere), without the user having to search the page for a name. See _runCompareDrafts
+  // for the same league-wide-regardless-of-team logic this mirrors.
+  const allAlgoKeys = new Set();
+  for(const sp of simPicks) if(sp.player) allAlgoKeys.add(_draftKey(sp.player, sp.pos));
+  const allActualKeys = new Set();
+  for(const [key] of Object.entries(actualDraft)){
+    const resolved = _findDraftPlayer(key);
+    allActualKeys.add(resolved ? _draftKey(resolved.name, resolved.pos) : key);
+  }
+  const valueMissedBadge = '<span title="Real value missed — no real GM drafted this player" style="margin-left:4px;cursor:default">💎</span>';
+  const stretchBadge = '<span title="Real reach — no algo simulation ever wanted this player" style="margin-left:4px;cursor:default">🏹</span>';
+
   // Render
   document.getElementById('draftSimTitle').textContent = `📋 Algo Draft vs Actual ${season}`;
   const totalSimPpts  = rows.reduce((s,r)=>s+r.ppts,0);
@@ -6936,7 +6951,8 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     `Algo total proj: <strong>${Math.round(totalSimPpts)} pts</strong> &nbsp;|&nbsp; `+
     `Actual total proj: <strong>${Math.round(totalActPpts)} pts</strong> &nbsp;|&nbsp; `+
     `<span style="color:${diffCol};font-weight:600">Algo ${diffStr} pts vs actual</span><br>`+
-    `<span style="color:#9ca3af;font-size:11px">${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}  = Prospect mode · R${draftProspectRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks in draft order per team</span>`;
+    `<span style="color:#9ca3af;font-size:11px">${draftProspectRounds>0?`R1${draftProspectRounds>1?`–R${draftProspectRounds}`:''}  = Prospect mode · R${draftProspectRounds+1}+ = Best Available`:'All rounds = Best Available'} (position-weighted PPTS) · Actual picks in draft order per team</span><br>`+
+    `<span style="color:#9ca3af;font-size:11px">💎 = real value missed (no real GM ever drafted this algo pick) &nbsp;·&nbsp; 🏹 = real reach (no algo simulation ever wanted this actual pick)</span>`;
 
   // Group by round
   const maxRound = Math.max(...rows.map(r=>r.round));
@@ -6962,11 +6978,18 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
       const d = row.ppts - row.actPpts;
       const dc = d>5?'#16a34a':d<-5?'#dc2626':'#9ca3af';
       const ds = (d>=0?'+':'')+Math.round(d);
+      const algoKey = (row.player && row.player!=='—') ? _draftKey(row.player, row.pos) : null;
+      const isValueMissed = algoKey && allAlgoKeys.has(algoKey) && !allActualKeys.has(algoKey);
+      // Resolve the same way allActualKeys was built (a name-matching gap falls back to the
+      // raw key string verbatim) so an unresolved actual pick can't spuriously mismatch here.
+      const actResolved = (row.actName && row.actName!=='—') ? _findDraftPlayer(row.actName) : null;
+      const actKey = (row.actName && row.actName!=='—') ? (actResolved ? _draftKey(actResolved.name, actResolved.pos) : row.actName) : null;
+      const isStretch = actKey && allActualKeys.has(actKey) && !allAlgoKeys.has(actKey);
       html += `<tr style="border-bottom:1px solid #f3f4f6">`;
       html += `<td style="padding:5px 10px;color:#374151;white-space:nowrap">${esc(row.team)}</td>`;
-      html += `<td style="padding:5px 10px;display:flex;gap:4px;align-items:center">${badge(row.pos,row.player)}</td>`;
+      html += `<td style="padding:5px 10px;display:flex;gap:4px;align-items:center">${badge(row.pos,row.player)}${isValueMissed?valueMissedBadge:''}</td>`;
       html += `<td style="padding:5px 6px;text-align:right;color:#6366f1;font-weight:600">${Math.round(row.ppts)}</td>`;
-      html += `<td style="padding:5px 10px;color:#9ca3af"><span style="display:inline-flex;gap:4px;align-items:center">${badge(row.actPos,row.actName)}</span></td>`;
+      html += `<td style="padding:5px 10px;color:#9ca3af"><span style="display:inline-flex;gap:4px;align-items:center">${badge(row.actPos,row.actName)}${isStretch?stretchBadge:''}</span></td>`;
       html += `<td style="padding:5px 6px;text-align:right;color:#9ca3af">${Math.round(row.actPpts)}</td>`;
       html += `<td style="padding:5px 8px;text-align:right;color:${dc};font-weight:600;font-size:11px">${ds}</td>`;
       html += `</tr>`;
