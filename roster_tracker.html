@@ -1092,6 +1092,10 @@ tr:hover td{background:#fafaf8}
         <input type="number" id="s-draftProspectRounds" value="1" min="0" max="20" step="1" onchange="updateSetting('draftProspectRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
       </div>
     </div>
+    <div style="margin-top:12px">
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:6px" title="Simulate tunes toward matching what that team's real GM actually picks (realistic opponent behavior). Optimize drops that tuning in favor of maximizing real outcome value — no match-rate tuning applied.">Per-team draft mode</div>
+      <div id="draftModeSettings" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
   </div>
 
   <div>
@@ -1369,6 +1373,13 @@ let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
 let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
 let draftProspectRounds = 1;
+// Per-team Algo Draft mode: 'simulate' (default) tunes toward matching what that team's real
+// GM will actually pick — useful for realistic opponent behavior. 'optimize' drops the
+// match-real-GMs tuning in favor of maximizing real outcome value, on the theory that a human
+// drafting against a realistically-imperfect field can gain a real edge by not mimicking their
+// mistakes. Any team not listed here defaults to 'simulate' — see _draftModeFor.
+let draftModeByTeam = { 'Muller Time!': 'optimize' };
+function _draftModeFor(team){ return draftModeByTeam[team] || 'simulate'; }
 let ptsTarget = 1150;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 // Players at or above this pts threshold are last-resort drops. Was a hardcoded const=50 (an
@@ -3989,6 +4000,30 @@ function updateProjWeight(key, val){
   PROJ_SOURCE_WEIGHTS[key] = val;
   applyBlendedPts();
   render();
+}
+
+// Renders the per-team Simulate/Optimize toggle row in Settings > Draft. Team names are
+// data-driven (DRAFT_TEAMS_2627, derived from FINAL_STANDINGS_2526), not known at HTML-authoring
+// time, so this populates the #draftModeSettings container via JS rather than static markup.
+function renderDraftModeSettings(){
+  const el = document.getElementById('draftModeSettings');
+  if(!el) return;
+  const teams = (typeof DRAFT_TEAMS_2627 !== 'undefined' && DRAFT_TEAMS_2627.length) ? DRAFT_TEAMS_2627 : Object.keys(draftModeByTeam);
+  el.innerHTML = teams.map(t => {
+    const mode = _draftModeFor(t);
+    const simActive = mode === 'simulate', optActive = mode === 'optimize';
+    return `<div style="display:flex;align-items:center;gap:6px;border:1px solid #e5e7eb;border-radius:8px;padding:4px 8px 4px 10px">
+      <span style="font-size:12px;color:#374151;white-space:nowrap">${esc(t)}</span>
+      <div style="display:flex;border:1px solid #ddd;border-radius:6px;overflow:hidden">
+        <button type="button" onclick="setDraftMode('${esc(t)}','simulate')" style="border:none;padding:3px 8px;font-size:11px;cursor:pointer;background:${simActive?'#6366f1':'#fff'};color:${simActive?'#fff':'#6b7280'}">Simulate</button>
+        <button type="button" onclick="setDraftMode('${esc(t)}','optimize')" style="border:none;padding:3px 8px;font-size:11px;cursor:pointer;background:${optActive?'#16a34a':'#fff'};color:${optActive?'#fff':'#6b7280'}">Optimize</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setDraftMode(team, mode){
+  draftModeByTeam[team] = mode;
+  renderDraftModeSettings();
 }
 function updateSetting(key, val){
   if(key === 'draftProspectRounds') draftProspectRounds = val;
@@ -6662,7 +6697,7 @@ function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
 // best-available scoring; posAlloc (D-cap-share correction) only applies in bestAvail mode and
 // only when a specific team's cap context is supplied — a generic "score every free agent" call
 // (no team) skips it, matching this formula's pre-existing, intentional team-agnostic display use.
-function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos }){
+function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, fullProspectCredit = false }){
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
   const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(pressure[pg]||0) - 1));
   const srcN = srcNFn(p);
@@ -6699,7 +6734,10 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
     score = tPPTS + prospect + richExtra;
   } else {
     score = tPPTS + richExtra;
-    const prospectWeight = prospectRoundWeight(round||1);
+    // Optimize-mode teams (draftModeByTeam) skip the round-based decay entirely — a prospect's
+    // true value doesn't depend on what round it is, only the timing of real human enthusiasm
+    // for prospects does. Simulate-mode teams keep the taper (see prospectRoundWeight).
+    const prospectWeight = fullProspectCredit ? 1 : prospectRoundWeight(round||1);
     if(prospectWeight > 0) score += prospect * prospectWeight;
     if((draftWeights.wtPosAlloc||0) > 0 && team && teamCap && teamCapByPos){
       const capTot = teamCap[team] || 0;
@@ -6823,7 +6861,7 @@ function _solveTeamKnapsack(neededCounts, candidatesByPos, budget){
 function _pickBestFA(team, round, mode, ctx){
   const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
           draftWeights, calcAgeForSim, contractYearAnchor, elcMax, srcNFn, maxSrc,
-          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField } = ctx;
+          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField, fullProspectCredit } = ctx;
   const nextContractFld = nextContractField || 'nextContractTerm';
   const injSet = injurySet || new Set();
 
@@ -6895,7 +6933,7 @@ function _pickBestFA(team, round, mode, ctx){
     const { score } = _scoreDraftCandidate(p, {
       pg, pp, cap0, pressure, mode, round, draftWeights,
       calcAgeForSim, contractYearAnchor, nextContractYrs: p[nextContractFld]||0, curveFns: curveFnsRich, elcMax, srcNFn, maxSrc,
-      team, teamCap, teamCapByPos,
+      team, teamCap, teamCapByPos, fullProspectCredit,
     });
     return {p, score, pp};
   }).sort((a,b) => b.score - a.score)[0];
@@ -6980,10 +7018,14 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     if((teamSpotsLeft[team]||0) <= 0){ teamPickNum[team]++; boardPicks.push(null); continue; }
 
     const getAssignedTeam = p => assigned[p.id] || null;
+    // Optimize-mode teams get full prospect-value credit regardless of round — the round-based
+    // decay exists to match WHEN real GMs get excited about prospects, not when a prospect is
+    // actually worth taking. See draftModeByTeam.
+    const fullProspectCredit = _draftModeFor(team) === 'optimize';
     const baseCtx = {
       players, getAssignedTeam, startField, ppts, getCap,
       capLimit, draftReserve, draftWeights, calcAgeForSim, contractYearAnchor, elcMax,
-      srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField,
+      srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField, fullProspectCredit,
     };
 
     // Position-awareness: figure out which of this team's still-needed positions should be
@@ -7023,7 +7065,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
             const { score } = _scoreDraftCandidate(p, {
               pg, pp: ppts(p), cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor,
               nextContractYrs: p[nextContractField||'nextContractTerm']||0, curveFns: curveFnsRich,
-              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos,
+              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, fullProspectCredit,
             });
             return { p, cap: cap0, score };
           });
@@ -8845,6 +8887,7 @@ function toggleSyncProjRow(force){
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 load();
 updateSigningsBtn();
+renderDraftModeSettings();
 updateYahooDropBtnTooltips();
 toggleSyncProjRow(syncProjCollapsed);
 updateDraftTab();
