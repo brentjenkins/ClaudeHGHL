@@ -1416,6 +1416,17 @@ let minDropF = 1, minDropD = 1; // every team must drop at least this many F and
 // 78.9%) then drop off at 30+ — the real breakpoint sits between 25-30, so 15 is a safe middle
 // value, clear of the edge, and a real accuracy improvement over 50 (414/536, 77.2%).
 let dropValueFloor = 15;
+// Fan-bias drop protection: shifts a player's effective deficit down (looks "less bad," dropped
+// later/less often) when their season-specific NHL team matches the rostering GM's real-life
+// favorite team (GM_FAN_TEAM) — same underlying bias as wtFanBias on the draft side, applied to
+// drops instead: real GMs show a measurable reluctance to part with a fan-team player even when
+// the math says cut them (see GM_FAN_TEAM / project_gm_nhl_affiliation memory — first surfaced
+// 2026-07-21 explaining 7/21 otherwise-unexplained "GM kept a below-curve player forever" drop
+// cases, ~10x the ~3% chance baseline). Applies uniformly to every team in _runAlgoDrops — there
+// is no Simulate/Optimize-style split for drops (only draft has that), so this affects the real
+// "Algo Drops" recommendation for every team the same way it affects Compare Drops' simulation
+// of every other GM.
+let wtFanBiasDrop = 5;
 // Draft dates — used to calculate the drop/add window (date + 2 days) for Yahoo transaction fetches.
 // All const: historical seasons are fixed facts; 26-27/27-28 are const too but may need a code edit once known.
 const draftDatePreseason2223    = '2022-10-08'; // no 22-23 Players view exists — kept for completeness/reference only
@@ -4890,7 +4901,7 @@ function algoDrops2526(){
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
     elcMax: ELC_MAX_2526, calcAgeForSim: calcAge2526,
     elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526,
-    computeABPFn: computeABP2526,
+    computeABPFn: computeABP2526, teamField: 'team2526',
     useRebalBonus: true, useMinEnforcement: false, emptyMarker: null,
   });
 
@@ -4908,7 +4919,7 @@ function algoDrops2526(){
 // each season's compareDrops2X2Y() wrapper just supplies config.
 function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predropStubs, stubExtraFields,
   startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet,
-  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey }){
+  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey, teamField = 'team' }){
   for(const g of guards){ if(g.fail()){ toast(g.msg); return; } }
 
   // Virtual copy: seed start field from predropRoster (pre-season rosters)
@@ -4935,7 +4946,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
   _runAlgoDrops({
     players: vp, teams, startField,
     ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim,
-    elcMandatorySet, injurySet, computeABPFn, useRebalBonus, useMinEnforcement, emptyMarker: null,
+    elcMandatorySet, injurySet, computeABPFn, useRebalBonus, useMinEnforcement, emptyMarker: null, teamField,
   });
 
   // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
@@ -5058,7 +5069,7 @@ function compareDrops2526(){
     startField: 'start2526', ppts: ppts2526blend, getCap: getCap2526,
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526, elcMax: ELC_MAX_2526, calcAgeForSim: calcAge2526,
     elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526, computeABPFn: computeABP2526,
-    useRebalBonus: true, useMinEnforcement: false,
+    useRebalBonus: true, useMinEnforcement: false, teamField: 'team2526',
     midseasonDrops: MIDSEASON_DROPS_2526, midseasonReadds: MIDSEASON_READDS_2526,
     resultsKey: 'lastCompareResults2526',
   });
@@ -5375,7 +5386,7 @@ function algoDrops2425(){
     capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
     elcMax: ELC_MAX_2425, calcAgeForSim: calcAge2425,
     elcMandatorySet: ELC_MANDATORY_DROPS_2425, injurySet: INJURY_DROPS_2425,
-    computeABPFn: computeABP2425,
+    computeABPFn: computeABP2425, teamField: 'team2425',
     useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
   });
 
@@ -5398,7 +5409,7 @@ function compareDrops2425(){
     startField: 'start2425', ppts: ppts2425blend, getCap: getCap2425,
     capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425, elcMax: ELC_MAX_2425, calcAgeForSim: calcAge2425,
     elcMandatorySet: ELC_MANDATORY_DROPS_2425, injurySet: INJURY_DROPS_2425, computeABPFn: computeABP2425,
-    useRebalBonus: false, useMinEnforcement: false,
+    useRebalBonus: false, useMinEnforcement: false, teamField: 'team2425',
     midseasonDrops: MIDSEASON_DROPS_2425, midseasonReadds: MIDSEASON_READDS_2425,
     resultsKey: 'lastCompareResults2425',
   });
@@ -5539,7 +5550,7 @@ function algoDrops2324(){
     capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324,
     elcMax: ELC_MAX_2324, calcAgeForSim: calcAge2324,
     elcMandatorySet: ELC_MANDATORY_DROPS_2324, injurySet: INJURY_DROPS_2324,
-    computeABPFn: computeABP2324,
+    computeABPFn: computeABP2324, teamField: 'team2324',
     useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
   });
 
@@ -5562,7 +5573,7 @@ function compareDrops2324(){
     startField: 'start2324', ppts: ppts2324blend, getCap: getCap2324,
     capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324, elcMax: ELC_MAX_2324, calcAgeForSim: calcAge2324,
     elcMandatorySet: ELC_MANDATORY_DROPS_2324, injurySet: INJURY_DROPS_2324, computeABPFn: computeABP2324,
-    useRebalBonus: false, useMinEnforcement: false,
+    useRebalBonus: false, useMinEnforcement: false, teamField: 'team2324',
     midseasonDrops: MIDSEASON_DROPS_2324, midseasonReadds: MIDSEASON_READDS_2324,
     resultsKey: 'lastCompareResults2324',
   });
@@ -6513,7 +6524,7 @@ function algoDraft2526(){
 // drops correctly (found 2026-07-22 via Blue Line Bangers/Mason Marchment in 24-25).
 // Mutates only p[startField] on the given `players` array; every other side effect (persistence,
 // rendering, toasts) stays in each season's own wrapper function, called after this returns.
-function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null }){
+function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team' }){
   const rosteredPool = players.filter(p => p[startField] && getCap(p) > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
@@ -6589,13 +6600,23 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       rebalBonus = p => (excessByPos[posGroup(p.pos)]||0) * rCapTot;
     }
 
+    // Fan-bias drop protection (see wtFanBiasDrop/GM_FAN_TEAM) — shifts a fan-team player's
+    // effective deficit DOWN (looks less bad, sorted later/less likely to be dropped), the
+    // mirror image of rebalBonus shifting an over-invested position's players UP.
+    const fanTeam = GM_FAN_TEAM[team];
+    const fanBiasProtection = p => {
+      if(!fanTeam || wtFanBiasDrop <= 0) return 0;
+      const playerNhlTeam = p[teamField] || p.team || null;
+      return playerNhlTeam === fanTeam ? wtFanBiasDrop : 0;
+    };
+
     // Four tiers: low-value non-prospects first, high-value non-prospects second (last resort),
     // prospects third, ABP=0 ("untouchable") absolute last — the mandatory minDropF/D quota below
     // bypasses every other protection once posMinsMet is false, so untouchable must sit past even
     // prospects or a forced drop can still reach an ABP=0 star before a disposable cheap prospect.
     const isUntouchableT = p => isUntouchable(p);
-    const lowVal    = remaining.filter(p => !isUntouchableT(p) && !isProtectedProspect(p) && !isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus(b)) - (deficit(a)+rebalBonus(a)));
-    const highVal   = remaining.filter(p => !isUntouchableT(p) && !isProtectedProspect(p) &&  isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus(b)) - (deficit(a)+rebalBonus(a)));
+    const lowVal    = remaining.filter(p => !isUntouchableT(p) && !isProtectedProspect(p) && !isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus(b)-fanBiasProtection(b)) - (deficit(a)+rebalBonus(a)-fanBiasProtection(a)));
+    const highVal   = remaining.filter(p => !isUntouchableT(p) && !isProtectedProspect(p) &&  isHighVal(p)).sort((a,b) => (deficit(b)+rebalBonus(b)-fanBiasProtection(b)) - (deficit(a)+rebalBonus(a)-fanBiasProtection(a)));
     const prospects = remaining.filter(p => !isUntouchableT(p) &&  isProtectedProspect(p)).sort((a,b) => deficit(b) - deficit(a));
     const untouchable = remaining.filter(p => isUntouchableT(p)).sort((a,b) => deficit(b) - deficit(a));
     const candidates = [...lowVal, ...highVal, ...prospects, ...untouchable];
