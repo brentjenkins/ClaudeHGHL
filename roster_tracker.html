@@ -6801,7 +6801,14 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   // project_goalie_volatility memory) so "spend more on a productive goalie" isn't the same bet
   // as it is for skaters. The mechanism was designed and validated around F candidates only;
   // rather than re-deriving a goalie-specific scale, it's simply off for G.
-  const capUseMult = pg === 'G' ? 1 : (1 + (draftWeights.wtCapUse||0) * cap0);
+  //
+  // Also off in 'prospect' mode (round <= draftProspectRounds): those rounds exist specifically
+  // to let a genuine prospect's uncapped `prospect` term compete against established, better-
+  // scoring vets on cheap-upside grounds — an unrelated cap-spending push on tPPTS works against
+  // that intent by inflating an expensive proven vet right when the round is meant to weigh
+  // prospect upside instead (e.g. Zeev Buium, a real consensus round-1 prospect who "wouldn't
+  // have lasted to round 2" per the user, was outranked by Panarin's wtCapUse boost here).
+  const capUseMult = (pg === 'G' || mode === 'prospect') ? 1 : (1 + (draftWeights.wtCapUse||0) * cap0);
   const tPPTS = tPPTSBase * capUseMult;
   const tCapUse = tPPTS - tPPTSBase; // portion of tPPTS attributable to the cap-use multiplier — display/debugging only
   let score;
