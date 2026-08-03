@@ -1260,9 +1260,29 @@ let sortColSignings = 'sign_date', sortDirSignings = -1;
 // inside _runAlgoDraft (see draftModeByTeam), not a general scoring term. Leaving it 0 in the
 // shared object keeps every other call site (display-only SCORE columns, Simulate-mode teams,
 // drops) exactly as they were before this existed.
-let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.33, wtCapUse: 0 };
+// wtFanBias defaults to 0 here too — Simulate-mode-only (see draftModeByTeam/_runAlgoDraft),
+// the mirror image of wtCapUse (Optimize-only). Real GMs show a measurable homer bias toward
+// their own favorite NHL team even when it costs them value — confirmed 2026-07-21 on the drop
+// side (7/21 otherwise-unexplained "GM kept a below-curve player forever" cases matched the
+// GM's fan team, ~10x the ~3% chance baseline) and explicitly flagged then to revisit for draft
+// accuracy too. See GM_FAN_TEAM / project_gm_nhl_affiliation memory.
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.33, wtCapUse: 0, wtFanBias: 0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
+
+// Each HGHL GM's real-life favorite NHL team (confirmed 2026-08-03, see
+// project_gm_nhl_affiliation memory) — feeds Simulate mode's fan-bias scoring bonus.
+const GM_FAN_TEAM = {
+  'Silence of the Lamb': 'MTL',
+  'Muller Time!': 'MTL',
+  'Blue Line Bangers': 'MTL',
+  'Pernicious Puckers': 'DET',
+  'Motor City Wings': 'DET',
+  'Damage Inc.': 'EDM',
+  'Bossy Posse': 'NYI',
+  'Killer Whales': 'SJS',
+  'Dumb and Goalie To': 'BUF',
+};
 
 // Delta-to-curve bonus: rewards players above the position efficiency curve, at full weight
 // across the entire cap range including ELC. Below-curve gets no penalty (floor 0) — tPPTSM
@@ -6395,6 +6415,7 @@ function algoDraft2425(){
     boardLsKey:      LS_DRAFT_2425,
     contractYearAnchor: 2025,
     nextContractField: 'nextContractTerm2425',
+    teamField: 'team2425',
     srcNFn: p => (p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
     maxSrc: 4,
     injurySet: INJURY_DROPS_2425,
@@ -6431,6 +6452,7 @@ function algoDraft2324(){
     boardLsKey:      LS_DRAFT_2324,
     contractYearAnchor: 2024,
     nextContractField: 'nextContractTerm2324',
+    teamField: 'team2324',
     srcNFn: p => (p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0),
     maxSrc: 3,
     injurySet: INJURY_DROPS_2324,
@@ -6467,6 +6489,7 @@ function algoDraft2526(){
     boardLsKey:      LS_DRAFT_2526,
     contractYearAnchor: 2026,
     nextContractField: 'nextContractTerm2526',
+    teamField: 'team2526',
     srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0),
     maxSrc: 6,
     // Simulate-mode teams (draftModeByTeam) predict real GM behavior, so their source-coverage
@@ -6712,7 +6735,7 @@ function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
 // best-available scoring; posAlloc (D-cap-share correction) only applies in bestAvail mode and
 // only when a specific team's cap context is supplied — a generic "score every free agent" call
 // (no team) skips it, matching this formula's pre-existing, intentional team-agnostic display use.
-function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos }){
+function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, teamField = 'team' }){
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
   const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(pressure[pg]||0) - 1));
   const srcN = srcNFn(p);
@@ -6741,7 +6764,17 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
   const tYouth = youthRaw * draftWeights.wtAge;
   const tDelta = _deltaCurveBonus(ppEff, cap0, pg, elcMax, curveFns[pg], draftWeights.wtDeltaCurve, draftWeights);
-  const richExtra = tPPTSM + tYouth + tDelta;
+  // Fan bias: Simulate-mode-only (see draftModeByTeam/_runAlgoDraft) — the mirror image of
+  // wtCapUse (Optimize-only). Real GMs show a measurable homer bias toward their own favorite
+  // NHL team even when it costs them value (see GM_FAN_TEAM / project_gm_nhl_affiliation memory
+  // — 7/21 otherwise-unexplained drop-side "GM kept a below-curve player forever" cases matched
+  // the GM's fan team, ~10x the ~3% chance baseline). Simulate mode predicts what a real GM will
+  // pick, so a candidate playing for that GM's team gets a flat bump. teamField picks the right
+  // season-specific team2324/2425/2526 column (or live `team` for 26-27) so this checks a
+  // player's REAL team at that point in history, not wherever they've since been traded to.
+  const playerNhlTeam = p[teamField] || p.team || null;
+  const tFanBias = (team && GM_FAN_TEAM[team] && playerNhlTeam === GM_FAN_TEAM[team]) ? (draftWeights.wtFanBias||0) : 0;
+  const richExtra = tPPTSM + tYouth + tDelta + tFanBias;
   const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, ppEff, draftWeights);
   const tPPTSBase = ppEff * (mode==='prospect' ? (pm[pg]||1) : 1) * pressMult;
   // Cap-use bonus: Optimize-mode-only (see draftModeByTeam/_runAlgoDraft), 0 everywhere else.
@@ -6756,7 +6789,19 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   // also pushed a $9.5M/23-actual-pt Charlie McAvoy ahead of a clearly-better $9.0M Dougie
   // Hamilton — a real regression the multiplicative form should resist, since McAvoy's own
   // (mediocre) tPPTS doesn't get amplified as much as a genuinely good producer's does.
-  const capUseMult = 1 + (draftWeights.wtCapUse||0) * cap0;
+  //
+  // Excluded for goalies entirely (found live 2026-08-03): this league's elite goalie cap hits
+  // ($10-11.5M) sit right up against elite skater cap hits, so the SAME formula that correctly
+  // favored Panarin over Perreault also pushed Igor Shesterkin from rank #4 to #1 overall for
+  // Muller Time! — the raw top-18 backtest (which only checks final roster composition via
+  // _solveTeamKnapsack, never live round-by-round pick order) never caught this. Worsens the
+  // already-known, never-fully-fixed goalie front-loading problem (see
+  // project_goalie_early_frontloading memory) rather than being a new failure mode — goalies'
+  // production is far more volatile than skaters' (R^2=0.14 vs 0.43-0.46, see
+  // project_goalie_volatility memory) so "spend more on a productive goalie" isn't the same bet
+  // as it is for skaters. The mechanism was designed and validated around F candidates only;
+  // rather than re-deriving a goalie-specific scale, it's simply off for G.
+  const capUseMult = pg === 'G' ? 1 : (1 + (draftWeights.wtCapUse||0) * cap0);
   const tPPTS = tPPTSBase * capUseMult;
   const tCapUse = tPPTS - tPPTSBase; // portion of tPPTS attributable to the cap-use multiplier — display/debugging only
   let score;
@@ -6774,7 +6819,7 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
       }
     }
   }
-  return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, tCapUse, pressRaw: pressure[pg], pressMult };
+  return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, tCapUse, tFanBias, pressRaw: pressure[pg], pressMult };
 }
 
 // ── Fully-uncontested batch drafting ─────────────────────────────────────────
@@ -6888,7 +6933,7 @@ function _solveTeamKnapsack(neededCounts, candidatesByPos, budget){
 function _pickBestFA(team, round, mode, ctx){
   const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
           draftWeights, calcAgeForSim, contractYearAnchor, elcMax, srcNFn, maxSrc,
-          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField } = ctx;
+          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField, teamField } = ctx;
   const nextContractFld = nextContractField || 'nextContractTerm';
   const injSet = injurySet || new Set();
 
@@ -6960,13 +7005,13 @@ function _pickBestFA(team, round, mode, ctx){
     const { score } = _scoreDraftCandidate(p, {
       pg, pp, cap0, pressure, mode, round, draftWeights,
       calcAgeForSim, contractYearAnchor, nextContractYrs: p[nextContractFld]||0, curveFns: curveFnsRich, elcMax, srcNFn, maxSrc,
-      team, teamCap, teamCapByPos,
+      team, teamCap, teamCapByPos, teamField,
     });
     return {p, score, pp};
   }).sort((a,b) => b.score - a.score)[0];
 }
 
-function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights: draftWeightsBase, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn: srcNFnBase, maxSrc: maxSrcBase, contractYearAnchor, injurySet, nextContractField, simulateSrcNFn = null, simulateMaxSrc = null }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights: draftWeightsBase, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn: srcNFnBase, maxSrc: maxSrcBase, contractYearAnchor, injurySet, nextContractField, simulateSrcNFn = null, simulateMaxSrc = null, teamField = 'team' }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
 
   // Snapshot: track each player's current team assignment
@@ -7057,14 +7102,14 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     // elite scorer for a cheap efficient prospect purely on tPPTSM's points-per-dollar bias.
     const teamMode = _draftModeFor(team);
     const draftWeights = teamMode === 'simulate'
-      ? { ...draftWeightsBase, elcExpF: 35, elcExpD: 25, wtCapUse: 0 }
-      : { ...draftWeightsBase, wtCapUse: draftWeightsBase.wtCapUse || 0.15 };
+      ? { ...draftWeightsBase, elcExpF: 35, elcExpD: 25, wtCapUse: 0, wtFanBias: draftWeightsBase.wtFanBias || 5 }
+      : { ...draftWeightsBase, wtCapUse: draftWeightsBase.wtCapUse || 0.15, wtFanBias: 0 };
     const srcNFn = (teamMode === 'simulate' && simulateSrcNFn) ? simulateSrcNFn : srcNFnBase;
     const maxSrc = (teamMode === 'simulate' && simulateSrcNFn) ? simulateMaxSrc : maxSrcBase;
 
     const getAssignedTeam = p => assigned[p.id] || null;
     const baseCtx = {
-      players, getAssignedTeam, startField, ppts, getCap,
+      players, getAssignedTeam, startField, ppts, getCap, teamField,
       capLimit, draftReserve, draftWeights, calcAgeForSim, contractYearAnchor, elcMax,
       srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField,
     };
@@ -7106,7 +7151,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
             const { score } = _scoreDraftCandidate(p, {
               pg, pp: ppts(p), cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor,
               nextContractYrs: p[nextContractField||'nextContractTerm']||0, curveFns: curveFnsRich,
-              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos,
+              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, teamField,
             });
             return { p, cap: cap0, score };
           });
