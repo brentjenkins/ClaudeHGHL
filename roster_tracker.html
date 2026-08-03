@@ -1256,7 +1256,11 @@ let sortColSignings = 'sign_date', sortDirSignings = -1;
 // but the user explicitly chose data-driven accuracy over draft-pick-matching as the priority
 // going forward. elcExpG left at 35 — its own projected-basis sample was tiny (n=6) and already
 // close to the guessed value.
-let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.33 };
+// wtCapUse defaults to 0 here — it's an Optimize-mode-only bonus applied selectively per team
+// inside _runAlgoDraft (see draftModeByTeam), not a general scoring term. Leaving it 0 in the
+// shared object keeps every other call site (display-only SCORE columns, Simulate-mode teams,
+// drops) exactly as they were before this existed.
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.33, wtCapUse: 0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
@@ -1278,9 +1282,9 @@ const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 // own displayed △ value — could be zero for a real riser (Ivan Demidov, +22 displayed, $0 scored)
 // while another similar player got a wildly oversized bonus purely from curve-fit noise landing
 // the other way (Lane Hutson, delta=37 -> tDelta=370 at wt=10, dwarfing the rest of the score).
-function _deltaCurveBonus(pts, cap, pg, elcMax, curveFn, wt){
+function _deltaCurveBonus(pts, cap, pg, elcMax, curveFn, wt, w){
   if(pts <= 0 || cap <= 0 || wt <= 0) return 0;
-  const base = _curveBaseline(pg, cap, elcMax, curveFn);
+  const base = _curveBaseline(pg, cap, elcMax, curveFn, w);
   if(base == null) return 0;
   const delta = pts - base;
   if(delta <= 0) return 0;
@@ -1290,14 +1294,17 @@ function _deltaCurveBonus(pts, cap, pg, elcMax, curveFn, wt){
 // Prospect age thresholds (Athletic definition): under 23 for F, under 24 for D, under 25 for G.
 const PROSPECT_MAX_AGE = {F: 22, D: 23, G: 24};
 
-// Returns the ELC expected pts for a position from live draftWeights settings.
-function _elcExp(pg){ return ({F: draftWeights.elcExpF, D: draftWeights.elcExpD, G: draftWeights.elcExpG}[pg] ?? 40); }
+// Returns the ELC expected pts for a position. `w` optionally overrides which weights object
+// to read elcExpF/D/G from (e.g. a Simulate-mode team's shadowed draftWeights inside
+// _runAlgoDraft — see draftModeByTeam) — defaults to the live global draftWeights settings for
+// every other caller (all the △ display functions, drops, etc.), unchanged from before.
+function _elcExp(pg, w){ w = w || draftWeights; return ({F: w.elcExpF, D: w.elcExpD, G: w.elcExpG}[pg] ?? 40); }
 
 // Returns the curve baseline for a player: ELC expected pts for ELC-cap players,
 // curveFn(cap) for everyone else. Used by all △ display functions so the column
-// reflects the same expectation as the prospect bonus.
-function _curveBaseline(pg, cap, elcMax, curveFn){
-  if(cap > 0 && cap <= elcMax) return _elcExp(pg);
+// reflects the same expectation as the prospect bonus. `w` — see _elcExp.
+function _curveBaseline(pg, cap, elcMax, curveFn, w){
+  if(cap > 0 && cap <= elcMax) return _elcExp(pg, w);
   return (curveFn && cap > 0) ? curveFn(cap) : null;
 }
 
@@ -1316,14 +1323,15 @@ function _buildCurveFns(pool, getCap, getPts){
 // Returns prospect bonus score (0 if not a prospect).
 // Weighted by pts vs ELC expectation: high-ceiling prospects score much higher
 // than fringe ELC players at the same age.
-function prospectBonus(age, pg, capHit, elcMax, wtProspect, pts=0){
+function prospectBonus(age, pg, capHit, elcMax, pts=0, w){
+  w = w || draftWeights;
   if(age == null || age >= 99) return 0;
   const maxAge = PROSPECT_MAX_AGE[pg] ?? 22;
   if(age > maxAge || capHit > elcMax) return 0;
   const ageScore = maxAge + 1 - age;
-  const normPts = _elcExp(pg);
+  const normPts = _elcExp(pg, w);
   const ptsRatio = pts > 0 ? pts / normPts : 0;
-  return Math.max(0, ageScore * ptsRatio * wtProspect);
+  return Math.max(0, ageScore * ptsRatio * w.wtProspect);
 }
 
 // Decaying prospect-bonus weight for rounds beyond draftProspectRounds.
@@ -1836,7 +1844,7 @@ function rankPlayers(){
       const scoreA = ppEff * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (ppEff / p.cap) * W.wtPPTSM;
       const scoreD = peakTrajectoryScore(age, posGroup(p.pos), (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) + (p.nextContractTerm||0)) * W.wtAge;
-      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, W.wtProspect, ppEff);
+      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, ppEff, W);
       return { p, score: scoreA + scoreB + scoreD + scoreE };
     })
     .sort((a, b) => b.score - a.score)
@@ -6461,6 +6469,13 @@ function algoDraft2526(){
     nextContractField: 'nextContractTerm2526',
     srcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0),
     maxSrc: 6,
+    // Simulate-mode teams (draftModeByTeam) predict real GM behavior, so their source-coverage
+    // confidence bar reverts to the pre-NHL-fix, pre-CBS-wiring count (see feedback_datadriven_
+    // over_matchrate memory) — 4 sources, not 6. The underlying blended PPTS itself (ppts2526blend)
+    // stays the single canonical, most-accurate value for every team; only the coverage-discount/
+    // eligibility-floor confidence assessment diverges by mode.
+    simulateSrcNFn: p => (p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0),
+    simulateMaxSrc: 4,
     injurySet: INJURY_DROPS_2526,
   });
 }
@@ -6697,7 +6712,7 @@ function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
 // best-available scoring; posAlloc (D-cap-share correction) only applies in bestAvail mode and
 // only when a specific team's cap context is supplied — a generic "score every free agent" call
 // (no team) skips it, matching this formula's pre-existing, intentional team-agnostic display use.
-function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, fullProspectCredit = false }){
+function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos }){
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
   const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(pressure[pg]||0) - 1));
   const srcN = srcNFn(p);
@@ -6725,19 +6740,31 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   const yrsRaw = (p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0) + nextContractYrs;
   const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
   const tYouth = youthRaw * draftWeights.wtAge;
-  const tDelta = _deltaCurveBonus(ppEff, cap0, pg, elcMax, curveFns[pg], draftWeights.wtDeltaCurve);
+  const tDelta = _deltaCurveBonus(ppEff, cap0, pg, elcMax, curveFns[pg], draftWeights.wtDeltaCurve, draftWeights);
   const richExtra = tPPTSM + tYouth + tDelta;
-  const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, draftWeights.wtProspect, ppEff);
-  const tPPTS = ppEff * (mode==='prospect' ? (pm[pg]||1) : 1) * pressMult;
+  const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, ppEff, draftWeights);
+  const tPPTSBase = ppEff * (mode==='prospect' ? (pm[pg]||1) : 1) * pressMult;
+  // Cap-use bonus: Optimize-mode-only (see draftModeByTeam/_runAlgoDraft), 0 everywhere else.
+  // tPPTSM already rewards points-per-dollar EFFICIENCY, which structurally favors cheap
+  // prospects over expensive stars regardless of total value produced — found live via the
+  // 25-26 top-18 backtest, where Optimize passed on Panarin (84 actual pts) for Perreault (27)
+  // while leaving $14.50M of cap unused. A MULTIPLIER on raw production (not a flat additive
+  // bonus — the first version tried that, see git history) so the boost scales with how much
+  // real production is being bought, not just cost: it amplifies an already-strong producer's
+  // edge (Panarin) but can't manufacture one for a merely-expensive mediocre player. Found via
+  // the wtCapUse sweep/24-25 backtest that the flat version, pushed high enough to fix Panarin,
+  // also pushed a $9.5M/23-actual-pt Charlie McAvoy ahead of a clearly-better $9.0M Dougie
+  // Hamilton — a real regression the multiplicative form should resist, since McAvoy's own
+  // (mediocre) tPPTS doesn't get amplified as much as a genuinely good producer's does.
+  const capUseMult = 1 + (draftWeights.wtCapUse||0) * cap0;
+  const tPPTS = tPPTSBase * capUseMult;
+  const tCapUse = tPPTS - tPPTSBase; // portion of tPPTS attributable to the cap-use multiplier — display/debugging only
   let score;
   if(mode === 'prospect'){
     score = tPPTS + prospect + richExtra;
   } else {
     score = tPPTS + richExtra;
-    // Optimize-mode teams (draftModeByTeam) skip the round-based decay entirely — a prospect's
-    // true value doesn't depend on what round it is, only the timing of real human enthusiasm
-    // for prospects does. Simulate-mode teams keep the taper (see prospectRoundWeight).
-    const prospectWeight = fullProspectCredit ? 1 : prospectRoundWeight(round||1);
+    const prospectWeight = prospectRoundWeight(round||1);
     if(prospectWeight > 0) score += prospect * prospectWeight;
     if((draftWeights.wtPosAlloc||0) > 0 && team && teamCap && teamCapByPos){
       const capTot = teamCap[team] || 0;
@@ -6747,7 +6774,7 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
       }
     }
   }
-  return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, pressRaw: pressure[pg], pressMult };
+  return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, tCapUse, pressRaw: pressure[pg], pressMult };
 }
 
 // ── Fully-uncontested batch drafting ─────────────────────────────────────────
@@ -6861,7 +6888,7 @@ function _solveTeamKnapsack(neededCounts, candidatesByPos, budget){
 function _pickBestFA(team, round, mode, ctx){
   const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
           draftWeights, calcAgeForSim, contractYearAnchor, elcMax, srcNFn, maxSrc,
-          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField, fullProspectCredit } = ctx;
+          allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField } = ctx;
   const nextContractFld = nextContractField || 'nextContractTerm';
   const injSet = injurySet || new Set();
 
@@ -6933,13 +6960,13 @@ function _pickBestFA(team, round, mode, ctx){
     const { score } = _scoreDraftCandidate(p, {
       pg, pp, cap0, pressure, mode, round, draftWeights,
       calcAgeForSim, contractYearAnchor, nextContractYrs: p[nextContractFld]||0, curveFns: curveFnsRich, elcMax, srcNFn, maxSrc,
-      team, teamCap, teamCapByPos, fullProspectCredit,
+      team, teamCap, teamCapByPos,
     });
     return {p, score, pp};
   }).sort((a,b) => b.score - a.score)[0];
 }
 
-function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn, maxSrc, contractYearAnchor, injurySet, nextContractField }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights: draftWeightsBase, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn: srcNFnBase, maxSrc: maxSrcBase, contractYearAnchor, injurySet, nextContractField, simulateSrcNFn = null, simulateMaxSrc = null }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
 
   // Snapshot: track each player's current team assignment
@@ -7017,15 +7044,29 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     // per-position need (guards against per-position miscounts on carried-forward rosters)
     if((teamSpotsLeft[team]||0) <= 0){ teamPickNum[team]++; boardPicks.push(null); continue; }
 
+    // Per-team mode divergence (draftModeByTeam/_draftModeFor): SHADOWS the season-wide
+    // draftWeights/srcNFn/maxSrc params for the rest of this team's turn — both _pickBestFA
+    // (via baseCtx below) AND the fully-uncontested batch-drafting block further down read
+    // straight from these same names, so shadowing here (not renaming) covers both paths with
+    // no other edits needed. Simulate mode reverts elcExpF/elcExpD to the pre-data-driven-
+    // backtest values and (where a season-specific variant is supplied) srcNFn/maxSrc to the
+    // pre-CBS/NHL-fix source count — it's trying to predict what a real GM would pick, not
+    // what's objectively most correct (see feedback_datadriven_over_matchrate memory). Optimize
+    // mode gets a cap-spending bonus (wtCapUse, see _scoreDraftCandidate) — found live via the
+    // 25-26 top-18 backtest that Optimize was leaving $14.50M unused by passing on an expensive
+    // elite scorer for a cheap efficient prospect purely on tPPTSM's points-per-dollar bias.
+    const teamMode = _draftModeFor(team);
+    const draftWeights = teamMode === 'simulate'
+      ? { ...draftWeightsBase, elcExpF: 35, elcExpD: 25, wtCapUse: 0 }
+      : { ...draftWeightsBase, wtCapUse: draftWeightsBase.wtCapUse || 0.15 };
+    const srcNFn = (teamMode === 'simulate' && simulateSrcNFn) ? simulateSrcNFn : srcNFnBase;
+    const maxSrc = (teamMode === 'simulate' && simulateSrcNFn) ? simulateMaxSrc : maxSrcBase;
+
     const getAssignedTeam = p => assigned[p.id] || null;
-    // Optimize-mode teams get full prospect-value credit regardless of round — the round-based
-    // decay exists to match WHEN real GMs get excited about prospects, not when a prospect is
-    // actually worth taking. See draftModeByTeam.
-    const fullProspectCredit = _draftModeFor(team) === 'optimize';
     const baseCtx = {
       players, getAssignedTeam, startField, ppts, getCap,
       capLimit, draftReserve, draftWeights, calcAgeForSim, contractYearAnchor, elcMax,
-      srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField, fullProspectCredit,
+      srcNFn, maxSrc, allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField,
     };
 
     // Position-awareness: figure out which of this team's still-needed positions should be
@@ -7065,7 +7106,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
             const { score } = _scoreDraftCandidate(p, {
               pg, pp: ppts(p), cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor,
               nextContractYrs: p[nextContractField||'nextContractTerm']||0, curveFns: curveFnsRich,
-              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, fullProspectCredit,
+              elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos,
             });
             return { p, cap: cap0, score };
           });
@@ -7676,7 +7717,7 @@ function rankPlayers2526(){
     const srcNS = (p.proj2526_ath > 0 ? 1 : 0) + (p.proj2526_dfo > 0 ? 1 : 0) + (p.proj2526_dtz > 0 ? 1 : 0) + (p.proj2526_espn > 0 ? 1 : 0);
     const coverageMultS = 1 - (draftWeights.wtCoverageDiscount||0) * (1 - Math.min(1, srcNS/4));
     const ppEffS = pp * coverageMultS;
-    const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, draftWeights.wtProspect, ppEffS);
+    const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, ppEffS);
     p._score2526 = ppEffS*(posMult[pg]??1) + (ppEffS/getCap2526(p))*draftWeights.wtPPTSM + youth*draftWeights.wtAge + prospectS;
   });
   eligible.sort((a,b)=>b._score2526-a._score2526).forEach((p,i)=>p.rank2526=i+1);
