@@ -3205,8 +3205,17 @@ const DRAFT_RESERVE_2324 = 1.5 * (ELC_MAX_2324 - 0.175); // cap to reserve per d
 // (Coyotes) — see also NHL_OPENING_NIGHT_2324/draftDatePreseason2324. Olen Zellweger: hadn't
 // made his NHL debut yet, first game Jan 25, 2024 (Ducks). Shane Pinto: serving a 41-game NHL
 // suspension, debuted Jan 27, 2024 (Senators).
+// Added 2026-08-03, same unresolved-availability logic, found via a protected-prospect drop-side
+// miss audit (algoKeptShouldDrop + isProtectedProspect, all 3 seasons — 7/9 clustered in 23-24,
+// the one season here where the draft falls after NHL opening night). Confirmed via real
+// reporting, not delta magnitude alone (Arthur Kaliyev showed a similarly bad delta but actually
+// made his team's real opening night roster, so he's deliberately NOT included here). Ty Smith:
+// didn't make the Penguins' 23-24 opening night roster. Shane Wright: started the season in the
+// AHL (Coachella Valley), granted a CHL-NHL transfer exemption. Simon Edvinsson: started the
+// season in the AHL (Grand Rapids). Jack Quinn: on IR to begin the season.
 const INJURY_DROPS_2324       = new Set(['brandon montour', 'aaron ekblad', 'andrei vasilevskiy',
-  'patrick kane', 'dylan guenther', 'olen zellweger', 'shane pinto']);
+  'patrick kane', 'dylan guenther', 'olen zellweger', 'shane pinto',
+  'ty smith', 'shane wright', 'simon edvinsson', 'jack quinn']);
 const ELC_MANDATORY_DROPS_2324 = new Set([]);
 
 
