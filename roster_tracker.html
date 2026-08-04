@@ -6664,6 +6664,16 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     // F) that the algo's D-only version had no way to reason about directly — the mechanism had
     // simply never been extended past its original D use case. Backtested via Compare Drops
     // 2025-26 (the only season with this flag on and real outcome data): 142/180 -> 143/180.
+    //
+    // Scaled by the player's OWN cap hit (2026-08-04), not flat per-position — found live via
+    // Mats Zuccarello ($1.00M, +4.6△, one of the best contracts on the roster) getting cut from
+    // Pernicious Puckers purely because F was 66.2% of team cap vs a 58% target. The flat
+    // version punished every forward equally regardless of cap hit, so a cheap efficient
+    // contract got the identical bump as an expensive inefficient one — backwards: cutting a
+    // $1M player barely dents an F-cap overage, and a cheap productive forward is exactly what
+    // a GM correcting a positional overweight should be looking to ADD, not cut. Now an
+    // expensive, inefficient forward at the same position gets a much larger bump than a cheap,
+    // efficient one — the players who actually cause the imbalance are the ones targeted.
     let rebalBonus = () => 0;
     if(useRebalBonus){
       const rCapTot = remaining.reduce((s,p) => s+(getCap(p)||0), 0);
@@ -6671,7 +6681,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       for(const p of remaining) rCapByPos[posGroup(p.pos)] = (rCapByPos[posGroup(p.pos)]||0) + (getCap(p)||0);
       const excessByPos = {};
       for(const pg of ['F','D','G']) excessByPos[pg] = rCapTot>0 ? Math.max(0, rCapByPos[pg]/rCapTot - (OPT_POS_FRACS[pg]||0)) : 0;
-      rebalBonus = p => (excessByPos[posGroup(p.pos)]||0) * rCapTot;
+      rebalBonus = p => (excessByPos[posGroup(p.pos)]||0) * (getCap(p)||0);
     }
 
     // Fan-bias drop protection (see wtFanBiasDrop/GM_FAN_TEAM) — shifts a fan-team player's
