@@ -891,7 +891,7 @@ tr:hover td{background:#fafaf8}
   </div>
 
   <div>
-    <div class="section-label">Yahoo <span class="section-line"></span><span class="section-desc">Yahoo Fantasy league keys and draft dates. Draft dates determine the drop/add window for Yahoo transaction fetches (date + 2 days). Draft dates are historical facts (const in code) — only 26–27/27–28 may still need updating.</span></div>
+    <div class="section-label">Yahoo <span class="section-line"></span><span class="section-desc">Yahoo Fantasy league keys and draft dates. Draft dates determine the drop/add window for Yahoo transaction fetches (date + 2 days). Draft dates are historical facts (const in code) — only 26–27/27–28 may still need updating. Preseason Draft cells outlined in orange fall AFTER that season's NHL opening night (see NHL_OPENING_NIGHT_2X2Y) — a retroactive-scoring situation, not necessarily an error.</span></div>
     <div style="display:grid;grid-template-columns:72px repeat(6,1fr);gap:6px;align-items:center;font-size:12px">
       <div></div>
       <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">22–23</div>
@@ -911,10 +911,10 @@ tr:hover td{background:#fafaf8}
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Preseason Draft</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa" title="No 22-23 Players view exists — kept for reference only">10/8/2022</div>
-      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">10/13/2023</div>
+      <div style="height:32px;border:1px solid #f59e0b;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#b45309;background:#fffbeb" title="Draft is 3 days AFTER NHL 23-24 opening night (10/10/2023) — retroactive-scoring situation">10/13/2023</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">10/5/2024</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">9/27/2025</div>
-      <div style="height:32px;border:1px solid #185FA5;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#1a1a18;background:#fff">10/2/2026</div>
+      <div style="height:32px;border:1px solid #f59e0b;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#b45309;background:#fffbeb" title="Draft is 3 days AFTER NHL 26-27 opening night (9/29/2026) — retroactive-scoring situation">10/2/2026</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
 
       <div style="font-size:11px;color:#9ca3af;white-space:nowrap">Supplemental Draft</div>
@@ -1426,7 +1426,12 @@ let dropValueFloor = 15;
 // is no Simulate/Optimize-style split for drops (only draft has that), so this affects the real
 // "Algo Drops" recommendation for every team the same way it affects Compare Drops' simulation
 // of every other GM.
-let wtFanBiasDrop = 5;
+// 5 (the original guess) turned out too small to matter — a live diagnostic 2026-08-03 found
+// it needs to be >=20 before it can flip even the closest-to-margin real case (Dylan Larkin,
+// Motor City Wings 25-26, delta=-9.3) from a miss to a correct prediction. 20 is the minimum
+// value where the mechanism does anything at all; the full-league accuracy sweep showed no
+// aggregate regression at that level (some other swap offsets Larkin's fix 1-for-1).
+let wtFanBiasDrop = 20;
 // Draft dates — used to calculate the drop/add window (date + 2 days) for Yahoo transaction fetches.
 // All const: historical seasons are fixed facts; 26-27/27-28 are const too but may need a code edit once known.
 const draftDatePreseason2223    = '2022-10-08'; // no 22-23 Players view exists — kept for completeness/reference only
