@@ -1713,7 +1713,11 @@ def dob_projections():
                 name = row[col_name].strip()
                 pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
                 if not pos_raw: continue
-                pg = "D" if pos_raw == "D" else "F"
+                # Dobbers uses LD/RD (handedness-specific) for defensemen, not a plain "D" like
+                # DTZ's format — found 2026-08-04 via Carter Yakemchuk ("RD") silently
+                # misclassified as a forward, breaking the position-keyed lookup entirely for
+                # every D in the file (316 of 906 skaters — not a one-off name mismatch).
+                pg = "D" if pos_raw in ("D", "LD", "RD") else "F"
                 hghl_pts = round(safe_float(row[col_g]) + safe_float(row[col_a]))
                 if hghl_pts <= 0: continue
                 gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0

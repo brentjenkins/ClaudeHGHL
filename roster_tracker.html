@@ -5437,6 +5437,10 @@ function rankPlayers2425(){
   });
   eligible.sort((a,b)=>b._rankScore2425-a._rankScore2425);
   eligible.forEach((p,i)=>p.rank2425=i+1);
+  // _rankScore2425 is a pure scratch sort key, fully recomputed from already-persisted fields
+  // every time this runs — no reason to serialize it to localStorage (found 2026-08-04 at 97%
+  // of a typical 5MB quota; this + its 2324/2526 siblings were ~76KB of pure waste).
+  eligible.forEach(p=>{ delete p._rankScore2425; });
   lsSet(LS_PLAYERS,players);
   render2425();
 }
@@ -5601,6 +5605,8 @@ function rankPlayers2324(){
   });
   eligible.sort((a,b)=>b._rankScore2324-a._rankScore2324);
   eligible.forEach((p,i)=>p.rank2324=i+1);
+  // See rankPlayers2425's identical note — pure scratch sort key, never needs to persist.
+  eligible.forEach(p=>{ delete p._rankScore2324; });
   lsSet(LS_PLAYERS,players);
   render2324();
 }
@@ -7862,6 +7868,8 @@ function rankPlayers2526(){
     p._score2526 = ppEffS*(posMult[pg]??1) + (ppEffS/getCap2526(p))*draftWeights.wtPPTSM + youth*draftWeights.wtAge + prospectS;
   });
   eligible.sort((a,b)=>b._score2526-a._score2526).forEach((p,i)=>p.rank2526=i+1);
+  // See rankPlayers2425's identical note — pure scratch sort key, never needs to persist.
+  eligible.forEach(p=>{ delete p._score2526; });
   lsSet(LS_PLAYERS, players);
   render2526();
   toast(`Ranked ${eligible.length} players for 25-26.`);

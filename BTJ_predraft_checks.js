@@ -37,3 +37,23 @@ var hwm=localStorage.getItem('hghl_signings_hwm');var today=new Date();var today
 // 26-27 Actual drops populated
 // Manual check — same reasoning as Inj reports above; no timestamp tracked, left as a manual
 // reminder rather than adding new tracking code.
+
+
+// LOCAL STORAGE use.
+(() => {
+  const before = new Blob([localStorage.getItem(LS_PLAYERS) || '']).size;
+  let cleaned = 0;
+  for (const p of players) {
+    for (const f of ['_rankScore2324', '_rankScore2425', '_score2526']) {
+      if (f in p) { delete p[f]; cleaned++; }
+    }
+  }
+  lsSet(LS_PLAYERS, players);
+  const after = new Blob([localStorage.getItem(LS_PLAYERS) || '']).size;
+  console.log('Purged ' + cleaned + ' stale scratch fields from ' + players.length + ' players.');
+  console.log('players key: ' + (before/1024).toFixed(1) + 'KB -> ' + (after/1024).toFixed(1) + 'KB (saved ' + ((before-after)/1024).toFixed(1) + 'KB)');
+
+  let total = 0;
+  for (let i = 0; i < localStorage.length; i++) total += new Blob([localStorage.getItem(localStorage.key(i)) || '']).size;
+  console.log('New localStorage total: ' + (total/1024).toFixed(1) + ' KB (' + (100*total/(5*1024*1024)).toFixed(1) + '% of a typical 5MB quota)');
+})();
