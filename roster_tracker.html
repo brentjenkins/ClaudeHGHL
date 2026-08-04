@@ -72,6 +72,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .btn-dfo:hover{background:#025a87;border-color:#025a87}
 .btn-dtz{background:#be185d;color:#fff;border-color:#be185d}
 .btn-dtz:hover{background:#9d174d;border-color:#9d174d}
+.btn-dob{background:#0891b2;color:#fff;border-color:#0891b2}
+.btn-dob:hover{background:#0e7490;border-color:#0e7490}
 .btn-cbs{background:#6d28d9;color:#fff;border-color:#6d28d9}
 .btn-cbs:hover{background:#4c1d95;border-color:#4c1d95}
 .btn-amber{background:#d97706;color:#fff;border-color:#b45309}
@@ -615,6 +617,8 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-dfo" id="dfo2627Btn" onclick="syncDFO2627()" title="Scrape DFO/5v5hockey 2026-27 projections (Points league, G+A for skaters, W×2+SO×3 for goalies)">📈 DFO 26-27</button>
       <input type="file" id="dtzFileInput" accept=".csv" multiple style="display:none" onchange="syncDTZ(this)">
       <button class="btn btn-dtz" id="dtzBtn" onclick="document.getElementById('dtzFileInput').click()" title="Import DTZ 2026-27 projections — select both the skater and goalie CSV exports together (once DTZ publishes 26-27 data)">📈 DTZ 26-27</button>
+      <input type="file" id="dobFileInput" accept=".csv" multiple style="display:none" onchange="syncDOB(this)">
+      <button class="btn btn-dob" id="dobBtn" onclick="document.getElementById('dobFileInput').click()" title="Import Dobbers 2026-27 projections — select both the skater and goalie CSV exports together. Currently 100% of preseason PPTS (not blended with other sources) until backtested against a real season, then folded into PROJ_SOURCE_WEIGHTS.">📈 DOB 26-27</button>
       <button class="btn btn-espn" id="espnBtn" onclick="syncESPN()" title="Pull latest ESPN 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~30s)">📈 ESPN 26-27</button>
       <button class="btn btn-cbs" id="cbsBtn" onclick="syncCBS()" title="Scrape CBS Sports 2026-27 projections (G+A for skaters, W×2+SO×3 for goalies) (~25s)">📈 CBS 26-27</button>
       <button class="btn btn-nhl" id="nhlProj2627Btn" onclick="syncNHLProj2627()" title="Pull NHL.com 2026-27 forward &amp; defenseman point projections (available ~Oct 2026)" style="opacity:.5">📈 NHL 26-27</button>
@@ -699,6 +703,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('ptsAth')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAth"></span></th>
   <th onclick="setSortCol('ptsDFO')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
   <th onclick="setSortCol('ptsDTZ')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DTZ 2026-27 projection">DTZ <span id="sort-ptsDTZ"></span></th>
+  <th onclick="setSortCol('ptsDOB')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Dobbers 2026-27 projection — currently 100% of preseason PPTS for matched players (not yet blended)">DOB <span id="sort-ptsDOB"></span></th>
   <th onclick="setSortCol('ptsESPN')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="ESPN 2026-27 projection">ESPN <span id="sort-ptsESPN"></span></th>
   <th onclick="setSortCol('ptsCBS')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="CBS Sports 2026-27 projection">CBS <span id="sort-ptsCBS"></span></th>
   <th onclick="setSortCol('ptsNHL')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="NHL.com 2026-27 forward/defenseman point projection">NHL <span id="sort-ptsNHL"></span></th>
@@ -1833,7 +1838,13 @@ function reblendPts(p){
     [p.ptsAth, W.athletic], [p.ptsDFO, W.dfo], [p.ptsDTZ, W.dtz], [p.ptsESPN, W.espn],
     [p.ptsCBS, W.cbs], [p.ptsNHL, W.nhl],
   ]);
-  const preseasonProj = blended;
+  // Dobbers (ptsDOB) is 100% of the 26-27 preseason projection for now — not blended with the
+  // other sources — per an explicit 2026-08-04 call while backtest data (prior-year Dobbers
+  // projections vs real outcomes) is still being gathered. Will fold into the normal weighted
+  // blend above once vetted, the same process DTZ went through before being trusted (see
+  // project_weighted_proj_blend memory). Falls back to the existing multi-source blend for
+  // anyone Dobbers doesn't cover.
+  const preseasonProj = (p.ptsDOB > 0) ? p.ptsDOB : blended;
 
   if(p.gp2627 > 0){
     const banked = p.pts2627 || 0;
@@ -2027,6 +2038,7 @@ function load(){
     if(p.ptsAth    === undefined){ p.ptsAth    = null; migrated = true; }
     if(p.ptsDFO         === undefined){ p.ptsDFO         = null; migrated = true; }
     if(p.ptsDTZ         === undefined){ p.ptsDTZ         = null; migrated = true; }
+    if(p.ptsDOB         === undefined){ p.ptsDOB         = null; migrated = true; }
     if(p.ptsCBS         === undefined){ p.ptsCBS         = null; migrated = true; }
     if(p.ptsNHL         === undefined){ p.ptsNHL         = null; migrated = true; }
     // Migrate renamed fields from old localStorage (split strings to survive future renames)
@@ -2044,6 +2056,7 @@ function load(){
     if(p.projGp2526_espn     === undefined){ p.projGp2526_espn     = null; migrated = true; }
     if(p.gpAth        === undefined){ p.gpAth        = null; migrated = true; }
     if(p.gpDTZ             === undefined){ p.gpDTZ             = null; migrated = true; }
+    if(p.gpDOB             === undefined){ p.gpDOB             = null; migrated = true; }
     if(p.gpESPN            === undefined){ p.gpESPN            = null; migrated = true; }
     if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
     if(p.team2526          === undefined){ p.team2526          = null; migrated = true; }
@@ -2253,6 +2266,46 @@ async function syncDTZ(input){
   } finally {
     btn.disabled=false;
     btn.innerHTML='📈 DTZ 26-27';
+  }
+}
+
+// Loads Dobbers 26-27 projections into ptsDOB/gpDOB, currently used as 100% of the 26-27
+// preseason projection (see reblendPts) rather than blended with the other sources — an
+// explicit 2026-08-04 call while backtest data (prior-year Dobbers vs real outcomes) is still
+// being gathered. Once vetted, folding it into the normal PROJ_SOURCE_WEIGHTS blend at an
+// appropriate weight is a small, separate follow-up (the same process DTZ went through before
+// being trusted — see project_weighted_proj_blend memory).
+async function syncDOB(input){
+  const files = Array.from(input.files); if(!files.length) return; input.value='';
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('dobBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData(); files.forEach(f=>fd.append('files', f));
+    const d = await fetch('/dob-projections',{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched=0, unmatched=0;
+    for(const p of players){
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.ptsDOB = entry.hghl_pts;
+        p.gpDOB  = entry.gp > 0 ? entry.gp : null;
+        matched++;
+      } else {
+        p.ptsDOB = null;
+        p.gpDOB  = null;
+        unmatched++;
+      }
+    }
+    applyBlendedPts();
+    lsSet(LS_PLAYERS, players);
+    render();
+    toast(`Dobbers 26-27 synced! ${matched} matched, ${unmatched} unmatched. (Now 100% of preseason PPTS for matched players.)`);
+  } catch(e){
+    toast('Dobbers 26-27 import failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='📈 DOB 26-27';
   }
 }
 
@@ -3003,7 +3056,7 @@ function render(){
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAth','ptsDFO','ptsDTZ','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','rank','abp','score'].forEach(c=>{
+  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAth','ptsDFO','ptsDTZ','ptsDOB','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','rank','abp','score'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -3103,6 +3156,7 @@ function render(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsAth>0?Math.round(p.ptsAth):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsDFO>0?Math.round(p.ptsDFO):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsDTZ>0?Math.round(p.ptsDTZ):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsDOB>0?Math.round(p.ptsDOB):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsESPN>0?Math.round(p.ptsESPN):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsCBS>0?Math.round(p.ptsCBS):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.ptsNHL>0?Math.round(p.ptsNHL):'—'}</td>
@@ -3563,7 +3617,7 @@ function _seedStart2627(){
       id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'roster', source:'manual',
       start2627:team||'', end2526:team,
       rank:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
-      ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
+      ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsDOB:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -4742,7 +4796,7 @@ function _seedStart2526(){
       start2627:'', end2526:'', end2425:team, start2526:team,
       rank:null, rank2526:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_ath:null, proj2526_cbs:null,
-      ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
+      ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsDOB:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -5296,7 +5350,7 @@ function _seedStart2425(){
       rank:null, rank2425:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
       proj2425_dfo:null, proj2425_dtz:null, proj2425_ath:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_ath:null, proj2526_cbs:null,
-      cap2526:null, ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
+      cap2526:null, ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsDOB:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -5462,7 +5516,7 @@ function _seedStart2324(){
       proj2324_ath:null, proj2324_dtz:null, proj2324_nhl:null,
       proj2425_dfo:null, proj2425_dtz:null, proj2425_ath:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_ath:null, proj2526_cbs:null,
-      cap2526:null, ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsCBS:null, ptsNHL:null,
+      cap2526:null, ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsDOB:null, ptsCBS:null, ptsNHL:null,
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync

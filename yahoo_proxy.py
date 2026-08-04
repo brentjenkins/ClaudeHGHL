@@ -1660,6 +1660,87 @@ def dtz_projections():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
+@app.route("/dob-projections", methods=["POST"])
+def dob_projections():
+    """Parse Dobbers 2026-27 skater + goalie CSV exports (uploaded together).
+
+    Unlike DTZ's exports, Dobbers' CSVs have several metadata/junk rows before the real
+    header row, so the header is located by scanning for a row containing "Player" rather
+    than assuming row 0. Skater sheet has direct Goals/Assists columns (same G+A scoring as
+    every other source); goalie sheet has Wins/SO (no SV%/W columns like DTZ's format), so
+    goalie-file detection keys off "GAA" instead.
+    """
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files uploaded"}), 400
+
+    import csv, io
+
+    def safe_float(val):
+        try: return float(val) if val and str(val).strip() else 0.0
+        except: return 0.0
+
+    def find_header_row(rows):
+        for i, row in enumerate(rows):
+            if any(cell.strip() == "Player" for cell in row):
+                return i
+        return None
+
+    all_players = {}
+    parsed_kinds = []
+    for f in files:
+        if not f.filename.lower().endswith(".csv"):
+            return jsonify({"error": f"Please upload .csv files ({f.filename} is not a CSV)"}), 400
+        try:
+            text = f.read().decode("utf-8-sig")
+            rows = list(csv.reader(io.StringIO(text)))
+        except Exception as e:
+            return jsonify({"error": f"Could not read {f.filename}: {e}"}), 400
+        if not rows:
+            continue
+        header_idx = find_header_row(rows)
+        if header_idx is None:
+            return jsonify({"error": f"Could not find a header row (no 'Player' column) in {f.filename}"}), 400
+        header = [h.strip() for h in rows[header_idx]]
+        data_rows = rows[header_idx + 1:]
+
+        if "Goals" in header and "Assists" in header:
+            col_name, col_pos = header.index("Player"), header.index("Pos")
+            col_g, col_a = header.index("Goals"), header.index("Assists")
+            col_gp = header.index("Games") if "Games" in header else None
+            for row in data_rows:
+                if not row or len(row) <= col_name or not row[col_name].strip(): continue
+                name = row[col_name].strip()
+                pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
+                if not pos_raw: continue
+                pg = "D" if pos_raw == "D" else "F"
+                hghl_pts = round(safe_float(row[col_g]) + safe_float(row[col_a]))
+                if hghl_pts <= 0: continue
+                gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
+                key = f"{normalize_name(name).lower()}_{pg}"
+                all_players[key] = {"name": name, "pg": pg, "hghl_pts": hghl_pts, "gp": gp}
+                _add_name_aliases(all_players, key, name, pg)
+            parsed_kinds.append(f"skaters({f.filename})")
+        elif "GAA" in header and "Wins" in header:
+            col_name, col_w, col_so = header.index("Player"), header.index("Wins"), header.index("SO")
+            col_gp = header.index("Proj. Games") if "Proj. Games" in header else None
+            for row in data_rows:
+                if not row or len(row) <= col_name or not row[col_name].strip(): continue
+                name = row[col_name].strip()
+                hghl_pts = round(safe_float(row[col_w]) * 2 + safe_float(row[col_so]) * 3)
+                if hghl_pts <= 0: continue
+                gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
+                key = f"{normalize_name(name).lower()}_G"
+                all_players[key] = {"name": name, "pg": "G", "hghl_pts": hghl_pts, "gp": gp}
+                _add_name_aliases(all_players, key, name, "G")
+            parsed_kinds.append(f"goalies({f.filename})")
+        else:
+            return jsonify({"error": f"Could not identify {f.filename} as a Dobbers skater or goalie export"}), 400
+
+    print(f"  Dobbers 26-27 CSV: {', '.join(parsed_kinds)} → {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
 @app.route("/nhl-projections-2425", methods=["POST"])
 def nhl_projections_2425():
     """Parse the NHL 24-25 projections CSV.
