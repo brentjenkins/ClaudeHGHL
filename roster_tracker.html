@@ -1538,6 +1538,8 @@ const FIRST_NAME_ALIASES = {
   'cal':'calvin','calvin':'cal',
   'arsh':'arshdeep','arshdeep':'arsh',
   'daniil':'danil','danil':'daniil',
+  'mathew':'matt', // Dobbers spells Matt Dumba "Mathew" (single T) — found 2026-08-05.
+  'nikke':'niklas','niklas':'nikke', // Dobbers spells Niklas Kokko "Nikke" (Finnish nickname) — found 2026-08-05.
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
@@ -1571,6 +1573,22 @@ const KNOWN_NAME_OVERRIDE_PAIRS = [
   // each other in a flat single-value dict.
   ['alexander nylander', 'alexandre nylander'],
   ['alexander wennberg', 'alexandre wennberg'],
+  // Dobbers' 2026-27 goalie export spells him "Sergei Bobrovski" (missing the final "y") —
+  // without this override his ptsDOB never matches, silently falling back to the multi-source
+  // blend instead of the 100% Dobbers override every other matched player gets. Found 2026-08-05.
+  ['sergei bobrovski', 'sergei bobrovsky'],
+  // Same hyphen-vs-space normalization gap as Charles-Alexis Legault above: normName() strips
+  // hyphens with no space substitution, so Dobbers' "Sandin-Pellikka" normalizes to
+  // "sandinpellikka" (fused) while the live pool's space-separated "Sandin Pellikka" normalizes
+  // to "sandin pellikka" — never converges without this override. Found 2026-08-05.
+  ['axel sandin pellikka', 'axel sandinpellikka'],
+  // Dobbers spells him "Danil Zhilkin"; the live pool has "Danny Zhilkin". "Danil" is already
+  // claimed by FIRST_NAME_ALIASES pointing at "Daniil" (the common Russian spelling variant for
+  // other players), so it can't also point at "Danny" — needs its own full-name pair. Found 2026-08-05.
+  ['danny zhilkin', 'danil zhilkin'],
+  // Dobbers spells him "Eric Pohlcamp" (missing the "k"); the live pool has "Eric Pohlkamp" —
+  // a third-party data typo like Sergei Bobrovski/Bobrovsky above. Found 2026-08-05.
+  ['eric pohlcamp', 'eric pohlkamp'],
 ];
 function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
@@ -1665,6 +1683,27 @@ function _dictLookupPos(name, pos, dict){
   const pg = posGroup(pos);
   for(const v of _nameVariants(name)){ const val = dict[`${v}_${pg}`]; if(val !== undefined && val !== null) return val; }
   return null;
+}
+// Every sync that pulls in an external source dict (name_pos -> entry, per _dictLookupPos's own
+// key convention) should call this once after fetching, so a real matching bug (Bobrovski/Bobrovsky,
+// Dumba/Mathew, Sandin-Pellikka hyphen mismatch — all found this way) surfaces in the console on
+// every upload instead of requiring a one-off diagnostic script each time. Not every listed name is
+// a bug — plenty are just deep prospects not yet in the live pool — but it's the one place to look.
+function _reportUnmatchedSourceEntries(sourceLabel, sourceDict){
+  if(!sourceDict) return;
+  const seen = new Set();
+  const unmatched = [];
+  for(const key in sourceDict){
+    const entry = sourceDict[key];
+    if(!entry || seen.has(entry)) continue;
+    seen.add(entry);
+    const pos = key.slice(key.lastIndexOf('_')+1);
+    if(!findPlayerByNamePos(entry.name, pos)) unmatched.push({name: entry.name, pos});
+  }
+  if(unmatched.length){
+    console.log(`[${sourceLabel}] ${unmatched.length} source player(s) not found in the live pool (deep prospects are expected here, but it's worth a glance for name-matching bugs):`);
+    console.table(unmatched);
+  }
 }
 // Build a compareDrafts/dedup-style match key: the canonical spelling, position-qualified
 // only when 2+ DIFFERENT real live players share that identity (e.g. Elias Pettersson F/D,
@@ -2121,6 +2160,7 @@ async function syncStats(){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`Stats synced! ${matched} players updated, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('NHL 25-26 Stats', d.players);
     if(d.errors.length) console.warn('Stats errors:', d.errors);
   } catch(e){
     toast('Stats sync failed: '+e.message);
@@ -2156,6 +2196,7 @@ async function syncESPN(){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`ESPN synced! ${matched} matched, ${unmatched} unmatched. ${d.errors.length?d.errors.length+' errors.':''}`);
+    _reportUnmatchedSourceEntries('ESPN 26-27', d.players);
     if(d.errors.length) console.warn('ESPN errors:', d.errors);
   } catch(e){
     toast('ESPN sync failed: '+e.message);
@@ -2189,6 +2230,7 @@ async function syncCBS(){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`CBS synced! ${matched} matched, ${unmatched} unmatched. ${d.errors.length?d.errors.length+' errors.':''}`);
+    _reportUnmatchedSourceEntries('CBS 26-27', d.players);
     if(d.errors.length) console.warn('CBS errors:', d.errors);
   } catch(e){
     toast('CBS sync failed: '+e.message);
@@ -2227,6 +2269,7 @@ async function syncAthletic(input){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`ATH 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('Athletic 26-27', d.players);
   } catch(e){
     toast('ATH 26-27 import failed: '+e.message);
   } finally {
@@ -2261,6 +2304,7 @@ async function syncDTZ(input){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`DTZ 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('DTZ 26-27', d.players);
   } catch(e){
     toast('DTZ 26-27 import failed: '+e.message);
   } finally {
@@ -2301,6 +2345,7 @@ async function syncDOB(input){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`Dobbers 26-27 synced! ${matched} matched, ${unmatched} unmatched. (Now 100% of preseason PPTS for matched players.)`);
+    _reportUnmatchedSourceEntries('Dobbers 26-27', d.players);
   } catch(e){
     toast('Dobbers 26-27 import failed: '+e.message);
   } finally {
@@ -2784,7 +2829,7 @@ async function checkProxy(){
   }
 }
 
-function _apply2526Proj(field, data, gpField=null){
+function _apply2526Proj(field, data, gpField=null, label=null){
   for(const p of players){ p[field] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
@@ -2797,6 +2842,7 @@ function _apply2526Proj(field, data, gpField=null){
   }
   lsSet(LS_PLAYERS, players);
   render2526();
+  if(label) _reportUnmatchedSourceEntries(label, data.players);
   return {matched, unmatched};
 }
 
@@ -2818,6 +2864,7 @@ async function syncDFO2627(){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`DFO 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('DFO 26-27', d.players);
   } catch(e){ toast('DFO 26-27 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 26-27'; }
 }
@@ -2854,7 +2901,7 @@ async function syncDFO2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/dfo-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', d);
+    const {matched,unmatched} = _apply2526Proj('proj2526_dfo', d, null, 'DFO 25-26');
     toast(`DFO 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 25-26'; }
@@ -2869,7 +2916,7 @@ async function syncDTZ2526(input){
     const fd = new FormData(); files.forEach(f=>fd.append('files', f));
     const d = await fetch('/dtz-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_dtz', d, 'projGp2526_dtz');
+    const {matched,unmatched} = _apply2526Proj('proj2526_dtz', d, 'projGp2526_dtz', 'DTZ 25-26');
     toast(`DTZ 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DTZ 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DTZ 25-26'; }
@@ -2913,6 +2960,7 @@ async function syncNHLProj2627(){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`NHL 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('NHL Proj 26-27', d.players);
   } catch(e){ toast('NHL 26-27 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 NHL 26-27'; }
 }
@@ -2925,7 +2973,7 @@ async function syncAthletic2526(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2526Proj('proj2526_ath', d, 'projGp2526_ath');
+    const {matched,unmatched} = _apply2526Proj('proj2526_ath', d, 'projGp2526_ath', 'Athletic 25-26');
     toast(`ATH 25-26 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 25-26 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 25-26'; }
@@ -4975,6 +5023,7 @@ async function syncStats2627(){
     lsSet(LS_PLAYERS, players);
     render();
     toast(`26-27 stats synced — ${matched} players updated, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('NHL 26-27 Stats', d.players);
   } catch(e){ toast('Stats sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📊 NHL 26-27'; }
 }
@@ -5354,6 +5403,7 @@ async function syncStats2425(){
     lsSet(LS_PLAYERS, players);
     render2425();
     toast(`Stats 2024-25 synced! ${matched} players updated, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('NHL 24-25 Stats', d.players);
     if(d.errors.length) console.warn('Stats 24-25 errors:', d.errors);
   } catch(e){ toast('Stats 24-25 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📊 NHL 24-25'; }
@@ -5380,13 +5430,14 @@ async function syncStats2324(){
     lsSet(LS_PLAYERS, players);
     render2324();
     toast(`Stats 2023-24 synced! ${matched} players updated, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('NHL 23-24 Stats', d.players);
     if(d.errors.length) console.warn('Stats 23-24 errors:', d.errors);
   } catch(e){ toast('Stats 23-24 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📊 NHL 23-24'; }
 }
 
 
-function _apply2425Proj(field, data, gpField=null){
+function _apply2425Proj(field, data, gpField=null, label=null){
   for(const p of players){ p[field] = null; if(gpField) p[gpField] = null; }
   let matched=0, unmatched=0;
   for(const p of players){
@@ -5400,6 +5451,7 @@ function _apply2425Proj(field, data, gpField=null){
   }
   lsSet(LS_PLAYERS, players);
   render2425();
+  if(label) _reportUnmatchedSourceEntries(label, data.players);
   return {matched, unmatched};
 }
 
@@ -5412,7 +5464,7 @@ async function syncDFO2425(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/dfo-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_dfo', d);
+    const {matched,unmatched} = _apply2425Proj('proj2425_dfo', d, null, 'DFO 24-25');
     toast(`DFO 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DFO 24-25 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 24-25'; }
@@ -5427,7 +5479,7 @@ async function syncDTZ2425(input){
     const fd = new FormData(); files.forEach(f=>fd.append('files', f));
     const d = await fetch('/dtz-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_dtz', d, 'projGp2425_dtz');
+    const {matched,unmatched} = _apply2425Proj('proj2425_dtz', d, 'projGp2425_dtz', 'DTZ 24-25');
     toast(`DTZ 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('DTZ 24-25 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DTZ 24-25'; }
@@ -5441,7 +5493,7 @@ async function syncAthletic2425(input){
     const fd = new FormData(); fd.append('file', file);
     const d = await fetch('/athletic-projections-2526',{method:'POST',body:fd}).then(r=>r.json());
     if(d.error) throw new Error(d.error);
-    const {matched,unmatched} = _apply2425Proj('proj2425_ath', d, 'projGp2425_ath');
+    const {matched,unmatched} = _apply2425Proj('proj2425_ath', d, 'projGp2425_ath', 'Athletic 24-25');
     toast(`ATH 24-25 synced! ${matched} matched, ${unmatched} unmatched.`);
   } catch(e){ toast('ATH 24-25 import failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 ATH 24-25'; }
