@@ -1660,20 +1660,37 @@ def dtz_projections():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
-@app.route("/dob-projections", methods=["POST"])
-def dob_projections():
-    """Parse Dobbers 2026-27 skater + goalie CSV exports (uploaded together).
+# Per-player position corrections for known errors in Dobbers' own Pos column — not a
+# systemic parsing bug like the LD/RD handling below, just Dobbers having the wrong
+# position for this specific player. Keyed by normalized lowercase full name.
+_DOB_POS_OVERRIDES = {
+    "kurtis macdermid": "F",  # Dobbers lists him as D; he's actually LW. Found 2026-08-05.
+}
+
+# Dobbers appends a single-letter disambiguator straight onto the Player cell for duplicate
+# names (e.g. "Sebastian Aho (d)" alongside a plain "Sebastian Aho") — found 2026-08-05 in the
+# 2023-24 skater export. Left in place, the raw name never matches the live pool's plain
+# "Sebastian Aho" no matter how position matching resolves, since the corruption is in the
+# name string itself, not the Pos column. Position-based disambiguation (findPlayerByNamePos)
+# already handles the real two-Sebastian-Aho case correctly once the name is clean.
+def _strip_dobbers_name_suffix(name):
+    return re.sub(r"\s*\([a-zA-Z]\)\s*$", "", name).strip()
+
+
+def _parse_dobbers_csvs(files):
+    """Parse Dobbers skater + goalie CSV exports (uploaded together), shared across every
+    season's Dobbers endpoint — the export format (junk header rows, column names, LD/RD
+    position codes) is identical whether it's a live preseason guide or a historical one
+    bought for backtesting.
 
     Unlike DTZ's exports, Dobbers' CSVs have several metadata/junk rows before the real
     header row, so the header is located by scanning for a row containing "Player" rather
     than assuming row 0. Skater sheet has direct Goals/Assists columns (same G+A scoring as
     every other source); goalie sheet has Wins/SO (no SV%/W columns like DTZ's format), so
     goalie-file detection keys off "GAA" instead.
-    """
-    files = request.files.getlist("files")
-    if not files:
-        return jsonify({"error": "No files uploaded"}), 400
 
+    Returns (all_players, parsed_kinds, error_message). error_message is None on success.
+    """
     import csv, io
 
     def safe_float(val):
@@ -1690,17 +1707,17 @@ def dob_projections():
     parsed_kinds = []
     for f in files:
         if not f.filename.lower().endswith(".csv"):
-            return jsonify({"error": f"Please upload .csv files ({f.filename} is not a CSV)"}), 400
+            return None, None, f"Please upload .csv files ({f.filename} is not a CSV)"
         try:
             text = f.read().decode("utf-8-sig")
             rows = list(csv.reader(io.StringIO(text)))
         except Exception as e:
-            return jsonify({"error": f"Could not read {f.filename}: {e}"}), 400
+            return None, None, f"Could not read {f.filename}: {e}"
         if not rows:
             continue
         header_idx = find_header_row(rows)
         if header_idx is None:
-            return jsonify({"error": f"Could not find a header row (no 'Player' column) in {f.filename}"}), 400
+            return None, None, f"Could not find a header row (no 'Player' column) in {f.filename}"
         header = [h.strip() for h in rows[header_idx]]
         data_rows = rows[header_idx + 1:]
 
@@ -1710,7 +1727,7 @@ def dob_projections():
             col_gp = header.index("Games") if "Games" in header else None
             for row in data_rows:
                 if not row or len(row) <= col_name or not row[col_name].strip(): continue
-                name = row[col_name].strip()
+                name = _strip_dobbers_name_suffix(row[col_name].strip())
                 pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
                 if not pos_raw: continue
                 # Dobbers uses LD/RD (handedness-specific) for defensemen, not a plain "D" like
@@ -1718,6 +1735,7 @@ def dob_projections():
                 # misclassified as a forward, breaking the position-keyed lookup entirely for
                 # every D in the file (316 of 906 skaters — not a one-off name mismatch).
                 pg = "D" if pos_raw in ("D", "LD", "RD") else "F"
+                pg = _DOB_POS_OVERRIDES.get(normalize_name(name).lower(), pg)
                 hghl_pts = round(safe_float(row[col_g]) + safe_float(row[col_a]))
                 if hghl_pts <= 0: continue
                 gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
@@ -1730,7 +1748,7 @@ def dob_projections():
             col_gp = header.index("Proj. Games") if "Proj. Games" in header else None
             for row in data_rows:
                 if not row or len(row) <= col_name or not row[col_name].strip(): continue
-                name = row[col_name].strip()
+                name = _strip_dobbers_name_suffix(row[col_name].strip())
                 hghl_pts = round(safe_float(row[col_w]) * 2 + safe_float(row[col_so]) * 3)
                 if hghl_pts <= 0: continue
                 gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
@@ -1739,9 +1757,35 @@ def dob_projections():
                 _add_name_aliases(all_players, key, name, "G")
             parsed_kinds.append(f"goalies({f.filename})")
         else:
-            return jsonify({"error": f"Could not identify {f.filename} as a Dobbers skater or goalie export"}), 400
+            return None, None, f"Could not identify {f.filename} as a Dobbers skater or goalie export"
 
+    return all_players, parsed_kinds, None
+
+
+@app.route("/dob-projections", methods=["POST"])
+def dob_projections():
+    """Parse Dobbers 2026-27 skater + goalie CSV exports (uploaded together)."""
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files uploaded"}), 400
+    all_players, parsed_kinds, error = _parse_dobbers_csvs(files)
+    if error:
+        return jsonify({"error": error}), 400
     print(f"  Dobbers 26-27 CSV: {', '.join(parsed_kinds)} → {len(all_players)} players parsed")
+    return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
+
+
+@app.route("/dob-projections-2324", methods=["POST"])
+def dob_projections_2324():
+    """Parse Dobbers 2023-24 skater + goalie CSV exports (uploaded together) — bought
+    after the fact to backtest Dobbers' accuracy against real 23-24 outcomes."""
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files uploaded"}), 400
+    all_players, parsed_kinds, error = _parse_dobbers_csvs(files)
+    if error:
+        return jsonify({"error": error}), 400
+    print(f"  Dobbers 23-24 CSV: {', '.join(parsed_kinds)} → {len(all_players)} players parsed")
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 

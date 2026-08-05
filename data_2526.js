@@ -1059,7 +1059,7 @@ const POSTDRAFT_ROSTER_2526 = {
   'tyson foerster':'Blue Line Bangers',     // R4
   'jordan binnington':'Blue Line Bangers',  // R5
   'rickard rakell':'Blue Line Bangers',     // R6
-  'sebastian aho_F':'Blue Line Bangers',    // R7 — F (CAR), disambiguates from Sebastian Aho D (SEA)
+  'sebastian aho_F':'Blue Line Bangers',    // R7 — F (CAR), disambiguates from Sebastian Aho D (NYI)
   // Bossy Posse (9 picks)
   'matthew schaefer':'Bossy Posse',   // R1
   'adin hill':'Bossy Posse',          // R2

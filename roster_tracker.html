@@ -358,6 +358,11 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">Sync</span>
       <button class="btn btn-nhl" id="stats2324Btn" onclick="syncStats2324()" title="Pull 2023-24 actual NHL stats">📊 NHL 23-24</button>
     </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;line-height:1.3">23-24<br>Projections</span>
+      <input type="file" id="dob2324FileInput" accept=".csv" multiple style="display:none" onchange="syncDOB2324(this)">
+      <button class="btn btn-dob" id="dob2324Btn" onclick="document.getElementById('dob2324FileInput').click()" title="Import Dobbers 2023-24 projections (bought after the fact to backtest) — select both the skater and goalie CSV exports together">📈 DOB 23-24</button>
+    </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Drops</span>
@@ -400,7 +405,7 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th id="thg-2324-team" colspan="8"></th>
-  <th colspan="8" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">23-24 Proj</th>
+  <th colspan="9" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">23-24 Proj</th>
   <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-right:2px solid #e5e7eb">23-24 Actual</th>
   <th id="th-group-last-2324" colspan="1"></th>
 </tr>
@@ -416,6 +421,7 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol2324('proj2324_ath')" style="color:#185FA5;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2023-24 projection">ATH <span id="sort2324-proj2324_ath"></span></th>
   <th onclick="setSortCol2324('proj2324_dtz')" style="color:#185FA5;text-align:right" title="DTZ 2023-24 projection">DTZ <span id="sort2324-proj2324_dtz"></span></th>
   <th onclick="setSortCol2324('proj2324_nhl')" style="color:#185FA5;text-align:right" title="NHL 2023-24 projection">NHL <span id="sort2324-proj2324_nhl"></span></th>
+  <th onclick="setSortCol2324('proj2324_dob')" style="color:#185FA5;text-align:right" title="Dobbers 2023-24 projection — backtested 2026-08-05 (common-pool r=0.747, last of 4 sources; weak on goalies), blended into PPTS at weight 0.9">DOB <span id="sort2324-proj2324_dob"></span></th>
   <th onclick="setSortCol2324('ppts2324blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2324-ppts2324blend"></span></th>
   <th onclick="setSortCol2324('ptsperm2324')" style="color:#185FA5;text-align:right">PPTS/$M <span id="sort2324-ptsperm2324"></span></th>
   <th onclick="setSortCol2324('curvedelta2324')" style="color:#185FA5;text-align:right" title="Projected pts above/below the curve">△ <span id="sort2324-curvedelta2324"></span></th>
@@ -683,7 +689,7 @@ tr:hover td{background:#fafaf8}
   <th id="thg-2627-team" colspan="8"></th>
   <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
   <th colspan="2" style="text-align:center;color:#16a34a;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Actual</th>
-  <th colspan="11" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
+  <th colspan="12" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2"></th>
 </tr>
 <tr>
@@ -941,6 +947,7 @@ tr:hover td{background:#fafaf8}
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.71, MAE=14.4 (common pool)">CBS<input type="number" id="s-wCBS" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('cbs',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.73, MAE=13.9 (common pool)">NHL.com<input type="number" id="s-wNHL" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('nhl',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest: r=0.64, MAE=15.2 (common pool)">ESPN<input type="number" id="s-wESPN" value="0.8" min="0" max="3" step="0.1" onchange="updateProjWeight('espn',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Backtest (2023-24, only season with data so far): r=0.747, MAE=14.03 (common pool) — last of 4 there, though full-pool r=0.828 is stronger; goalies notably weak (r=0.612)">Dobbers<input type="number" id="s-wDOB" value="0.9" min="0" max="3" step="0.1" onchange="updateProjWeight('dob',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Once 26-27 games exist, PPTS = banked actual points (certain — drops/draft apply retroactively) + this-weighted blend of preseason rate vs actual pace for games remaining. Small on purpose — 14 games is a noisy sample.">Early pace wt<input type="number" id="s-earlyPaceWeight" value="0.2" min="0" max="1" step="0.05" onchange="updateSetting('earlyPaceWeight',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
     </div>
   </div>
@@ -1540,6 +1547,11 @@ const FIRST_NAME_ALIASES = {
   'daniil':'danil','danil':'daniil',
   'mathew':'matt', // Dobbers spells Matt Dumba "Mathew" (single T) — found 2026-08-05.
   'nikke':'niklas','niklas':'nikke', // Dobbers spells Niklas Kokko "Nikke" (Finnish nickname) — found 2026-08-05.
+  // normName strips the hyphen in "Benoit-Olivier" with no space substitution, fusing it into
+  // one token "benoitolivier" — Dobbers uses his full name, the live pool uses his nickname "Bo".
+  'bo':'benoitolivier','benoitolivier':'bo',
+  'ronnie':'ronald','ronald':'ronnie',
+  'vasily':'vasiliy','vasiliy':'vasily',
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
@@ -1589,6 +1601,12 @@ const KNOWN_NAME_OVERRIDE_PAIRS = [
   // Dobbers spells him "Eric Pohlcamp" (missing the "k"); the live pool has "Eric Pohlkamp" —
   // a third-party data typo like Sergei Bobrovski/Bobrovsky above. Found 2026-08-05.
   ['eric pohlcamp', 'eric pohlkamp'],
+  // "Cal" is already claimed by FIRST_NAME_ALIASES pointing at "Calvin" (the common meaning) —
+  // wrong for Callan Foote specifically, same collision pattern as Nick/Nicklaus Perbix. Found 2026-08-05.
+  ['cal foote', 'callan foote'],
+  // Dobbers uses his full name; the live pool goes by his middle name only. A single-token
+  // first-name alias can't bridge a 3-token vs 2-token name, so this needs a full-name pair.
+  ['emilio pettersen', 'mathias emilio pettersen'],
 ];
 function _knownNameOverride(n){
   for(const [a,b] of KNOWN_NAME_OVERRIDE_PAIRS){ if(n===a) return b; if(n===b) return a; }
@@ -1829,7 +1847,7 @@ function dedup(){
 // DTZ added 2026-07-19 after the same backtest (r=0.834 full pool / 0.757 common pool,
 // tying Athletic for best correlation with the lowest bias of any source) — same tier as
 // Athletic/DFO. Tunable live in Settings > Projections.
-let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, dtz: 1.2, cbs: 0.9, nhl: 0.9, espn: 0.8 };
+let PROJ_SOURCE_WEIGHTS = { athletic: 1.2, dfo: 1.2, dtz: 1.2, cbs: 0.9, nhl: 0.9, espn: 0.8, dob: 0.9 };
 
 // How much weight the 26-27 in-season actual pace gets vs. the preseason-projection
 // rate, once real 26-27 games exist, when nowcasting the games remaining (see
@@ -2120,6 +2138,7 @@ function load(){
     if(p.proj2324_ath === undefined){ p.proj2324_ath = null; migrated = true; }
     if(p.proj2324_dtz      === undefined){ p.proj2324_dtz      = null; migrated = true; }
     if(p.proj2324_nhl      === undefined){ p.proj2324_nhl      = null; migrated = true; }
+    if(p.proj2324_dob      === undefined){ p.proj2324_dob      = null; migrated = true; }
     if(p.rank2324          === undefined){ p.rank2324          = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
@@ -4271,6 +4290,7 @@ function syncSettings(){
   set('s-wDTZ', PROJ_SOURCE_WEIGHTS.dtz);
   set('s-wCBS', PROJ_SOURCE_WEIGHTS.cbs); set('s-wNHL', PROJ_SOURCE_WEIGHTS.nhl);
   set('s-wESPN', PROJ_SOURCE_WEIGHTS.espn);
+  set('s-wDOB', PROJ_SOURCE_WEIGHTS.dob);
   set('s-earlyPaceWeight', EARLY_PACE_WEIGHT);
   updateYahooDropBtnTooltips();
 }
@@ -5436,6 +5456,42 @@ async function syncStats2324(){
   finally { btn.disabled=false; btn.innerHTML='📊 NHL 23-24'; }
 }
 
+// Loads Dobbers 2023-24 projections into proj2324_dob, blended into ppts2324blend at
+// PROJ_SOURCE_WEIGHTS.dob=0.9. Backtested 2026-08-05 against real 23-24 outcomes: common-pool
+// r=0.747 (last of Athletic/DailyFaceoff/NHL.com/DOB — same tier as NHL.com/CBS, not the top
+// 1.2 tier), goalies notably weaker (r=0.612) than skaters (r=0.848).
+async function syncDOB2324(input){
+  const files = Array.from(input.files); if(!files.length) return; input.value='';
+  if(!proxyOk){ toast('Start the proxy first.'); return; }
+  const btn = document.getElementById('dob2324Btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Parsing…';
+  try {
+    const fd = new FormData(); files.forEach(f=>fd.append('files', f));
+    const d = await fetch('/dob-projections-2324',{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error) throw new Error(d.error);
+    let matched=0, unmatched=0;
+    for(const p of players){
+      const entry = _dictLookupPos(p.name, p.pos, d.players);
+      if(entry){
+        p.proj2324_dob = entry.hghl_pts;
+        matched++;
+      } else {
+        p.proj2324_dob = null;
+        unmatched++;
+      }
+    }
+    lsSet(LS_PLAYERS, players);
+    render2324();
+    toast(`Dobbers 23-24 synced! ${matched} matched, ${unmatched} unmatched.`);
+    _reportUnmatchedSourceEntries('Dobbers 23-24', d.players);
+  } catch(e){
+    toast('Dobbers 23-24 import failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='📈 DOB 23-24';
+  }
+}
+
 
 function _apply2425Proj(field, data, gpField=null, label=null){
   for(const p of players){ p[field] = null; if(gpField) p[gpField] = null; }
@@ -5707,7 +5763,7 @@ function _seedStart2324(){
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:null, start2425:null, end2223:team, start2324:team,
       rank:null, rank2324:null, rank2425:null, birthDate:stub.birthDate||'', capManual:false, ptsManual:false,
-      proj2324_ath:null, proj2324_dtz:null, proj2324_nhl:null,
+      proj2324_ath:null, proj2324_dtz:null, proj2324_nhl:null, proj2324_dob:null,
       proj2425_dfo:null, proj2425_dtz:null, proj2425_ath:null, proj2425_nhl:null,
       proj2526_dfo:null, proj2526_dtz:null, proj2526_espn:null, proj2526_ath:null, proj2526_cbs:null,
       cap2526:null, ptsESPN:null, ptsAth:null, ptsDFO:null, ptsDTZ:null, ptsDOB:null, ptsCBS:null, ptsNHL:null,
@@ -6372,7 +6428,7 @@ function render2324(){
   });
 
   const sortCols2324=['name','pos','age','team','end2223','start2324','cap2324',
-    'proj2324_ath','proj2324_dtz','proj2324_nhl','ppts2324blend','ptsperm2324',
+    'proj2324_ath','proj2324_dtz','proj2324_nhl','proj2324_dob','ppts2324blend','ptsperm2324',
     'curvedelta2324','rank2324','abp2324','gp2324','pts2324','curvedelta2324actual'];
   sortCols2324.forEach(c=>{
     const el=document.getElementById(`sort2324-${c}`);
@@ -6395,11 +6451,11 @@ function render2324(){
     const focusCapUsed2324=viewTeam2324?players.filter(p=>p.start2324===viewTeam2324).reduce((s,p)=>s+getCap2324(p),0):0;
     const slotsLeft2324=need2324?need2324.F+need2324.D+need2324.G:0;
     const maxAffordable2324=viewTeam2324?CAP_LIMIT_2324-focusCapUsed2324-Math.max(0,slotsLeft2324-1)*ELC_MAX_2324:Infinity;
-    const srcNFn2324 = p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0);
+    const srcNFn2324 = p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0);
     const genericRound2324 = draftProspectRounds + 3;
     lastAllScored2324 = players.filter(p=>!p.start2324&&ppts2324blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2324blend(p); const cap0=getCap2324(p)||0;
-      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights, calcAgeForSim: calcAge2324, contractYearAnchor: 2024, nextContractYrs: p.nextContractTerm2324||0, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324, maxSrc: 3 };
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights, calcAgeForSim: calcAge2324, contractYearAnchor: 2024, nextContractYrs: p.nextContractTerm2324||0, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324, maxSrc: 4 };
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2324});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
       const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
@@ -6472,6 +6528,7 @@ function render2324(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2324_ath>0?Math.round(p.proj2324_ath):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_dtz>0?Math.round(p.proj2324_dtz):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_nhl>0?Math.round(p.proj2324_nhl):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324_dob>0?Math.round(p.proj2324_dob):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta2324(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -6532,7 +6589,7 @@ function updateStats2324(){
     const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2324(p),0)};
     const teamCapByPos={[team]:{F:0,D:0,G:0}};
     for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2324(p); }
-    const srcNFn2324=p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0);
+    const srcNFn2324=p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0);
     const fas=players.filter(p=>{
       if(p.start2324) return false;
       if(ppts2324blend(p)<=0) return false;
@@ -6545,7 +6602,7 @@ function updateStats2324(){
     });
     const picks=fas.map(p=>{
       const pg=posGroup(p.pos), pp=ppts2324blend(p), cap0=getCap2324(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2324,mode,round,draftWeights,calcAgeForSim:calcAge2324,contractYearAnchor:2024,nextContractYrs:p.nextContractTerm2324||0,curveFns:curveFns2324,elcMax:ELC_MAX_2324,srcNFn:srcNFn2324,maxSrc:3,team,teamCap,teamCapByPos});
+      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2324,mode,round,draftWeights,calcAgeForSim:calcAge2324,contractYearAnchor:2024,nextContractYrs:p.nextContractTerm2324||0,curveFns:curveFns2324,elcMax:ELC_MAX_2324,srcNFn:srcNFn2324,maxSrc:4,team,teamCap,teamCapByPos});
       return {p,score};
     }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
     if(!picks.length) return '';
@@ -6728,8 +6785,8 @@ function algoDraft2324(){
     contractYearAnchor: 2024,
     nextContractField: 'nextContractTerm2324',
     teamField: 'team2324',
-    srcNFn: p => (p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0),
-    maxSrc: 3,
+    srcNFn: p => (p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0),
+    maxSrc: 4,
     injurySet: INJURY_DROPS_2324,
   });
 }
@@ -8667,7 +8724,7 @@ function projGp2425blend(p){
 function ppts2324blend(p){
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
-    [p.proj2324_ath, W.athletic], [p.proj2324_dtz, W.dfo], [p.proj2324_nhl, W.nhl],
+    [p.proj2324_ath, W.athletic], [p.proj2324_dtz, W.dfo], [p.proj2324_nhl, W.nhl], [p.proj2324_dob, W.dob],
   ]);
   if(blended > 0) return Math.round(blended);
   if(p.pts2324 > 0) return p.pts2324; // fall back to actuals if no projections loaded
@@ -8724,7 +8781,7 @@ function _viewProjPts(p, view){
   }
   if(view==='2324'){
     const blended = _weightedBlend([
-      [p.proj2324_ath, W.athletic], [p.proj2324_dtz, W.dfo], [p.proj2324_nhl, W.nhl],
+      [p.proj2324_ath, W.athletic], [p.proj2324_dtz, W.dfo], [p.proj2324_nhl, W.nhl], [p.proj2324_dob, W.dob],
     ]);
     return blended > 0 ? Math.round(blended) : 0;
   }
