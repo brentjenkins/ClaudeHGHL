@@ -1501,7 +1501,14 @@ function toggleCurrentTeamCol(thId, groupThId, draftOn){
   if(th) th.style.display = draftOn ? 'none' : '';
   if(g)  g.colSpan = draftOn ? 7 : 8;
 }
-const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'').replace(/\s+/g,' ').trim();
+// Must stay in sync with Python normalize_name (yahoo_proxy.py) — including the trailing
+// "(POS)" strip, since some source exports embed a position disambiguator straight into the
+// name (Dobbers' "Sebastian Aho (d)", Athletic's "Daniil Tarasov (G)", DFO's "Elias Pettersson
+// (D)"). Without this the backend's own key-building is clean (it calls normalize_name), but
+// anything on the JS side that re-derives matching from a raw source name — e.g.
+// _reportUnmatchedSourceEntries, which checks entry.name directly — still fails on it, a false
+// unmatched flag for a player the real sync actually already matched correctly. Found 2026-08-05.
+const normName = s => s.replace(/\s*\([A-Za-z]{1,3}\)\s*$/, '').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'').replace(/\s+/g,' ').trim();
 const puckpediaSlug = name => name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/['.]/g,'').replace(/\s+/g,'-').toLowerCase();
 
 // Bidirectional first-name alias map (formal↔nick). Mirrors _FORMAL_TO_NICK in yahoo_proxy.py.
@@ -1518,7 +1525,7 @@ const FIRST_NAME_ALIASES = {
   'nick':'nicholas','pat':'patrick','phil':'philip','rick':'richard',
   'rob':'robert','sam':'samuel','tom':'thomas','tim':'timothy',
   'will':'william','zach':'zachary','freddy':'frederick',
-  'evgeni':'evgenii','evgenii':'evgeni',
+  'evgeni':'evgenii','evgenii':'evgeni','evgeny':'evgenii',
   'jakob':'jacob',
   'artyom':'artem','artem':'artyom',
   'ben':'benjamin','benjamin':'ben',
@@ -1552,6 +1559,7 @@ const FIRST_NAME_ALIASES = {
   'bo':'benoitolivier','benoitolivier':'bo',
   'ronnie':'ronald','ronald':'ronnie',
   'vasily':'vasiliy','vasiliy':'vasily',
+  'jamie':'jamieson','jamieson':'jamie', // NHL API's official name is "Jamieson Oleksiak"; Athletic's export uses "Jamie" — found 2026-08-05 via a 23-24 ATH backfill audit.
 };
 // Returns the alias spelling of a normalized full name, or null if no alias exists.
 function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; const a=FIRST_NAME_ALIASES[norm.slice(0,sp)]; return a?a+norm.slice(sp):null; }
@@ -1571,6 +1579,9 @@ function _nameAlias(norm){ const sp=norm.indexOf(' '); if(sp<0) return null; con
 // see 2026-07-28 audit that moved 12 such pairs out of this list.
 const KNOWN_NAME_OVERRIDE_PAIRS = [
   ['jj moser', 'janis jerome moser'],
+  // Athletic's 25-26 export uses just his first name, no middle name — a different token
+  // count than the "janis jerome moser" pair above, so it needs its own explicit pair too.
+  ['jj moser', 'janis moser'],
   // Live pool stores his name with a space ("Charles Alexis Legault"); PuckPedia's
   // p_fn is hyphenated ("Charles-Alexis"), and normalize_name() strips hyphens with
   // no space substitution, fusing it into "charlesalexis" — never matches the
@@ -2874,16 +2885,32 @@ async function syncDFO2627(){
     const d = await fetch('/dfo-projections').then(r=>r.json());
     if(d.error) throw new Error(d.error);
     let matched=0, unmatched=0;
+    const diffs2627Dfo = [];
     for(const p of players){
       const entry = _dictLookupPos(p.name, p.pos, d.players);
-      if(entry){ p.ptsDFO = entry.hghl_pts; matched++; }
-      else { p.ptsDFO = null; unmatched++; }
+      if(entry){
+        p.ptsDFO = entry.hghl_pts;
+        matched++;
+        if(p.pts2526>0 && p.gp2526>=TREND_MIN_GP) diffs2627Dfo.push(Math.abs(entry.hghl_pts - p.pts2526));
+      } else { p.ptsDFO = null; unmatched++; }
     }
     applyBlendedPts();
     lsSet(LS_PLAYERS, players);
     render();
     toast(`DFO 26-27 synced! ${matched} matched, ${unmatched} unmatched.`);
     _reportUnmatchedSourceEntries('DFO 26-27', d.players);
+    // Sanity check: 5v5hockey's projections page has no season marker to scrape, so if it
+    // hasn't published 26-27 numbers yet, /dfo-projections can silently keep returning last
+    // season's data mislabeled as "26-27" — caught 2026-08-05 the hard way. A tight median gap
+    // to real 25-26 points across a large matched sample is that pattern's signature.
+    if(diffs2627Dfo.length >= 30){
+      diffs2627Dfo.sort((a,b)=>a-b);
+      const medianDiff = diffs2627Dfo[Math.floor(diffs2627Dfo.length/2)];
+      if(medianDiff <= 3){
+        toast(`⚠️ DFO 26-27 looks like stale 25-26 data (median diff ${medianDiff.toFixed(1)} pts, n=${diffs2627Dfo.length}) — check before trusting it`);
+        console.warn(`DFO 26-27 sanity check FAILED: median |DFO 26-27 - actual 25-26 pts| = ${medianDiff.toFixed(1)} across ${diffs2627Dfo.length} matched players with real 25-26 seasons (GP>=${TREND_MIN_GP}). This strongly suggests 5v5hockey hasn't published 26-27 projections yet and the scrape returned stale 25-26 data instead.`);
+      }
+    }
   } catch(e){ toast('DFO 26-27 sync failed: '+e.message); }
   finally { btn.disabled=false; btn.innerHTML='📈 DFO 26-27'; }
 }

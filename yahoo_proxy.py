@@ -764,10 +764,19 @@ _POS_MAP = {"C": "C", "L": "LW", "R": "RW", "D": "D", "G": "G"}
 
 
 def normalize_name(name: str) -> str:
-    """Fold accented chars to ASCII, strip hyphens/periods/apostrophes, and collapse
-    whitespace runs for key matching. Must stay in sync with JS normName:
-    s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'').replace(/\\s+/g,' ').trim()"""
-    nfd = unicodedata.normalize("NFD", name)
+    """Fold accented chars to ASCII, strip hyphens/periods/apostrophes, drop a trailing
+    parenthetical position disambiguator, and collapse whitespace runs for key matching.
+    Must stay in sync with JS normName:
+    s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-.']/g,'').replace(/\\s+/g,' ').trim()
+
+    Several source exports embed a position code straight into the Player/NAME cell for
+    duplicate-named players instead of relying only on their separate Pos column — e.g.
+    Dobbers' "Sebastian Aho (d)", Athletic's "Daniil Tarasov (G)". Every importer already
+    builds its match key by calling this function, so stripping it once here fixes every
+    current and future importer's key-building generically, with no per-source special
+    case needed (found 2026-08-05 via Dobbers' Aho, then Athletic's Tarasov)."""
+    no_pos_suffix = re.sub(r"\s*\([A-Za-z]{1,3}\)\s*$", "", name)
+    nfd = unicodedata.normalize("NFD", no_pos_suffix)
     ascii_only = nfd.encode("ascii", "ignore").decode("ascii")
     stripped = ascii_only.replace("-", "").replace(".", "").replace("'", "")
     return " ".join(stripped.split())
@@ -1510,6 +1519,7 @@ def dfo_projections_2526():
         if not pos_raw:
             continue
         pg = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+        pg = _apply_pos_override(name, pg)
         hghl_pts = round(safe_float(row[col_pts]) if len(row) > col_pts else 0)
         if hghl_pts <= 0:
             continue
@@ -1660,21 +1670,18 @@ def dtz_projections():
     return jsonify({"ok": True, "players": all_players, "count": len(all_players)})
 
 
-# Per-player position corrections for known errors in Dobbers' own Pos column — not a
-# systemic parsing bug like the LD/RD handling below, just Dobbers having the wrong
-# position for this specific player. Keyed by normalized lowercase full name.
-_DOB_POS_OVERRIDES = {
+# Per-player position corrections for known errors in a source's own Pos column — not a
+# systemic parsing bug like Dobbers' LD/RD handling below, just a specific source having the
+# wrong position for a specific player. Shared across every importer since this bug class
+# isn't source-specific (found via Dobbers/Kurtis MacDermid, then Athletic/Zachary Bolduc).
+# Keyed by normalized lowercase full name.
+_SOURCE_POS_OVERRIDES = {
     "kurtis macdermid": "F",  # Dobbers lists him as D; he's actually LW. Found 2026-08-05.
+    "zachary bolduc": "F",    # Athletic 24-25 lists him as D; he's actually a forward. Found 2026-08-05.
 }
 
-# Dobbers appends a single-letter disambiguator straight onto the Player cell for duplicate
-# names (e.g. "Sebastian Aho (d)" alongside a plain "Sebastian Aho") — found 2026-08-05 in the
-# 2023-24 skater export. Left in place, the raw name never matches the live pool's plain
-# "Sebastian Aho" no matter how position matching resolves, since the corruption is in the
-# name string itself, not the Pos column. Position-based disambiguation (findPlayerByNamePos)
-# already handles the real two-Sebastian-Aho case correctly once the name is clean.
-def _strip_dobbers_name_suffix(name):
-    return re.sub(r"\s*\([a-zA-Z]\)\s*$", "", name).strip()
+def _apply_pos_override(name, pg):
+    return _SOURCE_POS_OVERRIDES.get(normalize_name(name).lower(), pg)
 
 
 def _parse_dobbers_csvs(files):
@@ -1727,7 +1734,7 @@ def _parse_dobbers_csvs(files):
             col_gp = header.index("Games") if "Games" in header else None
             for row in data_rows:
                 if not row or len(row) <= col_name or not row[col_name].strip(): continue
-                name = _strip_dobbers_name_suffix(row[col_name].strip())
+                name = row[col_name].strip()
                 pos_raw = row[col_pos].strip().upper() if len(row) > col_pos else ""
                 if not pos_raw: continue
                 # Dobbers uses LD/RD (handedness-specific) for defensemen, not a plain "D" like
@@ -1735,7 +1742,7 @@ def _parse_dobbers_csvs(files):
                 # misclassified as a forward, breaking the position-keyed lookup entirely for
                 # every D in the file (316 of 906 skaters — not a one-off name mismatch).
                 pg = "D" if pos_raw in ("D", "LD", "RD") else "F"
-                pg = _DOB_POS_OVERRIDES.get(normalize_name(name).lower(), pg)
+                pg = _apply_pos_override(name, pg)
                 hghl_pts = round(safe_float(row[col_g]) + safe_float(row[col_a]))
                 if hghl_pts <= 0: continue
                 gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
@@ -1748,7 +1755,7 @@ def _parse_dobbers_csvs(files):
             col_gp = header.index("Proj. Games") if "Proj. Games" in header else None
             for row in data_rows:
                 if not row or len(row) <= col_name or not row[col_name].strip(): continue
-                name = _strip_dobbers_name_suffix(row[col_name].strip())
+                name = row[col_name].strip()
                 hghl_pts = round(safe_float(row[col_w]) * 2 + safe_float(row[col_so]) * 3)
                 if hghl_pts <= 0: continue
                 gp = round(safe_float(row[col_gp])) if col_gp is not None and len(row) > col_gp else 0
@@ -1892,6 +1899,7 @@ def athletic_projections_2526():
         pos_raw = str(row[c_pos]).strip().upper() if c_pos is not None and row[c_pos] else ""
         if not pos_raw: continue
         pg = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+        pg = _apply_pos_override(name, pg)
         if pg == "G":
             gp = safe(row[c_gp_g] if c_gp_g is not None else None)
             hghl_pts = round(safe(row[c_w]) * 2 + safe(row[c_so]) * 3)
@@ -1990,6 +1998,7 @@ def athletic_projections():
         if not pos_raw:
             continue
         pg = "G" if pos_raw == "G" else "D" if pos_raw == "D" else "F"
+        pg = _apply_pos_override(name, pg)
 
         if pg == "G":
             gp = safe(row[c_gp_g] if c_gp_g is not None else None)

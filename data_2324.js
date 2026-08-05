@@ -1190,8 +1190,7 @@ const PROJ2324 = {
   'kris letang_D': { ath: 47, nhl: 62, dtz: 61 },
   'kris russell_D': { ath: 0, nhl: 0, dtz: 16 },
   'kristian reichel_F': { ath: 0, nhl: 0 },
-  'kurtis macdermid_D': { ath: 0, nhl: 0, dtz: 9 },
-  'kurtis macdermid_F': { ath: 0, nhl: 0 },
+  'kurtis macdermid_F': { ath: 0, nhl: 0, dtz: 9 }, // he's F not D — DailyFaceoff's 23-24 export had him under the wrong position key, same bug class as Dobbers' MacDermid entry. Found 2026-08-05.
   'kyle burroughs_D': { ath: 13, nhl: 0, dtz: 10 },
   'kyle capobianco_D': { ath: 0, nhl: 0, dtz: 8 },
   'kyle clifford_F': { ath: 0, nhl: 0, dtz: 12 },
