@@ -3407,6 +3407,7 @@ const POSTDROP_ROSTER_2627 = {
   'john carlson_D': 'Muller Time!',
   'carter yakemchuk_D': 'Muller Time!',
   'karel vejmelka_G': 'Muller Time!',
+  'oliver kapanen_F': 'Muller Time!',
   'tim stutzle_F': 'Pernicious Puckers',
   'nick suzuki_F': 'Pernicious Puckers',
   'alex debrincat_F': 'Pernicious Puckers',
@@ -5183,7 +5184,8 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
       const pp = ppts(p).toFixed(1);
       const cap = getCap(p).toFixed(2);
       const delta = labelDelta(p); const defStr = (delta===null?'?':(delta>=0?'+':'')+delta.toFixed(1));
-      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, ${defStr}△)`;
+      const deltaColor = delta===null ? '#9ca3af' : curveSurplusColor(delta);
+      const label = `${p.name} (${posGroup(p.pos)}, ${pp}pts, $${cap}M, <span style="color:${deltaColor}">${defStr}△</span>)`;
 
       if(!simKept && !actuallyKept){
         if(elcMandatorySet.has(key)) elcMandatory.push(label);
