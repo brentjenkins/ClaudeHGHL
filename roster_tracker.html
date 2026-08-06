@@ -4012,35 +4012,61 @@ function undoLastPick2324(){
   renderBigBoard();
 }
 
+// Full-league need/cap/spotsLeft snapshot for every 26-27 team from current live state —
+// shared by simulateBestPick and the Team Summary "top 5" cards, both of which need every
+// OTHER team's data (not just the one being asked about) to correctly judge splash-pick/
+// position deferral eligibility (see _getTeamDraftBoard/_isSplashCandidate).
+function _buildLeagueDraftState2627(){
+  const teams = [...new Set(players.filter(p=>p.start2627).map(p=>p.start2627))].sort();
+  const need = {}, teamCap = {}, teamCapByPos = {}, teamSpotsLeft = {};
+  for(const t of teams){
+    const tp = players.filter(p=>p.start2627===t);
+    need[t] = {
+      F: Math.max(0, DRAFT_ROSTER_MAX.F - tp.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
+    };
+    teamCap[t] = tp.reduce((s,p)=>s+(p.cap||0),0);
+    teamCapByPos[t] = {F:0,D:0,G:0};
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPos[t]) teamCapByPos[t][g]+=(p.cap||0); }
+    teamSpotsLeft[t] = Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
+  }
+  return {teams, need, teamCap, teamCapByPos, teamSpotsLeft};
+}
+
 function simulateBestPick(){
   const team = buildDraftSeq2627()[draftState2627.picks.length];
   if(!team) return;
 
-  // Picks with the exact same _pickBestFA/_scoreDraftCandidate engine _runAlgoDraft uses —
-  // this button used to run its own separate, unconsolidated 2-term formula (with a hardcoded
-  // 6x ABP inflation for goalies that had no basis in the data). Now it's just "what would Algo
-  // Draft pick right here, right now" for the team on the clock.
-  const roster = players.filter(p => p.start2627 === team);
-  const need = {
-    F: Math.max(0, DRAFT_ROSTER_MAX.F - roster.filter(p=>posGroup(p.pos)==='F').length),
-    D: Math.max(0, DRAFT_ROSTER_MAX.D - roster.filter(p=>posGroup(p.pos)==='D').length),
-    G: Math.max(0, DRAFT_ROSTER_MAX.G - roster.filter(p=>posGroup(p.pos)==='G').length),
-  };
-  const teamCapByPos = {F:0,D:0,G:0};
-  for(const p of roster) teamCapByPos[posGroup(p.pos)] += (p.cap||0);
-  const teamCapTot = teamCapByPos.F + teamCapByPos.D + teamCapByPos.G;
+  // Picks with the exact same _rankFACandidates/_scoreDraftCandidate engine _runAlgoDraft
+  // uses, via _getTeamDraftBoard — this button used to run its own separate, unconsolidated
+  // 2-term formula (with a hardcoded 6x ABP inflation for goalies that had no basis in the
+  // data), then later called _pickBestFA directly but with only THIS team's need/cap data (no
+  // other team's), which meant it couldn't ever apply splash-pick deferral even after that
+  // feature existed — clicking "Best Pick" would just take a uniquely-affordable splash target
+  // immediately instead of saving it for the final pick like the real Algo Draft simulation
+  // does. Found live 2026-08-06.
   const round = (draftState2627.picks||[]).filter(pk=>pk.team===team).length + 1;
   const mode = round <= draftProspectRounds ? 'prospect' : 'bestAvail';
+  const { teams, need, teamCap, teamCapByPos, teamSpotsLeft } = _buildLeagueDraftState2627();
 
-  const pick = _pickBestFA(team, round, mode, {
+  const { top, locked } = _getTeamDraftBoard(team, round, mode, {
     players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
     ppts: p => p.pts || 0, getCap: p => p.cap || 0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
-    allTeams: DRAFT_TEAMS_2627, need: {[team]: need}, teamCap: {[team]: teamCapTot}, teamCapByPos: {[team]: teamCapByPos},
-    injurySet: INJURY_DROPS_2627,
-  });
+    allTeams: teams, need, teamCap, teamCapByPos, teamSpotsLeft, injurySet: INJURY_DROPS_2627,
+  }, 999); // no real limit — need the full ranked list so skipping a deferred splash always finds the next real candidate
+
+  const isLastPickForTeam = teamSpotsLeft[team] === 1;
+  // Only the "splash" reason ever shows up inside top[0] (position-locked candidates are
+  // already excluded from top entirely, matching what _runAlgoDraft actually does this turn).
+  const splashId = locked.find(x => x.reason === 'splash')?.p?.id || null;
+  let pick = top[0] || null;
+  if(pick && splashId === pick.p.id && !isLastPickForTeam){
+    pick = top.find(x => x.p.id !== splashId) || null;
+  }
 
   if(!pick){
     toast('No available players at needed positions.');
@@ -7347,14 +7373,17 @@ function _solveTeamKnapsack(neededCounts, candidatesByPos, budget){
   return result;
 }
 
-// Selects the single best free-agent pick for `team` at `round`/`mode` — round-aware cap
-// reserve, live curve state, and the shared SCORE formula. Factored out of
-// _runAlgoDraft's per-pick loop so the on-the-clock "Best Pick" button (simulateBestPick) calls
-// the exact same selection logic instead of a separately hand-maintained formula — the button
-// previously had its own 2-term score plus a hardcoded 6x ABP inflation for goalies that had no
-// basis in the data and directly contradicted the goalie-volatility backtest (goalie proj R^2
-// far below F/D; no goalie is a reliable "sure thing" — see project_goalie_volatility memory).
-function _pickBestFA(team, round, mode, ctx){
+// Ranks every eligible free agent for `team` at `round`/`mode`, full-pool, best score first —
+// round-aware cap reserve, live curve state, strict-dominance wtCapUse suppression, and the
+// shared SCORE formula. The single source of truth for "who could this team draft right now
+// and how good is each option" — _pickBestFA (below) is a one-line wrapper taking just [0];
+// _getTeamDraftBoard (used by every season's live "top 5" team-card display) takes the top N
+// plus the splash-deferral check, so the card the user watches during a live/manual draft uses
+// the IDENTICAL filtering/scoring/deferral logic _runAlgoDraft's actual simulation does,
+// instead of a hand-rolled parallel copy that can silently drift (found live 2026-08-06 — the
+// old top5Html didn't know about excludePositions/excludePlayerIds at all, so it could show a
+// player as the #1 suggested pick that the real engine was deliberately passing on that turn).
+function _rankFACandidates(team, round, mode, ctx){
   const { players, getAssignedTeam, startField, ppts, getCap, capLimit, draftReserve,
           draftWeights, calcAgeForSim, contractYearAnchor, elcMax, srcNFn, maxSrc,
           allTeams, need, teamCap, teamCapByPos, injurySet, nextContractField, teamField } = ctx;
@@ -7372,6 +7401,11 @@ function _pickBestFA(team, round, mode, ctx){
   // reserving real budget for the team's other genuinely-contested remaining needs (unlike
   // excludePositions, which means "already reserved elsewhere, don't reserve again").
   const onlyPosition = ctx.onlyPosition || null;
+  // Specific player(s) to skip — used by _runAlgoDraft's splash-pick deferral (see
+  // deferredSplash there) to hide a locked-in, uniquely-affordable target from this pick's
+  // normal candidate pool without excluding its whole position (unlike excludePositions,
+  // other players at that same position remain eligible this turn).
+  const excludePlayerIds = ctx.excludePlayerIds || null;
 
   const spotsLeft = (need[team]?.F||0) + (need[team]?.D||0) + (need[team]?.G||0);
   // Deferred positions already have their exact cost held by reservedCap below — counting
@@ -7408,6 +7442,7 @@ function _pickBestFA(team, round, mode, ctx){
     const pg = posGroup(p.pos);
     if(excludePositions && excludePositions.has(pg)) return false;
     if(onlyPosition && pg !== onlyPosition) return false;
+    if(excludePlayerIds && excludePlayerIds.has(p.id)) return false;
     if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
     if(injSet.has(normName(p.name).toLowerCase())) return false; // known long-term-injured at draft time — no real GM would pick them
     return (need[team]?.[pg]||0) > 0;
@@ -7459,7 +7494,85 @@ function _pickBestFA(team, round, mode, ctx){
       team, teamCap, teamCapByPos, teamField,
     });
     return {p, score, pp};
-  }).sort((a,b) => b.score - a.score)[0];
+  }).sort((a,b) => b.score - a.score);
+}
+
+// Selects the single best free-agent pick for `team` at `round`/`mode`. Factored out of
+// _runAlgoDraft's per-pick loop so the on-the-clock "Best Pick" button (simulateBestPick) calls
+// the exact same selection logic instead of a separately hand-maintained formula — the button
+// previously had its own 2-term score plus a hardcoded 6x ABP inflation for goalies that had no
+// basis in the data and directly contradicted the goalie-volatility backtest (goalie proj R^2
+// far below F/D; no goalie is a reliable "sure thing" — see project_goalie_volatility memory).
+function _pickBestFA(team, round, mode, ctx){
+  return _rankFACandidates(team, round, mode, ctx)[0] || null;
+}
+
+// Is `candidateP` affordable to literally no team other than `team`, given each other team's
+// own remaining position need and raw remaining cap room (capLimit - teamCap, ignoring their
+// own future-pick reserve — the most generous possible affordability for a competitor, so this
+// only ever returns true when uniqueness is unambiguous)? Shared by _runAlgoDraft's actual
+// splash-deferral decision and _getTeamDraftBoard's live display check — see deferredSplash
+// comment in _runAlgoDraft for the monotonicity proof that this never needs re-verifying once
+// true.
+function _isSplashCandidate(candidateP, team, { allTeams, need, teamCap, teamSpotsLeft, capLimit, getCap }){
+  const cPg = posGroup(candidateP.pos);
+  const cCap = getCap(candidateP) || 0;
+  return !allTeams.some(t2 => {
+    if(t2 === team) return false;
+    if((teamSpotsLeft?.[t2]||0) <= 0) return false;
+    if((need[t2]?.[cPg]||0) <= 0) return false;
+    return (capLimit - (teamCap[t2]||0)) >= cCap;
+  });
+}
+
+// Given a team's current live state, returns the same thing _runAlgoDraft would compute this
+// turn: which position(s) are currently safe to defer (nobody else league-wide still needs
+// them), the best candidate at each of those positions (shown as locked rather than hidden —
+// found live 2026-08-06: excluding them from the ranked list entirely meant a team that became
+// the sole remaining goalie needer just saw 5 forwards, with no indication a goalie was already
+// secured), and whether the single best CONTESTED candidate is additionally a "splash" pick
+// affordable to no other team regardless of position (see deferredSplash in _runAlgoDraft for
+// the full rationale and the monotonicity proof that neither check ever needs re-verifying
+// once true). Deliberately stateless/recomputed fresh every call (not fed from _runAlgoDraft's
+// own mid-simulation deferredTarget/deferredSplash, which only exist as local variables for the
+// duration of one _runAlgoDraft() call) — safe because of that same monotonicity, so a fresh
+// recompute from current actual state always agrees with what a real simulation run would have
+// decided at this exact point.
+function _getTeamDraftBoard(team, round, mode, ctx, n = 5){
+  const { need, allTeams, teamCap, capLimit, getCap } = ctx;
+  const teamSpotsLeft = ctx.teamSpotsLeft || {};
+  const neededPgs = ['F','D','G'].filter(pg => (need[team]?.[pg]||0) > 0);
+
+  // Which needed positions is this team currently the sole league-wide needer of? (Never
+  // excludes the only position this pick could otherwise fill.)
+  const excludePositions = new Set();
+  if(neededPgs.length > 1){
+    const leagueNeedNow = {F:0,D:0,G:0};
+    for(const t of allTeams) for(const pg2 of ['F','D','G']) leagueNeedNow[pg2] += (need[t]?.[pg2]||0);
+    for(const pg of neededPgs){
+      if(neededPgs.length - excludePositions.size <= 1) break;
+      if((need[team][pg]||0) === leagueNeedNow[pg]) excludePositions.add(pg);
+    }
+  }
+
+  // The best candidate at each deferred position — locked in, shown rather than hidden.
+  const locked = [];
+  for(const pg of excludePositions){
+    const preview = _pickBestFA(team, round, mode, { ...ctx, onlyPosition: pg });
+    if(preview) locked.push({ p: preview.p, reason: 'position' });
+  }
+
+  const ranked = _rankFACandidates(team, round, mode, { ...ctx, excludePositions });
+  const top = ranked.slice(0, n);
+
+  // Splash check: is the single best CONTESTED candidate (the one this team would otherwise
+  // take right now) additionally affordable to literally no other team, given their own
+  // remaining need + raw cap room? (Independent of the position-deferral check above — this
+  // can trigger even for a position nobody else is short on, purely from budget scarcity.)
+  if(top.length && _isSplashCandidate(top[0].p, team, { allTeams, need, teamCap, teamSpotsLeft, capLimit, getCap })){
+    locked.push({ p: top[0].p, reason: 'splash' });
+  }
+  return { top, locked, excludePositions };
 }
 
 function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights: draftWeightsBase, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn: srcNFnBase, maxSrc: maxSrcBase, contractYearAnchor, injurySet, nextContractField, simulateSrcNFn = null, simulateMaxSrc = null, teamField = 'team' }){
@@ -7511,6 +7624,25 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
   // drafted directly, not re-scored (the decision is locked in, not merely postponed).
   const deferredTarget = {};
   for(const t of allTeams) deferredTarget[t] = {F:null, D:null, G:null};
+
+  // Splash-pick deferral: a further generalization of the position-based deferral above, from
+  // "sole league-wide needer of a position" to "sole team that can actually afford a specific
+  // player." Each turn (until one is locked in), checks whether the single best-available
+  // candidate right now is unaffordable to every OTHER team — no other team both needs that
+  // position AND has enough raw remaining cap room (capLimit - teamCap, ignoring their own
+  // future-pick reserve, so this only ever declares uniqueness when it's true even in the most
+  // generous case for competitors) to take it. If so, there is zero risk in waiting: lock the
+  // decision in, spend the picks in between on value that's actually contested, and take the
+  // guaranteed splash pick only when forced (this team's last pick). One target per team at a
+  // time, mirroring deferredTarget's per-position slot. Real GMs do this — Damage Inc. took
+  // William Nylander with their literal final pick of the 25-26 draft rather than "wasting" an
+  // earlier pick locking him in when nobody else could ever have afforded him anyway. Provably
+  // safe to never re-check once locked in: every other team's remaining cap room and remaining
+  // need can only shrink over the rest of the draft (spending only adds up, roster spots only
+  // fill in), so the set of teams that could possibly compete for this player can only shrink
+  // too — "nobody else can afford it" can never become false once true. Found live 2026-08-06.
+  const deferredSplash = {};
+  for(const t of allTeams) deferredSplash[t] = null;
 
   // Fully-uncontested batch drafting: once EVERY position a team still needs has zero
   // competing demand from any other team league-wide (not necessarily "every other team is
@@ -7636,6 +7768,19 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
       // technically left, so the team keeps drafting instead of stalling out.
       const allNeededAreDeferred = neededPgs.length > 0 && excludePositions.size === neededPgs.length;
 
+      // Splash-pick search (see deferredSplash comment above): only look for a new target if
+      // none is locked in yet, and this isn't a turn about to be forced into a position-
+      // deferred pick anyway (nothing to protect budget for in that case — spending happens
+      // this turn regardless). Checks whatever _pickBestFA would actually pick THIS turn
+      // (respecting any already-excluded deferred positions) against every other team's raw
+      // remaining cap room and real position need.
+      if(!deferredSplash[team] && !isLastPickForTeam && !allNeededAreDeferred){
+        const splashCandidate = _pickBestFA(team, round, mode, { ...baseCtx, excludePositions });
+        if(splashCandidate && _isSplashCandidate(splashCandidate.p, team, { allTeams, need, teamCap, teamSpotsLeft, capLimit, getCap })){
+          deferredSplash[team] = splashCandidate;
+        }
+      }
+
       if(!isLastPickForTeam && !allNeededAreDeferred){
         let leagueNeedNow = null; // computed lazily, only if a defer candidate shows up
         for(const pg of neededPgs){
@@ -7682,7 +7827,11 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
         }
       }
 
-      if(isLastPickForTeam || allNeededAreDeferred){
+      if(isLastPickForTeam && deferredSplash[team]){
+        // Forced: the true last pick, with a splash target still outstanding — this is the
+        // whole point of deferring it, take it now with zero risk left to manage.
+        pick = deferredSplash[team];
+      } else if(isLastPickForTeam || allNeededAreDeferred){
         // Forced: either this really is the team's last pick, or every remaining need is
         // already deferred and there's nothing else this pick could go toward either way.
         // Execute the ORIGINALLY decided player directly rather than re-scoring — that's the
@@ -7692,11 +7841,13 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
         if(forcedPg) pick = deferredTarget[team][forcedPg];
       }
       if(!pick){
-        const reservedCap = ['F','D','G'].reduce((s,pg) => s + (excludePositions.has(pg) && deferredTarget[team][pg]?.p ? getCap(deferredTarget[team][pg].p) : 0), 0);
+        const reservedCap = ['F','D','G'].reduce((s,pg) => s + (excludePositions.has(pg) && deferredTarget[team][pg]?.p ? getCap(deferredTarget[team][pg].p) : 0), 0)
+          + (deferredSplash[team]?.p ? getCap(deferredSplash[team].p) : 0);
+        const excludePlayerIds = deferredSplash[team]?.p ? new Set([deferredSplash[team].p.id]) : null;
         // Remaining picks for this team after this one — round-aware cap reserve, live
         // curve state, and the SCORE formula all live in _pickBestFA now (shared with
         // the on-the-clock "Best Pick" button via simulateBestPick).
-        pick = _pickBestFA(team, round, mode, { ...baseCtx, excludePositions, reservedCap });
+        pick = _pickBestFA(team, round, mode, { ...baseCtx, excludePositions, reservedCap, excludePlayerIds });
       }
     }
 
@@ -7707,6 +7858,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
 
     const pg = posGroup(pick.p.pos);
     if(deferredTarget[team][pg]?.p?.id === pick.p.id) deferredTarget[team][pg] = null; // consumed
+    if(deferredSplash[team]?.p?.id === pick.p.id) deferredSplash[team] = null; // consumed
 
     assigned[pick.p.id] = team;
     pick.p[startField] = team; // keep the real field in sync so the next pick's ABP/curve recompute sees this one
@@ -9244,43 +9396,45 @@ function updateStats(){
     G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
   };
   const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
-  // Recomputes eligibility + score fresh from this team's REAL current state, same shared
-  // primitives as _runAlgoDraft — see render2425's top5Html2425 for the full rationale.
+  // Precompute every team's need/cap state once — _getTeamDraftBoard's splash check needs
+  // every OTHER team's data too, not just the one being displayed, to correctly judge "is
+  // nobody else able to compete for this."
+  const needAll2627={}, teamCapAll2627={}, teamCapByPosAll2627={}, teamSpotsLeftAll2627={};
+  for(const t of teams){
+    const tp=players.filter(p=>p.start2627===t);
+    needAll2627[t]={
+      F: Math.max(0, DRAFT_ROSTER_MAX.F - tp.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
+    };
+    teamCapAll2627[t]=tp.reduce((s,p)=>s+(p.cap||0),0);
+    teamCapByPosAll2627[t]={F:0,D:0,G:0};
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2627[t]) teamCapByPosAll2627[t][g]+=(p.cap||0); }
+    teamSpotsLeftAll2627[t]=Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
+  }
+  // Uses _getTeamDraftBoard — the SAME ranking/filtering/splash-deferral logic _runAlgoDraft's
+  // actual simulation uses (see that function's comment) — instead of a hand-rolled parallel
+  // copy that could silently drift from what the real engine would do.
   const top5Html=(team,fRem,dRem,gRem,rem)=>{
     if(!draftMode) return '';
-    const need={F:fRem,D:dRem,G:gRem};
     if(!fRem&&!dRem&&!gRem) return '';
-    const spotsLeft=fRem+dRem+gRem;
     const round=(draftState2627.picks||[]).filter(pk=>pk.team===team).length+1;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
-    let futureReserve2627=0;
-    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2627+=_expectedRoundCost(fr,CAP_LIMIT,DRAFT_RESERVE_2627);
-    futureReserve2627=Math.min(futureReserve2627,Math.max(0,rem-ELC_MAX_2627));
-    const maxPickCap=rem-futureReserve2627;
-    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap||0);
-    const teamRoster=players.filter(p=>p.start2627===team);
-    const teamCap={[team]:teamRoster.reduce((s,p)=>s+(p.cap||0),0)};
-    const teamCapByPos={[team]:{F:0,D:0,G:0}};
-    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=(p.cap||0); }
-    const fas=players.filter(p=>{
-      if(p.start2627) return false;
-      if((p.pts||0)<=0) return false;
-      if((p.cap||0)<=0) return false;
-      if((p.cap||0)>maxPickCap) return false;
-      const pg=posGroup(p.pos);
-      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
-      if(INJURY_DROPS_2627.has(normName(p.name).toLowerCase())) return false;
-      return (need[pg]||0)>0;
-    });
-    const picks=fas.map(p=>{
-      const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure,mode,round,draftWeights:{...draftWeights,minSrcCoverage:MIN_SRC_COVERAGE_2627},calcAgeForSim:calcAge,contractYearAnchor:NHL_SEASON_YEAR,nextContractYrs:p.nextContractTerm||0,curveFns:curveFns2627,elcMax:ELC_MAX_2627,srcNFn:srcNFn2627,maxSrc:MAX_SRC_2627,team,teamCap,teamCapByPos});
-      return {p,score};
-    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
-    if(!picks.length) return '';
+    const { top, locked } = _getTeamDraftBoard(team, round, mode, {
+      players, getAssignedTeam: p=>p.start2627||null, startField:'start2627',
+      ppts: p=>p.pts||0, getCap: p=>p.cap||0,
+      capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
+      draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
+      calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
+      srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
+      allTeams: teams, need: needAll2627, teamCap: teamCapAll2627, teamCapByPos: teamCapByPosAll2627,
+      teamSpotsLeft: teamSpotsLeftAll2627, injurySet: INJURY_DROPS_2627,
+    }, 5);
+    if(!top.length && !locked.length) return '';
+    const row=(p,isLocked)=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${isLocked?'<span style="flex-shrink:0">🔒</span>':''}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts||0)}</span></div>`;};
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
-      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts||0)}</span></div>`;}).join('')}
+      ${locked.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px" title="${locked.some(x=>x.reason==='splash')?'No other team can afford this player':''}${locked.some(x=>x.reason==='position')?(locked.some(x=>x.reason==='splash')?' / ':'')+'No other team still needs this position':''} — locked in, no risk waiting to take it">🔒 Locked</div>${locked.map(x=>row(x.p,true)).join('')}`:''}
+      ${top.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px${locked.length?';margin-top:4px':''}">${mode==='prospect'?'prospect':'Best Avail'}</div>${top.map(({p})=>row(p,false)).join('')}`:''}
     </div>`;
   };
   const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.pts||0, p=>p.cap||0);
