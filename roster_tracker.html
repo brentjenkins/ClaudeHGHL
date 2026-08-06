@@ -642,7 +642,9 @@ tr:hover td{background:#fafaf8}
       <span style="font-size:10px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-left:4px">Draft</span>
       <button class="btn btn-indigo-outline" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
-      <button class="btn btn-blue-outline" onclick="algoDraft2627()" title="Run Algo Draft from current rosters and apply picks">⬆ Algo Draft</button>
+      <button class="btn btn-blue-outline" id="algoDraftBtn2627" onclick="algoDraft2627()" title="Run Algo Draft from current rosters and apply picks">⬆ Algo Draft</button>
+      <button class="btn btn-blue-outline" id="animateDraftBtn2627" onclick="animateAlgoDraft2627()" title="Watch Algo Draft happen pick-by-pick (~5s/pick) instead of applying instantly">🎬 Animate Draft</button>
+      <button class="btn btn-red-outline" id="skipAnimateBtn2627" onclick="skipAnimateDraft2627()" style="display:none" title="Jump straight to the final result">⏭ Skip to End</button>
       <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">💾 Export Draft</button>
       <button class="btn btn-indigo-light" id="compareDraftsBtn2627" onclick="compareDrafts2627()" title="Available once the real 26-27 draft happens (Oct 2, 2026) and POSTDRAFT_ROSTER_2627 is populated" style="opacity:.4;cursor:not-allowed">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
@@ -3507,6 +3509,7 @@ const POSTDROP_ROSTER_2627 = {
   'igor chernyshov_F': 'Killer Whales',
   'matthew wood_F': 'Killer Whales',
   'matvei gridin_F': 'Killer Whales',
+  'connor bedard_F': 'Killer Whales', // user's hunch update 2026-08-06: good long-term contract, KIL has the cap room, expects him kept over the Algo Drops baseline.
   'josh morrissey_D': 'Killer Whales',
   'jamie drysdale_D': 'Killer Whales',
   'jakob chychrun_D': 'Killer Whales',
@@ -4609,7 +4612,7 @@ function renderXactions2425(){ _renderXactionsView(xactions2425, draftDatePresea
 // droppedPlayers (optional array of player objects, not in pool since they're no longer
 // rostered): drawn as a red X at their own cap/pts, so cut players still show where they sat
 // on the curve.
-function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, highlightIds=null, pickIds=null, droppedPlayers=null){
+function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, highlightIds=null, pickIds=null, droppedPlayers=null, repickIds=null){
   if(!canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.clientWidth || 520;
@@ -4649,18 +4652,24 @@ function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, highlightIds=nu
   }
 
   // dots — highlighted (or all, if no highlight set given) drawn full-size/opaque; the rest
-  // faded. Highlighted players in pickIds draw as a square instead of a circle.
+  // faded. Highlighted players in pickIds draw as a square instead of a circle; players in
+  // repickIds (predrop keeper who got dropped at some point, then re-added by the same team —
+  // distinct from a plain uninterrupted keeper, and distinct from a genuinely new pick since
+  // they're not new to the roster) draw as a triangle instead of hiding that history entirely.
   const dotFill = {F:'#bfdbfe',D:'#bbf7d0',G:'#fef08a'};
   const dotStroke = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
   for(const p of pool){
     const pg=posGroup(p.pos);
     const isHi = !highlightIds || highlightIds.has(p.id);
     const isPick = isHi && pickIds && pickIds.has(p.id);
+    const isRepick = isHi && repickIds && repickIds.has(p.id);
     ctx.globalAlpha = isHi ? 1 : 0.18;
     const x = tx(getCap(p)), y = ty(getPts(p));
     const r = isHi ? 4 : 2.5;
     ctx.beginPath();
-    if(isPick){ ctx.rect(x-r, y-r, r*2, r*2); } else { ctx.arc(x, y, r, 0, Math.PI*2); }
+    if(isRepick){ ctx.moveTo(x, y-r*1.15); ctx.lineTo(x+r*1.05, y+r*0.85); ctx.lineTo(x-r*1.05, y+r*0.85); ctx.closePath(); }
+    else if(isPick){ ctx.rect(x-r, y-r, r*2, r*2); }
+    else { ctx.arc(x, y, r, 0, Math.PI*2); }
     ctx.fillStyle=dotFill[pg]||'#e5e7eb'; ctx.fill();
     ctx.strokeStyle=dotStroke[pg]||'#9ca3af'; ctx.lineWidth=isHi ? 1.3 : 0.8; ctx.stroke();
   }
@@ -6200,10 +6209,10 @@ function _curveDeltaLabel(delta, view, team){
 // the "△ vs curve" label that opened it.
 function _teamCurveConfig(view){
   switch(view){
-    case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324, predropStubs:PREDROP_STUBS_2324 };
-    case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425, predropStubs:PREDROP_STUBS_2425 };
-    case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526, predropStubs:PREDROP_STUBS_2526 };
-    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627 };
+    case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324, predropStubs:PREDROP_STUBS_2324, postdropDict:POSTDROP_ROSTER_2324 };
+    case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425, predropStubs:PREDROP_STUBS_2425, postdropDict:POSTDROP_ROSTER_2425 };
+    case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526, predropStubs:PREDROP_STUBS_2526, postdropDict:POSTDROP_ROSTER_2526 };
+    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627, postdropDict:POSTDROP_ROSTER_2627 };
   }
 }
 
@@ -6227,7 +6236,7 @@ function _wasPreDropKeeper(p, team, predropDict){
 }
 
 function showTeamCurveModal(view, team){
-  const { startField, pptsF, getCapF, elcMax, label, predropDict, predropStubs } = _teamCurveConfig(view);
+  const { startField, pptsF, getCapF, elcMax, label, predropDict, predropStubs, postdropDict } = _teamCurveConfig(view);
 
   // League-wide pool + curve fit — identical filter/fit logic to _makeTeamCurveDeltaFn so this
   // modal's chart and deltas match whatever number the team card's "△ vs curve" label showed.
@@ -6248,6 +6257,17 @@ function showTeamCurveModal(view, team){
   const pickIds = new Set(
     hasPredrop ? teamPlayers.filter(p => !_wasPreDropKeeper(p, team, predropDict)).map(p=>p.id) : []
   );
+  // A predrop keeper who's currently back on this team but WASN'T postdrop-kept here (i.e.
+  // dropped at some point, then re-added by the same team) — without this, they're
+  // indistinguishable from a player who was never dropped at all, since the app only has
+  // predrop/current snapshots, not a continuous history. Found live 2026-08-06 via KIL
+  // re-adding a previously-dropped Connor Bedard.
+  const hasPostdrop = postdropDict && Object.keys(postdropDict).length > 0;
+  const repickIds = new Set(
+    (hasPredrop && hasPostdrop)
+      ? teamPlayers.filter(p => _wasPreDropKeeper(p, team, predropDict) && !_wasPreDropKeeper(p, team, postdropDict)).map(p=>p.id)
+      : []
+  );
   // Real dropped players (still in the live pool, just rostered elsewhere or nowhere now) plus
   // virtual stubs for anyone who left the pool entirely (e.g. retired veterans who'll never show
   // up in another NHL/Yahoo sync) — otherwise they silently never appear as a dropped player at
@@ -6265,7 +6285,7 @@ function showTeamCurveModal(view, team){
     : [];
 
   document.getElementById('teamCurveModalTitle').textContent = `${team} — Efficiency Curve (${label})`;
-  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, highlightIds, pickIds, droppedPlayers);
+  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, highlightIds, pickIds, droppedPlayers, repickIds);
 
   const posColor = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
   const rowsKept = teamPlayers.map(p => {
@@ -6273,7 +6293,7 @@ function showTeamCurveModal(view, team){
     const cap = getCapF(p), pts = pptsF(p);
     const base = cap>0 ? _curveBaseline(pg, cap, elcMax, curveFns[pg]) : null;
     const delta = (base!=null && pts>0) ? pts-base : null;
-    const status = pickIds.has(p.id) ? 'pick' : 'kept';
+    const status = pickIds.has(p.id) ? 'pick' : repickIds.has(p.id) ? 'repick' : 'kept';
     return { p, pg, cap, pts, delta, status };
   });
   const rowsDropped = droppedPlayers.map(p => {
@@ -6286,9 +6306,10 @@ function showTeamCurveModal(view, team){
   const rows = [...rowsKept, ...rowsDropped].sort((a,b) => (b.delta??-Infinity) - (a.delta??-Infinity));
 
   const statusBadge = (r) => r.status==='pick' ? ` <span style="color:#7c3aed;font-weight:600">■ pick</span>`
+                            : r.status==='repick' ? ` <span style="color:#0891b2;font-weight:600">▲ dropped &amp; re-added</span>`
                             : r.status==='dropped' ? ` <span style="color:${posColor[r.pg]||'#dc2626'};font-weight:600">✕ dropped</span>`
                             : '';
-  const legend = hasPredrop ? `<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">● kept &nbsp; ■ <span style="color:#7c3aed">picked up</span> &nbsp; ✕ dropped (<span style="color:${posColor.F}">F</span>/<span style="color:${posColor.D}">D</span>/<span style="color:${posColor.G}">G</span> colored)</div>` : '';
+  const legend = hasPredrop ? `<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">● kept &nbsp; ■ <span style="color:#7c3aed">picked up</span> &nbsp; ▲ <span style="color:#0891b2">dropped &amp; re-added</span> &nbsp; ✕ dropped (<span style="color:${posColor.F}">F</span>/<span style="color:${posColor.D}">D</span>/<span style="color:${posColor.G}">G</span> colored)</div>` : '';
 
   const html = legend + `<table style="width:100%;border-collapse:collapse;font-size:12px">
     <tr style="border-bottom:1px solid #e5e7eb;color:#9ca3af">
@@ -6804,6 +6825,108 @@ function algoDraft2627(){
     injurySet: INJURY_DROPS_2627,
   });
   renderBigBoard();
+}
+
+let _animateDraft2627Running = false;
+let _animateDraft2627Skip = false;
+function skipAnimateDraft2627(){ _animateDraft2627Skip = true; }
+
+// Sleep that a running animation can be told to cut short mid-wait (checked every 100ms
+// instead of only between picks), so clicking "Skip to End" feels immediate rather than
+// waiting out however much of the current ~5s delay is left.
+function _animateSleep(ms){
+  return new Promise(resolve => {
+    const stepMs = 100;
+    let waited = 0;
+    const tick = () => {
+      if(_animateDraft2627Skip || waited >= ms){ resolve(); return; }
+      waited += stepMs;
+      setTimeout(tick, stepMs);
+    };
+    tick();
+  });
+}
+
+// Same decision engine as algoDraft2627 (_runAlgoDraft always computes the full result
+// instantly — every pick is already decided by the time this returns, since it needs its own
+// prior picks' curve/ABP state as it goes), but reveals it to the user one pick at a time
+// instead of applying everything at once. Runs with applyChanges:false so _runAlgoDraft
+// doesn't persist/render the finished result itself; this function resets players back to
+// their pre-draft state immediately after, then replays the already-decided sequence (read
+// back from draftState2627.simPicks, which only the Compare Drafts modal ever reads — nothing
+// on the live Big Board shows it, so setting it early doesn't spoil anything) with a real
+// delay between each. Found 2026-08-06 — the user wanted to visually watch the algo draft to
+// sanity-check its picks in real time rather than just seeing the final board instantly.
+async function animateAlgoDraft2627(){
+  if(_animateDraft2627Running) return;
+  const teams = [...new Set(players.filter(p=>p.start2627).map(p=>p.start2627))].sort();
+  if(!teams.length){ toast('Run Algo Drops first to seed rosters.'); return; }
+
+  const preDraftStart = new Map(players.map(p => [p.id, p.start2627]));
+
+  _runAlgoDraft({
+    season:       '26-27',
+    actualDraft:  {},
+    allTeams:     teams,
+    buildSeq:     buildDraftSeq2627,
+    startField:   'start2627',
+    ppts:         p => p.pts || 0,
+    getCap:       p => p.cap || 0,
+    capLimit:     CAP_LIMIT,
+    draftReserve: DRAFT_RESERVE_2627,
+    draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
+    applyChanges: false,
+    boardDraftState: draftState2627,
+    boardLsKey:   LS_DRAFT_2627,
+    contractYearAnchor: NHL_SEASON_YEAR,
+    srcNFn: srcNFn2627,
+    maxSrc: MAX_SRC_2627,
+    injurySet: INJURY_DROPS_2627,
+  });
+
+  const picks = (draftState2627.simPicks || []).filter(pk => pk.player);
+  if(!picks.length){ toast('No picks to animate.'); return; }
+
+  for(const p of players){ p.start2627 = preDraftStart.get(p.id) ?? null; }
+  // "On the clock" (render()'s onClockTeam) is driven by draftState2627.picks.length, not
+  // simPicks — reset it so the reveal starts from pick 1, and push one entry per revealed
+  // pick below so it advances in lockstep. Found live 2026-08-06: without this, the "on the
+  // clock" indicator just stayed frozen on whoever was up first for the whole animation.
+  draftState2627.picks = [];
+  render(); renderBigBoard();
+
+  _animateDraft2627Running = true;
+  _animateDraft2627Skip = false;
+  document.getElementById('animateDraftBtn2627').disabled = true;
+  document.getElementById('algoDraftBtn2627').disabled = true;
+  document.getElementById('skipAnimateBtn2627').style.display = '';
+
+  const reveal = pk => {
+    const p = findPlayerByNamePos(pk.player, pk.pos);
+    if(p) p.start2627 = pk.team;
+    draftState2627.picks.push({ team: pk.team, player: pk.player, pos: pk.pos, nhlTeam: p?.team||'', cap: pk.cap||0, projPts: pk.ppts||0 });
+  };
+
+  const DELAY_MS = 5000;
+  try {
+    for(let i = 0; i < picks.length; i++){
+      if(_animateDraft2627Skip){
+        for(let j = i; j < picks.length; j++) reveal(picks[j]);
+        break;
+      }
+      reveal(picks[i]);
+      render(); renderBigBoard();
+      if(i < picks.length - 1) await _animateSleep(DELAY_MS);
+    }
+  } finally {
+    lsSet(LS_PLAYERS, players);
+    saveDraft();
+    render(); renderBigBoard();
+    _animateDraft2627Running = false;
+    document.getElementById('animateDraftBtn2627').disabled = false;
+    document.getElementById('algoDraftBtn2627').disabled = false;
+    document.getElementById('skipAnimateBtn2627').style.display = 'none';
+  }
 }
 
 function algoDraft2425(){
@@ -7555,11 +7678,20 @@ function _getTeamDraftBoard(team, round, mode, ctx, n = 5){
     }
   }
 
-  // The best candidate at each deferred position — locked in, shown rather than hidden.
+  // The best candidate(s) at each deferred position — locked in, shown rather than hidden.
+  // Up to every remaining slot the team has there (need[team][pg]), matching
+  // _runAlgoDraft's own deferredTarget — a team needing 2 goalies with zero league-wide
+  // competition for goalies gets both shown as locked, not just the first.
   const locked = [];
   for(const pg of excludePositions){
-    const preview = _pickBestFA(team, round, mode, { ...ctx, onlyPosition: pg });
-    if(preview) locked.push({ p: preview.p, reason: 'position' });
+    const slotsToFill = need[team][pg] || 0;
+    const excludeIds = new Set();
+    for(let slot = 0; slot < slotsToFill; slot++){
+      const preview = _pickBestFA(team, round, mode, { ...ctx, onlyPosition: pg, excludePlayerIds: excludeIds });
+      if(!preview) break;
+      locked.push({ p: preview.p, reason: 'position' });
+      excludeIds.add(preview.p.id);
+    }
   }
 
   const ranked = _rankFACandidates(team, round, mode, { ...ctx, excludePositions });
@@ -7617,13 +7749,19 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
   // Real GMs act this way (see 24-25: Pernicious Puckers took their last goalie, Samuel
   // Ersson, in Round 4 when nothing else in the league needed a goalie — they could have
   // taken a much better F/D there and still gotten a goalie at their actual final pick,
-  // Round 6, with zero risk). deferredTarget[team][pg] holds the specific player+cap
-  // decided on at the moment deferral starts; the position stays excluded from that team's
-  // picks (reserving its cap) until forced — either their last pick overall, or the moment
-  // it becomes their only remaining need — at which point the ORIGINALLY decided player is
-  // drafted directly, not re-scored (the decision is locked in, not merely postponed).
+  // Round 6, with zero risk). deferredTarget[team][pg] holds an ARRAY of specific
+  // player+cap decisions locked in at the moment deferral starts — up to every remaining
+  // slot the team has at that position, not just one, since nobody else can compete for
+  // ANY of them regardless of when the decision gets made (found live 2026-08-06: a team
+  // needing 2 goalies with zero league-wide competition for goalies at all should get to
+  // lock in both, not just the first one, freeing up every pick in between for genuinely
+  // contested F/D value). The position stays excluded from that team's picks (reserving
+  // the total cap of everything locked in at it) until forced — either the team's last
+  // pick overall, or the moment every remaining need is deferred — at which point one
+  // entry is drafted directly per forced turn (shift(), not re-scored — the decision was
+  // already locked in), same as before this was generalized to multiple slots.
   const deferredTarget = {};
-  for(const t of allTeams) deferredTarget[t] = {F:null, D:null, G:null};
+  for(const t of allTeams) deferredTarget[t] = {F:[], D:[], G:[]};
 
   // Splash-pick deferral: a further generalization of the position-based deferral above, from
   // "sole league-wide needer of a position" to "sole team that can actually afford a specific
@@ -7741,7 +7879,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
         }
         const neededCounts = {}; for(const pg of neededPgs) neededCounts[pg] = need[team][pg];
         storedPicks[team] = _solveTeamKnapsack(neededCounts, candidatesByPos, budget);
-        for(const pg of ['F','D','G']) deferredTarget[team][pg] = null;
+        for(const pg of ['F','D','G']) deferredTarget[team][pg] = [];
         batchPlanned[team] = true;
       }
     }
@@ -7755,7 +7893,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
       // excluded from THIS pick because they're safe to defer (see deferredTarget comment above).
       const isLastPickForTeam = teamSpotsLeft[team] === 1;
       const excludePositions = new Set();
-      for(const pg of neededPgs) if(deferredTarget[team][pg]) excludePositions.add(pg); // already locked in — keep excluding until forced
+      for(const pg of neededPgs) if(deferredTarget[team][pg].length) excludePositions.add(pg); // already locked in — keep excluding until forced
 
       // Two (or more) positions can each get deferred independently at DIFFERENT earlier picks
       // — each individually left another position open at the time, so each was safe on its
@@ -7794,20 +7932,13 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
           })();
           if((need[team][pg]||0) !== leagueNeedNow[pg]) continue; // other teams still competing for it — don't defer
           // Sole remaining league-wide needer of this position, with picks left after this
-          // one — decide the target now (current best value at this position) and reserve
-          // its cap, but don't draft it yet. Uses the team's REAL, full need (not zeroed out
-          // for other positions) so the normal futureReserve math still holds back real
-          // budget for its other genuinely-contested needs (onlyPosition restricts candidates
-          // to pg here without hiding the cost of what else is still needed).
-          const reservedSoFar = ['F','D','G'].reduce((s,p2) => s + (deferredTarget[team][p2]?.p ? getCap(deferredTarget[team][p2].p) : 0), 0);
-          // The generic per-round reserve above is a rough historical average and isn't a hard
-          // guarantee — found live via Blue Line Bangers 24-25: it deferred William Nylander
-          // ($11.5M) as "best F" while a genuinely cheaper F existed, because the generic
-          // estimate alone wasn't nearly enough to protect its still-contested D need,
-          // leaving only $0.30M for a real D pick nothing could fill. Add a hard floor: reserve
-          // at least the cheapest currently-eligible free agent for every OTHER position this
-          // team still needs (not yet deferred), so a deferral can never price out a genuinely
-          // affordable option elsewhere.
+          // one — decide the target(s) now (current best value at this position) and reserve
+          // their cap, but don't draft them yet. Fills every remaining slot the team has at
+          // this position (need[team][pg]), not just one, since nobody else can ever compete
+          // for any of them. Uses the team's REAL, full need (not zeroed out for other
+          // positions) so the normal futureReserve math still holds back real budget for its
+          // other genuinely-contested needs (onlyPosition restricts candidates to pg here
+          // without hiding the cost of what else is still needed).
           const otherNeededPgs = neededPgs.filter(p2 => p2 !== pg && !excludePositions.has(p2));
           const minOtherFloor = otherNeededPgs.reduce((sum, p2) => {
             let cheapest = Infinity;
@@ -7820,10 +7951,20 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
             }
             return sum + (cheapest === Infinity ? 0 : cheapest);
           }, 0);
-          const preview = _pickBestFA(team, round, mode, {
-            ...baseCtx, onlyPosition: pg, reservedCap: reservedSoFar + minOtherFloor,
-          });
-          if(preview){ deferredTarget[team][pg] = preview; excludePositions.add(pg); }
+          const slotsToFill = (need[team][pg]||0) - deferredTarget[team][pg].length;
+          for(let slot = 0; slot < slotsToFill; slot++){
+            // Recomputed each slot: includes whatever this same loop already locked in for pg
+            // on earlier iterations, so a 2nd/3rd goalie target correctly reserves on top of
+            // the 1st instead of double-spending the same budget.
+            const reservedSoFar = ['F','D','G'].reduce((s,p2) => s + deferredTarget[team][p2].reduce((s2,x) => s2 + getCap(x.p), 0), 0);
+            const alreadyLockedIds = new Set(deferredTarget[team][pg].map(x => x.p.id));
+            const preview = _pickBestFA(team, round, mode, {
+              ...baseCtx, onlyPosition: pg, reservedCap: reservedSoFar + minOtherFloor, excludePlayerIds: alreadyLockedIds,
+            });
+            if(!preview) break; // ran out of eligible candidates at this position
+            deferredTarget[team][pg].push(preview);
+          }
+          if(deferredTarget[team][pg].length) excludePositions.add(pg);
         }
       }
 
@@ -7837,11 +7978,11 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
         // Execute the ORIGINALLY decided player directly rather than re-scoring — that's the
         // whole point of locking the decision in early. Any resolvable position works equally
         // well here (none of them are contested by another team, or they wouldn't be deferred).
-        const forcedPg = neededPgs.find(pg => deferredTarget[team][pg]);
-        if(forcedPg) pick = deferredTarget[team][forcedPg];
+        const forcedPg = neededPgs.find(pg => deferredTarget[team][pg].length);
+        if(forcedPg) pick = deferredTarget[team][forcedPg].shift(); // one entry per forced turn; more remain excluded until the next forced turn if slots > 1
       }
       if(!pick){
-        const reservedCap = ['F','D','G'].reduce((s,pg) => s + (excludePositions.has(pg) && deferredTarget[team][pg]?.p ? getCap(deferredTarget[team][pg].p) : 0), 0)
+        const reservedCap = ['F','D','G'].reduce((s,pg) => s + (excludePositions.has(pg) ? deferredTarget[team][pg].reduce((s2,x) => s2 + getCap(x.p), 0) : 0), 0)
           + (deferredSplash[team]?.p ? getCap(deferredSplash[team].p) : 0);
         const excludePlayerIds = deferredSplash[team]?.p ? new Set([deferredSplash[team].p.id]) : null;
         // Remaining picks for this team after this one — round-aware cap reserve, live
@@ -7857,7 +7998,10 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     }
 
     const pg = posGroup(pick.p.pos);
-    if(deferredTarget[team][pg]?.p?.id === pick.p.id) deferredTarget[team][pg] = null; // consumed
+    // No separate "consumed" bookkeeping needed for deferredTarget here — a locked position
+    // stays fully excluded from the normal fallback pick path while any entries remain, so
+    // the only way one of its entries is ever drafted is via the forced shift() above, which
+    // already removes it from the array at that point.
     if(deferredSplash[team]?.p?.id === pick.p.id) deferredSplash[team] = null; // consumed
 
     assigned[pick.p.id] = team;
@@ -9625,31 +9769,35 @@ function renderSummaryCard(teamIdx){
   const logo  = teamLogos[team];
 
   // Year-specific config
-  let prevField, currField, pptsF, prevStandings, prevRankFn, getCapY, capLimitY, prevYr, currYr;
+  let prevField, currField, pptsF, prevStandings, prevRankFn, getCapY, capLimitY, prevYr, currYr, predropDictY, postdropDictY;
   if(draftMode2324){
     prevField='end2223';   currField='start2324';
     pptsF=p=>ppts2324blend(p);  prevStandings=FINAL_STANDINGS_2223;
     prevRankFn=t=>FINAL_STANDINGS_2223[t]?.rank||'?';
     getCapY=p=>getCap2324(p);   capLimitY=CAP_LIMIT_2324;
     prevYr='22-23';  currYr='23-24';
+    predropDictY=PREDROP_ROSTER_2324; postdropDictY=POSTDROP_ROSTER_2324;
   } else if(draftMode2425){
     prevField='end2324';   currField='start2425';
     pptsF=p=>ppts2425blend(p);  prevStandings=FINAL_STANDINGS_2324;
     prevRankFn=t=>FINAL_STANDINGS_2324[t]?.rank||'?';
     getCapY=p=>getCap2425(p);   capLimitY=CAP_LIMIT_2425;
     prevYr='23-24';  currYr='24-25';
+    predropDictY=PREDROP_ROSTER_2425; postdropDictY=POSTDROP_ROSTER_2425;
   } else if(draftMode2526){
     prevField='start2425'; currField='start2526';
     pptsF=p=>ppts2526blend(p);  prevStandings=FINAL_STANDINGS_2425;
     prevRankFn=t=>FINAL_STANDINGS_2425[t]?.rank||'?';
     getCapY=p=>getCap2526(p);   capLimitY=CAP_LIMIT_2526;
     prevYr='24-25';  currYr='25-26';
+    predropDictY=PREDROP_ROSTER_2526; postdropDictY=POSTDROP_ROSTER_2526;
   } else {
     prevField='end2526';   currField='start2627';
     pptsF=p=>p.pts||0;          prevStandings=FINAL_STANDINGS_2526;
     prevRankFn=t=>FINAL_STANDINGS_2526[t]?.rank||'?';
     getCapY=p=>p.cap||0;        capLimitY=CAP_LIMIT;
     prevYr='25-26';  currYr='26-27';
+    predropDictY=PREDROP_ROSTER_2627; postdropDictY=POSTDROP_ROSTER_2627;
   }
 
   // Projected ranking for this year
@@ -9665,6 +9813,17 @@ function renderSummaryCard(teamIdx){
   const departed =players.filter(p=>p[prevField]===team&&p[currField]!==team).sort((a,b)=>pptsF(b)-pptsF(a));
   const arrived  =players.filter(p=>p[currField]===team&&p[prevField]!==team).sort((a,b)=>pptsF(b)-pptsF(a));
   const returning=players.filter(p=>p[prevField]===team&&p[currField]===team).sort((a,b)=>pptsF(b)-pptsF(a));
+  // Within this season's OWN drop/draft cycle (not the prevField/currField year-over-year
+  // comparison above — that's correct as-is, since a mid-cycle drop-then-re-add genuinely IS
+  // "returning" at the year level), was this "returning" player actually dropped and picked
+  // back up by the same team, rather than kept without interruption? Uses the predrop/postdrop
+  // snapshots so it doesn't look identical to a player who was never touched at all. Found
+  // live 2026-08-06 via KIL re-adding a previously-dropped Connor Bedard.
+  const hasPredropY = predropDictY && Object.keys(predropDictY).length>0;
+  const hasPostdropY = postdropDictY && Object.keys(postdropDictY).length>0;
+  const repickIdsY = (hasPredropY && hasPostdropY)
+    ? new Set(returning.filter(p => _wasPreDropKeeper(p,team,predropDictY) && !_wasPreDropKeeper(p,team,postdropDictY)).map(p=>p.id))
+    : new Set();
 
   const projPtsTotal=Math.round(rosterCurr.reduce((s,p)=>s+pptsF(p),0));
   const prevPtsTotal=prevStandings?prevStandings[team]?.pts??null:null;
@@ -9689,7 +9848,7 @@ function renderSummaryCard(teamIdx){
   const dPts=fmtDelta(deltaPts,0,false),dAge=fmtDelta(deltaAge,1,true),dRank=fmtDelta(deltaRank,0,false);
 
   const playerRow=(p,cls)=>`<div class="summary-player ${cls}">
-    <span class="summary-player-name">${esc(p.name)}</span>
+    <span class="summary-player-name">${esc(p.name)}${repickIdsY.has(p.id)?` <span style="color:#0891b2;font-weight:600" title="Dropped and re-added by ${esc(team)} this cycle, not kept without interruption">▲</span>`:''}</span>
     <span class="summary-player-pos">${posGroup(p.pos)}</span>
     <span class="summary-player-team">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:14px;height:14px;object-fit:contain" loading="lazy">`:''}${esc(p.team||'—')}</span>
     <span class="summary-player-pts">${Math.round(pptsF(p))||'—'}</span>
