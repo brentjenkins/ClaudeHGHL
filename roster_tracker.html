@@ -1439,6 +1439,23 @@ let draftProspectRounds = 1;
 // mistakes. Any team not listed here defaults to 'simulate' — see _draftModeFor.
 let draftModeByTeam = { 'Muller Time!': 'optimize' };
 function _draftModeFor(team){ return draftModeByTeam[team] || 'simulate'; }
+// The Simulate/Optimize per-team draft-weight override — shared so every place that scores a
+// candidate FOR A SPECIFIC TEAM (not just _runAlgoDraft's own simulation loop, which already
+// applied this inline) matches what the real engine would actually compute. Simulate mode
+// reverts elcExpF/elcExpD to the pre-data-driven-backtest values and adds wtFanBias (predicting
+// what a real GM will pick, homer bias included); Optimize mode adds wtCapUse (a cap-spending
+// bonus) instead. Found live 2026-08-06: KIL (Simulate mode) on the clock, but the live table's
+// score tooltip showed zero fan-team bonus for an SJS-affiliated prospect, because render()'s
+// SCORE column — and simulateBestPick, and the Team Summary "top 5" board — were all scoring
+// with flat/raw draftWeights, never applying this override at all, regardless of the team's
+// actual mode. Only _runAlgoDraft's own simulation loop (Algo Draft/Animate Draft buttons) had
+// ever applied it correctly.
+function _effectiveDraftWeights(team, draftWeightsBase){
+  const teamMode = _draftModeFor(team);
+  return teamMode === 'simulate'
+    ? { ...draftWeightsBase, elcExpF: 35, elcExpD: 25, wtCapUse: 0, wtFanBias: draftWeightsBase.wtFanBias || 5 }
+    : { ...draftWeightsBase, wtCapUse: draftWeightsBase.wtCapUse || 0.15, wtFanBias: 0 };
+}
 let ptsTarget = 1150;
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 // Players at or above this pts threshold are last-resort drops. Was a hardcoded const=50 (an
@@ -3226,22 +3243,29 @@ function render(){
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds,_dsNormal};
       });
-    const focusRound2627 = draftFocusTeam ? (draftState2627.picks||[]).filter(pk=>pk.team===draftFocusTeam).length+1 : genericRound2627;
-    const teamCap2627 = {[draftFocusTeam]: viewCapTot};
-    const teamCapByPos2627 = {[draftFocusTeam]: viewCapByPos};
+    // round/teamCap/teamCapByPos/team all key off viewTeam (draftFocusTeam || onClockTeam,
+    // defined above), not draftFocusTeam alone — otherwise the score shown for the unfocused
+    // default view (which IS scoped to a real team for need/cap-total display purposes, via
+    // viewTeam) silently reverts to a team-agnostic context for the actual SCORE/tooltip,
+    // which can never show a fan-bias bonus since that's inherently team-specific. Found live
+    // 2026-08-06: KIL on the clock, nobody explicitly focused, hovering Ivar Stenberg's score
+    // showed no fan-team bonus even though it's genuinely KIL's pick right now.
+    const focusRound2627 = viewTeam ? (draftState2627.picks||[]).filter(pk=>pk.team===viewTeam).length+1 : genericRound2627;
+    const teamCap2627 = {[viewTeam]: viewCapTot};
+    const teamCapByPos2627 = {[viewTeam]: viewCapByPos};
     const allScored=rows
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap||0)<=maxAffordable))&&(p.pts||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
         const scoreArgs = {
-          pg, pp, cap0, pressure, round: focusRound2627, draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
+          pg, pp, cap0, pressure, round: focusRound2627, draftWeights: _effectiveDraftWeights(viewTeam, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
           calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextContractTerm||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
-          team: draftFocusTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
+          team: viewTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
         const _ds = b.score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
-        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw:b.ageRaw,tProspect:b.tProspect,round:focusRound2627,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw:b.pressRaw,pressMult:b.pressMult}});
+        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw:b.ageRaw,tProspect:b.tProspect,round:focusRound2627,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw:b.pressRaw,pressMult:b.pressMult}});
       });
     rows=sortCol==='score'?(draftSubMode==='prospect'?allScored.sort((a,b)=>(b._ds-a._ds)*-sortDir):allScored.sort((a,b)=>(b._dsNormal-a._dsNormal)*-sortDir)):allScored;
   }
@@ -3298,7 +3322,7 @@ function render(){
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank<=10?'#b45309':p.rank<=25?'#185FA5':'#555'}">${p.rank}</span>`:'—'}</td>
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const pw=draftSubMode==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
+      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const pw=draftSubMode==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2627
@@ -4056,7 +4080,7 @@ function simulateBestPick(){
   const { top, locked } = _getTeamDraftBoard(team, round, mode, {
     players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
     ppts: p => p.pts || 0, getCap: p => p.cap || 0,
-    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
+    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
     allTeams: teams, need, teamCap, teamCapByPos, teamSpotsLeft, injurySet: INJURY_DROPS_2627,
@@ -6070,7 +6094,13 @@ function render2425(){
   // actual Algo Draft pick engine (_runAlgoDraft) so this SCORE column/bubble can't drift from
   // what Algo Draft would really pick. See those functions' comments for the drift history.
   if(draftMode2425){
-    const viewTeam2425 = draftFocusTeam2425;
+    // draftFocusTeam2425 falls back to whoever's on the clock (matching 26-27's viewTeam
+    // pattern) so the score/tooltip has a real team context by default instead of reverting to
+    // team-agnostic scoring — that's the only way tFanBias can ever be nonzero, since it's
+    // inherently team-specific. See _effectiveDraftWeights comment for the broader mode-
+    // override bug this was found alongside (2026-08-06).
+    const onClockTeam2425 = buildDraftSeq2425()[draftState2425.picks.length] ?? null;
+    const viewTeam2425 = draftFocusTeam2425 || onClockTeam2425;
     const { pressure: pressure2425 } = _draftPressureState(players, DRAFT_TEAMS_2425, p=>p.start2425||null, ppts2425blend, getCap2425);
     lastPressure2425=pressure2425;
     const need2425 = viewTeam2425 ? (()=>{
@@ -6079,21 +6109,21 @@ function render2425(){
     })() : null;
     const focusCapUsed2425=viewTeam2425?players.filter(p=>p.start2425===viewTeam2425).reduce((s,p)=>s+getCap2425(p),0):0;
     const slotsLeft2425=need2425?need2425.F+need2425.D+need2425.G:0;
-    const maxAffordable2425=viewTeam2425?CAP_LIMIT_2425-focusCapUsed2425-Math.max(0,slotsLeft2425-1)*ELC_MAX_2425:Infinity;
+    const maxAffordable2425=draftFocusTeam2425?CAP_LIMIT_2425-focusCapUsed2425-Math.max(0,slotsLeft2425-1)*ELC_MAX_2425:Infinity;
     const srcNFn2425 = p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
-    // No specific team/round is in play for this flat, whole-pool listing — use a round past
+    // No specific ROUND is in play for this flat, whole-pool listing — use a round past
     // the prospect-weight decay window (see prospectRoundWeight) so the "Best Avail" score here
     // matches the same no-residual-prospect-bonus baseline this column always showed. The
     // per-team top-5 bubble (top5Html2425) recomputes with each team's REAL current round instead.
     const genericRound = draftProspectRounds + 3;
     lastAllScored2425 = players.filter(p=>!p.start2425&&ppts2425blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2425blend(p); const cap0=getCap2425(p)||0;
-      const scoreArgs = { pg, pp, cap0, pressure: pressure2425, draftWeights, calcAgeForSim: calcAge2425, contractYearAnchor: 2025, nextContractYrs: p.nextContractTerm2425||0, curveFns: curveFns2425, elcMax: ELC_MAX_2425, srcNFn: srcNFn2425, maxSrc: 4 };
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2425, draftWeights: _effectiveDraftWeights(viewTeam2425, draftWeights), calcAgeForSim: calcAge2425, contractYearAnchor: 2025, nextContractYrs: p.nextContractTerm2425||0, curveFns: curveFns2425, elcMax: ELC_MAX_2425, srcNFn: srcNFn2425, maxSrc: 4, team: viewTeam2425, teamField: 'team2425' };
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound});
       const _ds2425=prospectScore.score, _ds2425Normal=normalScore.score;
       const b = prospectScore;
-      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,round:genericRound,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
+      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,round:genericRound,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
     });
     rows = lastAllScored2425.filter(p=>{
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
@@ -6170,7 +6200,7 @@ function render2425(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2425>0?p.gp2425:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2425>0?p.pts2425:'—'}</td>
       ${(()=>{const s=curveDeltaActual2425(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="24-25 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const pw=draftSubMode2425==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2425*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2425}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2425>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const pw=draftSubMode2425==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2425*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2425}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2425>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2425>0?`\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2425
@@ -6366,46 +6396,45 @@ function updateStats2425(){
     G: fitQuadratic(rosteredPool2425.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2425(p),y:ppts2425blend(p)}))),
   };
   const posBg2425={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2425={F:'#1e40af',D:'#166534',G:'#92400e'};
-  // Recomputes eligibility + score fresh from this team's REAL current state (real cap reserve,
-  // real getCap>0/DRAFT_NEVER eligibility, this team's actual pick count for round/mode) via the
-  // same _draftPressureState/_scoreDraftCandidate _runAlgoDraft itself uses — so "top of bubble
-  // for the on-clock team" is guaranteed to equal what Algo Draft's pick engine would select if
-  // run from this exact state, not a separately-approximated preview of it.
+  // Precompute every team's need/cap state once — _getTeamDraftBoard's splash check needs
+  // every OTHER team's data too, not just the one being displayed — see render2627's
+  // needAll2627 for the full rationale.
+  const needAll2425={}, teamCapAll2425={}, teamCapByPosAll2425={}, teamSpotsLeftAll2425={};
+  for(const t of allTeams){
+    const tp=players.filter(p=>p.start2425===t);
+    needAll2425[t]={
+      F: Math.max(0, DRAFT_ROSTER_MAX.F - tp.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
+    };
+    teamCapAll2425[t]=tp.reduce((s,p)=>s+getCap2425(p),0);
+    teamCapByPosAll2425[t]={F:0,D:0,G:0};
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2425[t]) teamCapByPosAll2425[t][g]+=getCap2425(p); }
+    teamSpotsLeftAll2425[t]=Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
+  }
+  const srcNFn2425=p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
+  // Uses _getTeamDraftBoard — the SAME ranking/filtering/splash-deferral logic _runAlgoDraft's
+  // actual simulation uses — see render2627's top5Html for the full rationale.
   const top5Html2425=(team,fRem,dRem,gRem,rem)=>{
-    if(!draftMode2425||!lastPressure2425) return '';
-    const need={F:fRem,D:dRem,G:gRem};
+    if(!draftMode2425) return '';
     if(!fRem&&!dRem&&!gRem) return '';
-    const spotsLeft=fRem+dRem+gRem;
     const round=(draftState2425.picks||[]).filter(pk=>pk.team===team).length+1;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
-    let futureReserve2425=0;
-    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2425+=_expectedRoundCost(fr,CAP_LIMIT_2425,DRAFT_RESERVE_2425);
-    futureReserve2425=Math.min(futureReserve2425,Math.max(0,rem-ELC_MAX_2425));
-    const maxPickCap=rem-futureReserve2425;
-    const teamRoster=players.filter(p=>p.start2425===team);
-    const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2425(p),0)};
-    const teamCapByPos={[team]:{F:0,D:0,G:0}};
-    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2425(p); }
-    const srcNFn2425=p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0);
-    const fas=players.filter(p=>{
-      if(p.start2425) return false;
-      if(ppts2425blend(p)<=0) return false;
-      if(getCap2425(p)<=0) return false;
-      if(getCap2425(p)>maxPickCap) return false;
-      const pg=posGroup(p.pos);
-      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
-      if(INJURY_DROPS_2425.has(normName(p.name).toLowerCase())) return false;
-      return (need[pg]||0)>0;
-    });
-    const picks=fas.map(p=>{
-      const pg=posGroup(p.pos), pp=ppts2425blend(p), cap0=getCap2425(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2425,mode,round,draftWeights,calcAgeForSim:calcAge2425,contractYearAnchor:2025,nextContractYrs:p.nextContractTerm2425||0,curveFns:curveFns2425,elcMax:ELC_MAX_2425,srcNFn:srcNFn2425,maxSrc:4,team,teamCap,teamCapByPos});
-      return {p,score};
-    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
-    if(!picks.length) return '';
+    const { top, locked } = _getTeamDraftBoard(team, round, mode, {
+      players, getAssignedTeam: p=>p.start2425||null, startField:'start2425',
+      ppts: ppts2425blend, getCap: getCap2425,
+      capLimit: CAP_LIMIT_2425, draftReserve: DRAFT_RESERVE_2425,
+      draftWeights: _effectiveDraftWeights(team, draftWeights),
+      calcAgeForSim: calcAge2425, contractYearAnchor: 2025, nextContractField: 'nextContractTerm2425', teamField: 'team2425', elcMax: ELC_MAX_2425,
+      srcNFn: srcNFn2425, maxSrc: 4,
+      allTeams, need: needAll2425, teamCap: teamCapAll2425, teamCapByPos: teamCapByPosAll2425,
+      teamSpotsLeft: teamSpotsLeftAll2425, injurySet: INJURY_DROPS_2425,
+    }, 5);
+    if(!top.length && !locked.length) return '';
+    const row=(p,isLocked)=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2425[pg]};color:${posCol2425[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${isLocked?'<span style="flex-shrink:0">🔒</span>':''}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2425blend(p))}</span></div>`;};
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
-      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2425[pg]};color:${posCol2425[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2425blend(p))}</span></div>`;}).join('')}
+      ${locked.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px" title="${locked.some(x=>x.reason==='splash')?'No other team can afford this player':''}${locked.some(x=>x.reason==='position')?(locked.some(x=>x.reason==='splash')?' / ':'')+'No other team still needs this position':''} — locked in, no risk waiting to take it">🔒 Locked</div>${locked.map(x=>row(x.p,true)).join('')}`:''}
+      ${top.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px${locked.length?';margin-top:4px':''}">${mode==='prospect'?'prospect':'Best Avail'}</div>${top.map(({p})=>row(p,false)).join('')}`:''}
     </div>`;
   };
 
@@ -6553,7 +6582,10 @@ function render2324(){
   // Draft mode scoring for 23-24 — shares _draftPressureState/_scoreDraftCandidate with the
   // actual Algo Draft pick engine; see _runAlgoDraft / render2425 for the drift history.
   if(draftMode2324){
-    const viewTeam2324 = draftFocusTeam2324;
+    // draftFocusTeam2324 falls back to whoever's on the clock — see the matching 24-25 comment
+    // (render2425) for the full rationale; same fix, found live 2026-08-06.
+    const onClockTeam2324 = buildDraftSeq2324()[draftState2324.picks.length] ?? null;
+    const viewTeam2324 = draftFocusTeam2324 || onClockTeam2324;
     const { pressure: pressure2324 } = _draftPressureState(players, DRAFT_TEAMS_2324, p=>p.start2324||null, ppts2324blend, getCap2324);
     lastPressure2324=pressure2324;
     const need2324 = viewTeam2324 ? (()=>{
@@ -6562,17 +6594,17 @@ function render2324(){
     })() : null;
     const focusCapUsed2324=viewTeam2324?players.filter(p=>p.start2324===viewTeam2324).reduce((s,p)=>s+getCap2324(p),0):0;
     const slotsLeft2324=need2324?need2324.F+need2324.D+need2324.G:0;
-    const maxAffordable2324=viewTeam2324?CAP_LIMIT_2324-focusCapUsed2324-Math.max(0,slotsLeft2324-1)*ELC_MAX_2324:Infinity;
+    const maxAffordable2324=draftFocusTeam2324?CAP_LIMIT_2324-focusCapUsed2324-Math.max(0,slotsLeft2324-1)*ELC_MAX_2324:Infinity;
     const srcNFn2324 = p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0);
     const genericRound2324 = draftProspectRounds + 3;
     lastAllScored2324 = players.filter(p=>!p.start2324&&ppts2324blend(p)>0).map(p=>{
       const pg=posGroup(p.pos); const pp=ppts2324blend(p); const cap0=getCap2324(p)||0;
-      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights, calcAgeForSim: calcAge2324, contractYearAnchor: 2024, nextContractYrs: p.nextContractTerm2324||0, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324, maxSrc: 4 };
+      const scoreArgs = { pg, pp, cap0, pressure: pressure2324, draftWeights: _effectiveDraftWeights(viewTeam2324, draftWeights), calcAgeForSim: calcAge2324, contractYearAnchor: 2024, nextContractYrs: p.nextContractTerm2324||0, curveFns: curveFns2324, elcMax: ELC_MAX_2324, srcNFn: srcNFn2324, maxSrc: 4, team: viewTeam2324, teamField: 'team2324' };
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2324});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
       const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
       const b = prospectScore;
-      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,round:genericRound2324,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
+      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,round:genericRound2324,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
     });
     rows = lastAllScored2324.filter(p=>{
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
@@ -6649,7 +6681,7 @@ function render2324(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2324>0?p.gp2324:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2324>0?p.pts2324:'—'}</td>
       ${(()=>{const s=curveDeltaActual2324(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="23-24 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const pw=draftSubMode2324==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2324*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2324}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2324>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const pw=draftSubMode2324==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2324*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2324}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2324>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2324>0?`\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2324
@@ -6684,43 +6716,45 @@ function updateStats2324(){
     G: fitQuadratic(rosteredPool2324.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2324(p),y:ppts2324blend(p)}))),
   };
   const posBg2324={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2324={F:'#1e40af',D:'#166534',G:'#92400e'};
-  // Recomputes eligibility + score fresh from this team's REAL current state, same shared
-  // primitives as _runAlgoDraft — see render2425's top5Html2425 for the full rationale.
+  // Precompute every team's need/cap state once — _getTeamDraftBoard's splash check needs
+  // every OTHER team's data too, not just the one being displayed — see render2627's
+  // needAll2627 for the full rationale.
+  const needAll2324={}, teamCapAll2324={}, teamCapByPosAll2324={}, teamSpotsLeftAll2324={};
+  for(const t of allTeams){
+    const tp=players.filter(p=>p.start2324===t);
+    needAll2324[t]={
+      F: Math.max(0, DRAFT_ROSTER_MAX.F - tp.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
+    };
+    teamCapAll2324[t]=tp.reduce((s,p)=>s+getCap2324(p),0);
+    teamCapByPosAll2324[t]={F:0,D:0,G:0};
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2324[t]) teamCapByPosAll2324[t][g]+=getCap2324(p); }
+    teamSpotsLeftAll2324[t]=Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
+  }
+  const srcNFn2324=p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0);
+  // Uses _getTeamDraftBoard — the SAME ranking/filtering/splash-deferral logic _runAlgoDraft's
+  // actual simulation uses — see render2627's top5Html for the full rationale.
   const top5Html2324=(team,fRem,dRem,gRem,rem)=>{
-    if(!draftMode2324||!lastPressure2324) return '';
-    const need={F:fRem,D:dRem,G:gRem};
+    if(!draftMode2324) return '';
     if(!fRem&&!dRem&&!gRem) return '';
-    const spotsLeft=fRem+dRem+gRem;
     const round=(draftState2324.picks||[]).filter(pk=>pk.team===team).length+1;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
-    let futureReserve2324=0;
-    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2324+=_expectedRoundCost(fr,CAP_LIMIT_2324,DRAFT_RESERVE_2324);
-    futureReserve2324=Math.min(futureReserve2324,Math.max(0,rem-ELC_MAX_2324));
-    const maxPickCap=rem-futureReserve2324;
-    const teamRoster=players.filter(p=>p.start2324===team);
-    const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2324(p),0)};
-    const teamCapByPos={[team]:{F:0,D:0,G:0}};
-    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2324(p); }
-    const srcNFn2324=p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0);
-    const fas=players.filter(p=>{
-      if(p.start2324) return false;
-      if(ppts2324blend(p)<=0) return false;
-      if(getCap2324(p)<=0) return false;
-      if(getCap2324(p)>maxPickCap) return false;
-      const pg=posGroup(p.pos);
-      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
-      if(INJURY_DROPS_2324.has(normName(p.name).toLowerCase())) return false;
-      return (need[pg]||0)>0;
-    });
-    const picks=fas.map(p=>{
-      const pg=posGroup(p.pos), pp=ppts2324blend(p), cap0=getCap2324(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:lastPressure2324,mode,round,draftWeights,calcAgeForSim:calcAge2324,contractYearAnchor:2024,nextContractYrs:p.nextContractTerm2324||0,curveFns:curveFns2324,elcMax:ELC_MAX_2324,srcNFn:srcNFn2324,maxSrc:4,team,teamCap,teamCapByPos});
-      return {p,score};
-    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
-    if(!picks.length) return '';
+    const { top, locked } = _getTeamDraftBoard(team, round, mode, {
+      players, getAssignedTeam: p=>p.start2324||null, startField:'start2324',
+      ppts: ppts2324blend, getCap: getCap2324,
+      capLimit: CAP_LIMIT_2324, draftReserve: DRAFT_RESERVE_2324,
+      draftWeights: _effectiveDraftWeights(team, draftWeights),
+      calcAgeForSim: calcAge2324, contractYearAnchor: 2024, nextContractField: 'nextContractTerm2324', teamField: 'team2324', elcMax: ELC_MAX_2324,
+      srcNFn: srcNFn2324, maxSrc: 4,
+      allTeams, need: needAll2324, teamCap: teamCapAll2324, teamCapByPos: teamCapByPosAll2324,
+      teamSpotsLeft: teamSpotsLeftAll2324, injurySet: INJURY_DROPS_2324,
+    }, 5);
+    if(!top.length && !locked.length) return '';
+    const row=(p,isLocked)=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2324[pg]};color:${posCol2324[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${isLocked?'<span style="flex-shrink:0">🔒</span>':''}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2324blend(p))}</span></div>`;};
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
-      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2324[pg]};color:${posCol2324[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2324blend(p))}</span></div>`;}).join('')}
+      ${locked.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px" title="${locked.some(x=>x.reason==='splash')?'No other team can afford this player':''}${locked.some(x=>x.reason==='position')?(locked.some(x=>x.reason==='splash')?' / ':'')+'No other team still needs this position':''} — locked in, no risk waiting to take it">🔒 Locked</div>${locked.map(x=>row(x.p,true)).join('')}`:''}
+      ${top.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px${locked.length?';margin-top:4px':''}">${mode==='prospect'?'prospect':'Best Avail'}</div>${top.map(({p})=>row(p,false)).join('')}`:''}
     </div>`;
   };
 
@@ -7694,7 +7728,7 @@ function _getTeamDraftBoard(team, round, mode, ctx, n = 5){
     }
   }
 
-  const ranked = _rankFACandidates(team, round, mode, { ...ctx, excludePositions });
+  const ranked = _rankFACandidates(team, round, mode, { ...ctx, excludePositions }) || [];
   const top = ranked.slice(0, n);
 
   // Splash check: is the single best CONTESTED candidate (the one this team would otherwise
@@ -7822,9 +7856,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     // 25-26 top-18 backtest that Optimize was leaving $14.50M unused by passing on an expensive
     // elite scorer for a cheap efficient prospect purely on tPPTSM's points-per-dollar bias.
     const teamMode = _draftModeFor(team);
-    const draftWeights = teamMode === 'simulate'
-      ? { ...draftWeightsBase, elcExpF: 35, elcExpD: 25, wtCapUse: 0, wtFanBias: draftWeightsBase.wtFanBias || 5 }
-      : { ...draftWeightsBase, wtCapUse: draftWeightsBase.wtCapUse || 0.15, wtFanBias: 0 };
+    const draftWeights = _effectiveDraftWeights(team, draftWeightsBase);
     const srcNFn = (teamMode === 'simulate' && simulateSrcNFn) ? simulateSrcNFn : srcNFnBase;
     const maxSrc = (teamMode === 'simulate' && simulateSrcNFn) ? simulateMaxSrc : maxSrcBase;
 
@@ -8570,44 +8602,45 @@ function updateStats2526(){
     G: fitQuadratic(rosteredPool2526.filter(p=>posGroup(p.pos)==='G').map(p=>({x:getCap2526(p),y:ppts2526blend(p)}))),
   };
   const posBg2526={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol2526={F:'#1e40af',D:'#166534',G:'#92400e'};
-  // Recomputes eligibility + score fresh from this team's REAL current state, same shared
-  // primitives as _runAlgoDraft — see render2425's top5Html2425 for the full rationale.
+  // Precompute every team's need/cap state once — _getTeamDraftBoard's splash check needs
+  // every OTHER team's data too, not just the one being displayed — see render2627's
+  // needAll2627 for the full rationale.
+  const needAll2526={}, teamCapAll2526={}, teamCapByPosAll2526={}, teamSpotsLeftAll2526={};
+  for(const t of allTeams){
+    const tp=players.filter(p=>p.start2526===t);
+    needAll2526[t]={
+      F: Math.max(0, DRAFT_ROSTER_MAX.F - tp.filter(p=>posGroup(p.pos)==='F').length),
+      D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
+      G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
+    };
+    teamCapAll2526[t]=tp.reduce((s,p)=>s+getCap2526(p),0);
+    teamCapByPosAll2526[t]={F:0,D:0,G:0};
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2526[t]) teamCapByPosAll2526[t][g]+=getCap2526(p); }
+    teamSpotsLeftAll2526[t]=Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
+  }
+  const srcNFn2526=p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0);
+  // Uses _getTeamDraftBoard — the SAME ranking/filtering/splash-deferral logic _runAlgoDraft's
+  // actual simulation uses — see render2627's top5Html for the full rationale.
   const top5Html2526=(team,fRem,dRem,gRem,rem)=>{
     if(!draftMode2526) return '';
-    const need={F:fRem,D:dRem,G:gRem};
     if(!fRem&&!dRem&&!gRem) return '';
-    const spotsLeft=fRem+dRem+gRem;
     const round=(draftState2526.picks||[]).filter(pk=>pk.team===team).length+1;
-    let futureReserve2526=0;
-    for(let fr=round+1;fr<round+spotsLeft;fr++) futureReserve2526+=_expectedRoundCost(fr,CAP_LIMIT_2526,DRAFT_RESERVE_2526);
-    futureReserve2526=Math.min(futureReserve2526,Math.max(0,rem-ELC_MAX_2526));
-    const maxPickCap=rem-futureReserve2526;
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
-    const { pressure: pressure2526 } = _draftPressureState(players, DRAFT_TEAMS_2526, p=>p.start2526||null, ppts2526blend, getCap2526);
-    const teamRoster=players.filter(p=>p.start2526===team);
-    const teamCap={[team]:teamRoster.reduce((s,p)=>s+getCap2526(p),0)};
-    const teamCapByPos={[team]:{F:0,D:0,G:0}};
-    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos[team]) teamCapByPos[team][g]+=getCap2526(p); }
-    const srcNFn2526=p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0);
-    const fas=players.filter(p=>{
-      if(p.start2526) return false;
-      if(ppts2526blend(p)<=0) return false;
-      if(getCap2526(p)<=0) return false;
-      if(getCap2526(p)>maxPickCap) return false;
-      const pg=posGroup(p.pos);
-      if(DRAFT_NEVER.has(`${normName(p.name).toLowerCase()}_${pg}`)) return false;
-      if(INJURY_DROPS_2526.has(normName(p.name).toLowerCase())) return false;
-      return (need[pg]||0)>0;
-    });
-    const picks=fas.map(p=>{
-      const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-      const {score}=_scoreDraftCandidate(p,{pg,pp,cap0,pressure:pressure2526,mode,round,draftWeights,calcAgeForSim:calcAge2526,contractYearAnchor:2026,nextContractYrs:p.nextContractTerm2526||0,curveFns:curveFns2526,elcMax:ELC_MAX_2526,srcNFn:srcNFn2526,maxSrc:6,team,teamCap,teamCapByPos});
-      return {p,score};
-    }).sort((a,b)=>b.score-a.score).slice(0,5).map(x=>x.p);
-    if(!picks.length) return '';
+    const { top, locked } = _getTeamDraftBoard(team, round, mode, {
+      players, getAssignedTeam: p=>p.start2526||null, startField:'start2526',
+      ppts: ppts2526blend, getCap: getCap2526,
+      capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
+      draftWeights: _effectiveDraftWeights(team, draftWeights),
+      calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractField: 'nextContractTerm2526', teamField: 'team2526', elcMax: ELC_MAX_2526,
+      srcNFn: srcNFn2526, maxSrc: 6,
+      allTeams, need: needAll2526, teamCap: teamCapAll2526, teamCapByPos: teamCapByPosAll2526,
+      teamSpotsLeft: teamSpotsLeftAll2526, injurySet: INJURY_DROPS_2526,
+    }, 5);
+    if(!top.length && !locked.length) return '';
+    const row=(p,isLocked)=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${isLocked?'<span style="flex-shrink:0">🔒</span>':''}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2526blend(p))}</span></div>`;};
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
-      <div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${mode==='prospect'?'prospect':'Best Avail'}</div>
-      ${picks.map(p=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg2526[pg]};color:${posCol2526[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(ppts2526blend(p))}</span></div>`;}).join('')}
+      ${locked.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px" title="${locked.some(x=>x.reason==='splash')?'No other team can afford this player':''}${locked.some(x=>x.reason==='position')?(locked.some(x=>x.reason==='splash')?' / ':'')+'No other team still needs this position':''} — locked in, no risk waiting to take it">🔒 Locked</div>${locked.map(x=>row(x.p,true)).join('')}`:''}
+      ${top.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px${locked.length?';margin-top:4px':''}">${mode==='prospect'?'prospect':'Best Avail'}</div>${top.map(({p})=>row(p,false)).join('')}`:''}
     </div>`;
   };
   const teamCurveDelta2526 = _makeTeamCurveDeltaFn('start2526', ppts2526blend, getCap2526);
@@ -8727,7 +8760,7 @@ function render2526(){
       D:Math.max(0,DRAFT_ROSTER_MAX.D-teamRoster.filter(p=>posGroup(p.pos)==='D').length),
       G:Math.max(0,DRAFT_ROSTER_MAX.G-teamRoster.filter(p=>posGroup(p.pos)==='G').length),
     };
-    const teamCapUsed2526=draftFocusTeam2526?teamRoster.reduce((s,p)=>s+getCap2526(p),0):0;
+    const teamCapUsed2526=teamRoster.reduce((s,p)=>s+getCap2526(p),0);
     const slotsLeft2526=need.F+need.D+need.G;
     const maxAffordable2526=draftFocusTeam2526?CAP_LIMIT_2526-teamCapUsed2526-Math.max(0,slotsLeft2526-1)*ELC_MAX_2526:Infinity;
     const srcNFn2526 = p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0);
@@ -8740,28 +8773,28 @@ function render2526(){
       .filter(p=>!p.start2526&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights, calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 6 };
+        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights: _effectiveDraftWeights(viewTeam2526, draftWeights), calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 6, team: viewTeam2526, teamField: 'team2526' };
         const _ds2526 = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2526}).score;
         const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2526}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds2526,_ds2526Normal};
       });
-    const focusRound2526 = draftFocusTeam2526 ? (draftState2526.picks||[]).filter(pk=>pk.team===draftFocusTeam2526).length+1 : genericRound2526;
-    const teamCap2526 = {[draftFocusTeam2526]: teamCapUsed2526};
-    const teamCapByPos2526 = {[draftFocusTeam2526]: {F:0,D:0,G:0}};
-    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos2526[draftFocusTeam2526]) teamCapByPos2526[draftFocusTeam2526][g]+=getCap2526(p); }
+    const focusRound2526 = viewTeam2526 ? (draftState2526.picks||[]).filter(pk=>pk.team===viewTeam2526).length+1 : genericRound2526;
+    const teamCap2526 = {[viewTeam2526]: teamCapUsed2526};
+    const teamCapByPos2526 = {[viewTeam2526]: {F:0,D:0,G:0}};
+    for(const p of teamRoster){ const g=posGroup(p.pos); if(g in teamCapByPos2526[viewTeam2526]) teamCapByPos2526[viewTeam2526][g]+=getCap2526(p); }
     const allScored2526=rows
       .filter(p=>!p.start2526&&(!draftFocusTeam2526||(need[posGroup(p.pos)]>0&&getCap2526(p)<=maxAffordable2526))&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
         const scoreArgs = {
-          pg, pp, cap0, pressure: pressure2526, round: focusRound2526, draftWeights,
+          pg, pp, cap0, pressure: pressure2526, round: focusRound2526, draftWeights: _effectiveDraftWeights(viewTeam2526, draftWeights),
           calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextContractTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 6,
-          team: draftFocusTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526,
+          team: viewTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526, teamField: 'team2526',
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
         const _ds2526 = b.score;
         const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
-        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2526:b.ageRaw,tProspect2526:b.tProspect,round:focusRound2526,srcN2526d:b.srcN,coverageMult2526:b.coverageMult,tDelta:b.tDelta,pressRaw2526:b.pressRaw,pressMult2526:b.pressMult}});
+        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2526:b.ageRaw,tProspect2526:b.tProspect,round:focusRound2526,srcN2526d:b.srcN,coverageMult2526:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2526:b.pressRaw,pressMult2526:b.pressMult}});
       });
     rows=sortCol2526==='ppts2526blend'?(draftSubMode2526==='prospect'?allScored2526.sort((a,b)=>b._ds2526-a._ds2526):allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal)):allScored2526;
   }
@@ -8830,7 +8863,7 @@ function render2526(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const pw=draftSubMode2526==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2526*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${b.tProspect2526>0?`\n\n── Draft ──\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const pw=draftSubMode2526==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2526*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2526>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
@@ -9568,7 +9601,7 @@ function updateStats(){
       players, getAssignedTeam: p=>p.start2627||null, startField:'start2627',
       ppts: p=>p.pts||0, getCap: p=>p.cap||0,
       capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
-      draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
+      draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
       calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
       srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
       allTeams: teams, need: needAll2627, teamCap: teamCapAll2627, teamCapByPos: teamCapByPosAll2627,
