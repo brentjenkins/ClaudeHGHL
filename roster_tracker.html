@@ -963,7 +963,7 @@ tr:hover td{background:#fafaf8}
     <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
 
       <div style="border:1px solid #c7d2fe;border-radius:8px;padding:8px 10px;background:#eef2ff">
-        <div style="font-size:10px;font-weight:700;color:#4338ca;letter-spacing:.02em">POSITION QUOTAS <span style="font-weight:400;color:#6b7280">— not a pass itself; used throughout Passes 2-7 to decide whether the algorithm's even allowed to stop or protect a player yet.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#4338ca;letter-spacing:.02em">POSITION QUOTAS <span style="font-weight:400;color:#6b7280">— not a pass itself; used throughout Passes 3-8 to decide whether the algorithm's even allowed to stop or protect a player yet.</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:6px">
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
@@ -981,7 +981,11 @@ tr:hover td{background:#fafaf8}
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 2 — REQUIRED MINIMUM <span style="font-weight:400;color:#9ca3af">Below this total, players drop automatically (worst value first) regardless of value, cap, or demand.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 2 — INJURY/DEMOTION <span style="font-weight:400;color:#9ca3af">Anyone on that season's known-long-term-unavailable list (injured or sent to a lower league) drops unconditionally, same as Pass 1 — a dead roster spot regardless of how good their last-known production/cap efficiency looks. Not tunable here — same hardcoded per-season list the draft side already excludes free agents with.</span></div>
+      </div>
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 3 — REQUIRED MINIMUM <span style="font-weight:400;color:#9ca3af">Below this total, players drop automatically (worst value first) regardless of value, cap, or demand.</span></div>
         <div style="display:flex;flex-direction:column;gap:4px;max-width:200px;margin-top:6px">
           <span style="font-size:11px;color:#9ca3af">Min drops per team (preseason)</span>
           <input type="number" id="s-minDropsPreseason" value="5" min="0" max="20" step="1" onchange="updateSetting('minDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -989,7 +993,7 @@ tr:hover td{background:#fafaf8}
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 3 — STOP CONDITIONS <span style="font-weight:400;color:#9ca3af">Once the floor above and position quotas are clear, these decide when to stop making further optional cuts. Not a drop reason on its own — it ends the process.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 4 — STOP CONDITIONS <span style="font-weight:400;color:#9ca3af">Once the floor above and position quotas are clear, these decide when to stop making further optional cuts. Not a drop reason on its own — it ends the process.</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:6px">
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
@@ -1003,33 +1007,33 @@ tr:hover td{background:#fafaf8}
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 4 — CAP CRUNCH <span style="font-weight:400;color:#9ca3af">Even past the floor, a player still gets forced out if keeping them would blow the cap. No dedicated setting here — driven by that season's Cap Limit (a different settings section) plus the built-in draft reserve.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 5 — CAP CRUNCH <span style="font-weight:400;color:#9ca3af">Even past the floor, a player still gets forced out if keeping them would blow the cap. No dedicated setting here — driven by that season's Cap Limit (a different settings section) plus the built-in draft reserve.</span></div>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 5 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine. All three values below work together to decide who's an easy cut vs. protected from one.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 6 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine. All three values below work together to decide who's an easy cut vs. protected from one.</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 16px;margin-top:6px">
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
             <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;color:#9ca3af" title="Raw pts at/above this level are blanket-protected regardless of cap efficiency — the curve fit is unreliable at the very top of the cap range, so a big negative delta there is as likely a fitting artifact as a real overpay. Read-only: a hardcoded constant, not a live setting — edit UNTOUCHABLE_ELITE_PTS in code to change it.">Untouchable elite pts <span style="opacity:.6">(read-only)</span></span>
+            <span style="font-size:11px;color:#9ca3af" title="Raw pts at/above this level push a player to the very back of the drop-candidate line — still droppable if the required minimum, position quotas, or cap crunch force it, but only as an absolute last resort. The curve fit is unreliable at the very top of the cap range, so a big negative delta there is as likely a fitting artifact as a real overpay. Read-only: a hardcoded constant, not a live setting — edit UNTOUCHABLE_ELITE_PTS in code to change it.">Last-resort pts threshold</span>
             <div style="width:80px;height:32px;border:1px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280;background:#f9fafb">90</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;color:#9ca3af" title="Below this curve-delta, a player is NOT protected by the drop value floor or ABP=0 escape hatch above — badly overpaying overrides those protections regardless of raw production. Read-only: a hardcoded constant, not a live setting — edit UNTOUCHABLE_DELTA_FLOOR in code to change it.">Untouchable delta floor <span style="opacity:.6">(read-only)</span></span>
+            <span style="font-size:11px;color:#9ca3af" title="Below this curve-delta, a player is NOT pushed to the back of the line by the drop value floor or ABP=0 escape hatch above — badly overpaying overrides that last-resort status regardless of raw production. Read-only: a hardcoded constant, not a live setting — edit UNTOUCHABLE_DELTA_FLOOR in code to change it.">Last-resort delta floor</span>
             <div style="width:80px;height:32px;border:1px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280;background:#f9fafb">-6</div>
           </div>
         </div>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 6 — FORCED <span style="font-weight:400;color:#9ca3af">Rare fallback: only fires if Passes 2-5 ran out of candidates before reaching Pass 2's minimum (small rosters). Uses that same Min drops per team total above — no separate setting.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 7 — FORCED <span style="font-weight:400;color:#9ca3af">Rare fallback: only fires if Passes 3-6 ran out of candidates before reaching Pass 3's minimum (small rosters). Uses that same Min drops per team total above — no separate setting.</span></div>
       </div>
 
       <div style="border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;background:#eff6ff">
-        <div style="font-size:10px;font-weight:700;color:#1d4ed8;letter-spacing:.02em">PASS 7 — PROTECTION <span style="font-weight:400;color:#6b7280">Before a Pass 2/4/5 drop happens, skip it entirely (nothing is ever dropped-then-undone) if the player would likely be re-drafted early by someone anyway.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#1d4ed8;letter-spacing:.02em">PASS 8 — PROTECTION <span style="font-weight:400;color:#6b7280">Before a Pass 3/5/6 drop happens, skip it entirely (nothing is ever dropped-then-undone) if the player would likely be re-drafted early by someone anyway.</span></div>
         <div style="display:flex;flex-direction:column;gap:4px;max-width:220px;margin-top:6px">
           <span style="font-size:11px;color:#9ca3af" title="Past the minimum, don't spend an optional drop on a player who'd rank in the top (teams × this many rounds) of the true open market by the same formula the draft engine uses — they're a near-lock to get scooped up early by someone, possibly you.">Early re-draft protection (rounds)</span>
           <input type="number" id="s-earlyRedraftRounds" value="3" min="0" max="10" step="1" onchange="updateSetting('earlyRedraftRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
@@ -5420,7 +5424,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
       const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
       return (predropRoster[`${base}_${pg}`] ?? _dictLookup(p.name, predropRoster) ?? null) === team;
     });
-    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], algoKeptReacquired=[], injuryExcused=[], elcMandatory=[];
+    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], algoKeptReacquired=[], injuryExcused=[], elcMandatory=[], injuryMandatory=[];
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
@@ -5435,6 +5439,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
 
       if(!simKept && !actuallyKept){
         if(elcMandatorySet.has(key)) elcMandatory.push(label);
+        else if(injurySet.has(key)) injuryMandatory.push(label);
         else correctDrops.push(label);
       }
       else if(simKept && actuallyKept)  correctKeeps.push(label);
@@ -5454,12 +5459,12 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
       }
     }
 
-    const correct = correctDrops.length + correctKeeps.length + elcMandatory.length;
+    const correct = correctDrops.length + correctKeeps.length + elcMandatory.length + injuryMandatory.length;
     const correctOutcome = correct + algoDroppedVindicated.length + algoKeptReacquired.length;
     const excused = injuryExcused.length;
     const total = teamPlayers.length - excused;
     totalCorrect += correct; totalAll += total; totalCorrectOutcome += correctOutcome;
-    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, algoKeptReacquired, injuryExcused, elcMandatory, correct, correctOutcome, total});
+    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, algoKeptReacquired, injuryExcused, elcMandatory, injuryMandatory, correct, correctOutcome, total});
   }
   window[resultsKey] = teamResults;
 
@@ -5469,12 +5474,14 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
   const totalReacquired = teamResults.reduce((s,r)=>s+r.algoKeptReacquired.length, 0);
   const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
   const totalELC = teamResults.reduce((s,r)=>s+r.elcMandatory.length, 0);
+  const totalInjuryMandatory = teamResults.reduce((s,r)=>s+r.injuryMandatory.length, 0);
 
   // Render modal
   document.getElementById('compareDropsSummary').innerHTML =
     `${season} Overall match: <strong>${totalCorrect}/${totalAll} players (${pct}%)</strong> &nbsp;|&nbsp; ` +
     `Target: <strong>${ptsTarget}pts</strong>` +
     (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
+    (totalInjuryMandatory ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalInjuryMandatory} injury/demotion rule</span>` : '') +
     (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '') +
     ((totalVindicated||totalReacquired) ? ` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated, ${totalReacquired} reacquired</span>` : '');
 
@@ -5482,7 +5489,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     const pct2 = Math.round(100*r.correct/r.total);
     const badgeColor = pct2>=80?'#16a34a':pct2>=60?'#d97706':'#dc2626';
     let html = `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
-    const algoDropCount = r.correctDrops.length + r.algoDroppedShouldKeep.length + r.algoDroppedVindicated.length + r.elcMandatory.length;
+    const algoDropCount = r.correctDrops.length + r.algoDroppedShouldKeep.length + r.algoDroppedVindicated.length + r.elcMandatory.length + r.injuryMandatory.length;
     const actualDropCount = r.correctDrops.length + r.algoKeptShouldDrop.length + r.algoKeptReacquired.length + r.injuryExcused.length;
     html += `<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
     html += `<div><strong style="font-size:13px">${r.team}</strong><div style="font-size:11px;color:#6b7280;margin-top:2px">Algo Drops (${algoDropCount}) &nbsp;|&nbsp; Actual Drops (${actualDropCount})</div></div>`;
@@ -5501,6 +5508,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
     html += section('Algo kept — dropped, but re-acquired by same team later (vindicated)', '#0891b2', '⏱', r.algoKeptReacquired);
     html += section('Dropped by rule — ELC', '#6366f1', '📋', r.elcMandatory);
+    html += section('Dropped by rule — Injury/Demotion', '#6b7280', '🏥', r.injuryMandatory);
     html += section('Dropped for injury (excused)', '#9ca3af', '🏥', r.injuryExcused);
     // Omit correctKeeps — too verbose; they're the bulk and uninteresting
     html += `</div></div>`;
@@ -6332,7 +6340,7 @@ function _wasPreDropKeeper(p, team, predropDict){
 }
 
 function showTeamCurveModal(view, team){
-  const { startField, pptsF, getCapF, elcMax, label, predropDict, predropStubs, postdropDict } = _teamCurveConfig(view);
+  const { startField, pptsF, getCapF, elcMax, label, predropDict, predropStubs } = _teamCurveConfig(view);
   // Same derivation _runAlgoDrops uses to tag each dropped player with its order/reason.
   const seasonSuffix = startField.replace('start', '');
   const dropOrderField = '_dropOrder' + seasonSuffix;
@@ -6357,17 +6365,6 @@ function showTeamCurveModal(view, team){
   const pickIds = new Set(
     hasPredrop ? teamPlayers.filter(p => !_wasPreDropKeeper(p, team, predropDict)).map(p=>p.id) : []
   );
-  // A predrop keeper who's currently back on this team but WASN'T postdrop-kept here (i.e.
-  // dropped at some point, then re-added by the same team) — without this, they're
-  // indistinguishable from a player who was never dropped at all, since the app only has
-  // predrop/current snapshots, not a continuous history. Found live 2026-08-06 via KIL
-  // re-adding a previously-dropped Connor Bedard.
-  const hasPostdrop = postdropDict && Object.keys(postdropDict).length > 0;
-  const repickIds = new Set(
-    (hasPredrop && hasPostdrop)
-      ? teamPlayers.filter(p => _wasPreDropKeeper(p, team, predropDict) && !_wasPreDropKeeper(p, team, postdropDict)).map(p=>p.id)
-      : []
-  );
   // Real dropped players (still in the live pool, just rostered elsewhere or nowhere now) plus
   // virtual stubs for anyone who left the pool entirely (e.g. retired veterans who'll never show
   // up in another NHL/Yahoo sync) — otherwise they silently never appear as a dropped player at
@@ -6385,7 +6382,7 @@ function showTeamCurveModal(view, team){
     : [];
 
   document.getElementById('teamCurveModalTitle').textContent = `${team} — Efficiency Curve (${label})`;
-  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, highlightIds, pickIds, droppedPlayers, repickIds);
+  _drawCurveChart(document.getElementById('teamCurveCanvas'), pool, getCapF, pptsF, curveFns, highlightIds, pickIds, droppedPlayers);
 
   const posColor = {F:'#1d4ed8',D:'#15803d',G:'#b45309'};
   const rowsKept = teamPlayers.map(p => {
@@ -6393,7 +6390,7 @@ function showTeamCurveModal(view, team){
     const cap = getCapF(p), pts = pptsF(p);
     const base = cap>0 ? _curveBaseline(pg, cap, elcMax, curveFns[pg]) : null;
     const delta = (base!=null && pts>0) ? pts-base : null;
-    const status = pickIds.has(p.id) ? 'pick' : repickIds.has(p.id) ? 'repick' : 'kept';
+    const status = pickIds.has(p.id) ? 'pick' : 'kept';
     return { p, pg, cap, pts, delta, status };
   });
   const rowsDropped = droppedPlayers.map(p => {
@@ -6409,10 +6406,9 @@ function showTeamCurveModal(view, team){
   const rows = [...rowsKept, ...rowsDropped].sort((a,b) => (b.delta??-Infinity) - (a.delta??-Infinity));
 
   const statusBadge = (r) => r.status==='pick' ? ` <span style="color:#7c3aed;font-weight:600">■ pick</span>`
-                            : r.status==='repick' ? ` <span style="color:#0891b2;font-weight:600">▲ dropped &amp; re-added</span>`
                             : r.status==='dropped' ? ` <span style="color:${posColor[r.pg]||'#dc2626'};font-weight:600;cursor:${r.dropReason?'help':'default'}"${r.dropReason?` title="Drop #${r.dropOrder}: ${esc(r.dropReason)}"`:''}>✕ dropped${r.dropOrder?` #${r.dropOrder}`:''}</span>`
                             : '';
-  const legend = hasPredrop ? `<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">● kept &nbsp; ■ <span style="color:#7c3aed">picked up</span> &nbsp; ▲ <span style="color:#0891b2">dropped &amp; re-added</span> &nbsp; ✕ dropped (<span style="color:${posColor.F}">F</span>/<span style="color:${posColor.D}">D</span>/<span style="color:${posColor.G}">G</span> colored)</div>` : '';
+  const legend = hasPredrop ? `<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">● kept &nbsp; ■ <span style="color:#7c3aed">picked up</span> &nbsp; ✕ dropped (<span style="color:${posColor.F}">F</span>/<span style="color:${posColor.D}">D</span>/<span style="color:${posColor.G}">G</span> colored)</div>` : '';
 
   const html = legend + `<table style="width:100%;border-collapse:collapse;font-size:12px">
     <tr style="border-bottom:1px solid #e5e7eb;color:#9ca3af">
@@ -7258,7 +7254,10 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
   })();
 
   const isProspect = p => { const a = calcAgeForSim(p) ?? 99; const mx = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22; return a<=mx && (getCap(p)||0)<=elcMax*ELC_SIGNING_BONUS_WIGGLE; };
-  const isProtectedProspect = p => isProspect(p) && !injurySet.has(normName(p.name).toLowerCase());
+  // No longer needs its own injurySet check — anyone on that list is now pulled out entirely by
+  // the Pass 2 injury drop above, before ever reaching `remaining` (the only pool this is called
+  // against), so the old "!injurySet.has(...)" term was always true here and dead weight.
+  const isProtectedProspect = p => isProspect(p);
   const abpMap = computeABPFn(players);
   const deltaOf = p => { const fn=curveFns[posGroup(p.pos)],pp=ppts(p),c=getCap(p); return (fn && pp>0 && c>0) ? pp-fn(c) : -Infinity; };
   const deficit = p => -deltaOf(p);
@@ -7294,7 +7293,16 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     const roster = players.filter(p => p[startField] === team);
     const mandatory = roster.filter(p => elcMandatorySet.has(normName(p.name).toLowerCase()));
     const mandatoryIds = new Set(mandatory.map(p => p.id));
-    const remaining = roster.filter(p => !mandatoryIds.has(p.id));
+    // Pass 2 — Injury/Demotion: anyone on the SAME known-long-term-unavailable list the draft
+    // side already excludes free agents with (injurySet) drops unconditionally, same as Pass 1
+    // Mandatory — a real GM doesn't keep a dead roster spot around regardless of how good their
+    // last-known production/cap efficiency looks. Added 2026-08-07 after the user noticed
+    // Algo Drops kept 23-24 Killer Whales' Brandon Montour and Andrei Vasilevskiy (both known
+    // long-term injured, both showing positive curve-delta from stale pre-injury production) —
+    // the drop algorithm had no way to see injury status at all before this.
+    const injuryDrops = roster.filter(p => !mandatoryIds.has(p.id) && injurySet.has(normName(p.name).toLowerCase()));
+    const injuryDropIds = new Set(injuryDrops.map(p => p.id));
+    const remaining = roster.filter(p => !mandatoryIds.has(p.id) && !injuryDropIds.has(p.id));
 
     // Positional rebalancing: any position's cap share > its knapsack-optimal fraction
     // (OPT_POS_FRACS) bumps THAT position's players' effective deficit, so an over-invested
@@ -7347,21 +7355,22 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
 
     const dropReasonById = new Map();
     for(const p of mandatory) dropReasonById.set(p.id, 'Pass 1: mandatory (ELC)');
-    const dropList = [...mandatory];
+    for(const p of injuryDrops) dropReasonById.set(p.id, 'Pass 2: injury/demotion (known long-term unavailable)');
+    const dropList = [...mandatory, ...injuryDrops];
     let keptPts = remaining.reduce((s,p) => s + ppts(p), 0);
     let keptCap = remaining.reduce((s,p) => s + (getCap(p)||0), 0);
     let numDropped = dropList.length;
-    let droppedF = mandatory.filter(p => posGroup(p.pos)==='F').length;
-    let droppedD = mandatory.filter(p => posGroup(p.pos)==='D').length;
-    let droppedG = mandatory.filter(p => posGroup(p.pos)==='G').length;
+    let droppedF = dropList.filter(p => posGroup(p.pos)==='F').length;
+    let droppedD = dropList.filter(p => posGroup(p.pos)==='D').length;
+    let droppedG = dropList.filter(p => posGroup(p.pos)==='G').length;
 
     // This team's own working view of the free-agent market — starts as a copy of the true
-    // pre-drop pool (plus this team's own mandatory drops, already "back on the market" from
-    // this team's perspective), and grows with each of THIS team's own decisions below. Other
-    // teams' simultaneous drops never touch it, matching how real GMs submit their lists
+    // pre-drop pool (plus this team's own mandatory/injury drops, already "back on the market"
+    // from this team's perspective), and grows with each of THIS team's own decisions below.
+    // Other teams' simultaneous drops never touch it, matching how real GMs submit their lists
     // independently without seeing each other's first.
     const teamPoolByPos = { F: [...basePoolByPos.F], D: [...basePoolByPos.D], G: [...basePoolByPos.G] };
-    for(const p of mandatory){ const pg=posGroup(p.pos); if(pg in teamPoolByPos) teamPoolByPos[pg].push({x:getCap(p)||0, y:ppts(p)}); }
+    for(const p of dropList){ const pg=posGroup(p.pos); if(pg in teamPoolByPos) teamPoolByPos[pg].push({x:getCap(p)||0, y:ppts(p)}); }
     const faCurveFns = {
       F: fitQuadratic(teamPoolByPos.F), D: fitQuadratic(teamPoolByPos.D), G: fitQuadratic(teamPoolByPos.G),
     };
@@ -7393,7 +7402,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
         const pastFloor = numDropped >= minDropsPreseason && posOwnMinMet && capOk;
         const pScore = redraftScoreOf(p);
         earlyRedraftFlag = pScore >= earlyRedraftScoreThreshold;
-        if(debugLog) console.log(`[earlyRedraft] ${team}: ${p.name} — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)} (flagged:${earlyRedraftFlag}) — drops so far ${numDropped}/${minDropsPreseason}, posOwnMinMet:${posOwnMinMet}, capOk:${capOk} → ${pastFloor && earlyRedraftFlag ? 'Pass 7: PROTECTED (skipped)' : earlyRedraftFlag ? 'flagged, but floor/position quota not yet clear' : 'not flagged'}`);
+        if(debugLog) console.log(`[earlyRedraft] ${team}: ${p.name} — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)} (flagged:${earlyRedraftFlag}) — drops so far ${numDropped}/${minDropsPreseason}, posOwnMinMet:${posOwnMinMet}, capOk:${capOk} → ${pastFloor && earlyRedraftFlag ? 'Pass 8: PROTECTED (skipped)' : earlyRedraftFlag ? 'flagged, but floor/position quota not yet clear' : 'not flagged'}`);
         if(pastFloor && earlyRedraftFlag) continue;
       }
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
@@ -7412,10 +7421,10 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
                                    + droppedD*Math.max(0, faCurveFns.D(perSlotBudget))
                                    + droppedG*Math.max(0, faCurveFns.G(perSlotBudget));
       if(!isValuable && numDropped >= minDropsPreseason && keptPts+assumedReplacementPts >= ptsTarget && capOk && posMinsMet) break;
-      let reason = numDropped < minDropsPreseason ? 'Pass 2: required minimum'
-                 : !capOk ? 'Pass 4: cap crunch'
-                 : 'Pass 5: below curve value';
-      if(earlyRedraftFlag) reason += ' (Pass 7 protection didn’t apply — floor/position quota not yet clear)';
+      let reason = numDropped < minDropsPreseason ? 'Pass 3: required minimum'
+                 : !capOk ? 'Pass 5: cap crunch'
+                 : 'Pass 6: below curve value';
+      if(earlyRedraftFlag) reason += ' (Pass 8 protection didn’t apply — floor/position quota not yet clear)';
       dropReasonById.set(p.id, reason);
       dropList.push(p);
       keptPts -= ppts(p); keptCap -= (getCap(p)||0); numDropped++;
@@ -7433,7 +7442,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       for(const p of candidates){
         if(numDropped >= minDropsPreseason) break;
         if(alreadyDropped.has(p.id)) continue;
-        dropReasonById.set(p.id, 'Pass 6: forced (ran out of natural candidates)');
+        dropReasonById.set(p.id, 'Pass 7: forced (ran out of natural candidates)');
         dropList.push(p);
         keptPts -= ppts(p); keptCap -= (getCap(p)||0);
         const pg2 = posGroup(p.pos);
