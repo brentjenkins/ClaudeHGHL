@@ -1007,10 +1007,20 @@ tr:hover td{background:#fafaf8}
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 5 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine.</span></div>
-        <div style="display:flex;flex-direction:column;gap:4px;max-width:200px;margin-top:6px">
-          <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
-          <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 5 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine. All three values below work together to decide who's an easy cut vs. protected from one.</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 16px;margin-top:6px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
+            <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af" title="Raw pts at/above this level are blanket-protected regardless of cap efficiency — the curve fit is unreliable at the very top of the cap range, so a big negative delta there is as likely a fitting artifact as a real overpay. Read-only: a hardcoded constant, not a live setting — edit UNTOUCHABLE_ELITE_PTS in code to change it.">Untouchable elite pts <span style="opacity:.6">(read-only)</span></span>
+            <div style="width:80px;height:32px;border:1px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280;background:#f9fafb">90</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af" title="Below this curve-delta, a player is NOT protected by the drop value floor or ABP=0 escape hatch above — badly overpaying overrides those protections regardless of raw production. Read-only: a hardcoded constant, not a live setting — edit UNTOUCHABLE_DELTA_FLOOR in code to change it.">Untouchable delta floor <span style="opacity:.6">(read-only)</span></span>
+            <div style="width:80px;height:32px;border:1px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280;background:#f9fafb">-6</div>
+          </div>
         </div>
       </div>
 
@@ -1466,7 +1476,7 @@ let minDropsPreseason = 5, maxDropsPreseason = 20;
 // candidate ISN'T a near-lock to be re-drafted in the first earlyRedraftRounds rounds by SOMEONE
 // (see _runAlgoDrops' earlyRedraftRiskIds) — losing a player you'll likely just spend an early
 // pick getting back isn't a good trade once the required floor is already satisfied.
-let earlyRedraftRounds = 3;
+let earlyRedraftRounds = 4;
 let draftProspectRounds = 1;
 // Per-team Algo Draft mode: 'simulate' (default) tunes toward matching what that team's real
 // GM will actually pick — useful for realistic opponent behavior. 'optimize' drops the
@@ -2118,6 +2128,7 @@ function algoDrops(){
     computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, contractYearAnchor: NHL_SEASON_YEAR,
+    debugLog: true,
   });
 
   algoDropsApplied = true;
@@ -5340,6 +5351,7 @@ function algoDrops2526(){
     useRebalBonus: true, useMinEnforcement: false, emptyMarker: null,
     srcNFn: p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0),
     maxSrc: 6, contractYearAnchor: 2026, nextContractField: 'nextContractTerm2526',
+    debugLog: true,
   });
 
   draftState2526 = {picks:[]};
@@ -5876,6 +5888,7 @@ function algoDrops2425(){
     useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
     srcNFn: p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
     maxSrc: 4, contractYearAnchor: 2025, nextContractField: 'nextContractTerm2425',
+    debugLog: true,
   });
 
   draftState2425 = {picks:[]};
@@ -6046,6 +6059,7 @@ function algoDrops2324(){
     useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
     srcNFn: p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0),
     maxSrc: 4, contractYearAnchor: 2024, nextContractField: 'nextContractTerm2324',
+    debugLog: true,
   });
 
   draftState2324 = {picks:[]};
@@ -7152,7 +7166,7 @@ function algoDraft2526(){
 // drops correctly (found 2026-07-22 via Blue Line Bangers/Mason Marchment in 24-25).
 // Mutates only p[startField] on the given `players` array; every other side effect (persistence,
 // rendering, toasts) stays in each season's own wrapper function, called after this returns.
-function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team', srcNFn, maxSrc, contractYearAnchor, nextContractField = 'nextContractTerm' }){
+function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team', srcNFn, maxSrc, contractYearAnchor, nextContractField = 'nextContractTerm', debugLog = false }){
   // Tags every dropped player with which numbered cut they were (this run's dropList order)
   // and why, so the reasoning is inspectable later (e.g. on the team curve modal) instead of
   // only visible transiently via console.log while the run is happening. Field names are
@@ -7379,10 +7393,8 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
         const pastFloor = numDropped >= minDropsPreseason && posOwnMinMet && capOk;
         const pScore = redraftScoreOf(p);
         earlyRedraftFlag = pScore >= earlyRedraftScoreThreshold;
-        if(pastFloor && earlyRedraftFlag){
-          console.log(`[earlyRedraft] ${team}: ${p.name} Pass 7: PROTECTED (skipped) — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)}`);
-          continue;
-        }
+        if(debugLog) console.log(`[earlyRedraft] ${team}: ${p.name} — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)} (flagged:${earlyRedraftFlag}) — drops so far ${numDropped}/${minDropsPreseason}, posOwnMinMet:${posOwnMinMet}, capOk:${capOk} → ${pastFloor && earlyRedraftFlag ? 'Pass 7: PROTECTED (skipped)' : earlyRedraftFlag ? 'flagged, but floor/position quota not yet clear' : 'not flagged'}`);
+        if(pastFloor && earlyRedraftFlag) continue;
       }
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
       // remaining cap headroom across the actual remaining open slots) and position-aware
