@@ -143,6 +143,7 @@ tr:hover td{background:#fafaf8}
 .section-line{flex:0 0 12px;height:1px;background:#eee;border-radius:1px}
 .section-line-full{flex:1;height:1px;background:#eee}
 .section-desc{font-size:10px;color:#b0b7c3;font-weight:400;text-transform:none;letter-spacing:0;flex:1;line-height:1.4}
+.settings-divider{border-top:1px solid #e5e7eb}
 .proxy-bar{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;background:#f0f0ef;font-size:12px;color:#666;cursor:default;user-select:none}
 .proxy-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db;flex-shrink:0}
 .proxy-dot.green{background:#16a34a}
@@ -153,33 +154,6 @@ tr:hover td{background:#fafaf8}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:.6rem 1.25rem;border-radius:8px;font-size:13px;z-index:1000;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
-/* ── Killer Whales watermark canvas ──────────────────────────────── */
-#whaleCanvas{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;display:none}
-/* ── Muller Time! watermark ──────────────────────────────────────── */
-#mullerOverlay{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none;
-  overflow:hidden;background:rgba(0,0,0,.35)}
-#mullerOverlay img{position:absolute;bottom:-110%;left:-10%;
-  height:85vh;max-width:70vw;object-fit:contain;border-radius:12px;
-  filter:drop-shadow(0 0 40px rgba(255,215,0,.8));
-  animation:mullerRise 1.1s cubic-bezier(.22,1,.36,1) forwards}
-#mullerVideo{position:absolute;bottom:-110%;left:-10%;
-  width:66vw;height:75vh;border-radius:12px;border:none;
-  box-shadow:0 0 40px rgba(255,215,0,.8);
-  animation:mullerRise 1.1s cubic-bezier(.22,1,.36,1) forwards}
-@keyframes mullerRise{
-  0%  {bottom:-110%;left:-10%;opacity:0;transform:rotate(-4deg) scale(.9)}
-  55% {opacity:1}
-  100%{bottom:2vh;left:18%;opacity:1;transform:rotate(3deg) scale(1)}
-}
-#mullerOverlay .muller-label{position:absolute;top:24px;left:50%;
-  transform:translateX(-50%);font-size:56px;font-weight:900;
-  color:#fff;text-shadow:0 0 32px rgba(255,215,0,1),0 4px 10px rgba(0,0,0,.85);
-  white-space:nowrap;letter-spacing:.04em;opacity:0;
-  animation:mullerPulse 1.5s ease-in-out infinite 1.1s}
-@keyframes mullerPulse{
-  0%,100%{opacity:1;transform:translateX(-50%) scale(1)}
-  50%    {opacity:.85;transform:translateX(-50%) scale(1.04)}
-}
 /* ── Draft Summary view ──────────────────────────────────────────── */
 #view-summary{max-width:1400px}
 .summary-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.75rem 2rem;min-height:480px;display:flex;flex-direction:column;gap:1.25rem}
@@ -222,14 +196,6 @@ tr:hover td{background:#fafaf8}
 .summary-progress{height:3px;background:#e5e7eb;border-radius:2px;margin-top:.5rem;overflow:hidden}
 .summary-progress-bar{height:100%;background:#185FA5;border-radius:2px;width:100%}
 .summary-progress-bar.running{animation:summaryProg 10s linear forwards}
-/* ── Proj Pts ticker ─────────────────────────────────────────────── */
-#draftTicker{position:fixed;bottom:0;left:0;right:0;height:48px;background:#1a1a18;color:#fff;overflow:hidden;z-index:9000;display:none;border-top:2px solid #185FA5}
-#draftTicker .ticker-track{display:flex;white-space:nowrap;height:100%;will-change:transform}
-.ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 28px;height:48px;font-size:17px;border-right:1px solid #333}
-.ticker-item-rank{font-size:14px;font-weight:700;color:#9ca3af}
-.ticker-item-name{font-weight:600}
-.ticker-item-pts{font-size:15px;color:#60a5fa;font-weight:700}
-.ticker-sep{color:#555;padding:0 4px}
 </style>
 </head>
 <body>
@@ -549,7 +515,7 @@ tr:hover td{background:#fafaf8}
 
 </div><!-- /view-roster2526 -->
 
-<div id="view-draft" style="display:none" onclick="if(!event.target.closest('button,input,.draft-results-row,.draft-row')){animDismissed=true;stopWhaleAnimation();showMullerOverlay(false);}">
+<div id="view-draft" style="display:none">
   <div id="bigBoardTitle" style="font-size:32px;font-weight:700;margin-bottom:.75rem">Big Board</div>
 
   <!-- Prior-year board (24-25 or 25-26 when that year is drafting) -->
@@ -564,16 +530,6 @@ tr:hover td{background:#fafaf8}
       <div style="display:flex;align-items:center;gap:10px">
         <div style="font-size:12px;color:#888" id="draftOnClock"></div>
         <span id="draftTimer" style="font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;letter-spacing:.03em;min-width:3.5ch;display:none"></span>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
-          <input type="checkbox" id="draftAnimToggle" onchange="setDraftAnims(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
-          Animations
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#9ca3af;cursor:pointer;user-select:none">
-          <input type="checkbox" id="draftTickerToggle" onchange="setTickerEnabled(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer">
-          Ticker
-        </label>
       </div>
     </div>
     <div id="draftCompactWrap" style="display:flex;gap:20px;align-items:flex-start">
@@ -643,8 +599,6 @@ tr:hover td{background:#fafaf8}
       <button class="btn btn-indigo-outline" onclick="rankPlayers()">★ Rank Players</button>
       <button class="btn btn-indigo-outline" id="draftModeBtn" onclick="toggleDraftMode()">⚡ Draft Mode</button>
       <button class="btn btn-blue-outline" id="algoDraftBtn2627" onclick="algoDraft2627()" title="Run Algo Draft from current rosters and apply picks">⬆ Algo Draft</button>
-      <button class="btn btn-blue-outline" id="animateDraftBtn2627" onclick="animateAlgoDraft2627()" title="Watch Algo Draft happen pick-by-pick (~5s/pick) instead of applying instantly">🎬 Animate Draft</button>
-      <button class="btn btn-red-outline" id="skipAnimateBtn2627" onclick="skipAnimateDraft2627()" style="display:none" title="Jump straight to the final result">⏭ Skip to End</button>
       <button class="btn btn-green-outline" onclick="exportDraft2627()" title="Save the 26-27 draft picks (player, pos, fantasy team, round#, pick#) to a CSV file">💾 Export Draft</button>
       <button class="btn btn-indigo-light" id="compareDraftsBtn2627" onclick="compareDrafts2627()" title="Available once the real 26-27 draft happens (Oct 2, 2026) and POSTDRAFT_ROSTER_2627 is populated" style="opacity:.4;cursor:not-allowed">📋 Compare Drafts</button>
       <span id="draftSubModeCtrl" style="display:none;border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600">
@@ -905,6 +859,7 @@ tr:hover td{background:#fafaf8}
 
     </div>
   </div>
+  <div class="settings-divider"></div>
 
   <div>
     <div class="section-label">Yahoo <span class="section-line"></span><span class="section-desc">Yahoo Fantasy league keys and draft dates. Draft dates determine the drop/add window for Yahoo transaction fetches (date + 2 days). Draft dates are historical facts (const in code) — only 26–27/27–28 may still need updating. Preseason Draft cells outlined in orange fall AFTER that season's NHL opening night (see NHL_OPENING_NIGHT_2X2Y) — a retroactive-scoring situation, not necessarily an error.</span></div>
@@ -942,6 +897,7 @@ tr:hover td{background:#fafaf8}
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
     </div>
   </div>
+  <div class="settings-divider"></div>
 
   <div>
     <div class="section-label">Projections <span class="section-line"></span><span class="section-desc">Confidence weight per projection source when blending PPTS/PPP (higher = trusted more). Defaults derived from a 2026-07-13 backtest of each source's 25-26 preseason projection vs actual 25-26 results — Athletic/DFO tracked actuals most closely, ESPN least.</span></div>
@@ -956,6 +912,7 @@ tr:hover td{background:#fafaf8}
       <label style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9ca3af" title="Once 26-27 games exist, PPTS = banked actual points (certain — drops/draft apply retroactively) + this-weighted blend of preseason rate vs actual pace for games remaining. Small on purpose — 14 games is a noisy sample.">Early pace wt<input type="number" id="s-earlyPaceWeight" value="0.2" min="0" max="1" step="0.05" onchange="updateSetting('earlyPaceWeight',+this.value)" style="width:64px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center;color:#1a1a18"></label>
     </div>
   </div>
+  <div class="settings-divider"></div>
 
 
   <div>
@@ -1042,6 +999,7 @@ tr:hover td{background:#fafaf8}
 
     </div>
   </div>
+  <div class="settings-divider"></div>
 
   <div>
     <div class="section-label">Efficiency Curve <span class="section-line"></span><span class="section-desc">Quadratic pts vs cap fit, per position (F/D/G). The △ column shows pts above (+) or below (−) the average for their position at their cap. Drives drop tier placement and sort order.</span></div>
@@ -1051,6 +1009,7 @@ tr:hover td{background:#fafaf8}
       </div>
     </div>
   </div>
+  <div class="settings-divider"></div>
 
   <div>
     <div class="section-label">Scoring <span class="section-line"></span><span class="section-desc">Rank Scoring drives the Rank column and draft board ordering. Draft Scoring layers on live-draft bonuses.</span></div>
@@ -1149,6 +1108,7 @@ tr:hover td{background:#fafaf8}
       </div>
     </div>
   </div>
+  <div class="settings-divider"></div>
 
   <div>
     <div class="section-label">Draft <span class="section-line"></span><span class="section-desc">Algo Draft settings.</span></div>
@@ -1163,6 +1123,7 @@ tr:hover td{background:#fafaf8}
       <div id="draftModeSettings" style="display:flex;flex-wrap:wrap;gap:8px"></div>
     </div>
   </div>
+  <div class="settings-divider"></div>
 
   <div>
     <div class="section-label">ABP <span class="section-line"></span><span class="section-desc">Available Better Players: unrostered players at same position with cap ≤ (this player's cap + wiggle%) and more pts. Low ABP = scarce position = draft premium.</span></div>
@@ -1231,16 +1192,6 @@ tr:hover td{background:#fafaf8}
     <button class="btn btn-primary" onclick="closeTeamCurveModal()">Close</button>
   </div>
 </div>
-</div>
-
-<div id="draftTicker"><div class="ticker-track" id="tickerTrack"></div></div>
-<canvas id="whaleCanvas"></canvas>
-
-<div id="mullerOverlay">
-  <div class="muller-label">MULLER TIME! 🏒</div>
-  <img id="mullerPhoto" src="/muller.webp" alt="Kirk Muller raising the Cup">
-  <iframe id="mullerVideo" style="display:none" frameborder="0"
-    allow="autoplay; encrypted-media" allowfullscreen></iframe>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3669,36 +3620,8 @@ let draftMode2526 = false, draftSubMode2526 = 'prospect';
 let sortCol2526 = 'ppts2526blend', sortDir2526 = -1;
 let sortCol2425 = 'ppts2425blend', sortDir2425 = -1;
 let sortCol2324 = 'ppts2324blend', sortDir2324 = -1;
-let animDismissed = false;
-const LS_DRAFT_ANIMS = 'hghl_draft_anims';
-let draftAnimsEnabled = localStorage.getItem(LS_DRAFT_ANIMS) === 'true';
-const LS_TICKER_ENABLED = 'hghl_ticker_enabled';
-let tickerEnabled = localStorage.getItem(LS_TICKER_ENABLED) === 'true';
 const LS_CAP_MIX = 'hghl_show_cap_mix';
 let showCapMix = localStorage.getItem(LS_CAP_MIX) === 'true';
-
-// ── Ticker RAF loop ───────────────────────────────────────────────
-let _tickerRAF = null, _tickerX = 0, _tickerLastTs = null;
-function _tickerFrame(ts){
-  const track = document.getElementById('tickerTrack');
-  if(!track){ _tickerRAF = null; return; }
-  if(_tickerLastTs !== null){
-    const half = track.scrollWidth / 2;
-    if(half > 0){
-      _tickerX += 150 * (ts - _tickerLastTs) / 1000; // 150 px/s
-      if(_tickerX >= half) _tickerX -= half;
-      track.style.transform = `translateX(-${_tickerX.toFixed(1)}px)`;
-    }
-  }
-  _tickerLastTs = ts;
-  _tickerRAF = requestAnimationFrame(_tickerFrame);
-}
-function startTicker(){
-  if(!_tickerRAF){ _tickerLastTs = null; _tickerRAF = requestAnimationFrame(_tickerFrame); }
-}
-function stopTicker(){
-  if(_tickerRAF){ cancelAnimationFrame(_tickerRAF); _tickerRAF = null; _tickerLastTs = null; }
-}
 
 // ── Draft pick timer ──────────────────────────────────────────────
 let _draftTimerStart = null, _draftTimerRAF = null;
@@ -3789,157 +3712,6 @@ function reorderStandings(el, ptsByTeam){
   });
 }
 
-// ── Whale canvas animation ────────────────────────────────────────
-let _whaleRAF = null;
-
-function startWhaleAnimation(){
-  const c = document.getElementById('whaleCanvas');
-  c.width  = window.innerWidth;
-  c.height = window.innerHeight;
-  c.style.display = 'block';
-  if(!_whaleRAF) _whaleRAF = requestAnimationFrame(_whaleFrame);
-}
-
-function stopWhaleAnimation(){
-  const c = document.getElementById('whaleCanvas');
-  if(c){ c.style.display='none'; c.getContext('2d').clearRect(0,0,c.width,c.height); }
-  if(_whaleRAF){ cancelAnimationFrame(_whaleRAF); _whaleRAF=null; }
-}
-
-function _whaleFrame(){
-  const c = document.getElementById('whaleCanvas');
-  if(!c || c.style.display==='none'){ _whaleRAF=null; return; }
-  const ctx = c.getContext('2d');
-  const W = c.width, H = c.height;
-  ctx.clearRect(0,0,W,H);
-
-  // ── Tank (bottom-right) ──────────────────────────────────────────
-  const TW=220, TH=165, TX=W-TW-30, TY=H-TH-30;
-  const waterTop = TY + TH*0.38;
-  const now = Date.now();
-
-  // glass walls
-  ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=5;
-  ctx.strokeRect(TX, TY, TW, TH);
-  // water fill
-  ctx.fillStyle='rgba(56,189,248,0.30)';
-  ctx.fillRect(TX+2, waterTop+4, TW-4, TH-(waterTop-TY)-4);
-  // animated wave on water surface
-  ctx.fillStyle='rgba(56,189,248,0.55)';
-  ctx.beginPath();
-  ctx.moveTo(TX+2, waterTop);
-  for(let x=0;x<=TW-4;x+=4){
-    ctx.lineTo(TX+2+x, waterTop + Math.sin(now/400 + x*0.12)*4);
-  }
-  ctx.lineTo(TX+TW-2, waterTop+8);
-  ctx.lineTo(TX+TW-2, TY+TH-2);
-  ctx.lineTo(TX+2,    TY+TH-2);
-  ctx.closePath(); ctx.fill();
-  // bubbles
-  for(const [bx,phase,speed] of [[TX+40,0,900],[TX+110,1.5,700],[TX+170,0.7,1100]]){
-    const by = waterTop + TH*0.3 + (TH*0.55)*((now/speed + phase)%1);
-    ctx.beginPath();
-    ctx.arc(bx, by, 5, 0, Math.PI*2);
-    ctx.strokeStyle='rgba(56,189,248,0.7)'; ctx.lineWidth=1.5;
-    ctx.stroke();
-  }
-
-  // ── Whale arc (top-left → tank) ──────────────────────────────────
-  const PERIOD = 5200;
-  const t = (now % PERIOD) / PERIOD;           // 0→1 per cycle
-  const DIVE_END = 0.82, SPLASH_END = 0.93;
-
-  if(t < DIVE_END){
-    const p = t / DIVE_END;                    // dive progress 0→1
-
-    // Cubic bezier: (startX,startY) → (cp1) → (cp2) → (tankCX,waterTop-50)
-    const sx=40, sy=-150, cp1x=W*0.18, cp1y=H*0.05, cp2x=W*0.65, cp2y=H*0.55;
-    const ex=TX+TW*0.5, ey=waterTop-60;
-    const mt=1-p;
-    const wx = mt*mt*mt*sx + 3*mt*mt*p*cp1x + 3*mt*p*p*cp2x + p*p*p*ex;
-    const wy = mt*mt*mt*sy + 3*mt*mt*p*cp1y + 3*mt*p*p*cp2y + p*p*p*ey;
-
-    // Tangent angle for rotation
-    const dp=0.01, p2=Math.min(p+dp,1), mt2=1-p2;
-    const wx2=mt2*mt2*mt2*sx+3*mt2*mt2*p2*cp1x+3*mt2*p2*p2*cp2x+p2*p2*p2*ex;
-    const wy2=mt2*mt2*mt2*sy+3*mt2*mt2*p2*cp1y+3*mt2*p2*p2*cp2y+p2*p2*p2*ey;
-    const angle = Math.atan2(wy2-wy, wx2-wx);
-
-    const opacity = p<0.06 ? (p/0.06)*0.38 : p>0.88 ? ((1-p)/0.12)*0.38 : 0.38;
-    ctx.save();
-    ctx.globalAlpha = opacity;
-    ctx.translate(wx, wy);
-    ctx.rotate(angle);
-    ctx.scale(-1, 1);                          // flip to face right
-    ctx.font='110px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('🐋', 0, 0);
-    ctx.restore();
-
-  } else if(t < SPLASH_END){
-    // Splash
-    const sp = (t - DIVE_END) / (SPLASH_END - DIVE_END);
-    ctx.globalAlpha = Math.max(0, 0.7 - sp*0.7);
-    ctx.font=`${70+sp*40}px serif`;
-    ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillText('💦', TX+TW*0.5, waterTop - sp*55);
-    ctx.globalAlpha=1;
-  }
-
-  _whaleRAF = requestAnimationFrame(_whaleFrame);
-}
-
-let _mullerInterval = null, _mullerHideTimeout = null, _mullerPhase = 0;
-
-function showMullerOverlay(show){
-  const el = document.getElementById('mullerOverlay');
-  if(!el) return;
-  clearInterval(_mullerInterval);  _mullerInterval = null;
-  clearTimeout(_mullerHideTimeout); _mullerHideTimeout = null;
-  if(!show){
-    el.style.display = 'none';
-    const vid = document.getElementById('mullerVideo');
-    if(vid) vid.src = '';
-    return;
-  }
-
-  const PHOTO_DURATION = 5000;
-  const VIDEO_DURATION = 12000;
-
-  function playOnce(){
-    const photo = document.getElementById('mullerPhoto');
-    const vid   = document.getElementById('mullerVideo');
-    const label = el.querySelector('.muller-label');
-    const isVideo = (_mullerPhase % 2 === 1);
-    _mullerPhase++;
-
-    if(isVideo){
-      photo.style.display = 'none';
-      vid.style.display = 'block';
-      vid.src = 'about:blank';
-      // small delay so display:block is painted before src triggers load
-      setTimeout(() => { vid.src = 'https://www.youtube.com/embed/I6Mlib8UbkU?autoplay=1'; }, 50);
-      vid.style.animation = 'none'; vid.offsetHeight; vid.style.animation = '';
-    } else {
-      vid.style.display = 'none';
-      vid.src = '';
-      photo.style.display = 'block';
-      photo.style.animation = 'none'; photo.offsetHeight; photo.style.animation = '';
-    }
-
-    el.style.display = 'block';
-    label.style.animation = 'none'; label.offsetHeight; label.style.animation = '';
-
-    const duration = isVideo ? VIDEO_DURATION : PHOTO_DURATION;
-    _mullerHideTimeout = setTimeout(() => {
-      el.style.display = 'none';
-      if(isVideo){ const v = document.getElementById('mullerVideo'); if(v) v.src = ''; }
-    }, duration);
-  }
-
-  playOnce();
-  _mullerInterval = setInterval(playOnce, 60000);
-}
-
 function loadDraft(){
   draftState2627 = lsGet(LS_DRAFT_2627) || {picks: []};
   draftState2526 = lsGet(LS_DRAFT_2526) || {picks: []};
@@ -4010,7 +3782,6 @@ function buildDraftSeq2526(){ return _buildSeq(DRAFT_TEAMS_2526, 'start2526', dr
 function buildDraftSeq2324(){ return _buildSeq(DRAFT_TEAMS_2324, 'start2324', draftState2324); }
 
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
-  animDismissed = false;
   draftFocusTeam = null;
   const team = buildDraftSeq2627()[draftState2627.picks.length];
   const toPts = players.filter(p=>p.start2627===team).reduce((s,p)=>s+(p.pts||0),0);
@@ -4417,18 +4188,6 @@ function setDraftSubMode(mode){
   if(draftMode) render();
 }
 
-function setDraftAnims(val){
-  draftAnimsEnabled = val;
-  localStorage.setItem(LS_DRAFT_ANIMS, val);
-  if(!val){ stopWhaleAnimation(); showMullerOverlay(false); }
-}
-function setTickerEnabled(val){
-  tickerEnabled = val;
-  localStorage.setItem(LS_TICKER_ENABLED, val);
-  const el = document.getElementById('draftTicker');
-  if(!val){ el.style.display='none'; stopTicker(); }
-  else if(currentView==='draft'||currentView==='summary'){ el.style.display='block'; startTicker(); }
-}
 function setCapMix(val){
   showCapMix = val;
   localStorage.setItem(LS_CAP_MIX, val);
@@ -6930,108 +6689,6 @@ function algoDraft2627(){
   renderBigBoard();
 }
 
-let _animateDraft2627Running = false;
-let _animateDraft2627Skip = false;
-function skipAnimateDraft2627(){ _animateDraft2627Skip = true; }
-
-// Sleep that a running animation can be told to cut short mid-wait (checked every 100ms
-// instead of only between picks), so clicking "Skip to End" feels immediate rather than
-// waiting out however much of the current ~5s delay is left.
-function _animateSleep(ms){
-  return new Promise(resolve => {
-    const stepMs = 100;
-    let waited = 0;
-    const tick = () => {
-      if(_animateDraft2627Skip || waited >= ms){ resolve(); return; }
-      waited += stepMs;
-      setTimeout(tick, stepMs);
-    };
-    tick();
-  });
-}
-
-// Same decision engine as algoDraft2627 (_runAlgoDraft always computes the full result
-// instantly — every pick is already decided by the time this returns, since it needs its own
-// prior picks' curve/ABP state as it goes), but reveals it to the user one pick at a time
-// instead of applying everything at once. Runs with applyChanges:false so _runAlgoDraft
-// doesn't persist/render the finished result itself; this function resets players back to
-// their pre-draft state immediately after, then replays the already-decided sequence (read
-// back from draftState2627.simPicks, which only the Compare Drafts modal ever reads — nothing
-// on the live Big Board shows it, so setting it early doesn't spoil anything) with a real
-// delay between each. Found 2026-08-06 — the user wanted to visually watch the algo draft to
-// sanity-check its picks in real time rather than just seeing the final board instantly.
-async function animateAlgoDraft2627(){
-  if(_animateDraft2627Running) return;
-  const teams = [...new Set(players.filter(p=>p.start2627).map(p=>p.start2627))].sort();
-  if(!teams.length){ toast('Run Algo Drops first to seed rosters.'); return; }
-
-  const preDraftStart = new Map(players.map(p => [p.id, p.start2627]));
-
-  _runAlgoDraft({
-    season:       '26-27',
-    actualDraft:  {},
-    allTeams:     teams,
-    buildSeq:     buildDraftSeq2627,
-    startField:   'start2627',
-    ppts:         p => p.pts || 0,
-    getCap:       p => p.cap || 0,
-    capLimit:     CAP_LIMIT,
-    draftReserve: DRAFT_RESERVE_2627,
-    draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
-    applyChanges: false,
-    boardDraftState: draftState2627,
-    boardLsKey:   LS_DRAFT_2627,
-    contractYearAnchor: NHL_SEASON_YEAR,
-    srcNFn: srcNFn2627,
-    maxSrc: MAX_SRC_2627,
-    injurySet: INJURY_DROPS_2627,
-  });
-
-  const picks = (draftState2627.simPicks || []).filter(pk => pk.player);
-  if(!picks.length){ toast('No picks to animate.'); return; }
-
-  for(const p of players){ p.start2627 = preDraftStart.get(p.id) ?? null; }
-  // "On the clock" (render()'s onClockTeam) is driven by draftState2627.picks.length, not
-  // simPicks — reset it so the reveal starts from pick 1, and push one entry per revealed
-  // pick below so it advances in lockstep. Found live 2026-08-06: without this, the "on the
-  // clock" indicator just stayed frozen on whoever was up first for the whole animation.
-  draftState2627.picks = [];
-  render(); renderBigBoard();
-
-  _animateDraft2627Running = true;
-  _animateDraft2627Skip = false;
-  document.getElementById('animateDraftBtn2627').disabled = true;
-  document.getElementById('algoDraftBtn2627').disabled = true;
-  document.getElementById('skipAnimateBtn2627').style.display = '';
-
-  const reveal = pk => {
-    const p = findPlayerByNamePos(pk.player, pk.pos);
-    if(p) p.start2627 = pk.team;
-    draftState2627.picks.push({ team: pk.team, player: pk.player, pos: pk.pos, nhlTeam: p?.team||'', cap: pk.cap||0, projPts: pk.ppts||0 });
-  };
-
-  const DELAY_MS = 5000;
-  try {
-    for(let i = 0; i < picks.length; i++){
-      if(_animateDraft2627Skip){
-        for(let j = i; j < picks.length; j++) reveal(picks[j]);
-        break;
-      }
-      reveal(picks[i]);
-      render(); renderBigBoard();
-      if(i < picks.length - 1) await _animateSleep(DELAY_MS);
-    }
-  } finally {
-    lsSet(LS_PLAYERS, players);
-    saveDraft();
-    render(); renderBigBoard();
-    _animateDraft2627Running = false;
-    document.getElementById('animateDraftBtn2627').disabled = false;
-    document.getElementById('algoDraftBtn2627').disabled = false;
-    document.getElementById('skipAnimateBtn2627').style.display = 'none';
-  }
-}
-
 function algoDraft2425(){
   if(!Object.keys(POSTDRAFT_ROSTER_2425).length){
     toast('Populate POSTDRAFT_ROSTER_2425 first.'); return;
@@ -7353,6 +7010,25 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     const untouchable = remaining.filter(p => isUntouchableT(p)).sort((a,b) => deficit(b) - deficit(a));
     const candidates = [...lowVal, ...highVal, ...prospects, ...untouchable];
 
+    // Tier-placement logging — same debugLog gate as the redraft-risk check above. Both
+    // prospects and untouchable are classified once here (not re-checked per-candidate the way
+    // the redraft-risk gate is), so this logs the WHOLE tier right after it's built rather than
+    // inline in the main loop below — added 2026-08-07 after a real "why is Jacob Fowler still
+    // on the roster despite -8△" question needed this to see it's prospect status (age/cap),
+    // not a value read, keeping him protected regardless of current production.
+    if(debugLog){
+      for(const p of prospects){
+        const age = calcAgeForSim(p) ?? 99;
+        const pg = posGroup(p.pos);
+        console.log(`[prospect] ${team}: ${p.name} — age ${age} (max ${PROSPECT_MAX_AGE[pg]}), cap $${(getCap(p)||0).toFixed(2)}M (max $${(elcMax*ELC_SIGNING_BONUS_WIGGLE).toFixed(3)}M) — protected, sorted last until floor/quota forces a cut`);
+      }
+      for(const p of untouchable){
+        const pp = ppts(p);
+        const reason = pp >= UNTOUCHABLE_ELITE_PTS ? `elite pts ${pp.toFixed(1)} >= ${UNTOUCHABLE_ELITE_PTS}` : `ABP=0, delta ${deltaOf(p).toFixed(1)} >= floor ${UNTOUCHABLE_DELTA_FLOOR}`;
+        console.log(`[untouchable] ${team}: ${p.name} — ${reason} — protected, absolute last resort`);
+      }
+    }
+
     const dropReasonById = new Map();
     for(const p of mandatory) dropReasonById.set(p.id, 'Pass 1: mandatory (ELC)');
     for(const p of injuryDrops) dropReasonById.set(p.id, 'Pass 2: injury/demotion (known long-term unavailable)');
@@ -7402,8 +7078,10 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
         const pastFloor = numDropped >= minDropsPreseason && posOwnMinMet && capOk;
         const pScore = redraftScoreOf(p);
         earlyRedraftFlag = pScore >= earlyRedraftScoreThreshold;
-        if(debugLog) console.log(`[earlyRedraft] ${team}: ${p.name} — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)} (flagged:${earlyRedraftFlag}) — drops so far ${numDropped}/${minDropsPreseason}, posOwnMinMet:${posOwnMinMet}, capOk:${capOk} → ${pastFloor && earlyRedraftFlag ? 'Pass 8: PROTECTED (skipped)' : earlyRedraftFlag ? 'flagged, but floor/position quota not yet clear' : 'not flagged'}`);
-        if(pastFloor && earlyRedraftFlag) continue;
+        if(pastFloor && earlyRedraftFlag){
+          if(debugLog) console.log(`[earlyRedraft] ${team}: ${p.name} Pass 8: PROTECTED (skipped) — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)}`);
+          continue;
+        }
       }
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
       // remaining cap headroom across the actual remaining open slots) and position-aware
@@ -9112,10 +8790,7 @@ function setView(v){
   document.getElementById('view-draft').style.display         = v==='draft'         ? '' : 'none';
   document.getElementById('view-summary').style.display       = v==='summary'       ? '' : 'none';
   document.getElementById('view-settings').style.display      = v==='settings'      ? '' : 'none';
-  if(v==='roster'||v==='roster2526'||v==='roster2425'||v==='roster2324'){ stopWhaleAnimation(); showMullerOverlay(false); }
   if(v!=='summary') stopSummaryRotation();
-  if(v!=='draft'&&v!=='summary'){ document.getElementById('draftTicker').style.display = 'none'; stopTicker(); }
-  if(v==='summary'){ const tr=document.getElementById('tickerTrack'); if(tr&&tr.innerHTML&&tickerEnabled){ document.getElementById('draftTicker').style.display='block'; startTicker(); } }
   if(v==='settings'){ syncSettings(); setTimeout(renderCurveChart, 0); }
   const views = ['draft','summary','roster2324','roster2425','roster2526','roster','xactions2425','xactions2526','xactions2627','signings','settings'];
   document.querySelectorAll('.view-tab').forEach((t,i) => {
@@ -9129,10 +8804,6 @@ function setView(v){
   if(v==='xactions2627') renderXactions2627();
   if(v==='signings') renderSignings();
   if(v==='draft'){
-    const tog = document.getElementById('draftAnimToggle');
-    if(tog) tog.checked = draftAnimsEnabled;
-    const ttog = document.getElementById('draftTickerToggle');
-    if(ttog) ttog.checked = tickerEnabled;
     renderBigBoard();
     // Reset to the latest picks whenever this tab is switched to — any manual
     // scroll-up to check earlier rounds only persists while actively viewing.
@@ -9143,10 +8814,6 @@ function setView(v){
     const cmtog = document.getElementById('capMixToggle');
     if(cmtog) cmtog.checked = showCapMix;
     startSummaryRotation();
-    const onClock = buildDraftSeq2627()[draftState2627.picks.length] ?? null;
-    const pastRound1 = draftState2627.picks.length >= 9;
-    if(pastRound1 && !animDismissed && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
-    showMullerOverlay(pastRound1 && !animDismissed && onClock === 'Muller Time!');
   }
 }
 
@@ -9165,9 +8832,6 @@ function renderDraftView(){
 
   const draftSeq = buildDraftSeq2627();
   const onClock = draftSeq[total] ?? null;
-  const pastRound1 = total >= 9;
-  if(pastRound1 && !animDismissed && draftAnimsEnabled && onClock === 'Killer Whales') startWhaleAnimation(); else stopWhaleAnimation();
-  showMullerOverlay(pastRound1 && !animDismissed && draftAnimsEnabled && onClock === 'Muller Time!');
   document.getElementById('draftOnClock').textContent = onClock
     ? `Round ${curRound} — On the clock: ${onClock} — Pick ${total + 1}`
     : 'Draft complete';
@@ -9239,35 +8903,6 @@ function renderDraftView(){
   _col.innerHTML = html;
   if(nearBottom) _col.scrollTop = _col.scrollHeight;
   renderStandings();
-
-  // Ticker: hidden before draft starts, proj pts standings once picks begin
-  const tickerEl = document.getElementById('draftTicker');
-  const track    = document.getElementById('tickerTrack');
-  if(total === 0){
-    tickerEl.style.display = 'none';
-  } else {
-    if((currentView==='draft'||currentView==='summary') && tickerEnabled) tickerEl.style.display = 'block';
-    const ptsByTeam = {};
-    for(const t of DRAFT_TEAMS_2627) ptsByTeam[t] = 0;
-    for(const p of players){
-      if(p.start2627 && ptsByTeam.hasOwnProperty(p.start2627))
-        ptsByTeam[p.start2627] += (p.pts||0);
-    }
-    const ranked = [...DRAFT_TEAMS_2627].sort((a,b) => ptsByTeam[b] - ptsByTeam[a]);
-    const tickerHeader = `<span class="ticker-item" style="color:#60a5fa;font-weight:700;letter-spacing:.04em">Team Rankings based on Projected Points for 2026-27</span>`;
-    const tickerContent = tickerHeader + ranked.map((t,i) => {
-      const logo = teamLogos[t];
-      const pts  = ptsByTeam[t] || 0;
-      return `<span class="ticker-item">
-        <span class="ticker-item-rank">#${i+1}</span>
-        ${logo ? `<img src="${esc(logo)}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">` : ''}
-        <span class="ticker-item-name">${esc(t)}</span>
-        <span class="ticker-item-pts">${pts || '—'}</span>
-      </span>`;
-    }).join('');
-    track.innerHTML = tickerContent + tickerContent;
-    startTicker();
-  }
 
   renderDraftSearch();
 }
