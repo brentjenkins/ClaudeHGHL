@@ -959,42 +959,73 @@ tr:hover td{background:#fafaf8}
 
 
   <div>
-    <div class="section-label">Drops <span class="section-line"></span><span class="section-desc">Per-position curves classify players as above/below average for their cap. Below-curve players drop first by deficit; at/above-curve players are protected. Stops once min drops is met and projected pts reach the target.</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
-        <input type="number" id="s-minDropF" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropF',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+    <div class="section-label">Drops <span class="section-line"></span><span class="section-desc">Runs as a sequence of passes over each team's roster, worst-value-first — see the bubbles below. Reason tags shown here match what you'll see on a team's Efficiency Curve modal (hover a "✕ dropped #N" badge).</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+
+      <div style="border:1px solid #c7d2fe;border-radius:8px;padding:8px 10px;background:#eef2ff">
+        <div style="font-size:10px;font-weight:700;color:#4338ca;letter-spacing:.02em">POSITION QUOTAS <span style="font-weight:400;color:#6b7280">— not a pass itself; used throughout Passes 2-7 to decide whether the algorithm's even allowed to stop or protect a player yet.</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:6px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af">Min F drops per team</span>
+            <input type="number" id="s-minDropF" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropF',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af">Min D drops per team</span>
+            <input type="number" id="s-minDropD" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropD',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          </div>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min D drops per team</span>
-        <input type="number" id="s-minDropD" value="1" min="0" max="5" step="1" onchange="updateSetting('minDropD',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 1 — MANDATORY <span style="font-weight:400;color:#9ca3af">Must be dropped at the preseason draft if the player was (1) picked up after the previous season's All-Star break AND (2) their ELC was signed after that same All-Star break. Always drops first, unconditionally. Not tunable here — driven by a hardcoded per-season list.</span></div>
       </div>
-      <div style="grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding-top:4px">Preseason</div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
-        <input type="number" id="s-minDropsPreseason" value="5" min="0" max="20" step="1" onchange="updateSetting('minDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 2 — REQUIRED MINIMUM <span style="font-weight:400;color:#9ca3af">Below this total, players drop automatically (worst value first) regardless of value, cap, or demand.</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;max-width:200px;margin-top:6px">
+          <span style="font-size:11px;color:#9ca3af">Min drops per team (preseason)</span>
+          <input type="number" id="s-minDropsPreseason" value="5" min="0" max="20" step="1" onchange="updateSetting('minDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
-        <input type="number" id="s-maxDropsPreseason" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 3 — STOP CONDITIONS <span style="font-weight:400;color:#9ca3af">Once the floor above and position quotas are clear, these decide when to stop making further optional cuts. Not a drop reason on its own — it ends the process.</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:6px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
+            <input type="number" id="s-maxDropsPreseason" value="20" min="1" max="30" step="1" onchange="updateSetting('maxDropsPreseason',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
+            <input type="number" id="s-ptsTarget" value="1150" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+          </div>
+        </div>
       </div>
-      <div style="grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;padding-top:4px">Supplemental</div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Min drops per team</span>
-        <input type="number" id="s-minDropsSupp" value="0" min="0" max="10" step="1" onchange="updateSetting('minDropsSupp',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 4 — CAP CRUNCH <span style="font-weight:400;color:#9ca3af">Even past the floor, a player still gets forced out if keeping them would blow the cap. No dedicated setting here — driven by that season's Cap Limit (a different settings section) plus the built-in draft reserve.</span></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Max drops per team</span>
-        <input type="number" id="s-maxDropsSupp" value="5" min="0" max="10" step="1" onchange="updateSetting('maxDropsSupp',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 5 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine.</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;max-width:200px;margin-top:6px">
+          <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
+          <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
-        <input type="number" id="s-ptsTarget" value="1150" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 6 — FORCED <span style="font-weight:400;color:#9ca3af">Rare fallback: only fires if Passes 2-5 ran out of candidates before reaching Pass 2's minimum (small rosters). Uses that same Min drops per team total above — no separate setting.</span></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
-        <input type="number" id="s-dropValueFloor" value="15" min="0" max="150" step="1" onchange="updateSetting('dropValueFloor',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+
+      <div style="border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;background:#eff6ff">
+        <div style="font-size:10px;font-weight:700;color:#1d4ed8;letter-spacing:.02em">PASS 7 — PROTECTION <span style="font-weight:400;color:#6b7280">Before a Pass 2/4/5 drop happens, skip it entirely (nothing is ever dropped-then-undone) if the player would likely be re-drafted early by someone anyway.</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;max-width:220px;margin-top:6px">
+          <span style="font-size:11px;color:#9ca3af" title="Past the minimum, don't spend an optional drop on a player who'd rank in the top (teams × this many rounds) of the true open market by the same formula the draft engine uses — they're a near-lock to get scooped up early by someone, possibly you.">Early re-draft protection (rounds)</span>
+          <input type="number" id="s-earlyRedraftRounds" value="3" min="0" max="10" step="1" onchange="updateSetting('earlyRedraftRounds',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -1430,7 +1461,12 @@ let draftMode2324 = false, draftSubMode2324 = 'prospect';
 let draftFocusTeam2324 = null, lastAllScored2324 = null, lastPressure2324 = null;
 let draftFocusTeam = null;   // team whose picks to show in 26-27 draft mode
 let draftFocusTeam2526 = null; // team whose picks to show in 25-26 draft mode
-let minDropsPreseason = 5, maxDropsPreseason = 20, minDropsSupp = 0, maxDropsSupp = 5;
+let minDropsPreseason = 5, maxDropsPreseason = 20;
+// Once minDropsPreseason (and position mins) are met, an additional drop is only made if the
+// candidate ISN'T a near-lock to be re-drafted in the first earlyRedraftRounds rounds by SOMEONE
+// (see _runAlgoDrops' earlyRedraftRiskIds) — losing a player you'll likely just spend an early
+// pick getting back isn't a good trade once the required floor is already satisfied.
+let earlyRedraftRounds = 3;
 let draftProspectRounds = 1;
 // Per-team Algo Draft mode: 'simulate' (default) tunes toward matching what that team's real
 // GM will actually pick — useful for realistic opponent behavior. 'optimize' drops the
@@ -2081,6 +2117,7 @@ function algoDrops(){
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
     computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
+    srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, contractYearAnchor: NHL_SEASON_YEAR,
   });
 
   algoDropsApplied = true;
@@ -3140,6 +3177,7 @@ function computeDrops(allPlayers){
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
     computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
+    srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, contractYearAnchor: NHL_SEASON_YEAR,
   });
   const dropIds = new Set();
   for(const p of vp) if(!p.start2627) dropIds.add(p.id);
@@ -4397,7 +4435,7 @@ function syncSettings(){
   set('s-wtPosAlloc', W.wtPosAlloc??1.0);
   set('s-draftProspectRounds', draftProspectRounds);
   set('s-minDropsPreseason', minDropsPreseason); set('s-maxDropsPreseason', maxDropsPreseason);
-  set('s-minDropsSupp', minDropsSupp); set('s-maxDropsSupp', maxDropsSupp);
+  set('s-earlyRedraftRounds', earlyRedraftRounds);
   set('s-ptsTarget', ptsTarget);
   set('s-minDropF', minDropF); set('s-minDropD', minDropD);
   set('s-dropValueFloor', dropValueFloor);
@@ -4458,8 +4496,7 @@ function updateSetting(key, val){
   if(key === 'draftProspectRounds') draftProspectRounds = val;
   else if(key === 'minDropsPreseason')     minDropsPreseason = val;
   else if(key === 'maxDropsPreseason') maxDropsPreseason = val;
-  else if(key === 'minDropsSupp')      minDropsSupp = val;
-  else if(key === 'maxDropsSupp')      maxDropsSupp = val;
+  else if(key === 'earlyRedraftRounds') earlyRedraftRounds = val;
   else if(key === 'minDropF')     minDropF = val;
   else if(key === 'minDropD')     minDropD = val;
   else if(key === 'ptsTarget')    ptsTarget = val;
@@ -5301,6 +5338,8 @@ function algoDrops2526(){
     elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526,
     computeABPFn: computeABP2526, teamField: 'team2526',
     useRebalBonus: true, useMinEnforcement: false, emptyMarker: null,
+    srcNFn: p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0),
+    maxSrc: 6, contractYearAnchor: 2026, nextContractField: 'nextContractTerm2526',
   });
 
   draftState2526 = {picks:[]};
@@ -5317,7 +5356,8 @@ function algoDrops2526(){
 // each season's compareDrops2X2Y() wrapper just supplies config.
 function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predropStubs, stubExtraFields,
   startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet,
-  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey, teamField = 'team' }){
+  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey, teamField = 'team',
+  srcNFn, maxSrc, contractYearAnchor, nextContractField }){
   for(const g of guards){ if(g.fail()){ toast(g.msg); return; } }
 
   // Virtual copy: seed start field from predropRoster (pre-season rosters)
@@ -5345,6 +5385,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     players: vp, teams, startField,
     ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim,
     elcMandatorySet, injurySet, computeABPFn, useRebalBonus, useMinEnforcement, emptyMarker: null, teamField,
+    srcNFn, maxSrc, contractYearAnchor, nextContractField,
   });
 
   // Post-drop curve: fitted on kept roster, matching what the UI △ column shows
@@ -5471,6 +5512,8 @@ function compareDrops2526(){
     useRebalBonus: true, useMinEnforcement: false, teamField: 'team2526',
     midseasonDrops: MIDSEASON_DROPS_2526, midseasonReadds: MIDSEASON_READDS_2526,
     resultsKey: 'lastCompareResults2526',
+    srcNFn: p=>(p.proj2526_ath>0?1:0)+(p.proj2526_dfo>0?1:0)+(p.proj2526_dtz>0?1:0)+(p.proj2526_espn>0?1:0)+(p.proj2526_nhl>0?1:0)+(p.proj2526_cbs>0?1:0),
+    maxSrc: 6, contractYearAnchor: 2026, nextContractField: 'nextContractTerm2526',
   });
 }
 
@@ -5489,6 +5532,7 @@ function compareDrops2627(){
     useRebalBonus: true, useMinEnforcement: true,
     midseasonDrops: MIDSEASON_DROPS_2627, midseasonReadds: MIDSEASON_READDS_2627,
     resultsKey: 'lastCompareResults2627',
+    srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, contractYearAnchor: NHL_SEASON_YEAR,
   });
 }
 
@@ -5830,6 +5874,8 @@ function algoDrops2425(){
     elcMandatorySet: ELC_MANDATORY_DROPS_2425, injurySet: INJURY_DROPS_2425,
     computeABPFn: computeABP2425, teamField: 'team2425',
     useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
+    srcNFn: p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
+    maxSrc: 4, contractYearAnchor: 2025, nextContractField: 'nextContractTerm2425',
   });
 
   draftState2425 = {picks:[]};
@@ -5854,6 +5900,8 @@ function compareDrops2425(){
     useRebalBonus: false, useMinEnforcement: false, teamField: 'team2425',
     midseasonDrops: MIDSEASON_DROPS_2425, midseasonReadds: MIDSEASON_READDS_2425,
     resultsKey: 'lastCompareResults2425',
+    srcNFn: p=>(p.proj2425_ath>0?1:0)+(p.proj2425_dfo>0?1:0)+(p.proj2425_dtz>0?1:0)+(p.proj2425_nhl>0?1:0),
+    maxSrc: 4, contractYearAnchor: 2025, nextContractField: 'nextContractTerm2425',
   });
 }
 
@@ -5996,6 +6044,8 @@ function algoDrops2324(){
     elcMandatorySet: ELC_MANDATORY_DROPS_2324, injurySet: INJURY_DROPS_2324,
     computeABPFn: computeABP2324, teamField: 'team2324',
     useRebalBonus: false, useMinEnforcement: false, emptyMarker: null,
+    srcNFn: p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0),
+    maxSrc: 4, contractYearAnchor: 2024, nextContractField: 'nextContractTerm2324',
   });
 
   draftState2324 = {picks:[]};
@@ -6020,6 +6070,8 @@ function compareDrops2324(){
     useRebalBonus: false, useMinEnforcement: false, teamField: 'team2324',
     midseasonDrops: MIDSEASON_DROPS_2324, midseasonReadds: MIDSEASON_READDS_2324,
     resultsKey: 'lastCompareResults2324',
+    srcNFn: p=>(p.proj2324_ath>0?1:0)+(p.proj2324_dtz>0?1:0)+(p.proj2324_nhl>0?1:0)+(p.proj2324_dob>0?1:0),
+    maxSrc: 4, contractYearAnchor: 2024, nextContractField: 'nextContractTerm2324',
   });
 }
 
@@ -6267,6 +6319,10 @@ function _wasPreDropKeeper(p, team, predropDict){
 
 function showTeamCurveModal(view, team){
   const { startField, pptsF, getCapF, elcMax, label, predropDict, predropStubs, postdropDict } = _teamCurveConfig(view);
+  // Same derivation _runAlgoDrops uses to tag each dropped player with its order/reason.
+  const seasonSuffix = startField.replace('start', '');
+  const dropOrderField = '_dropOrder' + seasonSuffix;
+  const dropReasonField = '_dropReason' + seasonSuffix;
 
   // League-wide pool + curve fit — identical filter/fit logic to _makeTeamCurveDeltaFn so this
   // modal's chart and deltas match whatever number the team card's "△ vs curve" label showed.
@@ -6331,13 +6387,16 @@ function showTeamCurveModal(view, team){
     const cap = getCapF(p), pts = pptsF(p);
     const base = cap>0 ? _curveBaseline(pg, cap, elcMax, curveFns[pg]) : null;
     const delta = (base!=null && pts>0) ? pts-base : null;
-    return { p, pg, cap, pts, delta, status:'dropped' };
+    // Only real Algo-Drops-tagged players carry these — virtual stubs (retired vets etc., see
+    // droppedPlayers above) never went through _runAlgoDrops as the same object, so they're
+    // absent here rather than wrong.
+    return { p, pg, cap, pts, delta, status:'dropped', dropOrder: p[dropOrderField]??null, dropReason: p[dropReasonField]??null };
   });
   const rows = [...rowsKept, ...rowsDropped].sort((a,b) => (b.delta??-Infinity) - (a.delta??-Infinity));
 
   const statusBadge = (r) => r.status==='pick' ? ` <span style="color:#7c3aed;font-weight:600">■ pick</span>`
                             : r.status==='repick' ? ` <span style="color:#0891b2;font-weight:600">▲ dropped &amp; re-added</span>`
-                            : r.status==='dropped' ? ` <span style="color:${posColor[r.pg]||'#dc2626'};font-weight:600">✕ dropped</span>`
+                            : r.status==='dropped' ? ` <span style="color:${posColor[r.pg]||'#dc2626'};font-weight:600;cursor:${r.dropReason?'help':'default'}"${r.dropReason?` title="Drop #${r.dropOrder}: ${esc(r.dropReason)}"`:''}>✕ dropped${r.dropOrder?` #${r.dropOrder}`:''}</span>`
                             : '';
   const legend = hasPredrop ? `<div style="font-size:10.5px;color:#9ca3af;margin-bottom:6px">● kept &nbsp; ■ <span style="color:#7c3aed">picked up</span> &nbsp; ▲ <span style="color:#0891b2">dropped &amp; re-added</span> &nbsp; ✕ dropped (<span style="color:${posColor.F}">F</span>/<span style="color:${posColor.D}">D</span>/<span style="color:${posColor.G}">G</span> colored)</div>` : '';
 
@@ -7093,7 +7152,21 @@ function algoDraft2526(){
 // drops correctly (found 2026-07-22 via Blue Line Bangers/Mason Marchment in 24-25).
 // Mutates only p[startField] on the given `players` array; every other side effect (persistence,
 // rendering, toasts) stays in each season's own wrapper function, called after this returns.
-function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team' }){
+function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team', srcNFn, maxSrc, contractYearAnchor, nextContractField = 'nextContractTerm' }){
+  // Tags every dropped player with which numbered cut they were (this run's dropList order)
+  // and why, so the reasoning is inspectable later (e.g. on the team curve modal) instead of
+  // only visible transiently via console.log while the run is happening. Field names are
+  // derived from startField ('start2627' -> '_dropOrder2627'/'_dropReason2627') so every season
+  // gets its own slot on the shared player record, matching the team2324/nextContractTerm2425-
+  // style per-season field convention already used elsewhere. Cleared for every player up front
+  // so a player no longer dropped in THIS run doesn't keep showing a stale tag from a previous
+  // run on the same live array (irrelevant for _runCompareDrops, which always passes a
+  // throwaway virtual copy, never the live array, so nothing here can leak into it).
+  const seasonSuffix = startField.replace('start', '');
+  const dropOrderField = '_dropOrder' + seasonSuffix;
+  const dropReasonField = '_dropReason' + seasonSuffix;
+  for(const p of players){ delete p[dropOrderField]; delete p[dropReasonField]; }
+
   const rosteredPool = players.filter(p => p[startField] && getCap(p) > 0);
   const curveFns = {
     F: fitQuadratic(rosteredPool.filter(p => posGroup(p.pos)==='F').map(p => ({x: getCap(p), y: ppts(p)}))),
@@ -7111,6 +7184,64 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     const pg = posGroup(p.pos);
     if(pg in basePoolByPos) basePoolByPos[pg].push({x: getCap(p), y: ppts(p)});
   }
+
+  // Early re-draft risk: would this dropped player likely be scooped back up in the first
+  // earlyRedraftRounds rounds by SOMEONE (possibly the same team that dropped them)? Scored
+  // with the exact same formula _runAlgoDraft itself uses (via _scoreDraftCandidate). A drop
+  // candidate is currently ROSTERED, so it can't be ranked directly against the true free-agent
+  // pool (it isn't in it yet) — instead this computes a SCORE THRESHOLD from the TRUE pre-drop
+  // free-agent pool (the score of its Nth-best member, N = teams.length × earlyRedraftRounds,
+  // matching basePoolByPos's own "no team's still-undecided drops leak into this" philosophy
+  // just above, since a real look-ahead draft simulation would be circular — other teams' drops
+  // aren't finalized yet either), and any candidate whose OWN score (computed the identical way)
+  // clears that bar is flagged: they'd outrank at least N players already known to be available,
+  // a near-lock to go early regardless of this team's own curve-delta read on them. See
+  // minDropsPreseason use below, where this only overrides an otherwise-droppable pick once the
+  // required minimum is already satisfied. Added 2026-08-06 after the user noticed Algo Drops
+  // repeatedly cutting Miro Heiskanen/Aliaksei Protas/Bryan Rust/Oliver Kapanen-caliber players
+  // that Algo Draft then consistently re-drafted within the first 3 rounds — a signal the
+  // curve-delta-only drop logic had no way to see.
+  // The last prospect-mode round (draftProspectRounds itself, live setting — not hardcoded),
+  // not a "representative middle round" of the window — matches how the live SCORE column
+  // actually evaluates an early pick, which gets the full position multiplier + uncapped
+  // prospect bonus that 'bestAvail' mode either drops entirely or only applies at
+  // prospectRoundWeight's decayed fraction. Falls back to round 1/bestAvail if
+  // draftProspectRounds is set to 0 (prospect mode disabled entirely).
+  // Found live 2026-08-07 via Aliaksei Protas: the real SCORE column showed 81.3 for him
+  // (prospect mode, position mult included) while the old "round 2, bestAvail" choice here
+  // scored him at 56.8 — comparing a peak-context threshold against an artificially deflated
+  // candidate score is not a fair test regardless of what the threshold itself is. Scoring every
+  // candidate at the SAME peak (prospect-window) context keeps the threshold comparison
+  // internally consistent even though it won't exactly reproduce a specific team's live SCORE
+  // cell (this check is team-less, so wtPosAlloc/fan-bias terms are still excluded).
+  const redraftRound = Math.max(1, draftProspectRounds);
+  const redraftMode = redraftRound <= draftProspectRounds ? 'prospect' : 'bestAvail';
+  // Neutral pressure (pressMult=1, no boost/penalty either way), not a live _draftPressureState
+  // read — pressure measures how many teams currently NEED a position, which at drop time is
+  // structurally meaningless (nobody's been dropped yet, so every team still looks fully
+  // rostered and near-zero real need exists anywhere). Found live 2026-08-07 alongside the
+  // round/mode fix above: Aliaksei Protas's score didn't move at all from that fix (F's own
+  // position multiplier is 1.0, so prospect vs bestAvail is a wash for forwards) — the real gap
+  // was pressure computed from a pre-drop snapshot suppressing pressMult toward its 0.7 floor
+  // league-wide, versus the live UI's mid-draft press=0.98→pressMult=1.29 read from teams that
+  // actually have open needs by then.
+  const redraftPressure = {F:0.5, D:0.5, G:0.5};
+  const redraftScoreOf = p => _scoreDraftCandidate(p, {
+    pg: posGroup(p.pos), pp: ppts(p), cap0: getCap(p)||0, pressure: redraftPressure, mode: redraftMode, round: redraftRound,
+    draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs: p[nextContractField]||0,
+    curveFns, elcMax, srcNFn, maxSrc, team: null, teamField,
+  }).score;
+  const earlyRedraftScoreThreshold = (() => {
+    if(!(earlyRedraftRounds > 0)) return Infinity;
+    const truePool = players.filter(p => !p[startField] && ppts(p) > 0 && (getCap(p)||0) > 0);
+    if(!truePool.length) return Infinity;
+    const earlyRedraftN = teams.length * earlyRedraftRounds;
+    const scores = truePool.map(redraftScoreOf).sort((a,b) => b-a);
+    // Fewer true free agents than the whole round window means the market's already thin —
+    // use the worst score in the (undersized) pool as the bar, erring toward protecting more
+    // rather than fewer candidates in that case.
+    return scores[Math.min(earlyRedraftN, scores.length) - 1];
+  })();
 
   const isProspect = p => { const a = calcAgeForSim(p) ?? 99; const mx = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22; return a<=mx && (getCap(p)||0)<=elcMax*ELC_SIGNING_BONUS_WIGGLE; };
   const isProtectedProspect = p => isProspect(p) && !injurySet.has(normName(p.name).toLowerCase());
@@ -7200,6 +7331,8 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     const untouchable = remaining.filter(p => isUntouchableT(p)).sort((a,b) => deficit(b) - deficit(a));
     const candidates = [...lowVal, ...highVal, ...prospects, ...untouchable];
 
+    const dropReasonById = new Map();
+    for(const p of mandatory) dropReasonById.set(p.id, 'Pass 1: mandatory (ELC)');
     const dropList = [...mandatory];
     let keptPts = remaining.reduce((s,p) => s + ppts(p), 0);
     let keptCap = remaining.reduce((s,p) => s + (getCap(p)||0), 0);
@@ -7226,6 +7359,31 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       const capOk = keptCap <= capLimit - numDropped*draftReserve;
       const isValuable = isHighVal(p) || isProspect(p);
       if(isValuable && numDropped >= minDropsPreseason && posMinsMet && capOk) break;
+      // Past the required minimum, skip (not break — other candidates further down may still
+      // be worth dropping) anyone who'd likely be re-drafted in the first earlyRedraftRounds
+      // rounds regardless of their curve-delta read — see earlyRedraftScoreThreshold above. Uses
+      // posOwnMinMet (this candidate's OWN position quota only), not the combined posMinsMet —
+      // found live 2026-08-06 via Muller Time!/Aliaksei Protas: posMinsMet requires BOTH an F
+      // AND a D drop, so a team that happens to reach several F candidates before its first D
+      // candidate never has posMinsMet true for ANY of those forwards, permanently blocking this
+      // protection from ever engaging for them regardless of total drop count. Whether a team
+      // has ALSO cleared its D quota is irrelevant to "should THIS forward be protected" — that
+      // combined check exists for the unrelated isValuable break below (should we stop dropping
+      // ANYONE further), which correctly does need both.
+      // Computed once and reused below for the drop-reason tag too — a player who WAS flagged
+      // but dropped anyway (floor/position quota not yet clear) tags that explicitly instead of
+      // silently looking identical to a genuinely low-demand cut.
+      let earlyRedraftFlag = false;
+      if(earlyRedraftRounds > 0){
+        const posOwnMinMet = pg==='D' ? droppedD >= minDropD : pg==='F' ? droppedF >= minDropF : true;
+        const pastFloor = numDropped >= minDropsPreseason && posOwnMinMet && capOk;
+        const pScore = redraftScoreOf(p);
+        earlyRedraftFlag = pScore >= earlyRedraftScoreThreshold;
+        if(pastFloor && earlyRedraftFlag){
+          console.log(`[earlyRedraft] ${team}: ${p.name} Pass 7: PROTECTED (skipped) — score ${pScore.toFixed(1)} vs threshold ${earlyRedraftScoreThreshold.toFixed(1)}`);
+          continue;
+        }
+      }
       // Assumed replacement value for everyone dropped so far — cap-aware (spread the actual
       // remaining cap headroom across the actual remaining open slots) and position-aware
       // (F/D/G each evaluated on this team's own free-agent curve, fit on real unclaimed players
@@ -7242,6 +7400,11 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
                                    + droppedD*Math.max(0, faCurveFns.D(perSlotBudget))
                                    + droppedG*Math.max(0, faCurveFns.G(perSlotBudget));
       if(!isValuable && numDropped >= minDropsPreseason && keptPts+assumedReplacementPts >= ptsTarget && capOk && posMinsMet) break;
+      let reason = numDropped < minDropsPreseason ? 'Pass 2: required minimum'
+                 : !capOk ? 'Pass 4: cap crunch'
+                 : 'Pass 5: below curve value';
+      if(earlyRedraftFlag) reason += ' (Pass 7 protection didn’t apply — floor/position quota not yet clear)';
+      dropReasonById.set(p.id, reason);
       dropList.push(p);
       keptPts -= ppts(p); keptCap -= (getCap(p)||0); numDropped++;
       if(pg==='F') droppedF++; else if(pg==='D') droppedD++; else if(pg==='G') droppedG++;
@@ -7258,6 +7421,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       for(const p of candidates){
         if(numDropped >= minDropsPreseason) break;
         if(alreadyDropped.has(p.id)) continue;
+        dropReasonById.set(p.id, 'Pass 6: forced (ran out of natural candidates)');
         dropList.push(p);
         keptPts -= ppts(p); keptCap -= (getCap(p)||0);
         const pg2 = posGroup(p.pos);
@@ -7266,7 +7430,12 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
       }
     }
 
-    dropList.forEach(p => { p[startField] = emptyMarker; dropped++; });
+    dropList.forEach((p, i) => {
+      p[startField] = emptyMarker;
+      p[dropOrderField] = i + 1;
+      p[dropReasonField] = dropReasonById.get(p.id) || 'unknown';
+      dropped++;
+    });
   }
   return dropped;
 }
