@@ -1833,10 +1833,12 @@ const PROJ_SORT_PATH = {
   proj2425_ath:['proj2425','ath'], proj2425_dfo:['proj2425','dfo'], proj2425_dtz:['proj2425','dtz'], proj2425_nhl:['proj2425','nhl'],
   proj2526_ath:['proj2526','ath'], proj2526_dfo:['proj2526','dfo'], proj2526_dtz:['proj2526','dtz'], proj2526_espn:['proj2526','espn'], proj2526_cbs:['proj2526','cbs'], proj2526_nhl:['proj2526','nhl'],
   ptsAth:['proj2627','ath'], ptsDFO:['proj2627','dfo'], ptsDTZ:['proj2627','dtz'], ptsESPN:['proj2627','espn'], ptsCBS:['proj2627','cbs'], ptsNHL:['proj2627','nhl'], ptsDOB:['proj2627','dob'],
+  team:'team2627',
 };
 function _sortVal(obj, col){
   const path = PROJ_SORT_PATH[col];
-  return path ? obj[path[0]]?.[path[1]] : obj[col];
+  if(!path) return obj[col];
+  return typeof path === 'string' ? obj[path] : obj[path[0]]?.[path[1]];
 }
 
 function dedup(){
@@ -2169,7 +2171,8 @@ function load(){
       ['nextStartYr2425','nextYr2425'],['nextStartYr2526','nextYr2526'],
       ['nextTerm','nextTerm2627'],['nextYr','nextYr2627'],
       ['capMan','capMan2627'],['ptsMan','ptsMan2627'],
-      ['rank','rank2627'],['contractTerm','contractTerm2627'],['expYear','expYear2627']]){
+      ['rank','rank2627'],['contractTerm','contractTerm2627'],['expYear','expYear2627'],
+      ['team','team2627']]){
       if(p[oldK] !== undefined){
         if(p[newK] === undefined) p[newK] = p[oldK];
         delete p[oldK];
@@ -2196,7 +2199,7 @@ function load(){
       migrated = true;
     }
     // Normalize Yahoo team abbreviations to NHL standard (WAS→WSH, NAS→NSH, SJ→SJS, etc.)
-    if(YAHOO_TEAM_NORM[p.team]){ p.team = YAHOO_TEAM_NORM[p.team]; migrated = true; }
+    if(YAHOO_TEAM_NORM[p.team2627]){ p.team2627 = YAHOO_TEAM_NORM[p.team2627]; migrated = true; }
     // Clear Yahoo bench/utility slot labels that aren't real positions
     if(['Util','BN'].includes(p.pos)){ p.pos = ''; migrated = true; }
     // Strip dead fields from a removed power-play-points feature (never displayed;
@@ -2512,16 +2515,16 @@ async function syncDOB(input){
 
 function defaultPlayers(){
   return [
-    {id:1,name:'Connor McDavid',team:'EDM',pos:'C',cap:12.5,pts:107,status:'r',source:'m',start2627:''},
-    {id:2,name:'Nathan MacKinnon',team:'COL',pos:'C',cap:12.6,pts:102,status:'r',source:'m',start2627:''},
-    {id:3,name:'Auston Matthews',team:'TOR',pos:'C',cap:13.25,pts:96,status:'r',source:'m',start2627:''},
-    {id:4,name:'Leon Draisaitl',team:'EDM',pos:'C',cap:14.0,pts:98,status:'r',source:'m',start2627:''},
-    {id:5,name:'Nikita Kucherov',team:'TBL',pos:'RW',cap:9.5,pts:94,status:'r',source:'m',start2627:''},
-    {id:6,name:'Cale Makar',team:'COL',pos:'D',cap:9.0,pts:82,status:'r',source:'m',start2627:''},
-    {id:7,name:'Roman Josi',team:'NSH',pos:'D',cap:9.06,pts:71,status:'r',source:'m',start2627:''},
-    {id:8,name:'David Pastrnak',team:'BOS',pos:'RW',cap:11.25,pts:88,status:'r',source:'m',start2627:''},
-    {id:9,name:'Igor Shesterkin',team:'NYR',pos:'G',cap:11.5,pts:0,status:'r',source:'m',start2627:''},
-    {id:10,name:'Sidney Crosby',team:'PIT',pos:'C',cap:8.7,pts:78,status:'r',source:'m',start2627:''},
+    {id:1,name:'Connor McDavid',team2627:'EDM',pos:'C',cap:12.5,pts:107,status:'r',source:'m',start2627:''},
+    {id:2,name:'Nathan MacKinnon',team2627:'COL',pos:'C',cap:12.6,pts:102,status:'r',source:'m',start2627:''},
+    {id:3,name:'Auston Matthews',team2627:'TOR',pos:'C',cap:13.25,pts:96,status:'r',source:'m',start2627:''},
+    {id:4,name:'Leon Draisaitl',team2627:'EDM',pos:'C',cap:14.0,pts:98,status:'r',source:'m',start2627:''},
+    {id:5,name:'Nikita Kucherov',team2627:'TBL',pos:'RW',cap:9.5,pts:94,status:'r',source:'m',start2627:''},
+    {id:6,name:'Cale Makar',team2627:'COL',pos:'D',cap:9.0,pts:82,status:'r',source:'m',start2627:''},
+    {id:7,name:'Roman Josi',team2627:'NSH',pos:'D',cap:9.06,pts:71,status:'r',source:'m',start2627:''},
+    {id:8,name:'David Pastrnak',team2627:'BOS',pos:'RW',cap:11.25,pts:88,status:'r',source:'m',start2627:''},
+    {id:9,name:'Igor Shesterkin',team2627:'NYR',pos:'G',cap:11.5,pts:0,status:'r',source:'m',start2627:''},
+    {id:10,name:'Sidney Crosby',team2627:'PIT',pos:'C',cap:8.7,pts:78,status:'r',source:'m',start2627:''},
   ];
 }
 function updateSigningsBtn(){
@@ -2618,7 +2621,7 @@ function assignCapFromSignings(){
       if(!p.capMan2627) p.cap = c2627.cap;
       p.contractTerm2627 = c2627.term || 0;
       p.expYear2627      = parseInt(c2627.exp?.split('-')[0]) || 0;
-      if(c2627.team && (!p.team || p.team==='—')) p.team = c2627.team;
+      if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
       if(c2627.birthDate && !p.birthDate)          p.birthDate = c2627.birthDate;
       if(c2627.nhl_id && !p.nhlId)                 p.nhlId = c2627.nhl_id;
     } else if(!p.capMan2627){
@@ -2747,7 +2750,7 @@ async function syncSigningsAll(e){
         p.cap = c2627.cap;
         p.contractTerm2627 = c2627.term || 0;
         p.expYear2627 = parseInt(c2627.exp?.split('-')[0]) || 0;
-        if(c2627.team && (!p.team || p.team==='—')) p.team = c2627.team;
+        if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
         if(c2627.birthDate && !p.birthDate) p.birthDate = c2627.birthDate;
         if(c2627.nhl_id && !p.nhlId) p.nhlId = c2627.nhl_id;
       } else {
@@ -2808,7 +2811,7 @@ async function syncSigningsAll(e){
           existingById.cap = c2627.cap;
           existingById.contractTerm2627 = c2627.term || 0;
           existingById.expYear2627 = parseInt(c2627.exp?.split('-')[0]) || 0;
-          if(c2627.team && (!existingById.team || existingById.team==='—')) existingById.team = c2627.team;
+          if(c2627.team && (!existingById.team2627 || existingById.team2627==='—')) existingById.team2627 = c2627.team;
           if(c2627.birthDate && !existingById.birthDate) existingById.birthDate = c2627.birthDate;
         }
         const cNextExisting = _findNextContract(contracts, c2627);
@@ -2830,7 +2833,7 @@ async function syncSigningsAll(e){
       const cNextNew2425 = _findNextContract(contracts, c2425, draftDatePreseason2425);
       const cNextNew2526 = _findNextContract(contracts, c2526, draftDatePreseason2526);
       players.push({
-        id: nextId++, name: latest.name, team: c2627?.team || latest.team || '',
+        id: nextId++, name: latest.name, team2627: c2627?.team || latest.team || '',
         pos: latest.pos || 'C',
         cap: c2627?.cap || 0, contractTerm2627: c2627?.term || 0,
         expYear2627: c2627 ? parseInt(c2627.exp?.split('-')[0]) || 0 : 0,
@@ -2932,7 +2935,7 @@ async function syncAllNHL(){
       const ex = _findExistingPlayerForSync(p.name, p.pos, p.nhlId);
       if(ex){
         ex.status = 'r';
-        if(p.nhlTeam && p.nhlTeam!=='—') ex.team = p.nhlTeam;
+        if(p.nhlTeam && p.nhlTeam!=='—') ex.team2627 = p.nhlTeam;
         if(p.birthDate && !ex.birthDate) ex.birthDate = p.birthDate;
         if(p.nhlId && !ex.nhlId) ex.nhlId = p.nhlId;
         updated++;
@@ -3191,7 +3194,7 @@ function renderTransactions(){
 function populateTeamFilter(){
   const el = document.getElementById('filterTeam');
   const prev = el.value;
-  const teams=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
+  const teams=[...new Set(players.map(p=>p.team2627).filter(t=>t&&t!=='—'))].sort();
   el.innerHTML='<option value="">All teams</option>'+teams.map(t=>`<option>${t}</option>`).join('');
   if(prev) el.value = prev;
 }
@@ -3248,9 +3251,9 @@ function render(){
   const ff2526=document.getElementById('filterFantasy2526').value;
 
   let rows=players.filter(p=>{
-    if(q&&![p.name,p.team,p.start2627||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team2627,p.start2627||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(fp&&posGroup(p.pos)!==fp) return false;
-    if(ft&&p.team!==ft) return false;
+    if(ft&&p.team2627!==ft) return false;
     if(fs&&(p.source||'m')!==fs) return false;
     if(ff === '__any__' && !p.start2627) return false;
     else if(ff === '__none__' && p.start2627) return false;
@@ -3383,7 +3386,7 @@ function render(){
       </td>
       <td><span class="badge ${bc}">${posGroup(p.pos)==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge(p)??'—'}</td>
-      <td><div style="display:flex;align-items:center;gap:5px">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy">`:''}${esc(p.team||'—')}</div></td>
+      <td><div style="display:flex;align-items:center;gap:5px">${NHL_LOGOS[p.team2627]?`<img src="${NHL_LOGOS[p.team2627]}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy">`:''}${esc(p.team2627||'—')}</div></td>
       <td style="color:#9ca3af">
         <div style="display:flex;align-items:center;gap:5px">
           ${p.end2526&&teamLogos[p.end2526]?`<img src="${teamLogos[p.end2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}
@@ -3823,7 +3826,7 @@ function _seedStart2627(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, pts:0, status:'r', source:'m',
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, pts:0, status:'r', source:'m',
       start2627:team||'', end2526:team,
       rank2627:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
       proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null},
@@ -4013,7 +4016,7 @@ function simulateBestPick(){
     return;
   }
 
-  makeDraftPick(pick.p.name, pick.p.pos, pick.p.team||'—', pick.p.cap||0, pick.pp);
+  makeDraftPick(pick.p.name, pick.p.pos, pick.p.team2627||'—', pick.p.cap||0, pick.pp);
 }
 
 function setDraftFocus(t){
@@ -4787,7 +4790,7 @@ function renderXactions2627(){ _renderXactionsView(xactions2627, draftDatePresea
 function quickDraft(id){
   const p = players.find(x=>x.id===id);
   if(!p) return;
-  makeDraftPick(p.name, p.pos, p.team||'—', p.cap||0, p.pts||0);
+  makeDraftPick(p.name, p.pos, p.team2627||'—', p.cap||0, p.pts||0);
   render();
 }
 
@@ -4930,7 +4933,7 @@ function quickDraft2526(id){
   if(!onClock){ toast('Draft complete or no open spots — load Actual Drops first.'); return; }
   const p = players.find(x=>x.id===id); if(!p) return;
   p.start2526 = onClock;
-  draftState2526.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:getCap2526(p), projPts:ppts2526blend(p)});
+  draftState2526.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team2627, cap:getCap2526(p), projPts:ppts2526blend(p)});
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2526, draftState2526);
   render2526();
@@ -4978,7 +4981,7 @@ function quickDraft2425(id){
   if(!onClock){ toast('Draft complete or no open spots — load Actual Drops first.'); return; }
   const p = players.find(x=>x.id===id); if(!p) return;
   p.start2425 = onClock;
-  draftState2425.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:getCap2425(p), projPts:ppts2425blend(p)});
+  draftState2425.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team2627, cap:getCap2425(p), projPts:ppts2425blend(p)});
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2425, draftState2425);
   render2425();
@@ -4991,7 +4994,7 @@ function quickDraft2324(id){
   if(!onClock){ toast('Draft complete or no open spots — load Actual Drops first.'); return; }
   const p = players.find(x=>x.id===id); if(!p) return;
   p.start2324 = onClock;
-  draftState2324.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team, cap:getCap2324(p), projPts:ppts2324blend(p)});
+  draftState2324.picks.push({team:onClock, player:p.name, pos:p.pos, nhlTeam:p.team2627, cap:getCap2324(p), projPts:ppts2324blend(p)});
   lsSet(LS_PLAYERS, players);
   lsSet(LS_DRAFT_2324, draftState2324);
   render2324();
@@ -5020,7 +5023,7 @@ function _seedStart2526(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2526:null,
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, cap2526:null,
       pts:0, pts2526:0, gp2526:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:team, start2526:team,
       rank2627:null, rank2526:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
@@ -5126,7 +5129,7 @@ function loadActualDraft2526(){
   for(const [rawKey, team] of _ord2526){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
     const p = findPlayerByNamePos(bk, wantPG);
-    if(p){ p.start2526 = p.end2526 = team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2526(p), projPts:ppts2526blend(p)}); }
+    if(p){ p.start2526 = p.end2526 = team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team2627||'', cap:getCap2526(p), projPts:ppts2526blend(p)}); }
     else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
   }
   draftState2526 = {picks};
@@ -5220,7 +5223,7 @@ function algoDrops2526(){
 // each season's compareDrops2X2Y() wrapper just supplies config.
 function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predropStubs, stubExtraFields,
   startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet,
-  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey, teamField = 'team',
+  computeABPFn, useRebalBonus, useMinEnforcement, midseasonDrops, midseasonReadds, resultsKey, teamField = 'team2627',
   srcNFn, maxSrc, contractYearAnchor, nextContractField }){
   for(const g of guards){ if(g.fail()){ toast(g.msg); return; } }
 
@@ -5625,7 +5628,7 @@ function _seedStart2425(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2425:null,
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, cap2425:null,
       pts:0, pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:team, start2425:team,
@@ -5689,7 +5692,7 @@ function loadActualDraft2425(){
   for(const [rawKey, team] of _ord2425){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
     const p = findPlayerByNamePos(bk, wantPG);
-    if(p){ p.start2425=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2425(p), projPts:ppts2425blend(p)}); }
+    if(p){ p.start2425=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team2627||'', cap:getCap2425(p), projPts:ppts2425blend(p)}); }
     else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
   }
   draftState2425 = {picks};
@@ -5799,7 +5802,7 @@ function _seedStart2324(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team:'', cap:0, cap2324:null, cap2425:null,
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, cap2324:null, cap2425:null,
       pts:0, pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:null, start2425:null, end2223:team, start2324:team,
@@ -5862,7 +5865,7 @@ function loadActualDraft2324(){
   for(const [rawKey, team] of _ord2324){
     const pgTag=rawKey.match(/_([FDG])$/); const bk=pgTag?rawKey.slice(0,-2):rawKey; const wantPG=pgTag?pgTag[1]:null;
     const p = findPlayerByNamePos(bk, wantPG);
-    if(p){ p.start2324=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team||'', cap:getCap2324(p), projPts:ppts2324blend(p)}); }
+    if(p){ p.start2324=team; picks.push({team, player:p.name, pos:p.pos, nhlTeam:p.team2627||'', cap:getCap2324(p), projPts:ppts2324blend(p)}); }
     else { unmatched.push(bk); picks.push({team, player:bk, pos:wantPG||'', nhlTeam:'', cap:0, projPts:0}); }
   }
   draftState2324 = {picks};
@@ -5975,9 +5978,9 @@ function render2425(){
   const abpMap2425 = computeABP2425(players);
 
   let rows=players.filter(p=>{
-    if(q&&![p.name,p.team,p.end2324||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team2627,p.end2324||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(fp && posGroup(p.pos)!==fp) return false;
-    if(ft && p.team!==ft) return false;
+    if(ft && p.team2627!==ft) return false;
     if(ft2425v==='__any__' && !(p.end2324||'')) return false;
     else if(ft2425v && ft2425v!=='__any__' && (p.end2324||'')!==ft2425v) return false;
     if(fsim==='__any__' && !p.start2425) return false;
@@ -6051,10 +6054,10 @@ function render2425(){
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
       if(viewTeam2425 && getCap2425(p)>maxAffordable2425) return false;
       if(fp && posGroup(p.pos)!==fp) return false;
-      if(ft && p.team!==ft) return false;
+      if(ft && p.team2627!==ft) return false;
       if(ft2425v==='__any__' && !(p.end2324||'')) return false;
       else if(ft2425v && ft2425v!=='__any__' && (p.end2324||'')!==ft2425v) return false;
-      if(q && ![p.name,p.team,p.end2324||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
+      if(q && ![p.name,p.team2627,p.end2324||'',p.start2425||''].some(s=>s.toLowerCase().includes(q))) return false;
       return true;
     });
     if(sortCol2425==='ppts2425blend'){
@@ -6083,7 +6086,7 @@ function render2425(){
     simEl.innerHTML='<option value="">All 24-25 Y! teams</option><option value="__any__">Any team</option><option value="__none__">Unrostered</option>'+allSim.map(t=>`<option>${esc(t)}</option>`).join('');
     simEl.value=prev;
   }
-  const allT=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
+  const allT=[...new Set(players.map(p=>p.team2627).filter(t=>t&&t!=='—'))].sort();
   const tEl=document.getElementById('filterTeam2425');
   if(tEl){
     const prev=tEl.value;
@@ -6105,7 +6108,7 @@ function render2425(){
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2425(p)??'—'}</td>
-      <td title="Team as of the 2024-25 season">${esc(p.team2425||p.team||'—')}</td>
+      <td title="Team as of the 2024-25 season">${esc(p.team2425||p.team2627||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2324&&teamLogos[p.end2324]?`<img src="${teamLogos[p.end2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2324)||'—'}</span></div></td>
       ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
@@ -6459,9 +6462,9 @@ function render2324(){
   const abpMap2324 = computeABP2324(players);
 
   let rows=players.filter(p=>{
-    if(q&&![p.name,p.team,p.end2223||'',p.start2324||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team2627,p.end2223||'',p.start2324||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(fp && posGroup(p.pos)!==fp) return false;
-    if(ft && p.team!==ft) return false;
+    if(ft && p.team2627!==ft) return false;
     if(ft2324v==='__any__' && !(p.end2223||'')) return false;
     else if(ft2324v && ft2324v!=='__any__' && (p.end2223||'')!==ft2324v) return false;
     if(fsim==='__any__' && !p.start2324) return false;
@@ -6527,10 +6530,10 @@ function render2324(){
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
       if(viewTeam2324 && getCap2324(p)>maxAffordable2324) return false;
       if(fp && posGroup(p.pos)!==fp) return false;
-      if(ft && p.team!==ft) return false;
+      if(ft && p.team2627!==ft) return false;
       if(ft2324v==='__any__' && !(p.end2223||'')) return false;
       else if(ft2324v && ft2324v!=='__any__' && (p.end2223||'')!==ft2324v) return false;
-      if(q && ![p.name,p.team,p.end2223||'',p.start2324||''].some(s=>s.toLowerCase().includes(q))) return false;
+      if(q && ![p.name,p.team2627,p.end2223||'',p.start2324||''].some(s=>s.toLowerCase().includes(q))) return false;
       return true;
     });
     if(sortCol2324==='ppts2324blend'){
@@ -6559,7 +6562,7 @@ function render2324(){
     simEl.innerHTML='<option value="">All 23-24 Y! teams</option><option value="__any__">Any team</option><option value="__none__">Unrostered</option>'+allSim.map(t=>`<option>${esc(t)}</option>`).join('');
     simEl.value=prev;
   }
-  const allT=[...new Set(players.map(p=>p.team).filter(t=>t&&t!=='—'))].sort();
+  const allT=[...new Set(players.map(p=>p.team2627).filter(t=>t&&t!=='—'))].sort();
   const tEl=document.getElementById('filterTeam2324');
   if(tEl){
     const prev=tEl.value;
@@ -6581,7 +6584,7 @@ function render2324(){
       <td><span class="player-name">${esc(p.name)}</span></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2324(p)??'—'}</td>
-      <td title="Team as of the 2023-24 season">${esc(p.team2324||p.team||'—')}</td>
+      <td title="Team as of the 2023-24 season">${esc(p.team2324||p.team2627||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2223&&teamLogos[p.end2223]?`<img src="${teamLogos[p.end2223]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2223)||'—'}</span></div></td>
       ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
@@ -6908,7 +6911,7 @@ function algoDraft2526(){
 // drops correctly (found 2026-07-22 via Blue Line Bangers/Mason Marchment in 24-25).
 // Mutates only p[startField] on the given `players` array; every other side effect (persistence,
 // rendering, toasts) stays in each season's own wrapper function, called after this returns.
-function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team', srcNFn, maxSrc, contractYearAnchor, nextContractField = 'nextTerm2627', debugLog = false }){
+function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, draftReserve, elcMax, calcAgeForSim, elcMandatorySet, injurySet = new Set(), computeABPFn, useRebalBonus = false, useMinEnforcement = false, emptyMarker = null, teamField = 'team2627', srcNFn, maxSrc, contractYearAnchor, nextContractField = 'nextTerm2627', debugLog = false }){
   // Tags every dropped player with which numbered cut they were (this run's dropList order)
   // and why, so the reasoning is inspectable later (e.g. on the team curve modal) instead of
   // only visible transiently via console.log while the run is happening. Field names are
@@ -7084,7 +7087,7 @@ function _runAlgoDrops({ players, teams, startField, ppts, getCap, capLimit, dra
     const fanTeam = GM_FAN_TEAM[team];
     const fanBiasProtection = p => {
       if(!fanTeam || wtFanBiasDrop <= 0) return 0;
-      const playerNhlTeam = p[teamField] || p.team || null;
+      const playerNhlTeam = p[teamField] || p.team2627 || null;
       return playerNhlTeam === fanTeam ? wtFanBiasDrop : 0;
     };
 
@@ -7292,7 +7295,7 @@ function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
 // best-available scoring; posAlloc (D-cap-share correction) only applies in bestAvail mode and
 // only when a specific team's cap context is supplied — a generic "score every free agent" call
 // (no team) skips it, matching this formula's pre-existing, intentional team-agnostic display use.
-function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, teamField = 'team' }){
+function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWeights, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFns, elcMax, srcNFn, maxSrc, team, teamCap, teamCapByPos, teamField = 'team2627' }){
   const pm = {F: draftWeights.multF||1, D: draftWeights.multD||1.26, G: draftWeights.multG||1};
   const pressMult = Math.max(0.1, 1 + draftWeights.wtPressure * (2*(pressure[pg]||0) - 1));
   const srcN = srcNFn(p);
@@ -7329,7 +7332,7 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   // pick, so a candidate playing for that GM's team gets a flat bump. teamField picks the right
   // season-specific team2324/2425/2526 column (or live `team` for 26-27) so this checks a
   // player's REAL team at that point in history, not wherever they've since been traded to.
-  const playerNhlTeam = p[teamField] || p.team || null;
+  const playerNhlTeam = p[teamField] || p.team2627 || null;
   const tFanBias = (team && GM_FAN_TEAM[team] && playerNhlTeam === GM_FAN_TEAM[team]) ? (draftWeights.wtFanBias||0) : 0;
   const richExtra = tPPTSM + tYouth + tDelta + tFanBias;
   const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, ppEff, draftWeights);
@@ -7708,7 +7711,7 @@ function _getTeamDraftBoard(team, round, mode, ctx, n = 5){
   return { top, locked, excludePositions };
 }
 
-function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights: draftWeightsBase, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn: srcNFnBase, maxSrc: maxSrcBase, contractYearAnchor, injurySet, nextContractField, simulateSrcNFn = null, simulateMaxSrc = null, teamField = 'team' }){
+function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, ppts, getCap, capLimit, draftReserve, draftWeights: draftWeightsBase, calcAgeForSim = calcAge, elcMax = ELC_MAX_2627, applyChanges = false, renderFn = null, boardDraftState = null, boardLsKey = null, postDropRoster = null, srcNFn: srcNFnBase, maxSrc: maxSrcBase, contractYearAnchor, injurySet, nextContractField, simulateSrcNFn = null, simulateMaxSrc = null, teamField = 'team2627' }){
   const ROSTER_MAX = DRAFT_ROSTER_MAX; // {F:12, D:6, G:2}
 
   // Snapshot: track each player's current team assignment
@@ -8011,7 +8014,7 @@ function _runAlgoDraft({ season, actualDraft, allTeams, buildSeq, startField, pp
     if(teamCapByPos[team]) teamCapByPos[team][pg] = (teamCapByPos[team][pg]||0) + getCap(pick.p);
 
     simPicks.push({round, team, player: pick.p.name, pos: pg, ppts: pick.pp, cap: getCap(pick.p)||0, mode});
-    boardPicks.push({team, player: pick.p.name, pos: pg, nhlTeam: pick.p.team||'', cap: getCap(pick.p)||0, projPts: pick.pp});
+    boardPicks.push({team, player: pick.p.name, pos: pg, nhlTeam: pick.p.team2627||'', cap: getCap(pick.p)||0, projPts: pick.pp});
     teamPickNum[team]++;
   }
 
@@ -8681,9 +8684,9 @@ function render2526(){
   };
 
   let rows = players.filter(p=>{
-    if(q&&![p.name,p.team,p.end2425||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
+    if(q&&![p.name,p.team2627,p.end2425||'',p.end2526||''].some(s=>s.toLowerCase().includes(q))) return false;
     if(fp && posGroup(p.pos)!==fp) return false;
-    if(ft && p.team!==ft) return false;
+    if(ft && p.team2627!==ft) return false;
     if(ft2425 === '__any__' && !(p.end2425||'')) return false;
     else if(ft2425 && ft2425 !== '__any__' && (p.end2425||'')!==ft2425) return false;
     if(ft2526==='__any__' && !p.start2526) return false;
@@ -8767,7 +8770,7 @@ function render2526(){
   }
 
   // Populate filter dropdowns
-  const allNHLTeams=[...new Set(players.map(p=>p.team).filter(Boolean))].sort();
+  const allNHLTeams=[...new Set(players.map(p=>p.team2627).filter(Boolean))].sort();
   const teamEl=document.getElementById('filterTeam2526');
   const prevT=teamEl.value;
   teamEl.innerHTML='<option value="">All NHL teams</option>'+allNHLTeams.map(t=>`<option>${esc(t)}</option>`).join('');
@@ -8811,7 +8814,7 @@ function render2526(){
       </div></td>
       <td><span class="badge ${bc}">${pg==='F'?'F':esc(p.pos)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${calcAge2526(p)??'—'}</td>
-      <td title="Team as of the 2025-26 season">${esc(p.team2526||p.team||'—')}</td>
+      <td title="Team as of the 2025-26 season">${esc(p.team2526||p.team2627||'—')}</td>
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2425&&teamLogos[p.end2425]?`<img src="${teamLogos[p.end2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2425)||'—'}</span></div></td>
       ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${c.toFixed(2)}</a>`:'—';})()}</td>
@@ -8850,7 +8853,7 @@ function updateDraftTab(){
     const ROSTER_TOTAL = DRAFT_ROSTER_MAX.F + DRAFT_ROSTER_MAX.D + DRAFT_ROSTER_MAX.G;
     const allFull = algoDropsApplied && DRAFT_TEAMS_2627.every(t => {
       const retained = players.filter(p => p.start2627 === t).length;
-      const picked   = draftState2627.picks.filter(p => p.team === t).length;
+      const picked   = draftState2627.picks.filter(p => p.team2627 === t).length;
       return retained + picked >= ROSTER_TOTAL;
     });
     const blocked = !algoDropsApplied || allFull;
@@ -9020,9 +9023,9 @@ function renderDraftSearch(){
   if(!fa.length){ res.style.display='none'; return; }
   res.style.display = '';
   res.innerHTML = fa.map(p =>
-    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team||'—')}',${p.cap||0},${p.pts||0})">
+    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team2627||'—')}',${p.cap||0},${p.pts||0})">
       <span>${esc(p.name)}</span>
-      <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
+      <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team2627||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
     </div>`
   ).join('');
 }
@@ -9334,7 +9337,7 @@ function showABPModal(playerId, view) {
     const trend = trendBadge(fa, view);
     return `<tr style="${style||''}">
       <td style="padding:6px 8px">${esc(fa.name)}</td>
-      <td style="padding:6px 8px">${esc(fa.team||'—')}</td>
+      <td style="padding:6px 8px">${esc(fa.team2627||'—')}</td>
       <td style="padding:6px 8px">${faCap>0?'$'+faCap.toFixed(2)+'M':'—'}</td>
       <td style="padding:6px 8px">${faPts||'—'}</td>
       <td style="padding:6px 8px">${faCap>0?(faPts/faCap).toFixed(1):'—'}</td>
@@ -9599,7 +9602,7 @@ function openEdit(id){
   editId=id;
   document.getElementById('modalTitle').textContent='Edit player';
   document.getElementById('fName').value=p.name;
-  document.getElementById('fTeam').value=p.team;
+  document.getElementById('fTeam').value=p.team2627;
   document.getElementById('fPos').value=p.pos;
   document.getElementById('fCap').value=p.cap;
   document.getElementById('fPts').value=p.pts;
@@ -9807,7 +9810,7 @@ function renderSummaryCard(teamIdx){
   const playerRow=(p,cls)=>`<div class="summary-player ${cls}">
     <span class="summary-player-name">${esc(p.name)}${repickIdsY.has(p.id)?` <span style="color:#0891b2;font-weight:600" title="Dropped and re-added by ${esc(team)} this cycle, not kept without interruption">▲</span>`:''}</span>
     <span class="summary-player-pos">${posGroup(p.pos)}</span>
-    <span class="summary-player-team">${NHL_LOGOS[p.team]?`<img src="${NHL_LOGOS[p.team]}" style="width:14px;height:14px;object-fit:contain" loading="lazy">`:''}${esc(p.team||'—')}</span>
+    <span class="summary-player-team">${NHL_LOGOS[p.team2627]?`<img src="${NHL_LOGOS[p.team2627]}" style="width:14px;height:14px;object-fit:contain" loading="lazy">`:''}${esc(p.team2627||'—')}</span>
     <span class="summary-player-pts">${Math.round(pptsF(p))||'—'}</span>
   </div>`;
   const colHdrs=`<div class="summary-col-colhdrs"><span>Player</span><span>Pos</span><span>NHL Team</span><span>PPTS</span></div>`;
