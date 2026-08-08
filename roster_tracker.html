@@ -2186,7 +2186,9 @@ function load(){
     for(const [oldK,newK] of [['ptsAthletic','ptsAth'],['gpAthletic','gpAth'],
       ['proj2324_athletic','proj2324_ath'],['proj2425_athletic','proj2425_ath'],
       ['proj2526_athletic','proj2526_ath'],['projGp2425_athletic','projGp2425_ath'],
-      ['projGp2526_athletic','projGp2526_ath']]){
+      ['projGp2526_athletic','projGp2526_ath'],
+      ['nextContractTerm','nextTerm'],['nextContractTerm2324','nextTerm2324'],
+      ['nextContractTerm2425','nextTerm2425'],['nextContractTerm2526','nextTerm2526']]){
       if(p[oldK] !== undefined){
         if(p[newK] === undefined) p[newK] = p[oldK];
         delete p[oldK];
