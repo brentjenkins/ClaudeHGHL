@@ -1895,7 +1895,7 @@ function dedup(){
     // which silently blocked backfilling a real value from the losing record (found
     // 2026-07-22: Nicklaus Perbix's merge kept the correct cap but dropped pts2526=13
     // from the losing Nick Perbix record, since 0 !== undefined). Scoped to numbers only
-    // — booleans (capMan2627 etc.) and strings keep the stricter undefined/null check, so
+    // — booleans (capMan etc.) and strings keep the stricter undefined/null check, so
     // a legitimate `false`/`''` isn't mistaken for missing.
     for(const k in loser){
       const w = winner[k];
@@ -1993,7 +1993,7 @@ function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs 
 // projection on top. See project_early_season_nowcast memory for the 2026-07-17
 // design discussion.
 function reblendPts(p){
-  if(p.ptsMan2627) return;
+  if(p.ptsMan) return;
   const W = PROJ_SOURCE_WEIGHTS;
   const blended = _weightedBlend([
     [p.proj2627.ath, W.athletic], [p.proj2627.dfo, W.dfo], [p.proj2627.dtz, W.dtz], [p.proj2627.espn, W.espn],
@@ -2157,11 +2157,11 @@ function load(){
       ['projGp2526_athletic','projGp2526_ath'],
       ['nextContractTerm','nextTerm2627'],['nextContractTerm2324','nextTerm2324'],
       ['nextContractTerm2425','nextTerm2425'],['nextContractTerm2526','nextTerm2526'],
-      ['ptsManual','ptsMan2627'],['capManual','capMan2627'],
+      ['ptsManual','ptsMan'],['capManual','capMan'],
       ['nextStartYr','nextYr2627'],['nextStartYr2324','nextYr2324'],
       ['nextStartYr2425','nextYr2425'],['nextStartYr2526','nextYr2526'],
-      ['nextTerm','nextTerm2627'],['nextYr','nextYr2627'],
-      ['capMan','capMan2627'],['ptsMan','ptsMan2627'],
+      ['nextCap','nextCap2627'],['nextTerm','nextTerm2627'],['nextYr','nextYr2627'],
+      ['capMan2627','capMan'],['ptsMan2627','ptsMan'],
       ['rank','rank2627'],['contractTerm2627','contractTerm'],['expYear2627','expYear'],
       ['team','team2627'],['cap','cap2627']]){
       if(p[oldK] !== undefined){
@@ -2177,23 +2177,23 @@ function load(){
       delete p.pts;
       migrated = true;
     }
-    // Backfill capMan2627: cap set without PuckPedia (no contractTerm means cap was manually entered)
-    if(p.cap2627 > 0 && !p.contractTerm && p.capMan2627 === undefined){
-      p.capMan2627 = true;
+    // Backfill capMan: cap set without PuckPedia (no contractTerm means cap was manually entered)
+    if(p.cap2627 > 0 && !p.contractTerm && p.capMan === undefined){
+      p.capMan = true;
       migrated = true;
     }
-    // Backfill ptsMan2627 for legacy records missing the field. NOT inferred from
+    // Backfill ptsMan for legacy records missing the field. NOT inferred from
     // "PPTS differs from 25-26 actuals" — that's expected and correct for a real
     // player, not evidence of a manual edit: reblendPts() blends multiple
     // projection sources (so it rarely equals raw pts2526 exactly) and, once real
     // 26-27 games exist, nowcasts using banked points + pace (guaranteed to differ
     // from pts2526 by design — see reblendPts). The old heuristic here silently
     // mislabeled real players as manual, which permanently locked their PPTS
-    // in place forever after (reblendPts returns immediately if ptsMan2627 is
+    // in place forever after (reblendPts returns immediately if ptsMan is
     // true, before the nowcast logic even runs) — worst possible timing, since
     // it'd bite hardest exactly when the season starts and nowcasting kicks in.
-    if(p.ptsMan2627 === undefined){
-      p.ptsMan2627 = false;
+    if(p.ptsMan === undefined){
+      p.ptsMan = false;
       migrated = true;
     }
     // Normalize Yahoo team abbreviations to NHL standard (WAS→WSH, NAS→NSH, SJ→SJS, etc.)
@@ -2306,7 +2306,7 @@ async function syncStats(){
         p.gp2526    = entry.gp;
         p.team2526  = entry.team || p.team2526;
         if(entry.nhlId && !p.nhlId) p.nhlId = entry.nhlId;
-        p.ptsMan2627 = false;
+        p.ptsMan = false;
         matched++;
       } else {
         unmatched++;
@@ -2615,13 +2615,13 @@ function assignCapFromSignings(){
     p.yrStr2526  = _signingYrStr(c2526, 2025);
     p.yrStr2627  = _signingYrStr(c2627, 2026);
     if(c2627){
-      if(!p.capMan2627) p.cap2627 = c2627.cap;
+      if(!p.capMan) p.cap2627 = c2627.cap;
       p.contractTerm = c2627.term || 0;
       p.expYear      = parseInt(c2627.exp?.split('-')[0]) || 0;
       if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
       if(c2627.birthDate && !p.birthDate)          p.birthDate = c2627.birthDate;
       if(c2627.nhl_id && !p.nhlId)                 p.nhlId = c2627.nhl_id;
-    } else if(!p.capMan2627){
+    } else if(!p.capMan){
       p.cap2627 = 0; p.contractTerm = 0; p.expYear = 0;
     }
     const cNext = _findNextContract(contracts, c2627);
@@ -2742,7 +2742,7 @@ async function syncSigningsAll(e){
       p.yrStr2425 = _signingYrStr(c2425, 2024);
       p.yrStr2526 = _signingYrStr(c2526, 2025);
       p.yrStr2627 = _signingYrStr(c2627, 2026);
-      p.capMan2627 = false;
+      p.capMan = false;
       if(c2627){
         p.cap2627 = c2627.cap;
         p.contractTerm = c2627.term || 0;
@@ -2803,7 +2803,7 @@ async function syncSigningsAll(e){
         existingById.yrStr2425 = _signingYrStr(c2425, 2024);
         existingById.yrStr2526 = _signingYrStr(c2526, 2025);
         existingById.yrStr2627 = _signingYrStr(c2627, 2026);
-        existingById.capMan2627 = false;
+        existingById.capMan = false;
         if(c2627){
           existingById.cap2627 = c2627.cap;
           existingById.contractTerm = c2627.term || 0;
@@ -2839,7 +2839,7 @@ async function syncSigningsAll(e){
         nextCap2425: cNextNew2425?.cap ?? null, nextTerm2425: cNextNew2425?.term ?? null, nextYr2425: cNextNew2425?.start_yr ?? null,
         nextCap2526: cNextNew2526?.cap ?? null, nextTerm2526: cNextNew2526?.term ?? null, nextYr2526: cNextNew2526?.start_yr ?? null,
         start2627: '', end2526: '', pts: 0, pts2526: 0, gp2526: 0,
-        capMan2627: false, ptsMan2627: false, rank2627: null,
+        capMan: false, ptsMan: false, rank2627: null,
         cap2526: c2526?.cap ?? null, cap2425: c2425?.cap ?? null, cap2324: c2324?.cap ?? null,
         nhlId: latest.nhl_id || null,
         nextCap2627: cNextNew?.cap ?? null, nextTerm2627: cNextNew?.term ?? null, nextYr2627: cNextNew?.start_yr ?? null,
@@ -2880,7 +2880,7 @@ async function fetchHistoricalCaps(){
     ...Object.keys(PREDROP_ROSTER_2526),
     ...Object.keys(PREDROP_ROSTER_2627),
   ]);
-  const targets = players.filter(p => predropKeys.has(normName(p.name).toLowerCase()) && !p.capMan2627);
+  const targets = players.filter(p => predropKeys.has(normName(p.name).toLowerCase()) && !p.capMan);
   if(!targets.length){
     toast('No rostered players found — populate the PREDROP_ROSTER_ dicts first.');
     btn.disabled = false; btn.innerHTML = '📜 Historical Caps';
@@ -3397,7 +3397,7 @@ function render(){
           <span style="overflow:hidden;text-overflow:ellipsis">${teamAbbr(p.start2627)||'—'}</span>
         </div>
       </td>`}
-      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap2627>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap2627.toFixed(2)}</a>${p.capMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap2627>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap2627.toFixed(2)}</a>${p.capMan?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
       <td style="color:#9ca3af;text-align:right">${p.cap2627>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}${p.nextCap2627?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2627.toFixed(2)}M × ${p.nextTerm2627}yr, starting ${p.nextYr2627}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
@@ -3411,7 +3411,7 @@ function render(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.espn>0?Math.round(p.proj2627.espn):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.cbs>0?Math.round(p.proj2627.cbs):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.nhl>0?Math.round(p.proj2627.nhl):'—'}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.proj2627.blend>0?`${p.proj2627.blend}${p.ptsMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.proj2627.blend>0?`${p.proj2627.blend}${p.ptsMan?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.proj2627.blend>0&&p.cap2627>0?(p.proj2627.blend/p.cap2627).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank2627!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2627<=10?'#b45309':p.rank2627<=25?'#185FA5':'#555'}">${p.rank2627}</span>`:'—'}</td>
@@ -3826,7 +3826,7 @@ function _seedStart2627(){
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, status:'r', source:'m',
       start2627:team||'', end2526:team,
-      rank2627:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
+      rank2627:null, birthDate:stub.birthDate||'', capMan:false, ptsMan:false,
       proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
     });
   }
@@ -5024,7 +5024,7 @@ function _seedStart2526(){
       id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2526:null,
       pts2526:0, gp2526:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:team, start2526:team,
-      rank2627:null, rank2526:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
+      rank2627:null, rank2526:null, birthDate:stub.birthDate||'', capMan:false, ptsMan:false,
       proj2526:{dfo:null,dtz:null,espn:null,ath:null,cbs:null},
       proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
     });
@@ -5630,7 +5630,7 @@ function _seedStart2425(){
       pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:team, start2425:team,
-      rank2627:null, rank2425:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
+      rank2627:null, rank2425:null, birthDate:stub.birthDate||'', capMan:false, ptsMan:false,
       proj2425:{dfo:null,dtz:null,ath:null,nhl:null},
       proj2526:{dfo:null,dtz:null,espn:null,ath:null,cbs:null},
       cap2526:null, proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
@@ -5804,7 +5804,7 @@ function _seedStart2324(){
       pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:null, start2425:null, end2223:team, start2324:team,
-      rank2627:null, rank2324:null, rank2425:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
+      rank2627:null, rank2324:null, rank2425:null, birthDate:stub.birthDate||'', capMan:false, ptsMan:false,
       proj2324:{ath:null,dtz:null,nhl:null,dob:null},
       proj2425:{dfo:null,dtz:null,ath:null,nhl:null},
       proj2526:{dfo:null,dtz:null,espn:null,ath:null,cbs:null},
@@ -9625,8 +9625,8 @@ function savePlayer(){
       const old=players[idx];
       players[idx]={...old,name,team2627:team,pos,cap2627:cap,status,start2627:ft2627,
         proj2627:{...old.proj2627,blend:pts},
-        capMan2627: cap!==old.cap2627 ? true : (old.capMan2627||false),
-        ptsMan2627: pts!==old.proj2627?.blend ? true : (old.ptsMan2627||false)};
+        capMan: cap!==old.cap2627 ? true : (old.capMan||false),
+        ptsMan: pts!==old.proj2627?.blend ? true : (old.ptsMan||false)};
     }
   } else {
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
