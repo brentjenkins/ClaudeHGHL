@@ -2204,7 +2204,8 @@ function load(){
     // computed and synced only) plus other orphaned localStorage cruft.
     for(const deadField of ['pppESPN','pppAthletic','pppDFO','pppDTZ','ppp','ppp2526',
       'ppp2526_athletic','ppp2526_dfo','ppp2526_dtz','ppp2526_espn','ppp2526proj',
-      'ppToi2526','ppToi2425','finalRoster2526']){
+      'ppToi2526','ppToi2425','finalRoster2526',
+      'fantasyTeam','fantasyTeam2425','fantasyTeam2526','sim2425','sim2526']){
       if(p[deadField] !== undefined){ delete p[deadField]; migrated = true; }
     }
     // Consolidate flat proj{season}_{source} / projGp{season}_{source} fields into nested
