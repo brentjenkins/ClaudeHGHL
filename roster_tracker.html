@@ -1833,7 +1833,7 @@ const PROJ_SORT_PATH = {
   proj2425_ath:['proj2425','ath'], proj2425_dfo:['proj2425','dfo'], proj2425_dtz:['proj2425','dtz'], proj2425_nhl:['proj2425','nhl'],
   proj2526_ath:['proj2526','ath'], proj2526_dfo:['proj2526','dfo'], proj2526_dtz:['proj2526','dtz'], proj2526_espn:['proj2526','espn'], proj2526_cbs:['proj2526','cbs'], proj2526_nhl:['proj2526','nhl'],
   ptsAth:['proj2627','ath'], ptsDFO:['proj2627','dfo'], ptsDTZ:['proj2627','dtz'], ptsESPN:['proj2627','espn'], ptsCBS:['proj2627','cbs'], ptsNHL:['proj2627','nhl'], ptsDOB:['proj2627','dob'],
-  team:'team2627',
+  team:'team2627', cap:'cap2627',
 };
 function _sortVal(obj, col){
   const path = PROJ_SORT_PATH[col];
@@ -2041,7 +2041,7 @@ function rankPlayers(){
   const multByGroup = { F: W.multF, D: W.multD, G: W.multG };
 
   for(const p of players) delete p.rank2627;
-  const eligible = players.filter(p => p.cap > 0 && p.pts > 0);
+  const eligible = players.filter(p => p.cap2627 > 0 && p.pts > 0);
 
   eligible
     .map(p => {
@@ -2050,9 +2050,9 @@ function rankPlayers(){
       const coverageMult = 1 - (W.wtCoverageDiscount||0) * (1 - Math.min(1, srcN/5));
       const ppEff = p.pts * coverageMult;
       const scoreA = ppEff * (multByGroup[posGroup(p.pos)] ?? 1.0);
-      const scoreB = (ppEff / p.cap) * W.wtPPTSM;
+      const scoreB = (ppEff / p.cap2627) * W.wtPPTSM;
       const scoreD = peakTrajectoryScore(age, posGroup(p.pos), (p.expYear2627 >= NHL_SEASON_YEAR ? p.expYear2627 - NHL_SEASON_YEAR + 1 : 0) + (p.nextTerm2627||0)) * W.wtAge;
-      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap||0, ELC_MAX_2627, ppEff, W);
+      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap2627||0, ELC_MAX_2627, ppEff, W);
       return { p, score: scoreA + scoreB + scoreD + scoreE };
     })
     .sort((a, b) => b.score - a.score)
@@ -2111,7 +2111,7 @@ function algoDrops(){
   const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))];
   const dropped = _runAlgoDrops({
     players, teams, startField: 'start2627',
-    ppts: p => p.pts||0, getCap: p => p.cap||0,
+    ppts: p => p.pts||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
     elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
@@ -2172,7 +2172,7 @@ function load(){
       ['nextTerm','nextTerm2627'],['nextYr','nextYr2627'],
       ['capMan','capMan2627'],['ptsMan','ptsMan2627'],
       ['rank','rank2627'],['contractTerm','contractTerm2627'],['expYear','expYear2627'],
-      ['team','team2627']]){
+      ['team','team2627'],['cap','cap2627']]){
       if(p[oldK] !== undefined){
         if(p[newK] === undefined) p[newK] = p[oldK];
         delete p[oldK];
@@ -2180,7 +2180,7 @@ function load(){
       }
     }
     // Backfill capMan2627: cap set without PuckPedia (no contractTerm2627 means cap was manually entered)
-    if(p.cap > 0 && !p.contractTerm2627 && p.capMan2627 === undefined){
+    if(p.cap2627 > 0 && !p.contractTerm2627 && p.capMan2627 === undefined){
       p.capMan2627 = true;
       migrated = true;
     }
@@ -2515,16 +2515,16 @@ async function syncDOB(input){
 
 function defaultPlayers(){
   return [
-    {id:1,name:'Connor McDavid',team2627:'EDM',pos:'C',cap:12.5,pts:107,status:'r',source:'m',start2627:''},
-    {id:2,name:'Nathan MacKinnon',team2627:'COL',pos:'C',cap:12.6,pts:102,status:'r',source:'m',start2627:''},
-    {id:3,name:'Auston Matthews',team2627:'TOR',pos:'C',cap:13.25,pts:96,status:'r',source:'m',start2627:''},
-    {id:4,name:'Leon Draisaitl',team2627:'EDM',pos:'C',cap:14.0,pts:98,status:'r',source:'m',start2627:''},
-    {id:5,name:'Nikita Kucherov',team2627:'TBL',pos:'RW',cap:9.5,pts:94,status:'r',source:'m',start2627:''},
-    {id:6,name:'Cale Makar',team2627:'COL',pos:'D',cap:9.0,pts:82,status:'r',source:'m',start2627:''},
-    {id:7,name:'Roman Josi',team2627:'NSH',pos:'D',cap:9.06,pts:71,status:'r',source:'m',start2627:''},
-    {id:8,name:'David Pastrnak',team2627:'BOS',pos:'RW',cap:11.25,pts:88,status:'r',source:'m',start2627:''},
-    {id:9,name:'Igor Shesterkin',team2627:'NYR',pos:'G',cap:11.5,pts:0,status:'r',source:'m',start2627:''},
-    {id:10,name:'Sidney Crosby',team2627:'PIT',pos:'C',cap:8.7,pts:78,status:'r',source:'m',start2627:''},
+    {id:1,name:'Connor McDavid',team2627:'EDM',pos:'C',cap2627:12.5,pts:107,status:'r',source:'m',start2627:''},
+    {id:2,name:'Nathan MacKinnon',team2627:'COL',pos:'C',cap2627:12.6,pts:102,status:'r',source:'m',start2627:''},
+    {id:3,name:'Auston Matthews',team2627:'TOR',pos:'C',cap2627:13.25,pts:96,status:'r',source:'m',start2627:''},
+    {id:4,name:'Leon Draisaitl',team2627:'EDM',pos:'C',cap2627:14.0,pts:98,status:'r',source:'m',start2627:''},
+    {id:5,name:'Nikita Kucherov',team2627:'TBL',pos:'RW',cap2627:9.5,pts:94,status:'r',source:'m',start2627:''},
+    {id:6,name:'Cale Makar',team2627:'COL',pos:'D',cap2627:9.0,pts:82,status:'r',source:'m',start2627:''},
+    {id:7,name:'Roman Josi',team2627:'NSH',pos:'D',cap2627:9.06,pts:71,status:'r',source:'m',start2627:''},
+    {id:8,name:'David Pastrnak',team2627:'BOS',pos:'RW',cap2627:11.25,pts:88,status:'r',source:'m',start2627:''},
+    {id:9,name:'Igor Shesterkin',team2627:'NYR',pos:'G',cap2627:11.5,pts:0,status:'r',source:'m',start2627:''},
+    {id:10,name:'Sidney Crosby',team2627:'PIT',pos:'C',cap2627:8.7,pts:78,status:'r',source:'m',start2627:''},
   ];
 }
 function updateSigningsBtn(){
@@ -2618,14 +2618,14 @@ function assignCapFromSignings(){
     p.yrStr2526  = _signingYrStr(c2526, 2025);
     p.yrStr2627  = _signingYrStr(c2627, 2026);
     if(c2627){
-      if(!p.capMan2627) p.cap = c2627.cap;
+      if(!p.capMan2627) p.cap2627 = c2627.cap;
       p.contractTerm2627 = c2627.term || 0;
       p.expYear2627      = parseInt(c2627.exp?.split('-')[0]) || 0;
       if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
       if(c2627.birthDate && !p.birthDate)          p.birthDate = c2627.birthDate;
       if(c2627.nhl_id && !p.nhlId)                 p.nhlId = c2627.nhl_id;
     } else if(!p.capMan2627){
-      p.cap = 0; p.contractTerm2627 = 0; p.expYear2627 = 0;
+      p.cap2627 = 0; p.contractTerm2627 = 0; p.expYear2627 = 0;
     }
     const cNext = _findNextContract(contracts, c2627);
     p.nextCap2627          = cNext?.cap ?? null;
@@ -2747,14 +2747,14 @@ async function syncSigningsAll(e){
       p.yrStr2627 = _signingYrStr(c2627, 2026);
       p.capMan2627 = false;
       if(c2627){
-        p.cap = c2627.cap;
+        p.cap2627 = c2627.cap;
         p.contractTerm2627 = c2627.term || 0;
         p.expYear2627 = parseInt(c2627.exp?.split('-')[0]) || 0;
         if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
         if(c2627.birthDate && !p.birthDate) p.birthDate = c2627.birthDate;
         if(c2627.nhl_id && !p.nhlId) p.nhlId = c2627.nhl_id;
       } else {
-        p.cap = 0; p.contractTerm2627 = 0; p.expYear2627 = 0;
+        p.cap2627 = 0; p.contractTerm2627 = 0; p.expYear2627 = 0;
       }
       const cNext = _findNextContract(contracts, c2627);
       p.nextCap2627          = cNext?.cap ?? null;
@@ -2808,7 +2808,7 @@ async function syncSigningsAll(e){
         existingById.yrStr2627 = _signingYrStr(c2627, 2026);
         existingById.capMan2627 = false;
         if(c2627){
-          existingById.cap = c2627.cap;
+          existingById.cap2627 = c2627.cap;
           existingById.contractTerm2627 = c2627.term || 0;
           existingById.expYear2627 = parseInt(c2627.exp?.split('-')[0]) || 0;
           if(c2627.team && (!existingById.team2627 || existingById.team2627==='—')) existingById.team2627 = c2627.team;
@@ -2835,7 +2835,7 @@ async function syncSigningsAll(e){
       players.push({
         id: nextId++, name: latest.name, team2627: c2627?.team || latest.team || '',
         pos: latest.pos || 'C',
-        cap: c2627?.cap || 0, contractTerm2627: c2627?.term || 0,
+        cap2627: c2627?.cap || 0, contractTerm2627: c2627?.term || 0,
         expYear2627: c2627 ? parseInt(c2627.exp?.split('-')[0]) || 0 : 0,
         birthDate: latest.birthDate || '', source: 'p', status: 'r',
         nextCap2324: cNextNew2324?.cap ?? null, nextTerm2324: cNextNew2324?.term ?? null, nextYr2324: cNextNew2324?.start_yr ?? null,
@@ -2941,7 +2941,7 @@ async function syncAllNHL(){
         updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(x=>x.id))+1 : 1;
-        players.push({id:newId, name:p.name, team:p.nhlTeam, pos:p.pos, cap:0, pts:0,
+        players.push({id:newId, name:p.name, team2627:p.nhlTeam, pos:p.pos, cap2627:0, pts:0,
                       status:'r', source:'n', start2627:'', birthDate:p.birthDate||'', nhlId:p.nhlId||null});
         added++;
       }
@@ -3229,7 +3229,7 @@ function computeDrops(allPlayers){
   const teams = [...new Set(vp.map(p => p.start2627).filter(Boolean))];
   _runAlgoDrops({
     players: vp, teams, startField: 'start2627',
-    ppts: p => p.pts||0, getCap: p => p.cap||0,
+    ppts: p => p.pts||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
     elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
@@ -3266,21 +3266,21 @@ function render(){
 
   const dropIds = algoDropsApplied ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
-  const ppm = p => (p.pts>0&&p.cap>0) ? p.pts/p.cap : 0;
-  const rosteredPool2627 = players.filter(p => p.start2627 && p.cap > 0);
+  const ppm = p => (p.pts>0&&p.cap2627>0) ? p.pts/p.cap2627 : 0;
+  const rosteredPool2627 = players.filter(p => p.start2627 && p.cap2627 > 0);
   const curveFns2627 = {
-    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
-    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
-    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
+    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap2627, y: p.pts}))),
+    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap2627, y: p.pts}))),
+    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap2627, y: p.pts}))),
   };
   const curveDelta = p => {
-    if(!(p.pts > 0 && p.cap > 0)) return null;
+    if(!(p.pts > 0 && p.cap2627 > 0)) return null;
     const pg = posGroup(p.pos);
-    const base = _curveBaseline(pg, p.cap, ELC_MAX_2627, curveFns2627[pg]);
+    const base = _curveBaseline(pg, p.cap2627, ELC_MAX_2627, curveFns2627[pg]);
     return base != null ? p.pts - base : null;
   };
   // △Act compares 25-26 actuals to a 25-26 curve at the 25-26 cap — same-year basis,
-  // matching curveDeltaActual2425/2324/2526. NOT curveFns2627/p.cap (this year's curve/
+  // matching curveDeltaActual2425/2324/2526. NOT curveFns2627/p.cap2627 (this year's curve/
   // cap): a player's cap can change year to year (new contract, ELC graduating), so
   // judging last year's output against this year's price would conflate the two.
   const rosteredPool2526ForActual = players.filter(p => p.start2526 && getCap2526(p) > 0);
@@ -3319,21 +3319,21 @@ function render(){
     const dN2=viewRoster.filter(p=>posGroup(p.pos)==='D').length;
     const gN2=viewRoster.filter(p=>posGroup(p.pos)==='G').length;
     const need={F:Math.max(0,DRAFT_ROSTER_MAX.F-fN2),D:Math.max(0,DRAFT_ROSTER_MAX.D-dN2),G:Math.max(0,DRAFT_ROSTER_MAX.G-gN2)};
-    const viewCapByPos={F:viewRoster.reduce((s,p)=>posGroup(p.pos)==='F'?s+(p.cap||0):s,0),D:viewRoster.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap||0):s,0),G:viewRoster.reduce((s,p)=>posGroup(p.pos)==='G'?s+(p.cap||0):s,0)};
+    const viewCapByPos={F:viewRoster.reduce((s,p)=>posGroup(p.pos)==='F'?s+(p.cap2627||0):s,0),D:viewRoster.reduce((s,p)=>posGroup(p.pos)==='D'?s+(p.cap2627||0):s,0),G:viewRoster.reduce((s,p)=>posGroup(p.pos)==='G'?s+(p.cap2627||0):s,0)};
     const viewCapTot=viewCapByPos.F+viewCapByPos.D+viewCapByPos.G;
     const slotsLeft=need.F+need.D+need.G;
     const maxAffordable=draftFocusTeam?CAP_LIMIT-viewCapTot-Math.max(0,slotsLeft-1)*ELC_MAX_2627:Infinity;
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
     // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
     // see _runAlgoDraft / render2425 for the drift history this is meant to end.
-    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap||0);
+    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap2627||0);
     lastPressure=pressure;
     const genericRound2627 = draftProspectRounds + 3;
     // Score ALL free agents (full pool) for team-card top-picks — no per-team need filter here
     lastAllScored = players
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
       .map(p=>{
-        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
+        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap2627||0;
         const scoreArgs = { pg, pp, cap0, pressure, draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627 };
         const _ds = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2627}).score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
@@ -3350,9 +3350,9 @@ function render(){
     const teamCap2627 = {[viewTeam]: viewCapTot};
     const teamCapByPos2627 = {[viewTeam]: viewCapByPos};
     const allScored=rows
-      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap||0)<=maxAffordable))&&(p.pts||0)>0)
+      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap2627||0)<=maxAffordable))&&(p.pts||0)>0)
       .map(p=>{
-        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap||0;
+        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap2627||0;
         const scoreArgs = {
           pg, pp, cap0, pressure, round: focusRound2627, draftWeights: _effectiveDraftWeights(viewTeam, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
           calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
@@ -3399,8 +3399,8 @@ function render(){
           <span style="overflow:hidden;text-overflow:ellipsis">${teamAbbr(p.start2627)||'—'}</span>
         </div>
       </td>`}
-      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap.toFixed(2)}</a>${p.capMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
-      <td style="color:#9ca3af;text-align:right">${p.cap>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}${p.nextCap2627?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2627.toFixed(2)}M × ${p.nextTerm2627}yr, starting ${p.nextYr2627}">→</span>`:''}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap2627>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap2627.toFixed(2)}</a>${p.capMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
+      <td style="color:#9ca3af;text-align:right">${p.cap2627>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}${p.nextCap2627?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2627.toFixed(2)}M × ${p.nextTerm2627}yr, starting ${p.nextYr2627}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -3414,7 +3414,7 @@ function render(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.cbs>0?Math.round(p.proj2627.cbs):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.nhl>0?Math.round(p.proj2627.nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0?`${p.pts}${p.ptsMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0&&p.cap>0?(p.pts/p.cap).toFixed(1):'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0&&p.cap2627>0?(p.pts/p.cap2627).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank2627!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2627<=10?'#b45309':p.rank2627<=25?'#185FA5':'#555'}">${p.rank2627}</span>`:'—'}</td>
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
@@ -3826,7 +3826,7 @@ function _seedStart2627(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, pts:0, status:'r', source:'m',
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, pts:0, status:'r', source:'m',
       start2627:team||'', end2526:team,
       rank2627:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
       proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null},
@@ -3969,9 +3969,9 @@ function _buildLeagueDraftState2627(){
       D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
       G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
     };
-    teamCap[t] = tp.reduce((s,p)=>s+(p.cap||0),0);
+    teamCap[t] = tp.reduce((s,p)=>s+(p.cap2627||0),0);
     teamCapByPos[t] = {F:0,D:0,G:0};
-    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPos[t]) teamCapByPos[t][g]+=(p.cap||0); }
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPos[t]) teamCapByPos[t][g]+=(p.cap2627||0); }
     teamSpotsLeft[t] = Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
   }
   return {teams, need, teamCap, teamCapByPos, teamSpotsLeft};
@@ -3995,7 +3995,7 @@ function simulateBestPick(){
 
   const { top, locked } = _getTeamDraftBoard(team, round, mode, {
     players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
-    ppts: p => p.pts || 0, getCap: p => p.cap || 0,
+    ppts: p => p.pts || 0, getCap: p => p.cap2627 || 0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
@@ -4016,7 +4016,7 @@ function simulateBestPick(){
     return;
   }
 
-  makeDraftPick(pick.p.name, pick.p.pos, pick.p.team2627||'—', pick.p.cap||0, pick.pp);
+  makeDraftPick(pick.p.name, pick.p.pos, pick.p.team2627||'—', pick.p.cap2627||0, pick.pp);
 }
 
 function setDraftFocus(t){
@@ -4658,7 +4658,7 @@ function _drawCurveChart(canvas, pool, getCap, getPts, curveFns, highlightIds=nu
 function renderCurveChart(){
   const canvas = document.getElementById('curveChart');
   if(!canvas) return;
-  const pool = players.filter(p => p.start2627 && (p.cap||0) > 0);
+  const pool = players.filter(p => p.start2627 && (p.cap2627||0) > 0);
   if(!pool.length){
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.clientWidth || 520, H = 220;
@@ -4670,11 +4670,11 @@ function renderCurveChart(){
     return;
   }
   const curveFns = {
-    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap,y:p.pts}))),
-    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap,y:p.pts}))),
-    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap,y:p.pts}))),
+    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap2627,y:p.pts}))),
+    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap2627,y:p.pts}))),
+    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap2627,y:p.pts}))),
   };
-  _drawCurveChart(canvas, pool, p=>p.cap, p=>p.pts, curveFns);
+  _drawCurveChart(canvas, pool, p=>p.cap2627, p=>p.pts, curveFns);
 }
 
 // ── PP Signings ───────────────────────────────────────────────────────────────
@@ -4790,7 +4790,7 @@ function renderXactions2627(){ _renderXactionsView(xactions2627, draftDatePresea
 function quickDraft(id){
   const p = players.find(x=>x.id===id);
   if(!p) return;
-  makeDraftPick(p.name, p.pos, p.team2627||'—', p.cap||0, p.pts||0);
+  makeDraftPick(p.name, p.pos, p.team2627||'—', p.cap2627||0, p.pts||0);
   render();
 }
 
@@ -5023,7 +5023,7 @@ function _seedStart2526(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, cap2526:null,
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2526:null,
       pts:0, pts2526:0, gp2526:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:team, start2526:team,
       rank2627:null, rank2526:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
@@ -5396,8 +5396,8 @@ function compareDrops2627(){
     season: '26-27',
     guards: [{ fail: () => !Object.keys(POSTDROP_ROSTER_2627).length, msg: 'No actual 26-27 drop data yet. Populate POSTDROP_ROSTER_2627 (normName_pos \u2192 team) once managers submit their drops.' }],
     predropRoster: PREDROP_ROSTER_2627, postdropRoster: POSTDROP_ROSTER_2627, predropStubs: PREDROP_STUBS_2627,
-    stubExtraFields: {},
-    startField: 'start2627', ppts: p => p.pts||0, getCap: p => p.cap||0,
+    stubExtraFields: { cap2627: null },
+    startField: 'start2627', ppts: p => p.pts||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627, computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true,
@@ -5628,7 +5628,7 @@ function _seedStart2425(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, cap2425:null,
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2425:null,
       pts:0, pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:team, start2425:team,
@@ -5802,7 +5802,7 @@ function _seedStart2324(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap:0, cap2324:null, cap2425:null,
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2324:null, cap2425:null,
       pts:0, pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:null, start2425:null, end2223:team, start2324:team,
@@ -6167,7 +6167,7 @@ function _teamCurveConfig(view){
     case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324, predropStubs:PREDROP_STUBS_2324, postdropDict:POSTDROP_ROSTER_2324 };
     case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425, predropStubs:PREDROP_STUBS_2425, postdropDict:POSTDROP_ROSTER_2425 };
     case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526, predropStubs:PREDROP_STUBS_2526, postdropDict:POSTDROP_ROSTER_2526 };
-    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627, postdropDict:POSTDROP_ROSTER_2627 };
+    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap2627||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627, postdropDict:POSTDROP_ROSTER_2627 };
   }
 }
 
@@ -6177,7 +6177,7 @@ function _teamCurveConfig(view){
 function _stubCurvePlayer(name, pos, team){
   return {
     id:`stub_${normName(name).toLowerCase()}`, name, pos, cap:0, pts:0,
-    cap2324:null, cap2425:null, cap2526:null, pts2324:0, pts2425:0, pts2526:0,
+    cap2324:null, cap2425:null, cap2526:null, cap2627:null, pts2324:0, pts2425:0, pts2526:0,
     start2324:team, start2425:team, start2526:team, start2627:team,
   };
 }
@@ -6765,7 +6765,7 @@ function algoDraft2627(){
     buildSeq:     buildDraftSeq2627,
     startField:   'start2627',
     ppts:         p => p.pts || 0,
-    getCap:       p => p.cap || 0,
+    getCap:       p => p.cap2627 || 0,
     capLimit:     CAP_LIMIT,
     draftReserve: DRAFT_RESERVE_2627,
     draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
@@ -8463,16 +8463,16 @@ function compareDrafts2526(){
 }
 
 // 26-27 version — same shape as compareDrafts2526, but no real draft picks exist until the
-// actual draft (Oct 2, 2026), so POSTDRAFT_ROSTER_2627 stays empty until then. Uses p.pts/p.cap
+// actual draft (Oct 2, 2026), so POSTDRAFT_ROSTER_2627 stays empty until then. Uses p.pts/p.cap2627
 // directly (26-27's live projection/cap fields) rather than a season-suffixed blend function.
 function compareDrafts2627(){
-  const pool = players.filter(p => p.start2627 && (p.cap||0) > 0);
+  const pool = players.filter(p => p.start2627 && (p.cap2627||0) > 0);
   _runCompareDrafts({
     season: '26-27', postdraftRoster: POSTDRAFT_ROSTER_2627,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2627 (normName → team) once the real 26-27 draft happens.',
-    draftState: draftState2627, ppts: p => p.pts||0, getCap: p => p.cap||0, actualPtsField: 'pts2627',
+    draftState: draftState2627, ppts: p => p.pts||0, getCap: p => p.cap2627||0, actualPtsField: 'pts2627',
     injurySet: INJURY_DROPS_2627,
-    curveFns: _buildCurveFns(pool, p => p.cap||0, p => p.pts||0), elcMax: ELC_MAX_2627,
+    curveFns: _buildCurveFns(pool, p => p.cap2627||0, p => p.pts||0), elcMax: ELC_MAX_2627,
   });
 }
 
@@ -8962,7 +8962,7 @@ function renderDraftView(){
 
     const logo   = teamLogos[team];
     const roster = players.filter(p => p.start2627 === team);
-    const cap    = roster.reduce((s,p) => s+(p.cap||0), 0);
+    const cap    = roster.reduce((s,p) => s+(p.cap2627||0), 0);
     const rem    = CAP_LIMIT - cap;
     const remColor = rem < 0 ? '#dc2626' : rem < 5 ? '#dc2626' : rem < 15 ? '#d97706' : '#16a34a';
     const remLabel = rem < 0 ? `$${(-rem).toFixed(1)}M over` : `$${rem.toFixed(1)}M left`;
@@ -9023,7 +9023,7 @@ function renderDraftSearch(){
   if(!fa.length){ res.style.display='none'; return; }
   res.style.display = '';
   res.innerHTML = fa.map(p =>
-    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team2627||'—')}',${p.cap||0},${p.pts||0})">
+    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team2627||'—')}',${p.cap2627||0},${p.pts||0})">
       <span>${esc(p.name)}</span>
       <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team2627||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
     </div>`
@@ -9281,14 +9281,14 @@ function computeABP2526(allPlayers){
 }
 
 function computeABP(allPlayers){
-  const fas = allPlayers.filter(p => !p.start2627 && p.cap > 0 && p.pts > 0);
+  const fas = allPlayers.filter(p => !p.start2627 && p.cap2627 > 0 && p.pts > 0);
   const abpMap = new Map();
   for(const p of allPlayers){
-    if(!(p.pts > 0) || p.cap <= 0){ abpMap.set(p.id, null); continue; }
+    if(!(p.pts > 0) || p.cap2627 <= 0){ abpMap.set(p.id, null); continue; }
     const pg  = posGroup(p.pos);
-    const cap = p.cap + (abpWiggle / 100) * CAP_LIMIT;
+    const cap = p.cap2627 + (abpWiggle / 100) * CAP_LIMIT;
     abpMap.set(p.id, fas.filter(fa =>
-      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap <= cap && fa.pts > p.pts
+      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap2627 <= cap && fa.pts > p.pts
     ).length);
   }
   return abpMap;
@@ -9297,7 +9297,7 @@ function computeABP(allPlayers){
 function showABPModal(playerId, view) {
   const p = players.find(x => x.id === playerId);
   if (!p) return;
-  const getCap   = view==='2627' ? x=>x.cap        : view==='2526' ? getCap2526    : view==='2425' ? getCap2425    : getCap2324;
+  const getCap   = view==='2627' ? x=>x.cap2627        : view==='2526' ? getCap2526    : view==='2425' ? getCap2425    : getCap2324;
   const getPts   = view==='2627' ? x=>x.pts        : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
   const isFa     = view==='2627' ? x=>!x.start2627 : view==='2526' ? x=>!x.start2526 : view==='2425' ? x=>!x.start2425 : x=>!x.start2324;
   const isStart  = view==='2627' ? x=>x.start2627  : view==='2526' ? x=>x.start2526  : view==='2425' ? x=>x.start2425  : x=>x.start2324;
@@ -9493,11 +9493,11 @@ function updateStats(){
   }
 
   const abpMap = computeABP(players);
-  const rosteredPool2627 = players.filter(p => p.start2627 && p.cap > 0);
+  const rosteredPool2627 = players.filter(p => p.start2627 && p.cap2627 > 0);
   const curveFns2627 = {
-    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap, y: p.pts}))),
-    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap, y: p.pts}))),
-    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap, y: p.pts}))),
+    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap2627, y: p.pts}))),
+    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap2627, y: p.pts}))),
+    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap2627, y: p.pts}))),
   };
   const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
   // Precompute every team's need/cap state once — _getTeamDraftBoard's splash check needs
@@ -9511,9 +9511,9 @@ function updateStats(){
       D: Math.max(0, DRAFT_ROSTER_MAX.D - tp.filter(p=>posGroup(p.pos)==='D').length),
       G: Math.max(0, DRAFT_ROSTER_MAX.G - tp.filter(p=>posGroup(p.pos)==='G').length),
     };
-    teamCapAll2627[t]=tp.reduce((s,p)=>s+(p.cap||0),0);
+    teamCapAll2627[t]=tp.reduce((s,p)=>s+(p.cap2627||0),0);
     teamCapByPosAll2627[t]={F:0,D:0,G:0};
-    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2627[t]) teamCapByPosAll2627[t][g]+=(p.cap||0); }
+    for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2627[t]) teamCapByPosAll2627[t][g]+=(p.cap2627||0); }
     teamSpotsLeftAll2627[t]=Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
   }
   // Uses _getTeamDraftBoard — the SAME ranking/filtering/splash-deferral logic _runAlgoDraft's
@@ -9526,7 +9526,7 @@ function updateStats(){
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
     const { top, locked } = _getTeamDraftBoard(team, round, mode, {
       players, getAssignedTeam: p=>p.start2627||null, startField:'start2627',
-      ppts: p=>p.pts||0, getCap: p=>p.cap||0,
+      ppts: p=>p.pts||0, getCap: p=>p.cap2627||0,
       capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
       draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
       calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
@@ -9541,11 +9541,11 @@ function updateStats(){
       ${top.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px${locked.length?';margin-top:4px':''}">${mode==='prospect'?'prospect':'Best Avail'}</div>${top.map(({p})=>row(p,false)).join('')}`:''}
     </div>`;
   };
-  const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.pts||0, p=>p.cap||0);
+  const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.pts||0, p=>p.cap2627||0);
 
   document.getElementById('statCards').innerHTML = leagueCard + teams.map(t => {
     const tp = players.filter(p=>p.start2627===t);
-    const cap = tp.reduce((s,p)=>s+(p.cap||0), 0);
+    const cap = tp.reduce((s,p)=>s+(p.cap2627||0), 0);
     const rem = CAP_LIMIT - cap;
     const fN = tp.filter(p=>posGroup(p.pos)==='F').length;
     const dN = tp.filter(p=>posGroup(p.pos)==='D').length;
@@ -9575,7 +9575,7 @@ function updateStats(){
       <div class="team-card-pos">
         <span title="${fRem} F spot${fRem!==1?'s':''} remaining">F&thinsp;${fRem}</span><span title="${dRem} D spot${dRem!==1?'s':''} remaining">D&thinsp;${dRem}</span><span title="${gRem} G spot${gRem!==1?'s':''} remaining">G&thinsp;${gRem}</span>
       </div>
-      ${_capGapRow(tp, p=>p.cap||0, CAP_LIMIT)}
+      ${_capGapRow(tp, p=>p.cap2627||0, CAP_LIMIT)}
       ${_curveDeltaLabel(teamCurveDelta(t), '2627', t)}
       ${top5Html(t,fRem,dRem,gRem,rem)}
     </div>`;
@@ -9604,7 +9604,7 @@ function openEdit(id){
   document.getElementById('fName').value=p.name;
   document.getElementById('fTeam').value=p.team2627;
   document.getElementById('fPos').value=p.pos;
-  document.getElementById('fCap').value=p.cap;
+  document.getElementById('fCap').value=p.cap2627;
   document.getElementById('fPts').value=p.pts;
   document.getElementById('fStatus').value=p.status;
   populateFantasyTeamModal(p.start2627||'');
@@ -9625,7 +9625,7 @@ function savePlayer(){
     if(idx>-1){
       const old=players[idx];
       players[idx]={...old,name,team,pos,cap,pts,status,start2627:ft2627,
-        capMan2627: cap!==old.cap ? true : (old.capMan2627||false),
+        capMan2627: cap!==old.cap2627 ? true : (old.capMan2627||false),
         ptsMan2627: pts!==old.pts ? true : (old.ptsMan2627||false)};
     }
   } else {
@@ -9755,7 +9755,7 @@ function renderSummaryCard(teamIdx){
     prevField='end2526';   currField='start2627';
     pptsF=p=>p.pts||0;          prevStandings=FINAL_STANDINGS_2526;
     prevRankFn=t=>FINAL_STANDINGS_2526[t]?.rank||'?';
-    getCapY=p=>p.cap||0;        capLimitY=CAP_LIMIT;
+    getCapY=p=>p.cap2627||0;        capLimitY=CAP_LIMIT;
     prevYr='25-26';  currYr='26-27';
     predropDictY=PREDROP_ROSTER_2627; postdropDictY=POSTDROP_ROSTER_2627;
   }
