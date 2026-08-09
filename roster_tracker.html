@@ -1833,7 +1833,7 @@ const PROJ_SORT_PATH = {
   proj2425_ath:['proj2425','ath'], proj2425_dfo:['proj2425','dfo'], proj2425_dtz:['proj2425','dtz'], proj2425_nhl:['proj2425','nhl'],
   proj2526_ath:['proj2526','ath'], proj2526_dfo:['proj2526','dfo'], proj2526_dtz:['proj2526','dtz'], proj2526_espn:['proj2526','espn'], proj2526_cbs:['proj2526','cbs'], proj2526_nhl:['proj2526','nhl'],
   ptsAth:['proj2627','ath'], ptsDFO:['proj2627','dfo'], ptsDTZ:['proj2627','dtz'], ptsESPN:['proj2627','espn'], ptsCBS:['proj2627','cbs'], ptsNHL:['proj2627','nhl'], ptsDOB:['proj2627','dob'],
-  team:'team2627', cap:'cap2627',
+  team:'team2627', cap:'cap2627', pts:['proj2627','blend'],
 };
 function _sortVal(obj, col){
   const path = PROJ_SORT_PATH[col];
@@ -1981,7 +1981,7 @@ function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs 
   return sw > 0 ? swv / sw : 0;
 }
 
-// Recompute p.pts from all available projection sources.
+// Recompute p.proj2627.blend from all available projection sources.
 // Priority: manual override > in-season nowcast (once 26-27 games exist) >
 // blend of external sources > 25-26 actuals fallback.
 //
@@ -2016,21 +2016,21 @@ function reblendPts(p){
     const trustGP = projGP * EARLY_PACE_TRUST_FRACTION;
     const paceWeight = EARLY_PACE_WEIGHT * Math.min(1, p.gp2627 / trustGP);
     const blendedRate = preseasonRate*(1-paceWeight) + paceRate*paceWeight;
-    p.pts = Math.round(banked + blendedRate*gamesRemaining);
+    p.proj2627.blend = Math.round(banked + blendedRate*gamesRemaining);
     return;
   }
 
   if(preseasonProj > 0){
-    p.pts = Math.round(preseasonProj);
+    p.proj2627.blend = Math.round(preseasonProj);
   } else if(p.pts2526 > 0){
-    p.pts = p.pts2526;
+    p.proj2627.blend = p.pts2526;
   }
 }
 
 function applyBlendedPts(){
   let changed = false;
   for(const p of players){
-    const old = p.pts; reblendPts(p); if(p.pts !== old) changed = true;
+    const old = p.proj2627.blend; reblendPts(p); if(p.proj2627.blend !== old) changed = true;
   }
   if(changed) lsSet(LS_PLAYERS, players);
 }
@@ -2041,17 +2041,17 @@ function rankPlayers(){
   const multByGroup = { F: W.multF, D: W.multD, G: W.multG };
 
   for(const p of players) delete p.rank2627;
-  const eligible = players.filter(p => p.cap2627 > 0 && p.pts > 0);
+  const eligible = players.filter(p => p.cap2627 > 0 && p.proj2627.blend > 0);
 
   eligible
     .map(p => {
       const age    = calcAge(p) ?? 99;
       const srcN   = (p.proj2627.ath > 0 ? 1 : 0) + (p.proj2627.dfo > 0 ? 1 : 0) + (p.proj2627.dtz > 0 ? 1 : 0) + (p.proj2627.espn > 0 ? 1 : 0) + (p.proj2627.cbs > 0 ? 1 : 0);
       const coverageMult = 1 - (W.wtCoverageDiscount||0) * (1 - Math.min(1, srcN/5));
-      const ppEff = p.pts * coverageMult;
+      const ppEff = p.proj2627.blend * coverageMult;
       const scoreA = ppEff * (multByGroup[posGroup(p.pos)] ?? 1.0);
       const scoreB = (ppEff / p.cap2627) * W.wtPPTSM;
-      const scoreD = peakTrajectoryScore(age, posGroup(p.pos), (p.expYear2627 >= NHL_SEASON_YEAR ? p.expYear2627 - NHL_SEASON_YEAR + 1 : 0) + (p.nextTerm2627||0)) * W.wtAge;
+      const scoreD = peakTrajectoryScore(age, posGroup(p.pos), (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) + (p.nextTerm2627||0)) * W.wtAge;
       const scoreE = prospectBonus(age, posGroup(p.pos), p.cap2627||0, ELC_MAX_2627, ppEff, W);
       return { p, score: scoreA + scoreB + scoreD + scoreE };
     })
@@ -2111,7 +2111,7 @@ function algoDrops(){
   const teams = [...new Set(players.map(p=>p.start2627).filter(Boolean))];
   const dropped = _runAlgoDrops({
     players, teams, startField: 'start2627',
-    ppts: p => p.pts||0, getCap: p => p.cap2627||0,
+    ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
     elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
@@ -2139,19 +2139,10 @@ function load(){
   // migrate: stamp end2526 from start2627 if not yet set
   let migrated = false;
   for(const p of players){
-    // Migrate renamed fields from old localStorage
-    const _oldEnd2526   = 'fantasy'+'Team2526', _oldStart2526 = 'sim'+'2526';
-    const _oldStart2627 = 'fantasy'+'Team';
-    if(p.start2627 === undefined){ p.start2627 = p[_oldStart2627] !== undefined ? p[_oldStart2627] : ''; migrated = true; }
+    if(p.start2627 === undefined){ p.start2627 = ''; migrated = true; }
     if(p.nhlId === undefined){ p.nhlId = null; migrated = true; }
-    if(p.end2526 === undefined){
-      p.end2526 = p[_oldEnd2526] !== undefined ? p[_oldEnd2526] : (p[_oldStart2627] || '');
-      migrated = true;
-    }
-    if(p.start2526 === undefined){
-      p.start2526 = p[_oldStart2526] !== undefined ? p[_oldStart2526] : null;
-      migrated = true;
-    }
+    if(p.end2526 === undefined){ p.end2526 = ''; migrated = true; }
+    if(p.start2526 === undefined){ p.start2526 = null; migrated = true; }
     // Shorten renamed fields (repeated per-player key names were a meaningful chunk of
     // localStorage size) — carry forward any already-synced values under the old name.
     // Must run before ANY other backfill/inference block below that checks a NEW key name
@@ -2171,7 +2162,7 @@ function load(){
       ['nextStartYr2425','nextYr2425'],['nextStartYr2526','nextYr2526'],
       ['nextTerm','nextTerm2627'],['nextYr','nextYr2627'],
       ['capMan','capMan2627'],['ptsMan','ptsMan2627'],
-      ['rank','rank2627'],['contractTerm','contractTerm2627'],['expYear','expYear2627'],
+      ['rank','rank2627'],['contractTerm2627','contractTerm'],['expYear2627','expYear'],
       ['team','team2627'],['cap','cap2627']]){
       if(p[oldK] !== undefined){
         if(p[newK] === undefined) p[newK] = p[oldK];
@@ -2179,8 +2170,15 @@ function load(){
         migrated = true;
       }
     }
-    // Backfill capMan2627: cap set without PuckPedia (no contractTerm2627 means cap was manually entered)
-    if(p.cap2627 > 0 && !p.contractTerm2627 && p.capMan2627 === undefined){
+    // pts -> proj2627.blend is a re-nesting, not a flat rename, so it needs its own step
+    // rather than fitting the generic [oldKey,newKey] loop above.
+    if(p.pts !== undefined){
+      if(p.proj2627.blend === undefined) p.proj2627.blend = p.pts;
+      delete p.pts;
+      migrated = true;
+    }
+    // Backfill capMan2627: cap set without PuckPedia (no contractTerm means cap was manually entered)
+    if(p.cap2627 > 0 && !p.contractTerm && p.capMan2627 === undefined){
       p.capMan2627 = true;
       migrated = true;
     }
@@ -2260,10 +2258,8 @@ function load(){
     }
     if(!p.proj2627 || typeof p.proj2627 !== 'object'){ p.proj2627 = {}; migrated = true; }
     if(!p.projGp2627 || typeof p.projGp2627 !== 'object'){ p.projGp2627 = {}; migrated = true; }
-    // Migrate renamed fields from old localStorage (split strings to survive future renames)
-    const _oldEnd   = 'fantasy'+'Team2425', _oldStart = 'sim'+'2425';
-    if(p.end2425   === undefined){ p.end2425   = (p[_oldEnd]   !== undefined ? p[_oldEnd]   : null); migrated = true; }
-    if(p.start2425 === undefined){ p.start2425 = (p[_oldStart] !== undefined ? p[_oldStart] : null); migrated = true; }
+    if(p.end2425   === undefined){ p.end2425   = null; migrated = true; }
+    if(p.start2425 === undefined){ p.start2425 = null; migrated = true; }
     if(p.cap2526           === undefined){ p.cap2526           = null; migrated = true; }
     if(p.team2526          === undefined){ p.team2526          = null; migrated = true; }
     if(p.pts2425           === undefined){ p.pts2425           = 0;    migrated = true; }
@@ -2515,16 +2511,16 @@ async function syncDOB(input){
 
 function defaultPlayers(){
   return [
-    {id:1,name:'Connor McDavid',team2627:'EDM',pos:'C',cap2627:12.5,pts:107,status:'r',source:'m',start2627:''},
-    {id:2,name:'Nathan MacKinnon',team2627:'COL',pos:'C',cap2627:12.6,pts:102,status:'r',source:'m',start2627:''},
-    {id:3,name:'Auston Matthews',team2627:'TOR',pos:'C',cap2627:13.25,pts:96,status:'r',source:'m',start2627:''},
-    {id:4,name:'Leon Draisaitl',team2627:'EDM',pos:'C',cap2627:14.0,pts:98,status:'r',source:'m',start2627:''},
-    {id:5,name:'Nikita Kucherov',team2627:'TBL',pos:'RW',cap2627:9.5,pts:94,status:'r',source:'m',start2627:''},
-    {id:6,name:'Cale Makar',team2627:'COL',pos:'D',cap2627:9.0,pts:82,status:'r',source:'m',start2627:''},
-    {id:7,name:'Roman Josi',team2627:'NSH',pos:'D',cap2627:9.06,pts:71,status:'r',source:'m',start2627:''},
-    {id:8,name:'David Pastrnak',team2627:'BOS',pos:'RW',cap2627:11.25,pts:88,status:'r',source:'m',start2627:''},
-    {id:9,name:'Igor Shesterkin',team2627:'NYR',pos:'G',cap2627:11.5,pts:0,status:'r',source:'m',start2627:''},
-    {id:10,name:'Sidney Crosby',team2627:'PIT',pos:'C',cap2627:8.7,pts:78,status:'r',source:'m',start2627:''},
+    {id:1,name:'Connor McDavid',team2627:'EDM',pos:'C',cap2627:12.5,proj2627:{blend:107},status:'r',source:'m',start2627:''},
+    {id:2,name:'Nathan MacKinnon',team2627:'COL',pos:'C',cap2627:12.6,proj2627:{blend:102},status:'r',source:'m',start2627:''},
+    {id:3,name:'Auston Matthews',team2627:'TOR',pos:'C',cap2627:13.25,proj2627:{blend:96},status:'r',source:'m',start2627:''},
+    {id:4,name:'Leon Draisaitl',team2627:'EDM',pos:'C',cap2627:14.0,proj2627:{blend:98},status:'r',source:'m',start2627:''},
+    {id:5,name:'Nikita Kucherov',team2627:'TBL',pos:'RW',cap2627:9.5,proj2627:{blend:94},status:'r',source:'m',start2627:''},
+    {id:6,name:'Cale Makar',team2627:'COL',pos:'D',cap2627:9.0,proj2627:{blend:82},status:'r',source:'m',start2627:''},
+    {id:7,name:'Roman Josi',team2627:'NSH',pos:'D',cap2627:9.06,proj2627:{blend:71},status:'r',source:'m',start2627:''},
+    {id:8,name:'David Pastrnak',team2627:'BOS',pos:'RW',cap2627:11.25,proj2627:{blend:88},status:'r',source:'m',start2627:''},
+    {id:9,name:'Igor Shesterkin',team2627:'NYR',pos:'G',cap2627:11.5,proj2627:{blend:0},status:'r',source:'m',start2627:''},
+    {id:10,name:'Sidney Crosby',team2627:'PIT',pos:'C',cap2627:8.7,proj2627:{blend:78},status:'r',source:'m',start2627:''},
   ];
 }
 function updateSigningsBtn(){
@@ -2619,13 +2615,13 @@ function assignCapFromSignings(){
     p.yrStr2627  = _signingYrStr(c2627, 2026);
     if(c2627){
       if(!p.capMan2627) p.cap2627 = c2627.cap;
-      p.contractTerm2627 = c2627.term || 0;
-      p.expYear2627      = parseInt(c2627.exp?.split('-')[0]) || 0;
+      p.contractTerm = c2627.term || 0;
+      p.expYear      = parseInt(c2627.exp?.split('-')[0]) || 0;
       if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
       if(c2627.birthDate && !p.birthDate)          p.birthDate = c2627.birthDate;
       if(c2627.nhl_id && !p.nhlId)                 p.nhlId = c2627.nhl_id;
     } else if(!p.capMan2627){
-      p.cap2627 = 0; p.contractTerm2627 = 0; p.expYear2627 = 0;
+      p.cap2627 = 0; p.contractTerm = 0; p.expYear = 0;
     }
     const cNext = _findNextContract(contracts, c2627);
     p.nextCap2627          = cNext?.cap ?? null;
@@ -2748,13 +2744,13 @@ async function syncSigningsAll(e){
       p.capMan2627 = false;
       if(c2627){
         p.cap2627 = c2627.cap;
-        p.contractTerm2627 = c2627.term || 0;
-        p.expYear2627 = parseInt(c2627.exp?.split('-')[0]) || 0;
+        p.contractTerm = c2627.term || 0;
+        p.expYear = parseInt(c2627.exp?.split('-')[0]) || 0;
         if(c2627.team && (!p.team2627 || p.team2627==='—')) p.team2627 = c2627.team;
         if(c2627.birthDate && !p.birthDate) p.birthDate = c2627.birthDate;
         if(c2627.nhl_id && !p.nhlId) p.nhlId = c2627.nhl_id;
       } else {
-        p.cap2627 = 0; p.contractTerm2627 = 0; p.expYear2627 = 0;
+        p.cap2627 = 0; p.contractTerm = 0; p.expYear = 0;
       }
       const cNext = _findNextContract(contracts, c2627);
       p.nextCap2627          = cNext?.cap ?? null;
@@ -2809,8 +2805,8 @@ async function syncSigningsAll(e){
         existingById.capMan2627 = false;
         if(c2627){
           existingById.cap2627 = c2627.cap;
-          existingById.contractTerm2627 = c2627.term || 0;
-          existingById.expYear2627 = parseInt(c2627.exp?.split('-')[0]) || 0;
+          existingById.contractTerm = c2627.term || 0;
+          existingById.expYear = parseInt(c2627.exp?.split('-')[0]) || 0;
           if(c2627.team && (!existingById.team2627 || existingById.team2627==='—')) existingById.team2627 = c2627.team;
           if(c2627.birthDate && !existingById.birthDate) existingById.birthDate = c2627.birthDate;
         }
@@ -2835,8 +2831,8 @@ async function syncSigningsAll(e){
       players.push({
         id: nextId++, name: latest.name, team2627: c2627?.team || latest.team || '',
         pos: latest.pos || 'C',
-        cap2627: c2627?.cap || 0, contractTerm2627: c2627?.term || 0,
-        expYear2627: c2627 ? parseInt(c2627.exp?.split('-')[0]) || 0 : 0,
+        cap2627: c2627?.cap || 0, contractTerm: c2627?.term || 0,
+        expYear: c2627 ? parseInt(c2627.exp?.split('-')[0]) || 0 : 0,
         birthDate: latest.birthDate || '', source: 'p', status: 'r',
         nextCap2324: cNextNew2324?.cap ?? null, nextTerm2324: cNextNew2324?.term ?? null, nextYr2324: cNextNew2324?.start_yr ?? null,
         nextCap2425: cNextNew2425?.cap ?? null, nextTerm2425: cNextNew2425?.term ?? null, nextYr2425: cNextNew2425?.start_yr ?? null,
@@ -2941,8 +2937,9 @@ async function syncAllNHL(){
         updated++;
       } else {
         const newId = players.length>0 ? Math.max(...players.map(x=>x.id))+1 : 1;
-        players.push({id:newId, name:p.name, team2627:p.nhlTeam, pos:p.pos, cap2627:0, pts:0,
-                      status:'r', source:'n', start2627:'', birthDate:p.birthDate||'', nhlId:p.nhlId||null});
+        players.push({id:newId, name:p.name, team2627:p.nhlTeam, pos:p.pos, cap2627:0,
+                      status:'r', source:'n', start2627:'', birthDate:p.birthDate||'', nhlId:p.nhlId||null,
+                      proj2627:{blend:0}});
         added++;
       }
     }
@@ -3229,7 +3226,7 @@ function computeDrops(allPlayers){
   const teams = [...new Set(vp.map(p => p.start2627).filter(Boolean))];
   _runAlgoDrops({
     players: vp, teams, startField: 'start2627',
-    ppts: p => p.pts||0, getCap: p => p.cap2627||0,
+    ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
     elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
@@ -3266,18 +3263,18 @@ function render(){
 
   const dropIds = algoDropsApplied ? new Set() : computeDrops(players);
   const abpMap  = computeABP(players);
-  const ppm = p => (p.pts>0&&p.cap2627>0) ? p.pts/p.cap2627 : 0;
+  const ppm = p => (p.proj2627.blend>0&&p.cap2627>0) ? p.proj2627.blend/p.cap2627 : 0;
   const rosteredPool2627 = players.filter(p => p.start2627 && p.cap2627 > 0);
   const curveFns2627 = {
-    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap2627, y: p.pts}))),
-    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap2627, y: p.pts}))),
-    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap2627, y: p.pts}))),
+    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap2627, y: p.proj2627.blend}))),
+    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap2627, y: p.proj2627.blend}))),
+    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap2627, y: p.proj2627.blend}))),
   };
   const curveDelta = p => {
-    if(!(p.pts > 0 && p.cap2627 > 0)) return null;
+    if(!(p.proj2627.blend > 0 && p.cap2627 > 0)) return null;
     const pg = posGroup(p.pos);
     const base = _curveBaseline(pg, p.cap2627, ELC_MAX_2627, curveFns2627[pg]);
-    return base != null ? p.pts - base : null;
+    return base != null ? p.proj2627.blend - base : null;
   };
   // △Act compares 25-26 actuals to a 25-26 curve at the 25-26 cap — same-year basis,
   // matching curveDeltaActual2425/2324/2526. NOT curveFns2627/p.cap2627 (this year's curve/
@@ -3326,14 +3323,14 @@ function render(){
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
     // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
     // see _runAlgoDraft / render2425 for the drift history this is meant to end.
-    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.pts||0, p=>p.cap2627||0);
+    const { pressure } = _draftPressureState(players, DRAFT_TEAMS_2627, p=>p.start2627||null, p=>p.proj2627.blend||0, p=>p.cap2627||0);
     lastPressure=pressure;
     const genericRound2627 = draftProspectRounds + 3;
     // Score ALL free agents (full pool) for team-card top-picks — no per-team need filter here
     lastAllScored = players
-      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0)
+      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.proj2627.blend||0)>0)
       .map(p=>{
-        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap2627||0;
+        const pg=posGroup(p.pos), pp=p.proj2627.blend||0, cap0=p.cap2627||0;
         const scoreArgs = { pg, pp, cap0, pressure, draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627 };
         const _ds = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2627}).score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
@@ -3350,9 +3347,9 @@ function render(){
     const teamCap2627 = {[viewTeam]: viewCapTot};
     const teamCapByPos2627 = {[viewTeam]: viewCapByPos};
     const allScored=rows
-      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap2627||0)<=maxAffordable))&&(p.pts||0)>0)
+      .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(!draftFocusTeam||(need[posGroup(p.pos)]>0&&(p.cap2627||0)<=maxAffordable))&&(p.proj2627.blend||0)>0)
       .map(p=>{
-        const pg=posGroup(p.pos), pp=p.pts||0, cap0=p.cap2627||0;
+        const pg=posGroup(p.pos), pp=p.proj2627.blend||0, cap0=p.cap2627||0;
         const scoreArgs = {
           pg, pp, cap0, pressure, round: focusRound2627, draftWeights: _effectiveDraftWeights(viewTeam, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
           calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
@@ -3413,8 +3410,8 @@ function render(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.espn>0?Math.round(p.proj2627.espn):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.cbs>0?Math.round(p.proj2627.cbs):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.nhl>0?Math.round(p.proj2627.nhl):'—'}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0?`${p.pts}${p.ptsMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.pts>0&&p.cap2627>0?(p.pts/p.cap2627).toFixed(1):'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.proj2627.blend>0?`${p.proj2627.blend}${p.ptsMan2627?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:''||'—'}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${p.proj2627.blend>0&&p.cap2627>0?(p.proj2627.blend/p.cap2627).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank2627!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2627<=10?'#b45309':p.rank2627<=25?'#185FA5':'#555'}">${p.rank2627}</span>`:'—'}</td>
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
@@ -3750,7 +3747,7 @@ function _standingsPts(){
   for(const t of DRAFT_TEAMS_2627) pts[t] = 0;
   for(const p of players){
     if(p.start2627 && pts.hasOwnProperty(p.start2627))
-      pts[p.start2627] = (pts[p.start2627]||0) + (p.pts||0);
+      pts[p.start2627] = (pts[p.start2627]||0) + (p.proj2627.blend||0);
   }
   return pts;
 }
@@ -3826,10 +3823,10 @@ function _seedStart2627(){
     if([..._nameVariants(stub.name)].some(v => matched.has(v))) continue;
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2627) || null;
     players.push({
-      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, pts:0, status:'r', source:'m',
+      id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, status:'r', source:'m',
       start2627:team||'', end2526:team,
       rank2627:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
-      proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null},
+      proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -3876,7 +3873,7 @@ function buildDraftSeq2324(){ return _buildSeq(DRAFT_TEAMS_2324, 'start2324', dr
 function makeDraftPick(player, pos, nhlTeam, cap, projPts){
   draftFocusTeam = null;
   const team = buildDraftSeq2627()[draftState2627.picks.length];
-  const toPts = players.filter(p=>p.start2627===team).reduce((s,p)=>s+(p.pts||0),0);
+  const toPts = players.filter(p=>p.start2627===team).reduce((s,p)=>s+(p.proj2627.blend||0),0);
   _standingsAnim = {team, fromPts: toPts-(projPts||0), toPts};
   draftState2627.picks.push({team, player, pos, nhlTeam, cap, projPts: projPts||0});
   const pl = players.find(x=>normName(x.name).toLowerCase()===normName(player).toLowerCase());
@@ -3995,7 +3992,7 @@ function simulateBestPick(){
 
   const { top, locked } = _getTeamDraftBoard(team, round, mode, {
     players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
-    ppts: p => p.pts || 0, getCap: p => p.cap2627 || 0,
+    ppts: p => p.proj2627.blend || 0, getCap: p => p.cap2627 || 0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
@@ -4670,11 +4667,11 @@ function renderCurveChart(){
     return;
   }
   const curveFns = {
-    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap2627,y:p.pts}))),
-    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap2627,y:p.pts}))),
-    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap2627,y:p.pts}))),
+    F: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='F').map(p=>({x:p.cap2627,y:p.proj2627.blend}))),
+    D: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='D').map(p=>({x:p.cap2627,y:p.proj2627.blend}))),
+    G: fitQuadratic(pool.filter(p=>posGroup(p.pos)==='G').map(p=>({x:p.cap2627,y:p.proj2627.blend}))),
   };
-  _drawCurveChart(canvas, pool, p=>p.cap2627, p=>p.pts, curveFns);
+  _drawCurveChart(canvas, pool, p=>p.cap2627, p=>p.proj2627.blend, curveFns);
 }
 
 // ── PP Signings ───────────────────────────────────────────────────────────────
@@ -4790,7 +4787,7 @@ function renderXactions2627(){ _renderXactionsView(xactions2627, draftDatePresea
 function quickDraft(id){
   const p = players.find(x=>x.id===id);
   if(!p) return;
-  makeDraftPick(p.name, p.pos, p.team2627||'—', p.cap2627||0, p.pts||0);
+  makeDraftPick(p.name, p.pos, p.team2627||'—', p.cap2627||0, p.proj2627.blend||0);
   render();
 }
 
@@ -5024,11 +5021,11 @@ function _seedStart2526(){
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2526) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2526:null,
-      pts:0, pts2526:0, gp2526:0, status:'r', source:'m',
+      pts2526:0, gp2526:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:team, start2526:team,
       rank2627:null, rank2526:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
       proj2526:{dfo:null,dtz:null,espn:null,ath:null,cbs:null},
-      proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null},
+      proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -5396,8 +5393,8 @@ function compareDrops2627(){
     season: '26-27',
     guards: [{ fail: () => !Object.keys(POSTDROP_ROSTER_2627).length, msg: 'No actual 26-27 drop data yet. Populate POSTDROP_ROSTER_2627 (normName_pos \u2192 team) once managers submit their drops.' }],
     predropRoster: PREDROP_ROSTER_2627, postdropRoster: POSTDROP_ROSTER_2627, predropStubs: PREDROP_STUBS_2627,
-    stubExtraFields: { cap2627: null },
-    startField: 'start2627', ppts: p => p.pts||0, getCap: p => p.cap2627||0,
+    stubExtraFields: { cap2627: null, proj2627: {blend: 0} },
+    startField: 'start2627', ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
     elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627, computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true,
@@ -5629,13 +5626,13 @@ function _seedStart2425(){
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2425) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2425:null,
-      pts:0, pts2425:0, gp2425:0, status:'r', source:'m',
+      pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:team, start2425:team,
       rank2627:null, rank2425:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
       proj2425:{dfo:null,dtz:null,ath:null,nhl:null},
       proj2526:{dfo:null,dtz:null,espn:null,ath:null,cbs:null},
-      cap2526:null, proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null},
+      cap2526:null, proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -5803,14 +5800,14 @@ function _seedStart2324(){
     const team = _dictLookup(stub.name, PREDROP_ROSTER_2324) || null;
     players.push({
       id:nextId++, name:stub.name, pos:stub.pos, team2627:'', cap2627:0, cap2324:null, cap2425:null,
-      pts:0, pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'r', source:'m',
+      pts2324:0, gp2324:0, pts2425:0, gp2425:0, status:'r', source:'m',
       start2627:'', end2526:'', end2425:null, start2526:null,
       end2324:null, start2425:null, end2223:team, start2324:team,
       rank2627:null, rank2324:null, rank2425:null, birthDate:stub.birthDate||'', capMan2627:false, ptsMan2627:false,
       proj2324:{ath:null,dtz:null,nhl:null,dob:null},
       proj2425:{dfo:null,dtz:null,ath:null,nhl:null},
       proj2526:{dfo:null,dtz:null,espn:null,ath:null,cbs:null},
-      cap2526:null, proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null},
+      cap2526:null, proj2627:{espn:null,ath:null,dfo:null,dtz:null,dob:null,cbs:null,nhl:null,blend:0},
     });
   }
   dedup(); // self-heal any pre-existing alias-pair duplicate from before this fix, or from a stale sync
@@ -6167,7 +6164,7 @@ function _teamCurveConfig(view){
     case '2324': return { startField:'start2324', pptsF:ppts2324blend, getCapF:getCap2324, elcMax:ELC_MAX_2324, label:'23-24', predropDict:PREDROP_ROSTER_2324, predropStubs:PREDROP_STUBS_2324, postdropDict:POSTDROP_ROSTER_2324 };
     case '2425': return { startField:'start2425', pptsF:ppts2425blend, getCapF:getCap2425, elcMax:ELC_MAX_2425, label:'24-25', predropDict:PREDROP_ROSTER_2425, predropStubs:PREDROP_STUBS_2425, postdropDict:POSTDROP_ROSTER_2425 };
     case '2526': return { startField:'start2526', pptsF:ppts2526blend, getCapF:getCap2526, elcMax:ELC_MAX_2526, label:'25-26', predropDict:PREDROP_ROSTER_2526, predropStubs:PREDROP_STUBS_2526, postdropDict:POSTDROP_ROSTER_2526 };
-    default:     return { startField:'start2627', pptsF:p=>p.pts||0,   getCapF:p=>p.cap2627||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627, postdropDict:POSTDROP_ROSTER_2627 };
+    default:     return { startField:'start2627', pptsF:p=>p.proj2627.blend||0,   getCapF:p=>p.cap2627||0, elcMax:ELC_MAX_2627, label:'26-27', predropDict:PREDROP_ROSTER_2627, predropStubs:PREDROP_STUBS_2627, postdropDict:POSTDROP_ROSTER_2627 };
   }
 }
 
@@ -6178,6 +6175,7 @@ function _stubCurvePlayer(name, pos, team){
   return {
     id:`stub_${normName(name).toLowerCase()}`, name, pos, cap:0, pts:0,
     cap2324:null, cap2425:null, cap2526:null, cap2627:null, pts2324:0, pts2425:0, pts2526:0,
+    proj2627:{blend:0},
     start2324:team, start2425:team, start2526:team, start2627:team,
   };
 }
@@ -6764,7 +6762,7 @@ function algoDraft2627(){
     allTeams:     teams,
     buildSeq:     buildDraftSeq2627,
     startField:   'start2627',
-    ppts:         p => p.pts || 0,
+    ppts:         p => p.proj2627.blend || 0,
     getCap:       p => p.cap2627 || 0,
     capLimit:     CAP_LIMIT,
     draftReserve: DRAFT_RESERVE_2627,
@@ -7320,7 +7318,7 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   // historical draft could only know about extensions signed before THAT draft day (e.g.
   // Bowen Byram's 2025-07-14 signing was public well before the 25-26 draft), which a
   // single "as of today" field can't distinguish from one signed only recently.
-  const yrsRaw = (p.expYear2627>=contractYearAnchor ? p.expYear2627-contractYearAnchor+1 : 0) + nextContractYrs;
+  const yrsRaw = (p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0) + nextContractYrs;
   const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
   const tYouth = youthRaw * draftWeights.wtAge;
   const tDelta = _deltaCurveBonus(ppEff, cap0, pg, elcMax, curveFns[pg], draftWeights.wtDeltaCurve, draftWeights);
@@ -8463,16 +8461,16 @@ function compareDrafts2526(){
 }
 
 // 26-27 version — same shape as compareDrafts2526, but no real draft picks exist until the
-// actual draft (Oct 2, 2026), so POSTDRAFT_ROSTER_2627 stays empty until then. Uses p.pts/p.cap2627
+// actual draft (Oct 2, 2026), so POSTDRAFT_ROSTER_2627 stays empty until then. Uses p.proj2627.blend/p.cap2627
 // directly (26-27's live projection/cap fields) rather than a season-suffixed blend function.
 function compareDrafts2627(){
   const pool = players.filter(p => p.start2627 && (p.cap2627||0) > 0);
   _runCompareDrafts({
     season: '26-27', postdraftRoster: POSTDRAFT_ROSTER_2627,
     noDataMsg: 'No actual draft data yet. Populate POSTDRAFT_ROSTER_2627 (normName → team) once the real 26-27 draft happens.',
-    draftState: draftState2627, ppts: p => p.pts||0, getCap: p => p.cap2627||0, actualPtsField: 'pts2627',
+    draftState: draftState2627, ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0, actualPtsField: 'pts2627',
     injurySet: INJURY_DROPS_2627,
-    curveFns: _buildCurveFns(pool, p => p.cap2627||0, p => p.pts||0), elcMax: ELC_MAX_2627,
+    curveFns: _buildCurveFns(pool, p => p.cap2627||0, p => p.proj2627.blend||0), elcMax: ELC_MAX_2627,
   });
 }
 
@@ -8505,7 +8503,7 @@ function rankPlayers2526(){
   eligible.forEach(p=>{
     const pg = posGroup(p.pos);
     const pp = ppts2526blend(p);
-    const yrs = (p.expYear2627>=2026 ? p.expYear2627-2026+1 : 0) + (p.nextTerm2526||0);
+    const yrs = (p.expYear>=2026 ? p.expYear-2026+1 : 0) + (p.nextTerm2526||0);
     const ageS = calcAge2526(p) ?? 99;
     const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
     const srcNS = (p.proj2526.ath > 0 ? 1 : 0) + (p.proj2526.dfo > 0 ? 1 : 0) + (p.proj2526.dtz > 0 ? 1 : 0) + (p.proj2526.espn > 0 ? 1 : 0);
@@ -9023,7 +9021,7 @@ function renderDraftSearch(){
   if(!fa.length){ res.style.display='none'; return; }
   res.style.display = '';
   res.innerHTML = fa.map(p =>
-    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team2627||'—')}',${p.cap2627||0},${p.pts||0})">
+    `<div class="draft-results-row" onclick="makeDraftPick('${esc(p.name)}','${esc(p.pos)}','${esc(p.team2627||'—')}',${p.cap2627||0},${p.proj2627.blend||0})">
       <span>${esc(p.name)}</span>
       <span style="color:#9ca3af;font-size:12px">${esc(p.pos)} &bull; ${esc(p.team2627||'—')}${p.pts2526?` &bull; ${p.pts2526}pts`:''}</span>
     </div>`
@@ -9106,7 +9104,7 @@ function _priorActualSeasons(p, view){
 }
 
 const _VIEW_SEASON_LABEL = view => view==='2627' ? '26-27' : view==='2526' ? '25-26' : view==='2425' ? '24-25' : view==='2324' ? '23-24' : null;
-// ppts2425blend/ppts2324blend and reblendPts (p.pts, 26-27) all fall back to
+// ppts2425blend/ppts2324blend and reblendPts (p.proj2627.blend, 26-27) all fall back to
 // actuals when no projection is synced (fine for their normal display columns,
 // wrong here — it would relabel a real actual/manual result as "(proj)").
 // Trend needs the pure projection-sources-only value, so 0 means "no
@@ -9281,14 +9279,14 @@ function computeABP2526(allPlayers){
 }
 
 function computeABP(allPlayers){
-  const fas = allPlayers.filter(p => !p.start2627 && p.cap2627 > 0 && p.pts > 0);
+  const fas = allPlayers.filter(p => !p.start2627 && p.cap2627 > 0 && p.proj2627.blend > 0);
   const abpMap = new Map();
   for(const p of allPlayers){
-    if(!(p.pts > 0) || p.cap2627 <= 0){ abpMap.set(p.id, null); continue; }
+    if(!(p.proj2627.blend > 0) || p.cap2627 <= 0){ abpMap.set(p.id, null); continue; }
     const pg  = posGroup(p.pos);
     const cap = p.cap2627 + (abpWiggle / 100) * CAP_LIMIT;
     abpMap.set(p.id, fas.filter(fa =>
-      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap2627 <= cap && fa.pts > p.pts
+      fa.id !== p.id && posGroup(fa.pos) === pg && fa.cap2627 <= cap && fa.proj2627.blend > p.proj2627.blend
     ).length);
   }
   return abpMap;
@@ -9298,7 +9296,7 @@ function showABPModal(playerId, view) {
   const p = players.find(x => x.id === playerId);
   if (!p) return;
   const getCap   = view==='2627' ? x=>x.cap2627        : view==='2526' ? getCap2526    : view==='2425' ? getCap2425    : getCap2324;
-  const getPts   = view==='2627' ? x=>x.pts        : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
+  const getPts   = view==='2627' ? x=>x.proj2627.blend        : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
   const isFa     = view==='2627' ? x=>!x.start2627 : view==='2526' ? x=>!x.start2526 : view==='2425' ? x=>!x.start2425 : x=>!x.start2324;
   const isStart  = view==='2627' ? x=>x.start2627  : view==='2526' ? x=>x.start2526  : view==='2425' ? x=>x.start2425  : x=>x.start2324;
   const getRank  = view==='2627' ? x=>x.rank2627        : view==='2526' ? x=>x.rank2526   : view==='2425' ? x=>x.rank2425   : x=>x.rank2324;
@@ -9411,9 +9409,9 @@ const calcAge2425 = p => calcAgeAt(p, draftDatePreseason2425);
 const calcAge2324 = p => calcAgeAt(p, draftDatePreseason2324);
 
 const contractYearStr = p => {
-  if(!p.contractTerm2627 || !p.expYear2627) return '';
-  const yr = NHL_SEASON_YEAR - p.expYear2627 + p.contractTerm2627;
-  return (yr >= 1 && yr <= p.contractTerm2627) ? `Yr ${yr} / ${p.contractTerm2627}` : '';
+  if(!p.contractTerm || !p.expYear) return '';
+  const yr = NHL_SEASON_YEAR - p.expYear + p.contractTerm;
+  return (yr >= 1 && yr <= p.contractTerm) ? `Yr ${yr} / ${p.contractTerm}` : '';
 };
 
 function clearFilters(){
@@ -9468,7 +9466,7 @@ function updateStats(){
     const lnD=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.D-r.filter(p=>posGroup(p.pos)==='D').length);},0);
     const lnG=teams.reduce((s,t)=>{const r=players.filter(p=>p.start2627===t);return s+Math.max(0,DRAFT_ROSTER_MAX.G-r.filter(p=>posGroup(p.pos)==='G').length);},0);
     const drafted=new Set(draftState2627.picks.map(p=>normName(p.player).toLowerCase()));
-    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.pts||0)>0);
+    const allUndrafted=players.filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.proj2627.blend||0)>0);
     const avF=allUndrafted.filter(p=>posGroup(p.pos)==='F').length;
     const avD=allUndrafted.filter(p=>posGroup(p.pos)==='D').length;
     const avG=allUndrafted.filter(p=>posGroup(p.pos)==='G').length;
@@ -9495,9 +9493,9 @@ function updateStats(){
   const abpMap = computeABP(players);
   const rosteredPool2627 = players.filter(p => p.start2627 && p.cap2627 > 0);
   const curveFns2627 = {
-    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap2627, y: p.pts}))),
-    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap2627, y: p.pts}))),
-    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap2627, y: p.pts}))),
+    F: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='F').map(p => ({x: p.cap2627, y: p.proj2627.blend}))),
+    D: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='D').map(p => ({x: p.cap2627, y: p.proj2627.blend}))),
+    G: fitQuadratic(rosteredPool2627.filter(p => posGroup(p.pos)==='G').map(p => ({x: p.cap2627, y: p.proj2627.blend}))),
   };
   const posBg={F:'#dbeafe',D:'#dcfce7',G:'#fef3c7'}, posCol={F:'#1e40af',D:'#166534',G:'#92400e'};
   // Precompute every team's need/cap state once — _getTeamDraftBoard's splash check needs
@@ -9526,7 +9524,7 @@ function updateStats(){
     const mode=round<=draftProspectRounds?'prospect':'bestAvail';
     const { top, locked } = _getTeamDraftBoard(team, round, mode, {
       players, getAssignedTeam: p=>p.start2627||null, startField:'start2627',
-      ppts: p=>p.pts||0, getCap: p=>p.cap2627||0,
+      ppts: p=>p.proj2627.blend||0, getCap: p=>p.cap2627||0,
       capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
       draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
       calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
@@ -9535,13 +9533,13 @@ function updateStats(){
       teamSpotsLeft: teamSpotsLeftAll2627, injurySet: INJURY_DROPS_2627,
     }, 5);
     if(!top.length && !locked.length) return '';
-    const row=(p,isLocked)=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${isLocked?'<span style="flex-shrink:0">🔒</span>':''}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.pts||0)}</span></div>`;};
+    const row=(p,isLocked)=>{const pg=posGroup(p.pos);return`<div style="display:flex;align-items:center;gap:3px;font-size:10px;line-height:1.6;overflow:hidden"><span style="background:${posBg[pg]};color:${posCol[pg]};border-radius:3px;padding:0 3px;font-size:9px;font-weight:600;flex-shrink:0">${pg}</span>${isLocked?'<span style="flex-shrink:0">🔒</span>':''}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span style="color:#9ca3af;font-size:9px;flex-shrink:0">${Math.round(p.proj2627.blend||0)}</span></div>`;};
     return `<div class="draft-top5" style="border-top:1px solid #e5e7eb;margin-top:5px;padding-top:4px">
       ${locked.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px" title="${locked.some(x=>x.reason==='splash')?'No other team can afford this player':''}${locked.some(x=>x.reason==='position')?(locked.some(x=>x.reason==='splash')?' / ':'')+'No other team still needs this position':''} — locked in, no risk waiting to take it">🔒 Locked</div>${locked.map(x=>row(x.p,true)).join('')}`:''}
       ${top.length?`<div style="font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px${locked.length?';margin-top:4px':''}">${mode==='prospect'?'prospect':'Best Avail'}</div>${top.map(({p})=>row(p,false)).join('')}`:''}
     </div>`;
   };
-  const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.pts||0, p=>p.cap2627||0);
+  const teamCurveDelta = _makeTeamCurveDeltaFn('start2627', p=>p.proj2627.blend||0, p=>p.cap2627||0);
 
   document.getElementById('statCards').innerHTML = leagueCard + teams.map(t => {
     const tp = players.filter(p=>p.start2627===t);
@@ -9605,7 +9603,7 @@ function openEdit(id){
   document.getElementById('fTeam').value=p.team2627;
   document.getElementById('fPos').value=p.pos;
   document.getElementById('fCap').value=p.cap2627;
-  document.getElementById('fPts').value=p.pts;
+  document.getElementById('fPts').value=p.proj2627?.blend;
   document.getElementById('fStatus').value=p.status;
   populateFantasyTeamModal(p.start2627||'');
   document.getElementById('modal').style.display='flex';
@@ -9624,13 +9622,14 @@ function savePlayer(){
     const idx=players.findIndex(p=>p.id===editId);
     if(idx>-1){
       const old=players[idx];
-      players[idx]={...old,name,team,pos,cap,pts,status,start2627:ft2627,
+      players[idx]={...old,name,team2627:team,pos,cap2627:cap,status,start2627:ft2627,
+        proj2627:{...old.proj2627,blend:pts},
         capMan2627: cap!==old.cap2627 ? true : (old.capMan2627||false),
-        ptsMan2627: pts!==old.pts ? true : (old.ptsMan2627||false)};
+        ptsMan2627: pts!==old.proj2627?.blend ? true : (old.ptsMan2627||false)};
     }
   } else {
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
-    players.push({id:newId,name,team,pos,cap,pts,status,source:'m',start2627:ft2627,end2526:''});
+    players.push({id:newId,name,team2627:team,pos,cap2627:cap,proj2627:{blend:pts},status,source:'m',start2627:ft2627,end2526:''});
   }
   lsSet(LS_PLAYERS,players); populateTeamFilter(); populateFantasyFilter(); render(); closeModal();
   toast(editId!==null?'Player updated.':'Player added.');
@@ -9719,7 +9718,7 @@ function buildProjRanking(){
   const totals = {};
   for(const t of DRAFT_TEAMS_2627) totals[t] = 0;
   for(const p of players) if(p.start2627 && totals.hasOwnProperty(p.start2627))
-    totals[p.start2627] += (p.pts||0);
+    totals[p.start2627] += (p.proj2627.blend||0);
   return [...DRAFT_TEAMS_2627].sort((a,b) => totals[b]-totals[a]);
 }
 
@@ -9753,7 +9752,7 @@ function renderSummaryCard(teamIdx){
     predropDictY=PREDROP_ROSTER_2526; postdropDictY=POSTDROP_ROSTER_2526;
   } else {
     prevField='end2526';   currField='start2627';
-    pptsF=p=>p.pts||0;          prevStandings=FINAL_STANDINGS_2526;
+    pptsF=p=>p.proj2627.blend||0;          prevStandings=FINAL_STANDINGS_2526;
     prevRankFn=t=>FINAL_STANDINGS_2526[t]?.rank||'?';
     getCapY=p=>p.cap2627||0;        capLimitY=CAP_LIMIT;
     prevYr='25-26';  currYr='26-27';
