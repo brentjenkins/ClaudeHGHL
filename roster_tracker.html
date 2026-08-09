@@ -9296,11 +9296,15 @@ function computeABP(allPlayers){
 function showABPModal(playerId, view) {
   const p = players.find(x => x.id === playerId);
   if (!p) return;
-  const getCap   = view==='2627' ? x=>x.cap2627        : view==='2526' ? getCap2526    : view==='2425' ? getCap2425    : getCap2324;
-  const getPts   = view==='2627' ? x=>x.proj2627.blend        : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
-  const isFa     = view==='2627' ? x=>!x.start2627 : view==='2526' ? x=>!x.start2526 : view==='2425' ? x=>!x.start2425 : x=>!x.start2324;
-  const isStart  = view==='2627' ? x=>x.start2627  : view==='2526' ? x=>x.start2526  : view==='2425' ? x=>x.start2425  : x=>x.start2324;
-  const getRank  = view==='2627' ? x=>x.rank2627        : view==='2526' ? x=>x.rank2526   : view==='2425' ? x=>x.rank2425   : x=>x.rank2324;
+  // cap/start/rank are all consistently named {field}{season} across every season now, so a
+  // single bracket-access accessor covers all 4 views. pts stays a ternary: 26-27 reads a
+  // cached nested field (proj2627.blend) while historical seasons call a live weighted-blend
+  // function (ppts2X2Yblend) - a real behavioral difference, not just a naming gap.
+  const getCap   = x => x['cap'+view] ?? 0;
+  const getPts   = view==='2627' ? x=>x.proj2627.blend : view==='2526' ? ppts2526blend : view==='2425' ? ppts2425blend : ppts2324blend;
+  const isFa     = x => !x['start'+view];
+  const isStart  = x => x['start'+view];
+  const getRank  = x => x['rank'+view];
   const capLimit = view==='2627' ? CAP_LIMIT : view==='2526' ? CAP_LIMIT_2526 : view==='2425' ? CAP_LIMIT_2425 : CAP_LIMIT_2324;
   const elcMax   = view==='2627' ? ELC_MAX_2627 : view==='2526' ? ELC_MAX_2526 : view==='2425' ? ELC_MAX_2425 : ELC_MAX_2324;
   const pg = posGroup(p.pos);
