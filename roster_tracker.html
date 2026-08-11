@@ -3369,9 +3369,14 @@ function render(){
           team: viewTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
+        const bNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'});
         const _ds = b.score;
-        const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
-        return Object.assign({},p,{_ds,_dsNormal,_dsParts:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw:b.ageRaw,tProspect:b.tProspect,round:focusRound2627,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw:b.pressRaw,pressMult:b.pressMult}});
+        const _dsNormal = bNormal.score;
+        // tCapUse/posAllocMult are mode-specific (both always no-op in prospect mode, only ever
+        // real in bestAvail) - so the tooltip needs BOTH breakdowns and picks whichever matches
+        // draftSubMode, not just the prospect one every time.
+        const toParts = (x) => ({tPPTS:x.tPPTS,tPPTSM:x.tPPTSM,yrsRaw:x.yrsRaw,youthRaw:x.youthRaw,tYouth:x.tYouth,ageRaw:x.ageRaw,tProspect:x.tProspect,round:focusRound2627,srcN:x.srcN,coverageMult:x.coverageMult,tDelta:x.tDelta,tFanBias:x.tFanBias,pressRaw:x.pressRaw,pressMult:x.pressMult,posMult:x.posMult,posAllocMult:x.posAllocMult,tCapUse:x.tCapUse});
+        return Object.assign({},p,{_ds,_dsNormal,_dsParts:toParts(b),_dsPartsNormal:toParts(bNormal)});
       });
     rows=sortCol==='score'?(draftSubMode==='prospect'?allScored.sort((a,b)=>(b._ds-a._ds)*-sortDir):allScored.sort((a,b)=>(b._dsNormal-a._dsNormal)*-sortDir)):allScored;
   }
@@ -3428,7 +3433,7 @@ function render(){
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right">${p.rank2627!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2627<=10?'#b45309':p.rank2627<=25?'#185FA5':'#555'}">${p.rank2627}</span>`:'—'}</td>
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
-      ${draftMode && p._dsParts ? (()=>{const b=p._dsParts;const pw=draftSubMode==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
+      ${draftMode && (p._dsParts||p._dsPartsNormal) ? (()=>{const b=draftSubMode==='bestAvail'?p._dsPartsNormal:p._dsParts;const pw=draftSubMode==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (pos×${b.posMult.toFixed(2)}; press=${b.pressRaw.toFixed(2)}→×${b.pressMult.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)}${b.tCapUse>0?`; cap-use +${b.tCapUse.toFixed(1)}`:''})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect>0?`\nProspect(age ${b.ageRaw})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}${b.posAllocMult!==1?`\n\n× ${b.posAllocMult.toFixed(2)} pos-budget correction`:''}\n───────\nTotal: ${(draftSubMode==='bestAvail'?p._dsNormal:p._ds).toFixed(1)}`;const score=draftSubMode==='bestAvail'?p._dsNormal:p._ds;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score.toFixed(1)}</td>`;})() : (draftMode?`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right">—</td>`:'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2627
@@ -6057,8 +6062,8 @@ function render2425(){
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound});
       const _ds2425=prospectScore.score, _ds2425Normal=normalScore.score;
-      const b = prospectScore;
-      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,round:genericRound,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult}});
+      const toParts2425 = (b) => ({tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2425:b.ageRaw,tProspect2425:b.tProspect,round:genericRound,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2425:b.pressRaw,pressMult2425:b.pressMult,posMult:b.posMult,posAllocMult:b.posAllocMult,tCapUse:b.tCapUse});
+      return Object.assign({},p,{_ds2425,_ds2425Normal,_dsParts2425:toParts2425(prospectScore),_dsPartsNormal2425:toParts2425(normalScore)});
     });
     rows = lastAllScored2425.filter(p=>{
       if(viewTeam2425 && !(need2425&&need2425[posGroup(p.pos)]>0)) return false;
@@ -6135,7 +6140,7 @@ function render2425(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2425>0?p.gp2425:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2425>0?p.pts2425:'—'}</td>
       ${(()=>{const s=curveDeltaActual2425(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="24-25 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2425&&p._dsParts2425?(()=>{const b=p._dsParts2425;const pw=draftSubMode2425==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2425*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2425}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2425>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2425>0?`\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2425&&(p._dsParts2425||p._dsPartsNormal2425)?(()=>{const b=draftSubMode2425==='bestAvail'?p._dsPartsNormal2425:p._dsParts2425;const pw=draftSubMode2425==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2425*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (pos×${b.posMult.toFixed(2)}; press=${b.pressRaw2425.toFixed(2)}→×${b.pressMult2425.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)}${b.tCapUse>0?`; cap-use +${b.tCapUse.toFixed(1)}`:''})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2425}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2425>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2425>0?`\nProspect(age ${b.ageRaw2425})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}${b.posAllocMult!==1?`\n\n× ${b.posAllocMult.toFixed(2)} pos-budget correction`:''}\n───\nTotal: ${(draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425).toFixed(1)}`;const score2425=draftSubMode2425==='bestAvail'?p._ds2425Normal:p._ds2425;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2425.toFixed(1)}</td>`;})():(draftMode2425?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2425
@@ -6534,8 +6539,8 @@ function render2324(){
       const prospectScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2324});
       const normalScore = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2324});
       const _ds2324=prospectScore.score, _ds2324Normal=normalScore.score;
-      const b = prospectScore;
-      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,round:genericRound2324,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult}});
+      const toParts2324 = (b) => ({tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2324:b.ageRaw,tProspect2324:b.tProspect,round:genericRound2324,srcN:b.srcN,coverageMult:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2324:b.pressRaw,pressMult2324:b.pressMult,posMult:b.posMult,posAllocMult:b.posAllocMult,tCapUse:b.tCapUse});
+      return Object.assign({},p,{_ds2324,_ds2324Normal,_dsParts2324:toParts2324(prospectScore),_dsPartsNormal2324:toParts2324(normalScore)});
     });
     rows = lastAllScored2324.filter(p=>{
       if(viewTeam2324 && !(need2324&&need2324[posGroup(p.pos)]>0)) return false;
@@ -6612,7 +6617,7 @@ function render2324(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.gp2324>0?p.gp2324:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2324>0?p.pts2324:'—'}</td>
       ${(()=>{const s=curveDeltaActual2324(p);if(s===null)return'<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="23-24 actual vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2324&&p._dsParts2324?(()=>{const b=p._dsParts2324;const pw=draftSubMode2324==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2324*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2324}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2324>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2324>0?`\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2324&&(p._dsParts2324||p._dsPartsNormal2324)?(()=>{const b=draftSubMode2324==='bestAvail'?p._dsPartsNormal2324:p._dsParts2324;const pw=draftSubMode2324==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2324*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (pos×${b.posMult.toFixed(2)}; press=${b.pressRaw2324.toFixed(2)}→×${b.pressMult2324.toFixed(2)}; ${b.srcN} src→×${b.coverageMult.toFixed(2)}${b.tCapUse>0?`; cap-use +${b.tCapUse.toFixed(1)}`:''})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2324}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2324>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2324>0?`\nProspect(age ${b.ageRaw2324})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}${b.posAllocMult!==1?`\n\n× ${b.posAllocMult.toFixed(2)} pos-budget correction`:''}\n───\nTotal: ${(draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324).toFixed(1)}`;const score2324=draftSubMode2324==='bestAvail'?p._ds2324Normal:p._ds2324;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2324.toFixed(1)}</td>`;})():(draftMode2324?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2324
@@ -7347,7 +7352,8 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   const tFanBias = (team && GM_FAN_TEAM[team] && playerNhlTeam === GM_FAN_TEAM[team]) ? (draftWeights.wtFanBias||0) : 0;
   const richExtra = tPPTSM + tYouth + tDelta + tFanBias;
   const prospect = prospectBonus(age < 99 ? age : null, pg, cap0, elcMax, ppEff, draftWeights);
-  const tPPTSBase = ppEff * (mode==='prospect' ? (pm[pg]||1) : 1) * pressMult;
+  const posMult = mode==='prospect' ? (pm[pg]||1) : 1;
+  const tPPTSBase = ppEff * posMult * pressMult;
   // Cap-use bonus: Optimize-mode-only (see draftModeByTeam/_runAlgoDraft), 0 everywhere else.
   // tPPTSM already rewards points-per-dollar EFFICIENCY, which structurally favors cheap
   // prospects over expensive stars regardless of total value produced — found live via the
@@ -7383,6 +7389,7 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
   const tPPTS = tPPTSBase * capUseMult;
   const tCapUse = tPPTS - tPPTSBase; // portion of tPPTS attributable to the cap-use multiplier — display/debugging only
   let score;
+  let posAllocMult = 1; // no-op default - only ever computed/applied in bestAvail mode below
   if(mode === 'prospect'){
     score = tPPTS + prospect + richExtra;
   } else {
@@ -7392,12 +7399,12 @@ function _scoreDraftCandidate(p, { pg, pp, cap0, pressure, mode, round, draftWei
     if((draftWeights.wtPosAlloc||0) > 0 && team && teamCap && teamCapByPos){
       const capTot = teamCap[team] || 0;
       if(capTot > 10){
-        const posAllocMult = Math.max(0.5, 1 - Math.max(0, (teamCapByPos[team]?.[pg]||0)/capTot - (OPT_POS_FRACS[pg]||0)) * (draftWeights.wtPosAlloc||1) * 2);
+        posAllocMult = Math.max(0.5, 1 - Math.max(0, (teamCapByPos[team]?.[pg]||0)/capTot - (OPT_POS_FRACS[pg]||0)) * (draftWeights.wtPosAlloc||1) * 2);
         score *= posAllocMult;
       }
     }
   }
-  return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, tCapUse, tFanBias, pressRaw: pressure[pg], pressMult };
+  return { score, tPPTS, tPPTSM, yrsRaw, youthRaw, tYouth, ageRaw: age, tProspect: prospect, srcN, coverageMult, tDelta, tCapUse, tFanBias, pressRaw: pressure[pg], pressMult, posMult, posAllocMult };
 }
 
 // ── Fully-uncontested batch drafting ─────────────────────────────────────────
@@ -8773,9 +8780,11 @@ function render2526(){
           team: viewTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526, teamField: 'team2526',
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
+        const bNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'});
         const _ds2526 = b.score;
-        const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'}).score;
-        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:{tPPTS:b.tPPTS,tPPTSM:b.tPPTSM,yrsRaw:b.yrsRaw,youthRaw:b.youthRaw,tYouth:b.tYouth,ageRaw2526:b.ageRaw,tProspect2526:b.tProspect,round:focusRound2526,srcN2526d:b.srcN,coverageMult2526:b.coverageMult,tDelta:b.tDelta,tFanBias:b.tFanBias,pressRaw2526:b.pressRaw,pressMult2526:b.pressMult}});
+        const _ds2526Normal = bNormal.score;
+        const toParts2526 = (x) => ({tPPTS:x.tPPTS,tPPTSM:x.tPPTSM,yrsRaw:x.yrsRaw,youthRaw:x.youthRaw,tYouth:x.tYouth,ageRaw2526:x.ageRaw,tProspect2526:x.tProspect,round:focusRound2526,srcN2526d:x.srcN,coverageMult2526:x.coverageMult,tDelta:x.tDelta,tFanBias:x.tFanBias,pressRaw2526:x.pressRaw,pressMult2526:x.pressMult,posMult:x.posMult,posAllocMult:x.posAllocMult,tCapUse:x.tCapUse});
+        return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:toParts2526(b),_dsPartsNormal2526:toParts2526(bNormal)});
       });
     rows=sortCol2526==='ppts2526blend'?(draftSubMode2526==='prospect'?allScored2526.sort((a,b)=>b._ds2526-a._ds2526):allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal)):allScored2526;
   }
@@ -8844,7 +8853,7 @@ function render2526(){
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&p._dsParts2526?(()=>{const b=p._dsParts2526;const pw=draftSubMode2526==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2526*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2526>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${draftMode2526&&(p._dsParts2526||p._dsPartsNormal2526)?(()=>{const b=draftSubMode2526==='bestAvail'?p._dsPartsNormal2526:p._dsParts2526;const pw=draftSubMode2526==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2526*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (pos×${b.posMult.toFixed(2)}; press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)}${b.tCapUse>0?`; cap-use +${b.tCapUse.toFixed(1)}`:''})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2526>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}${b.posAllocMult!==1?`\n\n× ${b.posAllocMult.toFixed(2)} pos-budget correction`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
