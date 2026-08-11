@@ -2177,6 +2177,14 @@ function load(){
       delete p.pts;
       migrated = true;
     }
+    // Strip the "Yr " prefix from already-cached yrStr values (format-only change, not a
+    // rename - the "Yr " is re-added at display time by _yrStrDisplay instead of stored).
+    for(const yrStrField of ['yrStr2324','yrStr2425','yrStr2526','yrStr2627']){
+      if(typeof p[yrStrField] === 'string' && p[yrStrField].startsWith('Yr ')){
+        p[yrStrField] = p[yrStrField].slice(3);
+        migrated = true;
+      }
+    }
     // Backfill capMan: cap set without PuckPedia (no contractTerm means cap was manually entered)
     if(p.cap2627 > 0 && !p.contractTerm && p.capMan === undefined){
       p.capMan = true;
@@ -2560,11 +2568,15 @@ function _mergeSigningsRaw(existing, incoming){
 }
 
 // "Yr X / Y" label for a specific contract in a given season.
+// Returns just "yr / term" (e.g. "7 / 8") - the "Yr " prefix is added back at display time
+// (_yrStrDisplay below) rather than stored, since it's dead repeated weight across ~2900
+// players x 4 season fields for a 3-character constant.
 function _signingYrStr(contract, seasonYear){
   if(!contract || !contract.term) return '';
   const yr = seasonYear - contract.start_yr + 1;
-  return (yr >= 1 && yr <= contract.term) ? `Yr ${yr} / ${contract.term}` : '';
+  return (yr >= 1 && yr <= contract.term) ? `${yr} / ${contract.term}` : '';
 }
+const _yrStrDisplay = s => s ? `Yr ${s}` : '';
 
 // Finds the contract immediately after curContract, if already signed — e.g. an ELC
 // player's post-ELC extension, visible on PuckPedia before it's active. Used for
@@ -2645,7 +2657,7 @@ function applyManualCaps2425(){
     const m = _dictLookupPos(p.name, p.pos, MANUAL_CAPS_2425);
     if(!m) continue;
     if(p.cap2425 === null || p.cap2425 === undefined){ p.cap2425 = m.cap || null; }
-    if(!p.yrStr2425 && m.yrStr) p.yrStr2425 = m.yrStr;
+    if(!p.yrStr2425 && m.yrStr) p.yrStr2425 = m.yrStr.replace(/^Yr /, '');
   }
 }
 
@@ -2654,7 +2666,7 @@ function applyManualCaps2526(){
     const m = _dictLookupPos(p.name, p.pos, MANUAL_CAPS_2526);
     if(!m) continue;
     if(p.cap2526 === null || p.cap2526 === undefined){ p.cap2526 = m.cap || null; }
-    if(!p.yrStr2526 && m.yrStr) p.yrStr2526 = m.yrStr;
+    if(!p.yrStr2526 && m.yrStr) p.yrStr2526 = m.yrStr.replace(/^Yr /, '');
   }
 }
 
@@ -2663,7 +2675,7 @@ function applyManualCaps2324(){
     const m = _dictLookupPos(p.name, p.pos, MANUAL_CAPS_2324);
     if(!m) continue;
     if(p.cap2324 === null || p.cap2324 === undefined){ p.cap2324 = m.cap || null; }
-    if(!p.yrStr2324 && m.yrStr) p.yrStr2324 = m.yrStr;
+    if(!p.yrStr2324 && m.yrStr) p.yrStr2324 = m.yrStr.replace(/^Yr /, '');
   }
 }
 
@@ -3398,7 +3410,7 @@ function render(){
         </div>
       </td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${p.cap2627>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap2627.toFixed(2)}</a>${p.capMan?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
-      <td style="color:#9ca3af;text-align:right">${p.cap2627>0?(p.yrStr2627||contractYearStr(p)||'—'):'—'}${p.nextCap2627?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2627.toFixed(2)}M × ${p.nextTerm2627}yr, starting ${p.nextYr2627}">→</span>`:''}</td>
+      <td style="color:#9ca3af;text-align:right">${p.cap2627>0?(p.yrStr2627?_yrStrDisplay(p.yrStr2627):(contractYearStr(p)||'—')):'—'}${p.nextCap2627?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2627.toFixed(2)}M × ${p.nextTerm2627}yr, starting ${p.nextYr2627}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -6110,7 +6122,7 @@ function render2425(){
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2324&&teamLogos[p.end2324]?`<img src="${teamLogos[p.end2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2324)||'—'}</span></div></td>
       ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
-      <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2425||'—'):'—'}${p.nextTerm2425?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2425.toFixed(2)}M × ${p.nextTerm2425}yr, starting ${p.nextYr2425}">→</span>`:''}</td>
+      <td style="color:#9ca3af;text-align:right">${cap>0?(_yrStrDisplay(p.yrStr2425)||'—'):'—'}${p.nextTerm2425?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2425.toFixed(2)}M × ${p.nextTerm2425}yr, starting ${p.nextYr2425}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2425.ath>0?Math.round(p.proj2425.ath):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425.dfo>0?Math.round(p.proj2425.dfo):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425.dtz>0?Math.round(p.proj2425.dtz):'—'}</td>
@@ -6587,7 +6599,7 @@ function render2324(){
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2223&&teamLogos[p.end2223]?`<img src="${teamLogos[p.end2223]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2223)||'—'}</span></div></td>
       ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
-      <td style="color:#9ca3af;text-align:right">${cap>0?(p.yrStr2324||'—'):'—'}${p.nextTerm2324?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2324.toFixed(2)}M × ${p.nextTerm2324}yr, starting ${p.nextYr2324}">→</span>`:''}</td>
+      <td style="color:#9ca3af;text-align:right">${cap>0?(_yrStrDisplay(p.yrStr2324)||'—'):'—'}${p.nextTerm2324?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2324.toFixed(2)}M × ${p.nextTerm2324}yr, starting ${p.nextYr2324}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2324.ath>0?Math.round(p.proj2324.ath):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324.dtz>0?Math.round(p.proj2324.dtz):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324.nhl>0?Math.round(p.proj2324.nhl):'—'}</td>
@@ -8817,7 +8829,7 @@ function render2526(){
       <td style="color:#9ca3af"><div style="display:flex;align-items:center;gap:5px">${p.end2425&&teamLogos[p.end2425]?`<img src="${teamLogos[p.end2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.end2425)||'—'}</span></div></td>
       ${draftMode2526 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2526&&teamLogos[p.start2526]?`<img src="${teamLogos[p.start2526]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2526)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return c>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${c.toFixed(2)}</a>`:'—';})()}</td>
-      <td style="color:#9ca3af;text-align:right">${getCap2526(p)>0?(p.yrStr2526||'—'):'—'}${p.nextTerm2526?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2526.toFixed(2)}M × ${p.nextTerm2526}yr, starting ${p.nextYr2526}">→</span>`:''}</td>
+      <td style="color:#9ca3af;text-align:right">${getCap2526(p)>0?(_yrStrDisplay(p.yrStr2526)||'—'):'—'}${p.nextTerm2526?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2526.toFixed(2)}M × ${p.nextTerm2526}yr, starting ${p.nextYr2526}">→</span>`:''}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;border-left:2px solid #f0f0ee">${p.proj2526.ath>0?Math.round(p.proj2526.ath):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526.dfo>0?Math.round(p.proj2526.dfo):'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2526.dtz>0?Math.round(p.proj2526.dtz):'—'}</td>
