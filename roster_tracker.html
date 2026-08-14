@@ -1388,16 +1388,17 @@ function prospectBonus(age, pg, capHit, elcMax, pts=0, w){
 }
 
 // Decaying prospect-bonus weight for rounds beyond draftProspectRounds.
-// Actual 23-24/24-25 drafts show prospects picked ~39% of the time in the first
-// half of the draft vs ~17% in the second half — a taper, not a cliff — so
-// prospect consideration extends a couple rounds past draftProspectRounds at
-// reduced weight instead of dropping to zero immediately.
+// A real cap-tier backtest across all 3 completed drafts (2026-08-13) found the round-4+
+// cliff to 0 didn't match actual GM behavior: 36% of real prospect-tier picks land at
+// round 4+, and 68% of those still had $6M+ of cap room available — genuine continued
+// speculation, not cap-forced filler. A matched-picks A/B backtest (current cliff vs a
+// flat 0.25 floor past round 3) confirmed the floor is never worse and improves overall
+// match rate (11/172 -> 12/172), so the bonus now floors at 0.25 instead of hitting zero.
 function prospectRoundWeight(round){
   if(round <= draftProspectRounds) return 1;
   const over = round - draftProspectRounds;
   if(over === 1) return 0.5;
-  if(over === 2) return 0.25;
-  return 0;
+  return 0.25;
 }
 
 // Peak age by position — production rises until these ages, then declines.
