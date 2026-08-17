@@ -2043,10 +2043,19 @@ function applyBlendedPts(){
 function rankPlayers(){
   const W = draftWeights;
   const multByGroup = { F: W.multF, D: W.multD, G: W.multG };
+  // Rank Score's Contract term was missing △Curve entirely (PPTS/$M + Peak Trajectory only) -
+  // Draft Score has had it since _deltaCurveBonus was added, but Rank Score never got the same
+  // fix ported over. Found live 2026-08-17: a user sorting by the new Con column noticed great
+  // non-ELC value contracts (McDavid/Kucherov/MacKinnon-tier — huge points above curve on a
+  // team-friendly cap hit) scoring far below merely-cheap complementary players, since PPTS/$M
+  // alone is a linear ratio that doesn't capture the curve's diminishing-returns shape. Same
+  // curve-fit inputs render() already uses for the visible △ column (rostered pool, cap vs
+  // raw proj2627.blend).
+  const curveFns2627RS = _buildCurveFns(players.filter(p => p.start2627 && p.cap2627 > 0), p => p.cap2627, p => p.proj2627.blend);
 
   for(const p of players){
     delete p.rank2627; delete p.rsProd2627; delete p.rsContract2627; delete p.rsProspect2627; delete p.rankScore2627;
-    delete p.rsCoverageMult2627; delete p.rsSrcN2627; delete p.rsPosMult2627; delete p.rsYouthRaw2627;
+    delete p.rsCoverageMult2627; delete p.rsSrcN2627; delete p.rsPosMult2627; delete p.rsYouthRaw2627; delete p.rsDeltaRaw2627;
   }
   const eligible = players.filter(p => p.cap2627 > 0 && p.proj2627.blend > 0);
 
@@ -2060,30 +2069,36 @@ function rankPlayers(){
       const srcN   = srcNFn2627(p);
       const coverageMult = 1 - (W.wtCoverageDiscount||0) * (1 - Math.min(1, srcN/MAX_SRC_2627));
       const ppEff = p.proj2627.blend * coverageMult;
-      const posMult = multByGroup[posGroup(p.pos)] ?? 1.0;
+      const pg = posGroup(p.pos);
+      const posMult = multByGroup[pg] ?? 1.0;
       const scoreA = ppEff * posMult;
       const ppPerM = ppEff / p.cap2627;
       const scoreB = ppPerM * W.wtPPTSM;
-      const youthRaw = peakTrajectoryScore(age, posGroup(p.pos), (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) + (p.nextTerm2627||0));
+      const youthRaw = peakTrajectoryScore(age, pg, (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) + (p.nextTerm2627||0));
       const scoreD = youthRaw * W.wtAge;
-      const scoreE = prospectBonus(age, posGroup(p.pos), p.cap2627||0, ELC_MAX_2627, ppEff, W);
-      return { p, srcN, coverageMult, posMult, youthRaw, scoreA, scoreB, scoreD, scoreE, score: scoreA + scoreB + scoreD + scoreE };
+      const scoreDelta = _deltaCurveBonus(ppEff, p.cap2627, pg, ELC_MAX_2627, curveFns2627RS[pg], W.wtDeltaCurve, W);
+      // Raw (pre-weight) delta, purely for tooltip display - recomputed independently rather
+      // than backed out of scoreDelta/wtDeltaCurve so a wtDeltaCurve=0 setting can't produce a
+      // division-by-zero/NaN here. Mirrors the same pattern used in _scoreDraftCandidate.
+      const deltaCurveBaseRS = _curveBaseline(pg, p.cap2627, ELC_MAX_2627, curveFns2627RS[pg], W);
+      const deltaRaw = (deltaCurveBaseRS!=null && ppEff-deltaCurveBaseRS>0) ? ppEff-deltaCurveBaseRS : 0;
+      const scoreE = prospectBonus(age, pg, p.cap2627||0, ELC_MAX_2627, ppEff, W);
+      return { p, srcN, coverageMult, posMult, youthRaw, deltaRaw, scoreA, scoreB, scoreD, scoreDelta, scoreE, score: scoreA + scoreB + scoreD + scoreDelta + scoreE };
     })
     .sort((a, b) => b.score - a.score)
-    .forEach(({ p, srcN, coverageMult, posMult, youthRaw, scoreA, scoreB, scoreD, scoreE, score }, i) => {
+    .forEach(({ p, srcN, coverageMult, posMult, youthRaw, deltaRaw, scoreA, scoreB, scoreD, scoreDelta, scoreE, score }, i) => {
       p.rank2627 = i + 1;
       // Static snapshot, same as rank2627 - only refreshed on the next Rank Players click, not
       // live per-render like Draft Score. Feeds the Production/Contract/Prospect/Score columns
       // outside Draft Mode, including the hover tooltip text (see _scoreCols2627, which
       // reconstructs the tooltip from the raw fields below at hover time - same architecture
       // Draft Score already used, live from _dsParts).
-      p.rsProd2627 = scoreA; p.rsContract2627 = scoreB + scoreD; p.rsProspect2627 = scoreE; p.rankScore2627 = score;
-      // Raw components only, not the pre-built tooltip strings (see _scoreCols2627, which
+      p.rsProd2627 = scoreA; p.rsContract2627 = scoreB + scoreD + scoreDelta; p.rsProspect2627 = scoreE; p.rankScore2627 = score;
+      // Raw components only, not pre-built tooltip strings (see _scoreCols2627, which
       // reconstructs the tooltip text from these at hover time - same as Draft Score already
-      // does from live _dsParts). The 3 strings this replaced cost ~319KB of localStorage at
-      // 932/2870 players ranked (would be ~1MB across a full pool); these 4 numbers cost a
-      // fraction of that. Found live 2026-08-17 via a user-reported 4.7MB storage jump.
-      p.rsCoverageMult2627 = coverageMult; p.rsSrcN2627 = srcN; p.rsPosMult2627 = posMult; p.rsYouthRaw2627 = youthRaw;
+      // does from live _dsParts) - keeps localStorage cost to a handful of small numbers per
+      // player instead of full formatted strings.
+      p.rsCoverageMult2627 = coverageMult; p.rsSrcN2627 = srcN; p.rsPosMult2627 = posMult; p.rsYouthRaw2627 = youthRaw; p.rsDeltaRaw2627 = deltaRaw;
     });
 
   lsSet(LS_PLAYERS, players);
@@ -3307,13 +3322,13 @@ function _scoreCols2627(p){
       prod: b.tPPTS*mult, contract: (b.tPPTSM+b.tYouth+b.tDelta)*mult, prospect: (b.tProspect*pw+b.tFanBias)*mult,
       total: draftSubMode==='bestAvail' ? p._dsNormal : p._ds,
       prodTip: `PPTS × coverage × position × pressure\n${b.pp} × ${b.coverageMult.toFixed(2)} × ${b.posMult.toFixed(2)} × ${b.pressMult.toFixed(2)} = ${b.tPPTSBase.toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\npressure @ ${posGroup(p.pos)} = ${b.pressMult.toFixed(2)}${b.tCapUse>0?`\n(cap-use +${b.tCapUse.toFixed(1)})`:''}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
-      contractTip: `(PPTS/$M × coverage × wtPPTSM) + (Peak Trajectory × wtAge)${b.tDelta>0?' + (△ Curve × wtDeltaCurve)':''}\n(${(p.cap2627>0?b.pp/p.cap2627:0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtPPTSM}) + (${b.youthRaw.toFixed(1)} × ${draftWeights.wtAge})${b.tDelta>0?` + (${b.deltaRaw.toFixed(1)} × ${draftWeights.wtDeltaCurve})`:''} = ${((b.tPPTSM+b.tYouth+b.tDelta)*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\nPeak Trajectory @ age ${b.ageRaw} = ${b.youthRaw.toFixed(1)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      contractTip: `(PPTS/$M × coverage × wtPPTSM) + (Peak Trajectory × wtAge) + (△ Curve × wtDeltaCurve)\n(${(p.cap2627>0?b.pp/p.cap2627:0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtPPTSM}) + (${b.youthRaw.toFixed(1)} × ${draftWeights.wtAge}) + (${b.deltaRaw.toFixed(1)} × ${draftWeights.wtDeltaCurve}) = ${((b.tPPTSM+b.tYouth+b.tDelta)*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\nPeak Trajectory @ age ${b.ageRaw} = ${b.youthRaw.toFixed(1)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
       prospectTip: b.tProspect>0
         ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect${b.tFanBias>0?' + Fan team bonus':''}\n${b.prospectAgeScore} × (${b.pp} × ${b.coverageMult.toFixed(2)} / ${b.prospectNormPts}) × ${draftWeights.wtProspect} = ${b.tProspect.toFixed(1)}\nProspect Age @ ${posGroup(p.pos)} <= ${prospectMaxAge}\nYears as prospect = ${prospectMaxAge}+1-${b.ageRaw}=${b.prospectAgeScore}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\nELC expected pts @ ${posGroup(p.pos)} = ${b.prospectNormPts}${pw!==1?(pw===0?'\n(ignored — past round decay window)':`\n(× ${pw} round decay = ${(b.tProspect*pw).toFixed(1)})`):''}${b.tFanBias>0?`\nFan team bonus @ ${teamAbbr(b.team)} = ${b.tFanBias.toFixed(1)}`:''}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`
         : 'No prospect bonus',
     };
   }
-  if(p.rankScore2627==null || p.rsCoverageMult2627==null) return null;
+  if(p.rankScore2627==null || p.rsCoverageMult2627==null || p.rsDeltaRaw2627==null) return null;
   // Tooltip text is reconstructed here from the raw components rankPlayers() stored (coverage/
   // srcN/posMult/youthRaw), not read back from a pre-built string - same architecture Draft
   // Score already used (live from _dsParts). Saves ~319KB of localStorage at 932/2870 players
@@ -3328,7 +3343,7 @@ function _scoreCols2627(p){
   return {
     prod: p.rsProd2627, contract: p.rsContract2627, prospect: p.rsProspect2627, total: p.rankScore2627,
     prodTip: `PPTS × coverage × position\n${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)} × ${p.rsPosMult2627.toFixed(2)} = ${p.rsProd2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
-    contractTip: `(PPTS/$M × coverage × wtPPTSM) + (Peak Trajectory × wtAge)\n(${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2627.toFixed(2)} × ${draftWeights.wtPPTSM}) + (${p.rsYouthRaw2627.toFixed(1)} × ${draftWeights.wtAge}) = ${p.rsContract2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2627.toFixed(1)}`,
+    contractTip: `(PPTS/$M × coverage × wtPPTSM) + (Peak Trajectory × wtAge) + (△ Curve × wtDeltaCurve)\n(${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2627.toFixed(2)} × ${draftWeights.wtPPTSM}) + (${p.rsYouthRaw2627.toFixed(1)} × ${draftWeights.wtAge}) + (${p.rsDeltaRaw2627.toFixed(1)} × ${draftWeights.wtDeltaCurve}) = ${p.rsContract2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2627.toFixed(1)}`,
     prospectTip: p.rsProspect2627 > 0
       ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2627.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
       : 'No prospect bonus',
