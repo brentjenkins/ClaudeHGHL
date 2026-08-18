@@ -481,9 +481,10 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th id="thg-2526-team" colspan="8"></th>
-  <th colspan="11" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
+  <th colspan="10" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb">25-26 Proj</th>
   <th colspan="3" style="text-align:center;color:#bbb;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
-  <th id="th-group-last-2526" colspan="1"></th>
+  <th colspan="7" style="text-align:center;color:#6b7280;letter-spacing:.05em">SCORE</th>
+  <th colspan="1" style="text-align:center;color:#9ca3af;letter-spacing:.05em">ACTION</th>
 </tr>
 <tr>
   <th onclick="setSortCol2526('name')">Player <span id="sort2526-name"></span></th>
@@ -503,12 +504,17 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol2526('ppts2526blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2526-ppts2526blend"></span></th>
   <th onclick="setSortCol2526('ptsperm2526')" style="color:#185FA5;text-align:right">PPTS<br>/$M <span id="sort2526-ptsperm2526"></span></th>
   <th onclick="setSortCol2526('curvedelta2526')" style="color:#185FA5;text-align:right" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort2526-curvedelta2526"></span></th>
-  <th onclick="setSortCol2526('rank2526')" style="color:#185FA5;text-align:right">Rank <span id="sort2526-rank2526"></span></th>
   <th onclick="setSortCol2526('abp2526')" title="Available Better Players (25-26)" style="color:#185FA5;text-align:right;border-right:2px solid #e5e7eb">ABP <span id="sort2526-abp2526"></span></th>
   <th onclick="setSortCol2526('gp2526')" style="color:#bbb;text-align:right;border-left:2px solid #e5e7eb">GP <span id="sort2526-gp2526"></span></th>
   <th onclick="setSortCol2526('pts2526')" style="color:#bbb;text-align:right">Pts <span id="sort2526-pts2526"></span></th>
   <th onclick="setSortCol2526('curvedelta2526actual')" style="color:#bbb;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the projection curve for their position at this cap hit">△Act <span id="sort2526-curvedelta2526actual"></span></th>
-  <th id="th-score2526" style="display:none;color:#6366f1;text-align:right;white-space:nowrap">Score</th>
+  <th onclick="setSortCol2526('prod2526')" title="Production Score" style="color:#185FA5;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Prd <span id="sort2526-prod2526"></span></th>
+  <th onclick="setSortCol2526('contract2526')" title="Contract Score" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Con <span id="sort2526-contract2526"></span></th>
+  <th onclick="setSortCol2526('con_ppm2526')" title="Contract: PPTS/$M component" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">PpM <span id="sort2526-con_ppm2526"></span></th>
+  <th onclick="setSortCol2526('con_trj2526')" title="Contract: Peak Trajectory component" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Trj <span id="sort2526-con_trj2526"></span></th>
+  <th onclick="setSortCol2526('con_crv2526')" title="Contract: △ Curve component" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Crv <span id="sort2526-con_crv2526"></span></th>
+  <th onclick="setSortCol2526('prospect2526')" title="Prospect Score" style="color:#475569;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Prs <span id="sort2526-prospect2526"></span></th>
+  <th onclick="setSortCol2526('score2526')" title="Production + Contract + Prospect" style="color:#111827;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Score <span id="sort2526-score2526"></span></th>
   <th></th>
 </tr>
 </thead>
@@ -1948,6 +1954,15 @@ function srcNFn2627(p){
   return (p.proj2627.ath>0?1:0)+(p.proj2627.dfo>0?1:0)+(p.proj2627.dtz>0?1:0)+(p.proj2627.espn>0?1:0)+(p.proj2627.cbs>0?1:0)+(p.proj2627.nhl>0?1:0)+(p.proj2627.dob>0?1:0);
 }
 const MAX_SRC_2627 = 7;
+// 25-26's equivalent of srcNFn2627 above — was previously two independently hand-copied inline
+// arrow fns inside render2526 (once for the top-level curveFns build, once inside the draft-mode
+// branch), both already agreeing on 6 sources (ath/dfo/dtz/espn/nhl/cbs) but never a single
+// source of truth. rankPlayers2526 (which runs outside render2526 entirely) needs its own
+// reference to feed _computeRankScore, so this is now the one canonical definition.
+function srcNFn2526(p){
+  return (p.proj2526.ath>0?1:0)+(p.proj2526.dfo>0?1:0)+(p.proj2526.dtz>0?1:0)+(p.proj2526.espn>0?1:0)+(p.proj2526.nhl>0?1:0)+(p.proj2526.cbs>0?1:0);
+}
+const MAX_SRC_2526 = 6;
 // 26-27's minSrcCoverage floor relaxed to 0 (vs the shared draftWeights.minSrcCoverage=0.33
 // used by 23-24/24-25/25-26) — as of 2026-08, only Dobbers has published real 26-27 numbers;
 // ATH/DFO/DTZ/ESPN/CBS/NHL aren't expected until mid-September, so the 1/3-of-7 floor would
@@ -2040,16 +2055,9 @@ function applyBlendedPts(){
 
 
 function rankPlayers(){
-  const W = draftWeights;
-  const multByGroup = { F: W.multF, D: W.multD, G: W.multG };
-  // Rank Score's Contract term was missing △Curve entirely (PPTS/$M + Peak Trajectory only) -
-  // Draft Score has had it since _deltaCurveBonus was added, but Rank Score never got the same
-  // fix ported over. Found live 2026-08-17: a user sorting by the new Con column noticed great
-  // non-ELC value contracts (McDavid/Kucherov/MacKinnon-tier — huge points above curve on a
-  // team-friendly cap hit) scoring far below merely-cheap complementary players, since PPTS/$M
-  // alone is a linear ratio that doesn't capture the curve's diminishing-returns shape. Same
-  // curve-fit inputs render() already uses for the visible △ column (rostered pool, cap vs
-  // raw proj2627.blend).
+  // Formula lives in the shared _computeRankScore (see its comment) — this function is now just
+  // the season-specific plumbing: which pool is eligible, which fields to read pp/cap/curve from,
+  // and which p.rs*2627 fields to persist the result into.
   const curveFns2627RS = _buildCurveFns(players.filter(p => p.start2627 && p.cap2627 > 0), p => p.cap2627, p => p.proj2627.blend);
 
   for(const p of players){
@@ -2061,47 +2069,31 @@ function rankPlayers(){
 
   eligible
     .map(p => {
-      const age    = calcAge(p) ?? 99;
-      // Was a hand-rolled 5-source count (missing dob/nhl) - the same drift a 2026-08-05 fix
-      // caught at 4 other call sites but missed here, silently zeroing out coverage for
-      // DOB-only players (real bug: this feeds the actual coverageMult used in scoreA, not
-      // just display) - now uses the canonical 7-source counter/denominator everywhere else.
-      const srcN   = srcNFn2627(p);
-      const coverageMult = 1 - (W.wtCoverageDiscount||0) * (1 - Math.min(1, srcN/MAX_SRC_2627));
-      const ppEff = p.proj2627.blend * coverageMult;
       const pg = posGroup(p.pos);
-      const posMult = multByGroup[pg] ?? 1.0;
-      const scoreA = ppEff * posMult;
-      const ppPerM = ppEff / p.cap2627;
-      const scoreB = ppPerM * W.wtPPTSM;
-      const youthRaw = peakTrajectoryScore(age, pg, (p.expYear >= NHL_SEASON_YEAR ? p.expYear - NHL_SEASON_YEAR + 1 : 0) + (p.nextTerm2627||0));
-      const scoreD = youthRaw * W.wtAge;
-      const scoreDelta = _deltaCurveBonus(ppEff, p.cap2627, pg, ELC_MAX_2627, curveFns2627RS[pg], W.wtDeltaCurve, W);
-      // Raw (pre-weight) delta, purely for tooltip display - recomputed independently rather
-      // than backed out of scoreDelta/wtDeltaCurve so a wtDeltaCurve=0 setting can't produce a
-      // division-by-zero/NaN here. Mirrors the same pattern used in _scoreDraftCandidate.
-      const deltaCurveBaseRS = _curveBaseline(pg, p.cap2627, ELC_MAX_2627, curveFns2627RS[pg], W);
-      const deltaRaw = (deltaCurveBaseRS!=null && ppEff-deltaCurveBaseRS>0) ? ppEff-deltaCurveBaseRS : 0;
-      const scoreE = prospectBonus(age, pg, p.cap2627||0, ELC_MAX_2627, ppEff, W);
-      return { p, srcN, coverageMult, posMult, youthRaw, deltaRaw, scoreA, scoreB, scoreD, scoreDelta, scoreE, score: scoreA + scoreB + scoreD + scoreDelta + scoreE };
+      const r = _computeRankScore(p, {
+        pg, pp: p.proj2627.blend, cap: p.cap2627,
+        calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0,
+        curveFn: curveFns2627RS[pg], elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, draftWeights,
+      });
+      return { p, r };
     })
-    .sort((a, b) => b.score - a.score)
-    .forEach(({ p, srcN, coverageMult, posMult, youthRaw, deltaRaw, scoreA, scoreB, scoreD, scoreDelta, scoreE, score }, i) => {
+    .sort((a, b) => b.r.score - a.r.score)
+    .forEach(({ p, r }, i) => {
       p.rank2627 = i + 1;
       // Static snapshot, same as rank2627 - only refreshed on the next Rank Players click, not
       // live per-render like Draft Score. Feeds the Production/Contract/Prospect/Score columns
       // outside Draft Mode, including the hover tooltip text (see _scoreCols2627, which
       // reconstructs the tooltip from the raw fields below at hover time - same architecture
       // Draft Score already used, live from _dsParts).
-      p.rsProd2627 = scoreA; p.rsContract2627 = scoreB + scoreD + scoreDelta; p.rsProspect2627 = scoreE; p.rankScore2627 = score;
+      p.rsProd2627 = r.prod; p.rsContract2627 = r.ppm + r.trj + r.crv; p.rsProspect2627 = r.prospect; p.rankScore2627 = r.score;
       // Raw components only, not pre-built tooltip strings (see _scoreCols2627, which
       // reconstructs the tooltip text from these at hover time - same as Draft Score already
       // does from live _dsParts) - keeps localStorage cost to a handful of small numbers per
       // player instead of full formatted strings.
-      p.rsCoverageMult2627 = coverageMult; p.rsSrcN2627 = srcN; p.rsPosMult2627 = posMult; p.rsYouthRaw2627 = youthRaw; p.rsDeltaRaw2627 = deltaRaw;
+      p.rsCoverageMult2627 = r.coverageMult; p.rsSrcN2627 = r.srcN; p.rsPosMult2627 = r.posMult; p.rsYouthRaw2627 = r.youthRaw; p.rsDeltaRaw2627 = r.deltaRaw;
       // Contract's 3 weighted sub-scores, stored individually so PpM/Trj/Crv columns can be
       // sorted on and always sum exactly to rsContract2627 above (no live-weight recompute drift).
-      p.rsPpm2627 = scoreB; p.rsTrj2627 = scoreD; p.rsCrv2627 = scoreDelta;
+      p.rsPpm2627 = r.ppm; p.rsTrj2627 = r.trj; p.rsCrv2627 = r.crv;
     });
 
   lsSet(LS_PLAYERS, players);
@@ -3372,6 +3364,62 @@ function _scoreColsHtml2627(p){
     `<td style="color:#111827;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${c.total.toFixed(1)}</td>`;
 }
 
+// 25-26's counterpart to _scoreCols2627/_scoreColsHtml2627 above — same shape (draftMode2526
+// reads live _dsParts2526/_dsPartsNormal2526, otherwise reads the static rankPlayers2526()
+// snapshot) now that toParts2526 uses the same field names as 26-27's toParts.
+function _scoreCols2526(p){
+  if(draftMode2526){
+    if(!(p._dsParts2526||p._dsPartsNormal2526)) return null;
+    const b = draftSubMode2526==='bestAvail' ? p._dsPartsNormal2526 : p._dsParts2526;
+    const pw = draftSubMode2526==='bestAvail' ? prospectRoundWeight(b.round||1) : 1;
+    const mult = b.posAllocMult;
+    const prospectMaxAge = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22;
+    return {
+      prod: b.tPPTS*mult, contract: (b.tPPTSM+b.tYouth+b.tDelta)*mult, prospect: (b.tProspect*pw+b.tFanBias)*mult,
+      conPpm: b.tPPTSM*mult, conTrj: b.tYouth*mult, conCrv: b.tDelta*mult,
+      total: draftSubMode2526==='bestAvail' ? p._ds2526Normal : p._ds2526,
+      prodTip: `PPTS × coverage × position × pressure\n${b.pp} × ${b.coverageMult.toFixed(2)} × ${b.posMult.toFixed(2)} × ${b.pressMult.toFixed(2)} = ${b.tPPTSBase.toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\npressure @ ${posGroup(p.pos)} = ${b.pressMult.toFixed(2)}${b.tCapUse>0?`\n(cap-use +${b.tCapUse.toFixed(1)})`:''}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      contractTip: `CON = PpM + Trj + Crv\n${((b.tPPTSM+b.tYouth+b.tDelta)*mult).toFixed(1)} = ${(b.tPPTSM*mult).toFixed(1)} + ${(b.tYouth*mult).toFixed(1)} + ${(b.tDelta*mult).toFixed(1)}`,
+      conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${(getCap2526(p)>0?b.pp/getCap2526(p):0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtPPTSM} = ${(b.tPPTSM*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      conTrjTip: `Peak Trajectory × wtAge\n${b.youthRaw.toFixed(1)} × ${draftWeights.wtAge} = ${(b.tYouth*mult).toFixed(1)}\nPeak Trajectory @ age ${b.ageRaw} = ${b.youthRaw.toFixed(1)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      conCrvTip: `△ Curve × coverage × wtDeltaCurve\n${(b.coverageMult>0?b.deltaRaw/b.coverageMult:0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtDeltaCurve} = ${(b.tDelta*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      prospectTip: b.tProspect>0
+        ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect${b.tFanBias>0?' + Fan team bonus':''}\n${b.prospectAgeScore} × (${b.pp} × ${b.coverageMult.toFixed(2)} / ${b.prospectNormPts}) × ${draftWeights.wtProspect} = ${b.tProspect.toFixed(1)}\nProspect Age @ ${posGroup(p.pos)} <= ${prospectMaxAge}\nYears as prospect = ${prospectMaxAge}+1-${b.ageRaw}=${b.prospectAgeScore}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\nELC expected pts @ ${posGroup(p.pos)} = ${b.prospectNormPts}${pw!==1?(pw===0?'\n(ignored — past round decay window)':`\n(× ${pw} round decay = ${(b.tProspect*pw).toFixed(1)})`):''}${b.tFanBias>0?`\nFan team bonus @ ${teamAbbr(b.team)} = ${b.tFanBias.toFixed(1)}`:''}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`
+        : 'No prospect bonus',
+    };
+  }
+  if(p.rankScore2526==null || p.rsCoverageMult2526==null || p.rsDeltaRaw2526==null || p.rsPpm2526==null) return null;
+  const posLetterRS = posGroup(p.pos);
+  const age = calcAge2526(p) ?? 99;
+  const prospectMaxAgeRS = PROSPECT_MAX_AGE[posLetterRS] ?? 22;
+  const prospectAgeScoreRS = (age < 99 && age <= prospectMaxAgeRS) ? prospectMaxAgeRS + 1 - age : 0;
+  const prospectNormPtsRS = _elcExp(posLetterRS, draftWeights);
+  const rawPpPerMRS = getCap2526(p)>0 ? ppts2526blend(p)/getCap2526(p) : 0;
+  return {
+    prod: p.rsProd2526, contract: p.rsContract2526, prospect: p.rsProspect2526, total: p.rankScore2526,
+    conPpm: p.rsPpm2526, conTrj: p.rsTrj2526, conCrv: p.rsCrv2526,
+    prodTip: `PPTS × coverage × position\n${ppts2526blend(p)} × ${p.rsCoverageMult2526.toFixed(2)} × ${p.rsPosMult2526.toFixed(2)} = ${p.rsProd2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}`,
+    contractTip: `CON = PpM + Trj + Crv\n${p.rsContract2526.toFixed(1)} = ${p.rsPpm2526.toFixed(1)} + ${p.rsTrj2526.toFixed(1)} + ${p.rsCrv2526.toFixed(1)}`,
+    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2526.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}`,
+    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYouthRaw2526.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2526.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2526.toFixed(1)}`,
+    conCrvTip: `△ Curve × coverage × wtDeltaCurve\n${(p.rsCoverageMult2526>0?p.rsDeltaRaw2526/p.rsCoverageMult2526:0).toFixed(1)} × ${p.rsCoverageMult2526.toFixed(2)} × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}`,
+    prospectTip: p.rsProspect2526 > 0
+      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2526blend(p)} × ${p.rsCoverageMult2526.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2526.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
+      : 'No prospect bonus',
+  };
+}
+function _scoreColsHtml2526(p){
+  const c = _scoreCols2526(p);
+  if(!c) return `<td style="color:#9ca3af;text-align:right;font-size:10px;padding:9px 2px">—</td>`.repeat(7);
+  return `<td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.prodTip)}">${c.prod.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.contractTip)}">${c.contract.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.conPpmTip)}">${c.conPpm.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.conTrjTip)}">${c.conTrj.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.conCrvTip)}">${c.conCrv.toFixed(1)}</td>`+
+    `<td style="color:#475569;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.prospectTip)}">${c.prospect.toFixed(1)}</td>`+
+    `<td style="color:#111827;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${c.total.toFixed(1)}</td>`;
+}
+
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
   const fp=document.getElementById('filterPos').value;
@@ -4367,8 +4415,6 @@ function _deactivateDraftMode2526(){
   if(btn){ btn.style.background=''; btn.style.color='#6366f1'; btn.style.borderColor='#6366f1'; }
   const ctrl = document.getElementById('draftSubModeCtrl2526');
   if(ctrl) ctrl.style.display = 'none';
-  const th = document.getElementById('th-score2526'); if(th) th.style.display='none';
-  const tg = document.getElementById('th-group-last-2526'); if(tg) tg.colSpan=1;
 }
 function _deactivateDraftMode2324(){
   if(!draftMode2324) return;
@@ -5046,8 +5092,6 @@ function toggleDraftMode2526(){
   btn.style.background = draftMode2526 ? '#6366f1' : '';
   btn.style.color = draftMode2526 ? '#fff' : '#6366f1';
   btn.style.borderColor = '#6366f1';
-  document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
-  document.getElementById('th-group-last-2526').colSpan = draftMode2526 ? 2 : 1;
   document.getElementById('draftSubModeCtrl2526').style.display = draftMode2526 ? '' : 'none';
   render2526();
 }
@@ -5274,8 +5318,6 @@ function loadActualDraft2526(){
   updateBigBoardTab();
   const btn=document.getElementById('draftMode2526Btn');
   if(btn){ btn.style.background='#6366f1'; btn.style.color='#fff'; btn.style.borderColor='#6366f1'; }
-  const th=document.getElementById('th-score2526'); if(th) th.style.display='';
-  const tg=document.getElementById('th-group-last-2526'); if(tg) tg.colSpan=2;
   const ctrl=document.getElementById('draftSubModeCtrl2526'); if(ctrl) ctrl.style.display='';
   render2526();
   if(unmatched.length) toast(`25-26 actual draft loaded — ${unmatched.length} unmatched: ${unmatched.slice(0,3).join(', ')}`);
@@ -7421,6 +7463,49 @@ function _draftPressureState(players, allTeams, isAssignedFn, ppts, getCap){
   return {need, leagueNeed, avail, pressure};
 }
 
+// Shared per-candidate Rank Score (non-Draft-Mode "★ Rank Players") — the Draft Score sibling of
+// _scoreDraftCandidate below, parameterized the same way (season-specific pp/cap/curveFns/elcMax/
+// srcNFn all supplied by the caller) so the Prod/PpM/Trj/Crv/Prospect formula only exists once
+// instead of once per season. Before this existed, 26-27's rankPlayers() had the full rich
+// formula (coverage discount, position mult, peak trajectory, delta-curve bonus, prospect bonus)
+// while rankPlayers2425/2324's were a much older, simpler `(pts×posMult)+(pts/cap×wtPPTSM)` with
+// none of that, and rankPlayers2526's had its own independently-drifted inline copy — including a
+// stale hardcoded 4-source coverage denominator (missing nhl/cbs) that srcNFn2526 elsewhere in
+// the same tab had already fixed to 6. No pressure/fanBias/capUse/posAlloc here — those are
+// Draft-Mode-only concepts (live pick competition, team context) that don't apply to a standing
+// Rank Score.
+function _computeRankScore(p, { pg, pp, cap, calcAgeForSim, contractYearAnchor, nextContractYrs = 0, curveFn, elcMax, srcNFn, maxSrc, draftWeights }){
+  const W = draftWeights;
+  const pm = {F: W.multF||1, D: W.multD||1.26, G: W.multG||1};
+  const srcN = srcNFn(p);
+  const covRatio = maxSrc > 0 ? Math.min(1, srcN / maxSrc) : 1;
+  const coverageMult = 1 - (W.wtCoverageDiscount||0) * (1 - covRatio);
+  const ppEff = pp * coverageMult;
+  const posMult = pm[pg] ?? 1;
+  const prod = ppEff * posMult;
+  const ppPerM = (ppEff>0 && cap>0) ? ppEff/cap : 0;
+  const ppm = ppPerM * W.wtPPTSM;
+  const age = calcAgeForSim(p) ?? 99;
+  const yrsRaw = (p.expYear>=contractYearAnchor ? p.expYear-contractYearAnchor+1 : 0) + nextContractYrs;
+  const youthRaw = peakTrajectoryScore(age < 99 ? age : null, pg, yrsRaw);
+  const trj = youthRaw * W.wtAge;
+  const crv = _deltaCurveBonus(ppEff, cap, pg, elcMax, curveFn, W.wtDeltaCurve, W);
+  // Raw (pre-weight) curve delta, purely for tooltip display — recomputed independently rather
+  // than backed out of crv/wtDeltaCurve so a wtDeltaCurve=0 setting can't produce a
+  // division-by-zero/NaN here. Mirrors _scoreDraftCandidate's identical pattern.
+  const deltaCurveBase = (ppEff>0 && cap>0) ? _curveBaseline(pg, cap, elcMax, curveFn, W) : null;
+  const deltaRaw = (deltaCurveBase!=null && ppEff-deltaCurveBase>0) ? ppEff-deltaCurveBase : 0;
+  const prospect = prospectBonus(age < 99 ? age : null, pg, cap||0, elcMax, ppEff, W);
+  const prospectMaxAge = PROSPECT_MAX_AGE[pg] ?? 22;
+  const prospectAgeScore = (age < 99 && age <= prospectMaxAge) ? prospectMaxAge + 1 - age : 0;
+  const prospectNormPts = _elcExp(pg, W);
+  return {
+    score: prod + ppm + trj + crv + prospect,
+    prod, ppm, trj, crv, prospect,
+    coverageMult, srcN, posMult, youthRaw, deltaRaw, ageRaw: age, ppPerM, pp, prospectAgeScore, prospectNormPts,
+  };
+}
+
 // Shared per-candidate SCORE — the exact formula behind the SCORE column, every season's
 // team-summary bubble, and _runAlgoDraft's actual pick selection. Before this existed each of
 // those was a separately hand-copied implementation of "the same" formula; they'd already
@@ -8648,24 +8733,38 @@ function compareDrafts2324(){
 }
 
 function rankPlayers2526(){
-  const posMult = {F:draftWeights.multF, D:draftWeights.multD, G:draftWeights.multG};
-  players.forEach(p=>p.rank2526=null);
+  // Formula lives in the shared _computeRankScore (see its comment) — was previously an
+  // independently hand-copied inline formula missing △Curve entirely and using a stale
+  // hardcoded 4-source coverage denominator (missing nhl/cbs) that srcNFn2526 elsewhere in this
+  // same tab had already fixed to 6 — same drift class as the 26-27 bug this consolidation
+  // (2026-08-17) was built to end for good.
+  const curveFns2526RS = _buildCurveFns(players.filter(p => p.start2526 && getCap2526(p) > 0), getCap2526, ppts2526blend);
+
+  for(const p of players){
+    delete p.rank2526; delete p.rsProd2526; delete p.rsContract2526; delete p.rsProspect2526; delete p.rankScore2526;
+    delete p.rsCoverageMult2526; delete p.rsSrcN2526; delete p.rsPosMult2526; delete p.rsYouthRaw2526; delete p.rsDeltaRaw2526;
+    delete p.rsPpm2526; delete p.rsTrj2526; delete p.rsCrv2526;
+  }
   const eligible = players.filter(p=>getCap2526(p)>0 && ppts2526blend(p)>0);
-  eligible.forEach(p=>{
-    const pg = posGroup(p.pos);
-    const pp = ppts2526blend(p);
-    const yrs = (p.expYear>=2026 ? p.expYear-2026+1 : 0) + (p.nextTerm2526||0);
-    const ageS = calcAge2526(p) ?? 99;
-    const youth = peakTrajectoryScore(ageS < 99 ? ageS : null, pg, yrs);
-    const srcNS = (p.proj2526.ath > 0 ? 1 : 0) + (p.proj2526.dfo > 0 ? 1 : 0) + (p.proj2526.dtz > 0 ? 1 : 0) + (p.proj2526.espn > 0 ? 1 : 0);
-    const coverageMultS = 1 - (draftWeights.wtCoverageDiscount||0) * (1 - Math.min(1, srcNS/4));
-    const ppEffS = pp * coverageMultS;
-    const prospectS = prospectBonus(ageS < 99 ? ageS : null, pg, getCap2526(p), ELC_MAX_2526, ppEffS);
-    p._score2526 = ppEffS*(posMult[pg]??1) + (ppEffS/getCap2526(p))*draftWeights.wtPPTSM + youth*draftWeights.wtAge + prospectS;
-  });
-  eligible.sort((a,b)=>b._score2526-a._score2526).forEach((p,i)=>p.rank2526=i+1);
-  // See rankPlayers2425's identical note — pure scratch sort key, never needs to persist.
-  eligible.forEach(p=>{ delete p._score2526; });
+
+  eligible
+    .map(p => {
+      const pg = posGroup(p.pos);
+      const r = _computeRankScore(p, {
+        pg, pp: ppts2526blend(p), cap: getCap2526(p),
+        calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextTerm2526||0,
+        curveFn: curveFns2526RS[pg], elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: MAX_SRC_2526, draftWeights,
+      });
+      return { p, r };
+    })
+    .sort((a, b) => b.r.score - a.r.score)
+    .forEach(({ p, r }, i) => {
+      p.rank2526 = i + 1;
+      p.rsProd2526 = r.prod; p.rsContract2526 = r.ppm + r.trj + r.crv; p.rsProspect2526 = r.prospect; p.rankScore2526 = r.score;
+      p.rsCoverageMult2526 = r.coverageMult; p.rsSrcN2526 = r.srcN; p.rsPosMult2526 = r.posMult; p.rsYouthRaw2526 = r.youthRaw; p.rsDeltaRaw2526 = r.deltaRaw;
+      p.rsPpm2526 = r.ppm; p.rsTrj2526 = r.trj; p.rsCrv2526 = r.crv;
+    });
+
   lsSet(LS_PLAYERS, players);
   render2526();
   toast(`Ranked ${eligible.length} players for 25-26.`);
@@ -8737,7 +8836,6 @@ function updateStats2526(){
     for(const p of tp){ const g=posGroup(p.pos); if(g in teamCapByPosAll2526[t]) teamCapByPosAll2526[t][g]+=getCap2526(p); }
     teamSpotsLeftAll2526[t]=Math.max(0, DRAFT_ROSTER_MAX.F+DRAFT_ROSTER_MAX.D+DRAFT_ROSTER_MAX.G - tp.length);
   }
-  const srcNFn2526=p=>(p.proj2526.ath>0?1:0)+(p.proj2526.dfo>0?1:0)+(p.proj2526.dtz>0?1:0)+(p.proj2526.espn>0?1:0)+(p.proj2526.nhl>0?1:0)+(p.proj2526.cbs>0?1:0);
   // Uses _getTeamDraftBoard — the SAME ranking/filtering/splash-deferral logic _runAlgoDraft's
   // actual simulation uses — see render2627's top5Html for the full rationale.
   const top5Html2526=(team,fRem,dRem,gRem,rem)=>{
@@ -8852,21 +8950,27 @@ function render2526(){
     else if(sortCol2526==='ptsperm2526'){ av=ppm2526(a); bv=ppm2526(b); }
     else if(sortCol2526==='age'){ av=calcAge2526(a)??-1; bv=calcAge2526(b)??-1; }
     else if(sortCol2526==='abp2526'){ av=abpMap2526.get(a.id)??-1; bv=abpMap2526.get(b.id)??-1; }
-    else if(sortCol2526==='rank2526'){ av=a.rank2526??99999; bv=b.rank2526??99999; }
     else if(sortCol2526==='curvedelta2526'){ av=curveDelta2526(a)??-Infinity; bv=curveDelta2526(b)??-Infinity; }
     else if(sortCol2526==='curvedelta2526actual'){ av=curveDeltaActual2526(a)??-Infinity; bv=curveDeltaActual2526(b)??-Infinity; }
+    else if(sortCol2526==='prod2526'){ av=_scoreCols2526(a)?.prod??-Infinity; bv=_scoreCols2526(b)?.prod??-Infinity; }
+    else if(sortCol2526==='contract2526'){ av=_scoreCols2526(a)?.contract??-Infinity; bv=_scoreCols2526(b)?.contract??-Infinity; }
+    else if(sortCol2526==='con_ppm2526'){ av=_scoreCols2526(a)?.conPpm??-Infinity; bv=_scoreCols2526(b)?.conPpm??-Infinity; }
+    else if(sortCol2526==='con_trj2526'){ av=_scoreCols2526(a)?.conTrj??-Infinity; bv=_scoreCols2526(b)?.conTrj??-Infinity; }
+    else if(sortCol2526==='con_crv2526'){ av=_scoreCols2526(a)?.conCrv??-Infinity; bv=_scoreCols2526(b)?.conCrv??-Infinity; }
+    else if(sortCol2526==='prospect2526'){ av=_scoreCols2526(a)?.prospect??-Infinity; bv=_scoreCols2526(b)?.prospect??-Infinity; }
+    else if(sortCol2526==='score2526'){ av=_scoreCols2526(a)?.total??-Infinity; bv=_scoreCols2526(b)?.total??-Infinity; }
     else { av=_sortVal(a,sortCol2526)??''; bv=_sortVal(b,sortCol2526)??''; }
     if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
     return av<bv?-sortDir2526:av>bv?sortDir2526:0;
   });
 
   const sortCols2526 = ['name','pos','age','team','end2425','end2526','cap',
-    'proj2526_ath','proj2526_dfo','proj2526_dtz','proj2526_espn','proj2526_cbs','proj2526_nhl','ppts2526blend','ptsperm2526','curvedelta2526','rank2526','abp2526','gp2526','pts2526','curvedelta2526actual'];
+    'proj2526_ath','proj2526_dfo','proj2526_dtz','proj2526_espn','proj2526_cbs','proj2526_nhl','ppts2526blend','ptsperm2526','curvedelta2526','abp2526','gp2526','pts2526','curvedelta2526actual',
+    'prod2526','contract2526','con_ppm2526','con_trj2526','con_crv2526','prospect2526','score2526'];
   sortCols2526.forEach(c=>{
     const el=document.getElementById('sort2526-'+c);
     if(el) el.textContent=sortCol2526===c?(sortDir2526>0?'↑':'↓'):'';
   });
-  document.getElementById('th-score2526').style.display = draftMode2526 ? '' : 'none';
   toggleCurrentTeamCol('th-end2526', 'thg-2526-team', draftMode2526);
 
   const onClockTeam2526 = buildDraftSeq2526()[draftState2526.picks.length] ?? null;
@@ -8882,7 +8986,6 @@ function render2526(){
     const teamCapUsed2526=teamRoster.reduce((s,p)=>s+getCap2526(p),0);
     const slotsLeft2526=need.F+need.D+need.G;
     const maxAffordable2526=draftFocusTeam2526?CAP_LIMIT_2526-teamCapUsed2526-Math.max(0,slotsLeft2526-1)*ELC_MAX_2526:Infinity;
-    const srcNFn2526 = p=>(p.proj2526.ath>0?1:0)+(p.proj2526.dfo>0?1:0)+(p.proj2526.dtz>0?1:0)+(p.proj2526.espn>0?1:0)+(p.proj2526.nhl>0?1:0)+(p.proj2526.cbs>0?1:0);
     // Shares _draftPressureState/_scoreDraftCandidate with the actual Algo Draft pick engine —
     // see _runAlgoDraft / render2425 for the drift history this is meant to end.
     const { pressure: pressure2526 } = _draftPressureState(players, DRAFT_TEAMS_2526, p=>p.start2526||null, ppts2526blend, getCap2526);
@@ -8892,7 +8995,7 @@ function render2526(){
       .filter(p=>!p.start2526&&ppts2526blend(p)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
-        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights: _effectiveDraftWeights(viewTeam2526, draftWeights), calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 6, team: viewTeam2526, teamField: 'team2526' };
+        const scoreArgs = { pg, pp, cap0, pressure: pressure2526, draftWeights: _effectiveDraftWeights(viewTeam2526, draftWeights), calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: MAX_SRC_2526, team: viewTeam2526, teamField: 'team2526' };
         const _ds2526 = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2526}).score;
         const _ds2526Normal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2526}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds2526,_ds2526Normal};
@@ -8907,17 +9010,23 @@ function render2526(){
         const pg=posGroup(p.pos), pp=ppts2526blend(p), cap0=getCap2526(p)||0;
         const scoreArgs = {
           pg, pp, cap0, pressure: pressure2526, round: focusRound2526, draftWeights: _effectiveDraftWeights(viewTeam2526, draftWeights),
-          calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: 6,
+          calcAgeForSim: calcAge2526, contractYearAnchor: 2026, nextContractYrs: p.nextTerm2526||0, curveFns: curveFns2526, elcMax: ELC_MAX_2526, srcNFn: srcNFn2526, maxSrc: MAX_SRC_2526,
           team: viewTeam2526, teamCap: teamCap2526, teamCapByPos: teamCapByPos2526, teamField: 'team2526',
         };
         const b = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect'});
         const bNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail'});
         const _ds2526 = b.score;
         const _ds2526Normal = bNormal.score;
-        const toParts2526 = (x) => ({tPPTS:x.tPPTS,tPPTSM:x.tPPTSM,yrsRaw:x.yrsRaw,youthRaw:x.youthRaw,tYouth:x.tYouth,ageRaw2526:x.ageRaw,tProspect2526:x.tProspect,round:focusRound2526,srcN2526d:x.srcN,coverageMult2526:x.coverageMult,tDelta:x.tDelta,tFanBias:x.tFanBias,pressRaw2526:x.pressRaw,pressMult2526:x.pressMult,posMult:x.posMult,posAllocMult:x.posAllocMult,tCapUse:x.tCapUse});
+        // Same field names as 26-27's toParts (not suffixed) so _scoreCols2526 below can share
+        // its draft-mode branch structure with _scoreCols2627 — was previously missing pp/
+        // tPPTSBase/ppPerM/deltaRaw/prospectAgeScore/prospectNormPts entirely and used
+        // inconsistent per-field suffixes (ageRaw2526/tProspect2526/srcN2526d/coverageMult2526/
+        // pressMult2526/pressRaw2526) that nothing else in the codebase matched.
+        const toParts2526 = (x) => ({tPPTS:x.tPPTS,tPPTSM:x.tPPTSM,yrsRaw:x.yrsRaw,youthRaw:x.youthRaw,tYouth:x.tYouth,ageRaw:x.ageRaw,tProspect:x.tProspect,round:focusRound2526,srcN:x.srcN,coverageMult:x.coverageMult,tDelta:x.tDelta,tFanBias:x.tFanBias,pressRaw:x.pressRaw,pressMult:x.pressMult,posMult:x.posMult,posAllocMult:x.posAllocMult,tCapUse:x.tCapUse,pp:x.pp,tPPTSBase:x.tPPTSBase,ppPerM:x.ppPerM,deltaRaw:x.deltaRaw,prospectAgeScore:x.prospectAgeScore,prospectNormPts:x.prospectNormPts,team:viewTeam2526});
         return Object.assign({},p,{_ds2526,_ds2526Normal,_dsParts2526:toParts2526(b),_dsPartsNormal2526:toParts2526(bNormal)});
       });
-    rows=sortCol2526==='ppts2526blend'?(draftSubMode2526==='prospect'?allScored2526.sort((a,b)=>b._ds2526-a._ds2526):allScored2526.sort((a,b)=>b._ds2526Normal-a._ds2526Normal)):allScored2526;
+    const dsField2526 = sortCol2526==='prod2526'?'prod':sortCol2526==='contract2526'?'contract':sortCol2526==='con_ppm2526'?'conPpm':sortCol2526==='con_trj2526'?'conTrj':sortCol2526==='con_crv2526'?'conCrv':sortCol2526==='prospect2526'?'prospect':sortCol2526==='score2526'?'total':null;
+    rows = dsField2526 ? allScored2526.sort((a,b)=>(_scoreCols2526(b)[dsField2526]-_scoreCols2526(a)[dsField2526])*-sortDir2526) : allScored2526;
   }
 
   // Populate filter dropdowns
@@ -8956,7 +9065,6 @@ function render2526(){
     const pp=ppts2526blend(p);
     const abpVal=abpMap2526.get(p.id);
     const abpStr=abpVal===null||abpVal===undefined?'—':(()=>{const c=abpVal===0?'#16a34a':abpVal<=3?'#1a1a18':abpVal<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2526')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${abpVal}</button>`;})();
-    const rankStr=p.rank2526!=null?`<span style="font-size:11px;font-weight:700;color:${p.rank2526<=10?'#b45309':p.rank2526<=25?'#185FA5':'#555'}">${p.rank2526}</span>`:'—';
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:5px">
         <span style="overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
@@ -8979,12 +9087,11 @@ function render2526(){
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${(()=>{const c=getCap2526(p);return pp>0&&c>0?(pp/c).toFixed(1):'—';})()}</td>
       ${(()=>{const s=curveDelta2526(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td style="text-align:right">${rankStr}</td>
       <td style="text-align:right;border-right:2px solid #f0f0ee">${abpStr}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
       <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
       ${(()=>{const s=curveDeltaActual2526(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #f0f0ee">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #f0f0ee" title="actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      ${draftMode2526&&(p._dsParts2526||p._dsPartsNormal2526)?(()=>{const b=draftSubMode2526==='bestAvail'?p._dsPartsNormal2526:p._dsParts2526;const pw=draftSubMode2526==='bestAvail'?prospectRoundWeight(b.round||1):1;const wProspect=b.tProspect2526*pw;const tip=`── Production ──\nPPTS×pos×press×coverage: ${b.tPPTS.toFixed(1)}  (pos×${b.posMult.toFixed(2)}; press=${b.pressRaw2526.toFixed(2)}→×${b.pressMult2526.toFixed(2)}; ${b.srcN2526d} src→×${b.coverageMult2526.toFixed(2)}${b.tCapUse>0?`; cap-use +${b.tCapUse.toFixed(1)}`:''})\n\n── Contract ──\nPPTS/$M×${draftWeights.wtPPTSM}: ${b.tPPTSM.toFixed(1)}\n+ Peak traj(age ${b.ageRaw2526}, ${b.youthRaw.toFixed(1)}pts)×${draftWeights.wtAge}: ${b.tYouth.toFixed(1)}${b.tDelta>0?`\n+ △Curve×${draftWeights.wtDeltaCurve}: ${b.tDelta.toFixed(1)}`:''}${(b.tProspect2526>0||b.tFanBias>0)?`\n\n── Draft ──${b.tProspect2526>0?`\nProspect(age ${b.ageRaw2526})×${draftWeights.wtProspect}: ${wProspect.toFixed(1)}${pw===1?'':pw===0?' (ignored — past round decay window)':` (×${pw} round decay)`}`:''}${b.tFanBias>0?`\n+ Fan team bonus: +${b.tFanBias.toFixed(1)}`:''}`:''}${b.posAllocMult!==1?`\n\n× ${b.posAllocMult.toFixed(2)} pos-budget correction`:''}\n───\nTotal: ${(draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526).toFixed(1)}`;const score2526=draftSubMode2526==='bestAvail'?p._ds2526Normal:p._ds2526;return`<td style="color:#6366f1;font-weight:700;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;cursor:default" title="${esc(tip)}">${score2526.toFixed(1)}</td>`;})():(draftMode2526?'<td style="color:#6366f1;text-align:right">—</td>':'')}
+      ${_scoreColsHtml2526(p)}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
         ${p.start2526
@@ -8992,7 +9099,7 @@ function render2526(){
           : draftMode2526 ? `<button class="btn-draft" onclick="quickDraft2526(${p.id})">Draft</button>` : ''}
       </td>
     </tr>`;
-  }).join('')):`<tr><td colspan="${draftMode2526?22:23}" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>`;
+  }).join('')):`<tr><td colspan="29" style="text-align:center;color:#9ca3af;padding:2rem">No players match</td></tr>`;
 
   document.getElementById('rowCount2526').textContent = `${rows.length} player${rows.length!==1?'s':''}`;
   updateStats2526();
