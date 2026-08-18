@@ -301,10 +301,10 @@ tr:hover td{background:#fafaf8}
   <th id="th-start2425" onclick="setSortCol2425('start2425')" style="color:#185FA5">24-25 Y! <span id="sort2425-start2425"></span></th>
   <th onclick="setSortCol2425('cap2425')" style="text-align:right">Cap $M <span id="sort2425-cap2425"></span></th>
   <th style="text-align:right">Term</th>
-  <th onclick="setSortCol2425('proj2425_ath')" style="color:#185FA5;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2024-25 projection">ATH <span id="sort2425-proj2425_ath"></span></th>
-  <th onclick="setSortCol2425('proj2425_dfo')" style="color:#185FA5;text-align:right" title="DFO 2024-25 projection">DFO <span id="sort2425-proj2425_dfo"></span></th>
-  <th onclick="setSortCol2425('proj2425_dtz')" style="color:#185FA5;text-align:right" title="DTZ 2024-25 projection">DTZ <span id="sort2425-proj2425_dtz"></span></th>
-  <th onclick="setSortCol2425('proj2425_nhl')" style="color:#185FA5;text-align:right" title="NHL 2024-25 projection">NHL <span id="sort2425-proj2425_nhl"></span></th>
+  <th onclick="setSortCol2425('proj2425_ath')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb" title="Athletic 2024-25 projection">ATH <span id="sort2425-proj2425_ath"></span></th>
+  <th onclick="setSortCol2425('proj2425_dfo')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DFO 2024-25 projection">DFO <span id="sort2425-proj2425_dfo"></span></th>
+  <th onclick="setSortCol2425('proj2425_dtz')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DTZ 2024-25 projection">DTZ <span id="sort2425-proj2425_dtz"></span></th>
+  <th onclick="setSortCol2425('proj2425_nhl')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="NHL 2024-25 projection">NHL <span id="sort2425-proj2425_nhl"></span></th>
   <th onclick="setSortCol2425('ppts2425blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2425-ppts2425blend"></span></th>
   <th onclick="setSortCol2425('ptsperm2425')" style="color:#185FA5;text-align:right">PPTS<br>/$M <span id="sort2425-ptsperm2425"></span></th>
   <th onclick="setSortCol2425('curvedelta2425')" style="color:#185FA5;text-align:right" title="Projected pts above/below the curve">△ <span id="sort2425-curvedelta2425"></span></th>
@@ -400,10 +400,10 @@ tr:hover td{background:#fafaf8}
   <th id="th-start2324" onclick="setSortCol2324('start2324')" style="color:#185FA5">23-24 Y! <span id="sort2324-start2324"></span></th>
   <th onclick="setSortCol2324('cap2324')" style="text-align:right">Cap $M <span id="sort2324-cap2324"></span></th>
   <th style="text-align:right">Term</th>
-  <th onclick="setSortCol2324('proj2324_ath')" style="color:#185FA5;text-align:right;border-left:2px solid #e5e7eb" title="Athletic 2023-24 projection">ATH <span id="sort2324-proj2324_ath"></span></th>
-  <th onclick="setSortCol2324('proj2324_dtz')" style="color:#185FA5;text-align:right" title="DTZ 2023-24 projection">DTZ <span id="sort2324-proj2324_dtz"></span></th>
-  <th onclick="setSortCol2324('proj2324_nhl')" style="color:#185FA5;text-align:right" title="NHL 2023-24 projection">NHL <span id="sort2324-proj2324_nhl"></span></th>
-  <th onclick="setSortCol2324('proj2324_dob')" style="color:#185FA5;text-align:right" title="Dobbers 2023-24 projection — backtested 2026-08-05 (common-pool r=0.747, last of 4 sources; weak on goalies), blended into PPTS at weight 0.9">DOB <span id="sort2324-proj2324_dob"></span></th>
+  <th onclick="setSortCol2324('proj2324_ath')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb" title="Athletic 2023-24 projection">ATH <span id="sort2324-proj2324_ath"></span></th>
+  <th onclick="setSortCol2324('proj2324_dtz')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DTZ 2023-24 projection">DTZ <span id="sort2324-proj2324_dtz"></span></th>
+  <th onclick="setSortCol2324('proj2324_nhl')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="NHL 2023-24 projection">NHL <span id="sort2324-proj2324_nhl"></span></th>
+  <th onclick="setSortCol2324('proj2324_dob')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Dobbers 2023-24 projection — backtested 2026-08-05 (common-pool r=0.747, last of 4 sources; weak on goalies), blended into PPTS at weight 0.9">DOB <span id="sort2324-proj2324_dob"></span></th>
   <th onclick="setSortCol2324('ppts2324blend')" style="color:#185FA5;text-align:right">PPTS <span id="sort2324-ppts2324blend"></span></th>
   <th onclick="setSortCol2324('ptsperm2324')" style="color:#185FA5;text-align:right">PPTS<br>/$M <span id="sort2324-ptsperm2324"></span></th>
   <th onclick="setSortCol2324('curvedelta2324')" style="color:#185FA5;text-align:right" title="Projected pts above/below the curve">△ <span id="sort2324-curvedelta2324"></span></th>
@@ -6449,10 +6449,10 @@ function render2425(){
       ${draftMode2425 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2425&&teamLogos[p.start2425]?`<img src="${teamLogos[p.start2425]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2425)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
       <td style="color:#9ca3af;text-align:right">${cap>0?(_yrStrDisplay(p.yrStr2425)||'—'):'—'}${p.nextTerm2425?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2425.toFixed(2)}M × ${p.nextTerm2425}yr, starting ${p.nextYr2425}">→</span>`:''}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2425.ath>0?Math.round(p.proj2425.ath):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425.dfo>0?Math.round(p.proj2425.dfo):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425.dtz>0?Math.round(p.proj2425.dtz):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2425.nhl>0?Math.round(p.proj2425.nhl):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb">${p.proj2425.ath>0?Math.round(p.proj2425.ath):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2425.dfo>0?Math.round(p.proj2425.dfo):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2425.dtz>0?Math.round(p.proj2425.dtz):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2425.nhl>0?Math.round(p.proj2425.nhl):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta2425(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
@@ -6935,10 +6935,10 @@ function render2324(){
       ${draftMode2324 ? '' : `<td style="color:#185FA5"><div style="display:flex;align-items:center;gap:5px">${p.start2324&&teamLogos[p.start2324]?`<img src="${teamLogos[p.start2324]}" style="width:20px;height:20px;border-radius:3px;object-fit:cover;flex-shrink:0" loading="lazy">`:''}<span>${teamAbbr(p.start2324)||'—'}</span></div></td>`}
       <td style="text-align:right;font-variant-numeric:tabular-nums">${cap>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${capStr}</a>`:'—'}</td>
       <td style="color:#9ca3af;text-align:right">${cap>0?(_yrStrDisplay(p.yrStr2324)||'—'):'—'}${p.nextTerm2324?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2324.toFixed(2)}M × ${p.nextTerm2324}yr, starting ${p.nextYr2324}">→</span>`:''}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #e5e7eb">${p.proj2324.ath>0?Math.round(p.proj2324.ath):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324.dtz>0?Math.round(p.proj2324.dtz):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324.nhl>0?Math.round(p.proj2324.nhl):'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.proj2324.dob>0?Math.round(p.proj2324.dob):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb">${p.proj2324.ath>0?Math.round(p.proj2324.ath):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2324.dtz>0?Math.round(p.proj2324.dtz):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2324.nhl>0?Math.round(p.proj2324.nhl):'—'}</td>
+      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2324.dob>0?Math.round(p.proj2324.dob):'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0?pp:'—'}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${pp>0&&cap>0?(pp/cap).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta2324(p);if(s===null)return'<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return`<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${pg} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
