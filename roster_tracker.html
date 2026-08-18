@@ -652,10 +652,9 @@ tr:hover td{background:#fafaf8}
 <thead>
 <tr>
   <th id="thg-2627-team" colspan="8"></th>
-  <th colspan="3" style="text-align:center;color:#9ca3af;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">25-26 Actual</th>
+  <th colspan="11" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-left:2px solid #e5e7eb;border-right:2px solid #e5e7eb">26-27 Proj</th>
   <th colspan="2" style="text-align:center;color:#1a1a18;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Actual</th>
-  <th colspan="11" style="text-align:center;color:#185FA5;letter-spacing:.05em;border-right:2px solid #e5e7eb">26-27 Proj</th>
-  <th colspan="4" style="text-align:center;color:#6b7280;letter-spacing:.05em">SCORE</th>
+  <th colspan="7" style="text-align:center;color:#6b7280;letter-spacing:.05em">SCORE</th>
   <th colspan="1" style="text-align:center;color:#9ca3af;letter-spacing:.05em">ACTION</th>
 </tr>
 <tr>
@@ -667,12 +666,7 @@ tr:hover td{background:#fafaf8}
   <th id="th-start2627" onclick="setSortCol('start2627')" style="color:#7c3aed">26-27 Y! <span id="sort-start2627"></span></th>
   <th onclick="setSortCol('cap')" style="color:#16a34a;text-align:right">Cap $M <span id="sort-cap"></span></th>
   <th style="color:#16a34a;text-align:right">Term</th>
-  <th onclick="setSortCol('gp2526')" style="color:#9ca3af;text-align:right;border-left:2px solid #e5e7eb" title="2025-26 games played">GP <span id="sort-gp2526"></span></th>
-  <th onclick="setSortCol('pts2526')" style="color:#9ca3af;text-align:right" title="2025-26 actual points">Pts <span id="sort-pts2526"></span></th>
-  <th onclick="setSortCol('curvedelta_actual')" style="color:#9ca3af;text-align:right;border-right:2px solid #e5e7eb" title="Actual 25-26 pts above/below the 25-26 projection curve, at 25-26 cap">△Act <span id="sort-curvedelta_actual"></span></th>
-  <th onclick="setSortCol('gp2627')" style="color:#1a1a18;text-align:right" title="2026-27 games played so far">GP <span id="sort-gp2627"></span></th>
-  <th onclick="setSortCol('pts2627')" style="color:#1a1a18;text-align:right;border-right:2px solid #e5e7eb" title="2026-27 actual points so far — banked; counts fully for whoever ends up rostering this player after the draft (drops/draft apply retroactively)">Pts <span id="sort-pts2627"></span></th>
-  <th onclick="setSortCol('ptsAth')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAth"></span></th>
+  <th onclick="setSortCol('ptsAth')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb" title="Athletic 2026-27 projection">ATH <span id="sort-ptsAth"></span></th>
   <th onclick="setSortCol('ptsDFO')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DFO/5v5hockey 2026-27 projection">DFO <span id="sort-ptsDFO"></span></th>
   <th onclick="setSortCol('ptsDTZ')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="DTZ 2026-27 projection">DTZ <span id="sort-ptsDTZ"></span></th>
   <th onclick="setSortCol('ptsDOB')" style="color:#185FA5;text-align:right;font-size:10px;padding:9px 2px" title="Dobbers 2026-27 projection — currently 100% of preseason PPTS for matched players (not yet blended)">DOB <span id="sort-ptsDOB"></span></th>
@@ -683,8 +677,13 @@ tr:hover td{background:#fafaf8}
   <th onclick="setSortCol('ptsperm')" style="color:#0d9488;text-align:right">PPTS<br>/$M <span id="sort-ptsperm"></span></th>
   <th onclick="setSortCol('curvedelta')" style="color:#185FA5;text-align:right" title="Points above/below the average efficiency curve for their position at this cap hit (+good, −bad)">△ <span id="sort-curvedelta"></span></th>
   <th onclick="setSortCol('abp')" title="Available Better Players: free agents at the same position and similar cap hit with better APP" style="color:#185FA5;text-align:right;border-right:2px solid #e5e7eb">ABP <span id="sort-abp"></span></th>
+  <th onclick="setSortCol('gp2627')" style="color:#1a1a18;text-align:right" title="2026-27 games played so far">GP <span id="sort-gp2627"></span></th>
+  <th onclick="setSortCol('pts2627')" style="color:#1a1a18;text-align:right;border-right:2px solid #e5e7eb" title="2026-27 actual points so far — banked; counts fully for whoever ends up rostering this player after the draft (drops/draft apply retroactively)">Pts <span id="sort-pts2627"></span></th>
   <th onclick="setSortCol('prod')" title="Production Score" style="color:#185FA5;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Prd <span id="sort-prod"></span></th>
   <th onclick="setSortCol('contract')" title="Contract Score" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Con <span id="sort-contract"></span></th>
+  <th onclick="setSortCol('con_ppm')" title="Contract: PPTS/$M component" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">PpM <span id="sort-con_ppm"></span></th>
+  <th onclick="setSortCol('con_trj')" title="Contract: Peak Trajectory component" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Trj <span id="sort-con_trj"></span></th>
+  <th onclick="setSortCol('con_crv')" title="Contract: △ Curve component" style="color:#0d9488;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Crv <span id="sort-con_crv"></span></th>
   <th onclick="setSortCol('prospect')" title="Prospect Score" style="color:#475569;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Prs <span id="sort-prospect"></span></th>
   <th id="th-score" onclick="setSortCol('score')" title="Production + Contract + Prospect" style="color:#111827;text-align:right;white-space:nowrap;font-size:10px;padding:9px 2px">Score <span id="sort-score"></span></th>
   <th></th>
@@ -2056,6 +2055,7 @@ function rankPlayers(){
   for(const p of players){
     delete p.rank2627; delete p.rsProd2627; delete p.rsContract2627; delete p.rsProspect2627; delete p.rankScore2627;
     delete p.rsCoverageMult2627; delete p.rsSrcN2627; delete p.rsPosMult2627; delete p.rsYouthRaw2627; delete p.rsDeltaRaw2627;
+    delete p.rsPpm2627; delete p.rsTrj2627; delete p.rsCrv2627;
   }
   const eligible = players.filter(p => p.cap2627 > 0 && p.proj2627.blend > 0);
 
@@ -2099,6 +2099,9 @@ function rankPlayers(){
       // does from live _dsParts) - keeps localStorage cost to a handful of small numbers per
       // player instead of full formatted strings.
       p.rsCoverageMult2627 = coverageMult; p.rsSrcN2627 = srcN; p.rsPosMult2627 = posMult; p.rsYouthRaw2627 = youthRaw; p.rsDeltaRaw2627 = deltaRaw;
+      // Contract's 3 weighted sub-scores, stored individually so PpM/Trj/Crv columns can be
+      // sorted on and always sum exactly to rsContract2627 above (no live-weight recompute drift).
+      p.rsPpm2627 = scoreB; p.rsTrj2627 = scoreD; p.rsCrv2627 = scoreDelta;
     });
 
   lsSet(LS_PLAYERS, players);
@@ -3320,15 +3323,19 @@ function _scoreCols2627(p){
     const prospectMaxAge = PROSPECT_MAX_AGE[posGroup(p.pos)] ?? 22;
     return {
       prod: b.tPPTS*mult, contract: (b.tPPTSM+b.tYouth+b.tDelta)*mult, prospect: (b.tProspect*pw+b.tFanBias)*mult,
+      conPpm: b.tPPTSM*mult, conTrj: b.tYouth*mult, conCrv: b.tDelta*mult,
       total: draftSubMode==='bestAvail' ? p._dsNormal : p._ds,
       prodTip: `PPTS × coverage × position × pressure\n${b.pp} × ${b.coverageMult.toFixed(2)} × ${b.posMult.toFixed(2)} × ${b.pressMult.toFixed(2)} = ${b.tPPTSBase.toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\npressure @ ${posGroup(p.pos)} = ${b.pressMult.toFixed(2)}${b.tCapUse>0?`\n(cap-use +${b.tCapUse.toFixed(1)})`:''}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
       contractTip: `(PPTS/$M × coverage × wtPPTSM) + (Peak Trajectory × wtAge) + (△ Curve × wtDeltaCurve)\n(${(p.cap2627>0?b.pp/p.cap2627:0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtPPTSM}) + (${b.youthRaw.toFixed(1)} × ${draftWeights.wtAge}) + (${b.deltaRaw.toFixed(1)} × ${draftWeights.wtDeltaCurve}) = ${((b.tPPTSM+b.tYouth+b.tDelta)*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\nPeak Trajectory @ age ${b.ageRaw} = ${b.youthRaw.toFixed(1)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${(p.cap2627>0?b.pp/p.cap2627:0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtPPTSM} = ${(b.tPPTSM*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      conTrjTip: `Peak Trajectory × wtAge\n${b.youthRaw.toFixed(1)} × ${draftWeights.wtAge} = ${(b.tYouth*mult).toFixed(1)}\nPeak Trajectory @ age ${b.ageRaw} = ${b.youthRaw.toFixed(1)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
+      conCrvTip: `△ Curve × coverage × wtDeltaCurve\n${(b.coverageMult>0?b.deltaRaw/b.coverageMult:0).toFixed(1)} × ${b.coverageMult.toFixed(2)} × ${draftWeights.wtDeltaCurve} = ${(b.tDelta*mult).toFixed(1)}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`,
       prospectTip: b.tProspect>0
         ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect${b.tFanBias>0?' + Fan team bonus':''}\n${b.prospectAgeScore} × (${b.pp} × ${b.coverageMult.toFixed(2)} / ${b.prospectNormPts}) × ${draftWeights.wtProspect} = ${b.tProspect.toFixed(1)}\nProspect Age @ ${posGroup(p.pos)} <= ${prospectMaxAge}\nYears as prospect = ${prospectMaxAge}+1-${b.ageRaw}=${b.prospectAgeScore}\ncoverage @ ${b.srcN} src = ${b.coverageMult.toFixed(2)}\nELC expected pts @ ${posGroup(p.pos)} = ${b.prospectNormPts}${pw!==1?(pw===0?'\n(ignored — past round decay window)':`\n(× ${pw} round decay = ${(b.tProspect*pw).toFixed(1)})`):''}${b.tFanBias>0?`\nFan team bonus @ ${teamAbbr(b.team)} = ${b.tFanBias.toFixed(1)}`:''}${mult!==1?`\n(× ${mult.toFixed(2)} pos-budget correction)`:''}`
         : 'No prospect bonus',
     };
   }
-  if(p.rankScore2627==null || p.rsCoverageMult2627==null || p.rsDeltaRaw2627==null) return null;
+  if(p.rankScore2627==null || p.rsCoverageMult2627==null || p.rsDeltaRaw2627==null || p.rsPpm2627==null) return null;
   // Tooltip text is reconstructed here from the raw components rankPlayers() stored (coverage/
   // srcN/posMult/youthRaw), not read back from a pre-built string - same architecture Draft
   // Score already used (live from _dsParts). Saves ~319KB of localStorage at 932/2870 players
@@ -3342,8 +3349,12 @@ function _scoreCols2627(p){
   const rawPpPerMRS = p.cap2627>0 ? p.proj2627.blend/p.cap2627 : 0;
   return {
     prod: p.rsProd2627, contract: p.rsContract2627, prospect: p.rsProspect2627, total: p.rankScore2627,
+    conPpm: p.rsPpm2627, conTrj: p.rsTrj2627, conCrv: p.rsCrv2627,
     prodTip: `PPTS × coverage × position\n${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)} × ${p.rsPosMult2627.toFixed(2)} = ${p.rsProd2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
     contractTip: `(PPTS/$M × coverage × wtPPTSM) + (Peak Trajectory × wtAge) + (△ Curve × wtDeltaCurve)\n(${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2627.toFixed(2)} × ${draftWeights.wtPPTSM}) + (${p.rsYouthRaw2627.toFixed(1)} × ${draftWeights.wtAge}) + (${p.rsDeltaRaw2627.toFixed(1)} × ${draftWeights.wtDeltaCurve}) = ${p.rsContract2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2627.toFixed(1)}`,
+    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2627.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
+    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYouthRaw2627.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2627.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2627.toFixed(1)}`,
+    conCrvTip: `△ Curve × coverage × wtDeltaCurve\n${(p.rsCoverageMult2627>0?p.rsDeltaRaw2627/p.rsCoverageMult2627:0).toFixed(1)} × ${p.rsCoverageMult2627.toFixed(2)} × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
     prospectTip: p.rsProspect2627 > 0
       ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2627.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
       : 'No prospect bonus',
@@ -3351,9 +3362,12 @@ function _scoreCols2627(p){
 }
 function _scoreColsHtml2627(p){
   const c = _scoreCols2627(p);
-  if(!c) return `<td style="color:#9ca3af;text-align:right;font-size:10px;padding:9px 2px">—</td><td style="color:#9ca3af;text-align:right;font-size:10px;padding:9px 2px">—</td><td style="color:#9ca3af;text-align:right;font-size:10px;padding:9px 2px">—</td><td style="color:#9ca3af;text-align:right;font-size:10px;padding:9px 2px">—</td>`;
+  if(!c) return `<td style="color:#9ca3af;text-align:right;font-size:10px;padding:9px 2px">—</td>`.repeat(7);
   return `<td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.prodTip)}">${c.prod.toFixed(1)}</td>`+
     `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.contractTip)}">${c.contract.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.conPpmTip)}">${c.conPpm.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.conTrjTip)}">${c.conTrj.toFixed(1)}</td>`+
+    `<td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.conCrvTip)}">${c.conCrv.toFixed(1)}</td>`+
     `<td style="color:#475569;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;cursor:default" title="${esc(c.prospectTip)}">${c.prospect.toFixed(1)}</td>`+
     `<td style="color:#111827;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${c.total.toFixed(1)}</td>`;
 }
@@ -3417,13 +3431,13 @@ function render(){
   // redone below once _dsParts/_dsPartsNormal exist on each row, so resolving to -Infinity here
   // for every player in that case is harmless.
   rows.sort((a,b)=>{
-    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='prod'?(_scoreCols2627(a)?.prod??-Infinity):sortCol==='contract'?(_scoreCols2627(a)?.contract??-Infinity):sortCol==='prospect'?(_scoreCols2627(a)?.prospect??-Infinity):sortCol==='score'?(_scoreCols2627(a)?.total??-Infinity):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):(_sortVal(a,sortCol)??'');
-    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='prod'?(_scoreCols2627(b)?.prod??-Infinity):sortCol==='contract'?(_scoreCols2627(b)?.contract??-Infinity):sortCol==='prospect'?(_scoreCols2627(b)?.prospect??-Infinity):sortCol==='score'?(_scoreCols2627(b)?.total??-Infinity):sortCol==='curvedelta'?(curveDelta(b)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(b)??-Infinity):(_sortVal(b,sortCol)??'');
+    let av = sortCol==='ptsperm'?ppm(a):sortCol==='age'?(calcAge(a)??-1):sortCol==='abp'?(abpMap.get(a.id)??-1):sortCol==='prod'?(_scoreCols2627(a)?.prod??-Infinity):sortCol==='contract'?(_scoreCols2627(a)?.contract??-Infinity):sortCol==='con_ppm'?(_scoreCols2627(a)?.conPpm??-Infinity):sortCol==='con_trj'?(_scoreCols2627(a)?.conTrj??-Infinity):sortCol==='con_crv'?(_scoreCols2627(a)?.conCrv??-Infinity):sortCol==='prospect'?(_scoreCols2627(a)?.prospect??-Infinity):sortCol==='score'?(_scoreCols2627(a)?.total??-Infinity):sortCol==='curvedelta'?(curveDelta(a)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(a)??-Infinity):(_sortVal(a,sortCol)??'');
+    let bv = sortCol==='ptsperm'?ppm(b):sortCol==='age'?(calcAge(b)??-1):sortCol==='abp'?(abpMap.get(b.id)??-1):sortCol==='prod'?(_scoreCols2627(b)?.prod??-Infinity):sortCol==='contract'?(_scoreCols2627(b)?.contract??-Infinity):sortCol==='con_ppm'?(_scoreCols2627(b)?.conPpm??-Infinity):sortCol==='con_trj'?(_scoreCols2627(b)?.conTrj??-Infinity):sortCol==='con_crv'?(_scoreCols2627(b)?.conCrv??-Infinity):sortCol==='prospect'?(_scoreCols2627(b)?.prospect??-Infinity):sortCol==='score'?(_scoreCols2627(b)?.total??-Infinity):sortCol==='curvedelta'?(curveDelta(b)??-Infinity):sortCol==='curvedelta_actual'?(curveDeltaActual(b)??-Infinity):(_sortVal(b,sortCol)??'');
     if(typeof av==='string' || typeof bv==='string'){av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
     return av<bv?-sortDir:av>bv?sortDir:0;
   });
 
-  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAth','ptsDFO','ptsDTZ','ptsDOB','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','prod','contract','prospect','abp','score'].forEach(c=>{
+  ['name','pos','age','team','end2526','start2627','cap','gp2526','pts2526','curvedelta_actual','gp2627','pts2627','ptsAth','ptsDFO','ptsDTZ','ptsDOB','ptsESPN','ptsCBS','ptsNHL','pts','ptsperm','curvedelta','prod','contract','con_ppm','con_trj','con_crv','prospect','abp','score'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el) el.textContent=sortCol===c?(sortDir>0?'↑':'↓'):'';
   });
@@ -3487,7 +3501,7 @@ function render(){
         const toParts = (x) => ({tPPTS:x.tPPTS,tPPTSM:x.tPPTSM,yrsRaw:x.yrsRaw,youthRaw:x.youthRaw,tYouth:x.tYouth,ageRaw:x.ageRaw,tProspect:x.tProspect,round:focusRound2627,srcN:x.srcN,coverageMult:x.coverageMult,tDelta:x.tDelta,tFanBias:x.tFanBias,pressRaw:x.pressRaw,pressMult:x.pressMult,posMult:x.posMult,posAllocMult:x.posAllocMult,tCapUse:x.tCapUse,pp:x.pp,tPPTSBase:x.tPPTSBase,ppPerM:x.ppPerM,deltaRaw:x.deltaRaw,prospectAgeScore:x.prospectAgeScore,prospectNormPts:x.prospectNormPts,team:viewTeam});
         return Object.assign({},p,{_ds,_dsNormal,_dsParts:toParts(b),_dsPartsNormal:toParts(bNormal)});
       });
-    const dsField = sortCol==='prod'?'prod':sortCol==='contract'?'contract':sortCol==='prospect'?'prospect':sortCol==='score'?'total':null;
+    const dsField = sortCol==='prod'?'prod':sortCol==='contract'?'contract':sortCol==='con_ppm'?'conPpm':sortCol==='con_trj'?'conTrj':sortCol==='con_crv'?'conCrv':sortCol==='prospect'?'prospect':sortCol==='score'?'total':null;
     rows = dsField ? allScored.sort((a,b)=>(_scoreCols2627(b)[dsField]-_scoreCols2627(a)[dsField])*-sortDir) : allScored;
   }
 
@@ -3526,12 +3540,7 @@ function render(){
       </td>`}
       <td style="color:#16a34a;text-align:right;font-variant-numeric:tabular-nums">${p.cap2627>0?`<a href="https://puckpedia.com/player/${puckpediaSlug(p.name)}" target="_blank" style="color:inherit;text-decoration:underline dotted">${p.cap2627.toFixed(2)}</a>${p.capMan?'<span style="color:#9ca3af;font-size:9px;vertical-align:super;margin-left:1px" title="Manually overridden">●</span>':''}`:'—'}</td>
       <td style="color:#16a34a;text-align:right">${p.cap2627>0?(p.yrStr2627?_yrStrDisplay(p.yrStr2627):(contractYearStr(p)||'—')):'—'}${p.nextCap2627?`<span style="color:#6366f1;font-size:9px;margin-left:2px;cursor:default" title="Next contract: $${p.nextCap2627.toFixed(2)}M × ${p.nextTerm2627}yr, starting ${p.nextYr2627}">→</span>`:''}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums;border-left:2px solid #f0f0ee">${p.gp2526>0?p.gp2526:'—'}</td>
-      <td style="color:#9ca3af;text-align:right;font-variant-numeric:tabular-nums">${p.pts2526>0?p.pts2526:'—'}</td>
-      ${(()=>{const s=curveDeltaActual(p);if(s===null)return '<td style="text-align:right;border-right:2px solid #e5e7eb">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb" title="25-26 actual vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
-      <td style="color:#1a1a18;text-align:right;font-variant-numeric:tabular-nums">${p.gp2627>0?p.gp2627:'—'}</td>
-      <td style="color:#1a1a18;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb">${p.pts2627>0?p.pts2627:'—'}</td>
-      <td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.ath>0?Math.round(p.proj2627.ath):'—'}</td>
+      <td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px;border-left:2px solid #e5e7eb">${p.proj2627.ath>0?Math.round(p.proj2627.ath):'—'}</td>
       <td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.dfo>0?Math.round(p.proj2627.dfo):'—'}</td>
       <td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.dtz>0?Math.round(p.proj2627.dtz):'—'}</td>
       <td style="color:#185FA5;text-align:right;font-variant-numeric:tabular-nums;font-size:10px;padding:9px 2px">${p.proj2627.dob>0?Math.round(p.proj2627.dob):'—'}</td>
@@ -3542,6 +3551,8 @@ function render(){
       <td style="color:#0d9488;text-align:right;font-variant-numeric:tabular-nums">${p.proj2627.blend>0&&p.cap2627>0?(p.proj2627.blend/p.cap2627).toFixed(1):'—'}</td>
       ${(()=>{const s=curveDelta(p);if(s===null)return '<td style="text-align:right">—</td>';const sign=s>=0?'+':'';const col=curveSurplusColor(s);return `<td style="color:${col};font-weight:600;font-size:11px;text-align:right;font-variant-numeric:tabular-nums" title="vs avg ${posGroup(p.pos)} curve: ${sign}${s.toFixed(1)} pts">${sign}${Math.round(s)}</td>`;})()}
       <td style="text-align:right;border-right:2px solid #e5e7eb">${(()=>{const n=abpMap.get(p.id);if(n===null||n===undefined)return'—';const c=n===0?'#16a34a':n<=3?'#1a1a18':n<=7?'#d97706':'#dc2626';return`<button onclick="showABPModal(${p.id},'2627')" style="color:${c};font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline dotted">${n}</button>`;})()}</td>
+      <td style="color:#1a1a18;text-align:right;font-variant-numeric:tabular-nums">${p.gp2627>0?p.gp2627:'—'}</td>
+      <td style="color:#1a1a18;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;border-right:2px solid #e5e7eb">${p.pts2627>0?p.pts2627:'—'}</td>
       ${_scoreColsHtml2627(p)}
       <td style="text-align:right;white-space:nowrap">
         <button class="edit-btn" onclick="openEdit(${p.id})" title="Edit">✏</button>
