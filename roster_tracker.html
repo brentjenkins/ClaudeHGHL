@@ -5577,7 +5577,13 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     const key = normName(stub.name).toLowerCase();
     if([..._nameVariants(stub.name)].some(v => vpMatched.has(v))) continue;
     const team = _dictLookup(stub.name, predropRoster) || null;
-    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, pts:0, [startField]:team, ...stubExtraFields });
+    // proj2324/proj2425/proj2526 must always be objects, never undefined — every real player
+    // record gets this guarantee from load()'s migration, but these virtual stub records are
+    // built fresh here and skip that entirely. Without it, ppts2X2Yblend(p) (called on every
+    // team roster player via _runAlgoDrops and on every player via computeABPFn) crashes on
+    // `p.proj2324.ath` the moment a real unmatched PREDROP_STUBS entry is hit — found live
+    // 2026-08-19 running compareDrops2324() against real data.
+    vp.push({ id:`stub_${key}`, name:stub.name, pos:stub.pos, cap:0, pts:0, proj2324:{}, proj2425:{}, proj2526:{}, [startField]:team, ...stubExtraFields });
   }
   const teams = [...new Set(vp.map(p => p[startField]).filter(Boolean))].sort();
   if(!teams.length){ toast(`No ${season} team assignments found.`); return; }
