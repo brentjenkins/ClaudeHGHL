@@ -1262,15 +1262,28 @@ def _espn_fetch_projections(season_year: int):
 
 @app.route("/espn-projections")
 def espn_projections():
-    """Fetch ESPN 2026-27 HGHL fantasy-point projections."""
-    players, errors = _espn_fetch_projections(2026)
+    """Fetch ESPN 2026-27 HGHL fantasy-point projections.
+
+    ESPN's kona_player_info seasonId is the season's END year (season/2027 = the
+    2026-27 season), not its start year. This previously requested seasons/2026,
+    which returns that *season's own preseason projection for 2025-26* (statSourceId=1,
+    seasonId=2026) — a year-old, pre-breakout number frozen at last preseason, not a
+    live current projection. Confirmed live 2026-08-19: Celebrini showed 79 pts (the
+    stale 2025-26 preseason projection) instead of ESPN's actual current 108 pt
+    projection for 26-27, found at seasons/2027.
+    """
+    players, errors = _espn_fetch_projections(2027)
     return jsonify({"ok": True, "players": players, "count": len(players), "errors": errors})
 
 
 @app.route("/espn-projections-2526")
 def espn_projections_2526():
-    """Fetch ESPN 2025-26 HGHL fantasy-point projections (historical)."""
-    players, errors = _espn_fetch_projections(2025)
+    """Fetch ESPN 2025-26 HGHL fantasy-point projections (historical).
+
+    Same seasonId-is-end-year fix as espn_projections() above — the 2025-26 season
+    is seasons/2026, not seasons/2025.
+    """
+    players, errors = _espn_fetch_projections(2026)
     return jsonify({"ok": True, "players": players, "count": len(players), "errors": errors})
 
 
