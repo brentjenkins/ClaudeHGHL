@@ -5618,7 +5618,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
       const base = normName(p.name).toLowerCase(), pg = posGroup(p.pos);
       return (predropRoster[`${base}_${pg}`] ?? _dictLookup(p.name, predropRoster) ?? null) === team;
     });
-    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], algoKeptReacquired=[], injuryExcused=[], elcMandatory=[], injuryMandatory=[];
+    const correctDrops=[], correctKeeps=[], algoDroppedShouldKeep=[], algoDroppedVindicated=[], algoKeptShouldDrop=[], algoKeptReacquired=[], elcMandatory=[], injuryMandatory=[];
 
     for(const p of teamPlayers){
       const key = normName(p.name).toLowerCase();
@@ -5645,20 +5645,21 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
         else algoDroppedShouldKeep.push(label);
       }
       else if(simKept && !actuallyKept){
-        if(injurySet.has(key)) injuryExcused.push(label);
         // Mirror of the drop-side vindication: did the SAME team that dropped this
         // player (against the algo's advice) re-acquire them later that season?
-        else if(_wasReacquired(midseasonReadds, postdropRoster, team, p.name, p.pos)) algoKeptReacquired.push(label);
+        // (No injurySet check here — Pass 2 of _runAlgoDrops force-drops everyone in
+        // injurySet unconditionally before any value judgment, so simKept can never be
+        // true for an injury-listed player; that branch was dead, confirmed 2026-08-19.)
+        if(_wasReacquired(midseasonReadds, postdropRoster, team, p.name, p.pos)) algoKeptReacquired.push(label);
         else algoKeptShouldDrop.push(label);
       }
     }
 
     const correct = correctDrops.length + correctKeeps.length + elcMandatory.length + injuryMandatory.length;
     const correctOutcome = correct + algoDroppedVindicated.length + algoKeptReacquired.length;
-    const excused = injuryExcused.length;
-    const total = teamPlayers.length - excused;
+    const total = teamPlayers.length;
     totalCorrect += correct; totalAll += total; totalCorrectOutcome += correctOutcome;
-    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, algoKeptReacquired, injuryExcused, elcMandatory, injuryMandatory, correct, correctOutcome, total});
+    teamResults.push({team, correctDrops, correctKeeps, algoDroppedShouldKeep, algoDroppedVindicated, algoKeptShouldDrop, algoKeptReacquired, elcMandatory, injuryMandatory, correct, correctOutcome, total});
   }
   window[resultsKey] = teamResults;
 
@@ -5666,7 +5667,6 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
   const pctOutcome = totalAll>0 ? Math.round(100*totalCorrectOutcome/totalAll) : 0;
   const totalVindicated = teamResults.reduce((s,r)=>s+r.algoDroppedVindicated.length, 0);
   const totalReacquired = teamResults.reduce((s,r)=>s+r.algoKeptReacquired.length, 0);
-  const totalExcused = teamResults.reduce((s,r)=>s+r.injuryExcused.length, 0);
   const totalELC = teamResults.reduce((s,r)=>s+r.elcMandatory.length, 0);
   const totalInjuryMandatory = teamResults.reduce((s,r)=>s+r.injuryMandatory.length, 0);
 
@@ -5676,7 +5676,6 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     `Target: <strong>${ptsTarget}pts</strong>` +
     (totalELC ? ` &nbsp;|&nbsp; <span style="color:#6366f1">${totalELC} ELC rule</span>` : '') +
     (totalInjuryMandatory ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalInjuryMandatory} injury/demotion rule</span>` : '') +
-    (totalExcused ? ` &nbsp;|&nbsp; <span style="color:#6b7280">${totalExcused} injury-excused</span>` : '') +
     ((totalVindicated||totalReacquired) ? ` &nbsp;|&nbsp; <span style="color:#0891b2">Outcome-adjusted: ${totalCorrectOutcome}/${totalAll} (${pctOutcome}%) — ${totalVindicated} vindicated, ${totalReacquired} reacquired</span>` : '');
 
   const rows = teamResults.map(r => {
@@ -5684,7 +5683,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     const badgeColor = pct2>=80?'#16a34a':pct2>=60?'#d97706':'#dc2626';
     let html = `<div style="margin-bottom:1.25rem;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">`;
     const algoDropCount = r.correctDrops.length + r.algoDroppedShouldKeep.length + r.algoDroppedVindicated.length + r.elcMandatory.length + r.injuryMandatory.length;
-    const actualDropCount = r.correctDrops.length + r.algoKeptShouldDrop.length + r.algoKeptReacquired.length + r.injuryExcused.length;
+    const actualDropCount = r.correctDrops.length + r.algoKeptShouldDrop.length + r.algoKeptReacquired.length;
     html += `<div style="padding:8px 12px;background:#f1f5f9;display:flex;justify-content:space-between;align-items:center">`;
     html += `<div><strong style="font-size:13px">${r.team}</strong><div style="font-size:11px;color:#6b7280;margin-top:2px">Algo Drops (${algoDropCount}) &nbsp;|&nbsp; Actual Drops (${actualDropCount})</div></div>`;
     html += `<span style="font-size:12px;color:${badgeColor};font-weight:600">${r.correct}/${r.total} (${pct2}%)</span>`;
@@ -5702,8 +5701,7 @@ function _runCompareDrops({ season, guards, predropRoster, postdropRoster, predr
     html += section('Algo kept — should have dropped', '#d97706', '△', r.algoKeptShouldDrop);
     html += section('Algo kept — dropped, but re-acquired by same team later (vindicated)', '#0891b2', '⏱', r.algoKeptReacquired);
     html += section('Dropped by rule — ELC', '#6366f1', '📋', r.elcMandatory);
-    html += section('Dropped by rule — Injury/Demotion', '#6b7280', '🏥', r.injuryMandatory);
-    html += section('Dropped for injury (excused)', '#9ca3af', '🏥', r.injuryExcused);
+    html += section('Dropped for Injury/Demotion', '#6b7280', '🏥', r.injuryMandatory);
     // Omit correctKeeps — too verbose; they're the bulk and uninteresting
     html += `</div></div>`;
     return html;
