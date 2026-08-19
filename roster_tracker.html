@@ -2114,8 +2114,8 @@ function rankPlayers(){
   const curveFns2627RS = _buildCurveFns(players.filter(p => p.start2627 && p.cap2627 > 0), p => p.cap2627, p => p.proj2627.blend);
 
   for(const p of players){
-    delete p.rank2627; delete p.rsProd2627; delete p.rsContract2627; delete p.rsProspect2627; delete p.rankScore2627;
-    delete p.rsCoverageMult2627; delete p.rsSrcN2627; delete p.rsPosMult2627; delete p.rsYouthRaw2627; delete p.rsDeltaRaw2627;
+    delete p.rank2627; delete p.rsProd2627; delete p.rsCon2627; delete p.rsPros2627; delete p.rankScore2627;
+    delete p.rsCovM2627; delete p.rsSrcN2627; delete p.rsPosM2627; delete p.rsYRaw2627; delete p.rsDRaw2627;
     delete p.rsPpm2627; delete p.rsTrj2627; delete p.rsCrv2627; delete p.rsCrvBase2627;
   }
   const eligible = players.filter(p => p.cap2627 > 0 && p.proj2627.blend > 0);
@@ -2138,15 +2138,15 @@ function rankPlayers(){
       // outside Draft Mode, including the hover tooltip text (see _scoreCols2627, which
       // reconstructs the tooltip from the raw fields below at hover time - same architecture
       // Draft Score already used, live from _dsParts).
-      p.rsProd2627 = r.prod; p.rsContract2627 = r.contract; p.rsProspect2627 = r.prospect; p.rankScore2627 = r.score;
+      p.rsProd2627 = r.prod; p.rsCon2627 = r.contract; p.rsPros2627 = r.prospect; p.rankScore2627 = r.score;
       // Raw components only, not pre-built tooltip strings (see _scoreCols2627, which
       // reconstructs the tooltip text from these at hover time - same as Draft Score already
       // does from live _dsParts) - keeps localStorage cost to a handful of small numbers per
       // player instead of full formatted strings.
-      p.rsCoverageMult2627 = r.coverageMult; p.rsSrcN2627 = r.srcN; p.rsPosMult2627 = r.posMult; p.rsYouthRaw2627 = r.youthRaw; p.rsDeltaRaw2627 = r.deltaRaw;
+      p.rsCovM2627 = r.coverageMult; p.rsSrcN2627 = r.srcN; p.rsPosM2627 = r.posMult; p.rsYRaw2627 = r.youthRaw; p.rsDRaw2627 = r.deltaRaw;
       // Contract's 3 weighted sub-scores, stored individually so PpM/Trj/Crv columns can be
-      // sorted on and always sum exactly to rsContract2627 above (no live-weight recompute drift).
-      p.rsPpm2627 = r.ppm; p.rsTrj2627 = r.trj; p.rsCrv2627 = r.crv; p.rsCrvBase2627 = r.curveBase;
+      // sorted on and always sum exactly to rsCon2627 above (no live-weight recompute drift).
+      p.rsPpm2627 = r.ppm; p.rsTrj2627 = r.trj; p.rsCrv2627 = r.crv;
     });
 
   lsSet(LS_PLAYERS, players);
@@ -2305,7 +2305,7 @@ function load(){
       'ppToi2526','ppToi2425','finalRoster2526',
       'fantasyTeam','fantasyTeam2425','fantasyTeam2526','sim2425','sim2526',
       // Rank Score's 3 pre-built tooltip strings (2026-08-17) — replaced by 4 small raw-number
-      // fields (rsCoverageMult2627/rsSrcN2627/rsPosMult2627/rsYouthRaw2627) that the tooltip is
+      // fields (rsCovM2627/rsSrcN2627/rsPosM2627/rsYRaw2627) that the tooltip is
       // now reconstructed from at hover time, same as Draft Score already did. Was ~319KB of
       // the 422KB Score-breakdown footprint (167+88.7+63.3KB for the 3 strings vs ~103KB for
       // all 4 real number fields combined) — found live via a user-reported 4.7MB storage jump.
@@ -2316,7 +2316,23 @@ function load(){
       // QuotaExceededError on rankPlayers2324's lsSet. Also strips any pre-nested-object legacy
       // flat remnants that never made it through the projGp2425_athletic->projGp2425_ath rename.
       'projGp2425','projGp2526','projGp2425_athletic','projGp2526_athletic',
-      'projGp2425_ath','projGp2425_dtz','projGp2526_ath','projGp2526_dtz','projGp2526_espn']){
+      'projGp2425_ath','projGp2425_dtz','projGp2526_ath','projGp2526_dtz','projGp2526_espn',
+      // rsCrvBase2627/2526/2425/2324 (2026-08-19) — redundant with rsCoverageMult/rsDeltaRaw,
+      // which already reconstruct it exactly via the same back-solve _computeRankScore used to
+      // store it (verified by rankscore_rounding_test.js's back-solve identity check). Tooltips
+      // now recompute it inline at hover time instead of reading a stored 4th number.
+      'rsCrvBase2627','rsCrvBase2526','rsCrvBase2425','rsCrvBase2324',
+      // rsContract/rsProspect/rsCoverageMult/rsPosMult/rsYouthRaw/rsDeltaRaw (2026-08-19) —
+      // renamed to rsCon/rsPros/rsCovM/rsPosM/rsYRaw/rsDRaw (per season) to cut the key-name-
+      // repetition cost of ~52 field instances x ~929 populated players x 4 seasons. Values are
+      // identical under the new names post-rerank; these old-named copies are just dead weight
+      // until the user's next "Rank Players" click, so strip them here instead of waiting.
+      'rsContract2627','rsContract2526','rsContract2425','rsContract2324',
+      'rsProspect2627','rsProspect2526','rsProspect2425','rsProspect2324',
+      'rsCoverageMult2627','rsCoverageMult2526','rsCoverageMult2425','rsCoverageMult2324',
+      'rsPosMult2627','rsPosMult2526','rsPosMult2425','rsPosMult2324',
+      'rsYouthRaw2627','rsYouthRaw2526','rsYouthRaw2425','rsYouthRaw2324',
+      'rsDeltaRaw2627','rsDeltaRaw2526','rsDeltaRaw2425','rsDeltaRaw2324']){
       if(p[deadField] !== undefined){ delete p[deadField]; migrated = true; }
     }
     // Consolidate flat proj{season}_{source} / projGp{season}_{source} fields into nested
@@ -2387,6 +2403,14 @@ function load(){
     if(p.rank2324          === undefined){ p.rank2324          = null; migrated = true; }
   }
   if(migrated) lsSet(LS_PLAYERS, players);
+  // One-time compaction of any already-cached LS_SIGNINGS_RAW (2026-08-19) — collapses
+  // nickname-alias duplicate keys immediately on load, rather than waiting for the next
+  // signings sync (which is the only other place setSigningsRaw's compaction runs).
+  const storedSignings = lsGet(LS_SIGNINGS_RAW);
+  if(storedSignings){
+    const {compacted, changed} = _compactSigningsRaw(storedSignings);
+    if(changed) lsSet(LS_SIGNINGS_RAW, compacted);
+  }
   assignCapFromSignings();
   applyManualCaps2526();
   applyManualCaps2425();
@@ -2641,6 +2665,50 @@ function updateSigningsBtn(){
   document.querySelectorAll('.signings-all-btn').forEach(b => b.title = title);
 }
 
+// Nickname-alias duplicate keys — yahoo_proxy.py's /signings-all writes each contract array
+// under both the formal-name key and a nickname key (e.g. "jj peterka_F" and "john-jason
+// peterka_F"), so lookups succeed regardless of which spelling a live player record uses.
+// The two arrays are byte-identical, so storing both in full wastes real space (~150KB
+// across ~490 duplicate keys, found 2026-08-19 investigating hghl_signings_raw_v1's growth).
+// Collapses duplicates to a tiny {__alias: canonicalKey} pointer instead. This is purely a
+// storage-layer detail — every consumer reads through getSigningsRaw(), which expands
+// pointers back into real arrays before any business logic ever sees them, so nothing
+// outside this pair of functions (plus setSigningsRaw) needs to know pointers exist.
+function _compactSigningsRaw(raw){
+  const fp = arr => Array.isArray(arr) ? arr.map(c => `${c.sign_date}|${c.exp}|${c.cap}`).join(',') : null;
+  const byFp = new Map();
+  for(const k of Object.keys(raw)){
+    const f = fp(raw[k]);
+    if(f == null) continue; // already a pointer (already-compacted input) - leave as-is
+    if(!byFp.has(f)) byFp.set(f, []);
+    byFp.get(f).push(k);
+  }
+  let changed = false;
+  const compacted = {...raw};
+  for(const ks of byFp.values()){
+    if(ks.length < 2) continue;
+    const canonical = ks[0];
+    for(let i=1;i<ks.length;i++){ compacted[ks[i]] = {__alias: canonical}; changed = true; }
+  }
+  return {compacted, changed};
+}
+// Reverses _compactSigningsRaw's pointer format back into real contract arrays.
+function _expandSigningsRaw(raw){
+  if(!raw) return raw;
+  const out = {};
+  for(const k of Object.keys(raw)){
+    const v = raw[k];
+    out[k] = (v && !Array.isArray(v) && v.__alias) ? raw[v.__alias] : v;
+  }
+  return out;
+}
+function getSigningsRaw(){
+  return _expandSigningsRaw(lsGet(LS_SIGNINGS_RAW));
+}
+function setSigningsRaw(raw){
+  lsSet(LS_SIGNINGS_RAW, _compactSigningsRaw(raw).compacted);
+}
+
 // Merge incremental signings into the cached raw store.
 // Deduplicates by (exp + start_yr): incoming overwrites existing for the same contract.
 function _mergeSigningsRaw(existing, incoming){
@@ -2704,7 +2772,7 @@ function _findNextContract(contracts, curContract, asOfDate){
 // Always writes cap2425/cap2526 when the player is in the signings store —
 // null means "no contract active that season" (avoids stale / cascaded wrong values).
 function assignCapFromSignings(){
-  const raw = lsGet(LS_SIGNINGS_RAW);
+  const raw = getSigningsRaw();
   if(!raw) return;
   for(const p of players){
     // Alias/override fallback: a player's live-pool name and PuckPedia's own spelling can
@@ -2832,9 +2900,9 @@ async function syncSigningsAll(e){
     // actually covers 23-24/24-25). Replacing the store here silently discarded any
     // non-current contract "📜 Historical Caps" had merged in, regressing cap2324/
     // cap2425 to null on the next reload for anyone who's since re-signed.
-    const existing = lsGet(LS_SIGNINGS_RAW) || {};
+    const existing = getSigningsRaw() || {};
     const raw = _mergeSigningsRaw(existing, d.contracts);
-    lsSet(LS_SIGNINGS_RAW, raw);
+    setSigningsRaw(raw);
 
     // Apply cap hits to all existing players
     let matched = 0;
@@ -3011,9 +3079,9 @@ async function fetchHistoricalCaps(){
     if(d.error) throw new Error(d.error);
 
     // Merge into LS_SIGNINGS_RAW
-    const existing = lsGet(LS_SIGNINGS_RAW) || {};
+    const existing = getSigningsRaw() || {};
     const merged   = _mergeSigningsRaw(existing, d.contracts);
-    lsSet(LS_SIGNINGS_RAW, merged);
+    setSigningsRaw(merged);
 
     // Re-assign caps from the updated store
     assignCapFromSignings();
@@ -3361,7 +3429,7 @@ function computeDrops(allPlayers){
 // both the row-cell renderer and the column sort so the two can never drift apart. In Draft
 // Mode this decomposes the live per-render Draft Score (_dsParts/_dsPartsNormal, matching
 // draftSubMode); outside Draft Mode it reads the static Rank Score snapshot rankPlayers() last
-// wrote (rsProd2627/rsContract2627/rsProspect2627/rankScore2627 — null until that button has
+// wrote (rsProd2627/rsCon2627/rsPros2627/rankScore2627 — null until that button has
 // been clicked, same as rank2627 always was). posAllocMult (bestAvail-mode-only, multiplicative)
 // is distributed across all three buckets proportionally so they always sum exactly to Score,
 // rather than only being visible as an asterisk on the total like the tooltip does it.
@@ -3387,7 +3455,7 @@ function _scoreCols2627(p){
         : 'No prospect bonus',
     };
   }
-  if(p.rankScore2627==null || p.rsCoverageMult2627==null || p.rsDeltaRaw2627==null || p.rsPpm2627==null) return null;
+  if(p.rankScore2627==null || p.rsCovM2627==null || p.rsDRaw2627==null || p.rsPpm2627==null) return null;
   // Tooltip text is reconstructed here from the raw components rankPlayers() stored (coverage/
   // srcN/posMult/youthRaw), not read back from a pre-built string - same architecture Draft
   // Score already used (live from _dsParts). Saves ~319KB of localStorage at 932/2870 players
@@ -3400,15 +3468,15 @@ function _scoreCols2627(p){
   const prospectNormPtsRS = _elcExp(posLetterRS, draftWeights);
   const rawPpPerMRS = p.cap2627>0 ? p.proj2627.blend/p.cap2627 : 0;
   return {
-    prod: p.rsProd2627, contract: p.rsContract2627, prospect: p.rsProspect2627, total: p.rankScore2627,
+    prod: p.rsProd2627, contract: p.rsCon2627, prospect: p.rsPros2627, total: p.rankScore2627,
     conPpm: p.rsPpm2627, conTrj: p.rsTrj2627, conCrv: p.rsCrv2627,
-    prodTip: `PPTS × coverage × position\n${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)} × ${p.rsPosMult2627.toFixed(2)} = ${p.rsProd2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
-    contractTip: `CON = PpM + Trj + Crv\n${p.rsContract2627.toFixed(1)} = ${p.rsPpm2627.toFixed(1)} + ${p.rsTrj2627.toFixed(1)} + ${p.rsCrv2627.toFixed(1)}`,
-    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2627.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
-    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYouthRaw2627.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2627.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2627.toFixed(1)}`,
-    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)}) − ${(p.rsCrvBase2627??0).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}`,
-    prospectTip: p.rsProspect2627 > 0
-      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${p.proj2627.blend} × ${p.rsCoverageMult2627.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2627.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCoverageMult2627.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
+    prodTip: `PPTS × coverage × position\n${p.proj2627.blend} × ${p.rsCovM2627.toFixed(2)} × ${p.rsPosM2627.toFixed(2)} = ${p.rsProd2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCovM2627.toFixed(2)}`,
+    contractTip: `CON = PpM + Trj + Crv\n${p.rsCon2627.toFixed(1)} = ${p.rsPpm2627.toFixed(1)} + ${p.rsTrj2627.toFixed(1)} + ${p.rsCrv2627.toFixed(1)}`,
+    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCovM2627.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCovM2627.toFixed(2)}`,
+    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYRaw2627.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2627.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYRaw2627.toFixed(1)}`,
+    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${p.proj2627.blend} × ${p.rsCovM2627.toFixed(2)}) − ${(p.proj2627.blend*p.rsCovM2627-p.rsDRaw2627).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2627.toFixed(1)}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCovM2627.toFixed(2)}`,
+    prospectTip: p.rsPros2627 > 0
+      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${p.proj2627.blend} × ${p.rsCovM2627.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsPros2627.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2627} src = ${p.rsCovM2627.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
       : 'No prospect bonus',
   };
 }
@@ -3448,7 +3516,7 @@ function _scoreCols2526(p){
         : 'No prospect bonus',
     };
   }
-  if(p.rankScore2526==null || p.rsCoverageMult2526==null || p.rsDeltaRaw2526==null || p.rsPpm2526==null) return null;
+  if(p.rankScore2526==null || p.rsCovM2526==null || p.rsDRaw2526==null || p.rsPpm2526==null) return null;
   const posLetterRS = posGroup(p.pos);
   const age = calcAge2526(p) ?? 99;
   const prospectMaxAgeRS = PROSPECT_MAX_AGE[posLetterRS] ?? 22;
@@ -3456,15 +3524,15 @@ function _scoreCols2526(p){
   const prospectNormPtsRS = _elcExp(posLetterRS, draftWeights);
   const rawPpPerMRS = getCap2526(p)>0 ? ppts2526blend(p)/getCap2526(p) : 0;
   return {
-    prod: p.rsProd2526, contract: p.rsContract2526, prospect: p.rsProspect2526, total: p.rankScore2526,
+    prod: p.rsProd2526, contract: p.rsCon2526, prospect: p.rsPros2526, total: p.rankScore2526,
     conPpm: p.rsPpm2526, conTrj: p.rsTrj2526, conCrv: p.rsCrv2526,
-    prodTip: `PPTS × coverage × position\n${ppts2526blend(p)} × ${p.rsCoverageMult2526.toFixed(2)} × ${p.rsPosMult2526.toFixed(2)} = ${p.rsProd2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}`,
-    contractTip: `CON = PpM + Trj + Crv\n${p.rsContract2526.toFixed(1)} = ${p.rsPpm2526.toFixed(1)} + ${p.rsTrj2526.toFixed(1)} + ${p.rsCrv2526.toFixed(1)}`,
-    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2526.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}`,
-    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYouthRaw2526.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2526.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2526.toFixed(1)}`,
-    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${ppts2526blend(p)} × ${p.rsCoverageMult2526.toFixed(2)}) − ${(p.rsCrvBase2526??0).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}`,
-    prospectTip: p.rsProspect2526 > 0
-      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2526blend(p)} × ${p.rsCoverageMult2526.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2526.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCoverageMult2526.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
+    prodTip: `PPTS × coverage × position\n${ppts2526blend(p)} × ${p.rsCovM2526.toFixed(2)} × ${p.rsPosM2526.toFixed(2)} = ${p.rsProd2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCovM2526.toFixed(2)}`,
+    contractTip: `CON = PpM + Trj + Crv\n${p.rsCon2526.toFixed(1)} = ${p.rsPpm2526.toFixed(1)} + ${p.rsTrj2526.toFixed(1)} + ${p.rsCrv2526.toFixed(1)}`,
+    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCovM2526.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCovM2526.toFixed(2)}`,
+    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYRaw2526.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2526.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYRaw2526.toFixed(1)}`,
+    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${ppts2526blend(p)} × ${p.rsCovM2526.toFixed(2)}) − ${(ppts2526blend(p)*p.rsCovM2526-p.rsDRaw2526).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2526.toFixed(1)}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCovM2526.toFixed(2)}`,
+    prospectTip: p.rsPros2526 > 0
+      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2526blend(p)} × ${p.rsCovM2526.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsPros2526.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2526} src = ${p.rsCovM2526.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
       : 'No prospect bonus',
   };
 }
@@ -3501,7 +3569,7 @@ function _scoreCols2425(p){
         : 'No prospect bonus',
     };
   }
-  if(p.rankScore2425==null || p.rsCoverageMult2425==null || p.rsDeltaRaw2425==null || p.rsPpm2425==null) return null;
+  if(p.rankScore2425==null || p.rsCovM2425==null || p.rsDRaw2425==null || p.rsPpm2425==null) return null;
   const posLetterRS = posGroup(p.pos);
   const age = calcAge2425(p) ?? 99;
   const prospectMaxAgeRS = PROSPECT_MAX_AGE[posLetterRS] ?? 22;
@@ -3509,15 +3577,15 @@ function _scoreCols2425(p){
   const prospectNormPtsRS = _elcExp(posLetterRS, draftWeights);
   const rawPpPerMRS = getCap2425(p)>0 ? ppts2425blend(p)/getCap2425(p) : 0;
   return {
-    prod: p.rsProd2425, contract: p.rsContract2425, prospect: p.rsProspect2425, total: p.rankScore2425,
+    prod: p.rsProd2425, contract: p.rsCon2425, prospect: p.rsPros2425, total: p.rankScore2425,
     conPpm: p.rsPpm2425, conTrj: p.rsTrj2425, conCrv: p.rsCrv2425,
-    prodTip: `PPTS × coverage × position\n${ppts2425blend(p)} × ${p.rsCoverageMult2425.toFixed(2)} × ${p.rsPosMult2425.toFixed(2)} = ${p.rsProd2425.toFixed(1)}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCoverageMult2425.toFixed(2)}`,
-    contractTip: `CON = PpM + Trj + Crv\n${p.rsContract2425.toFixed(1)} = ${p.rsPpm2425.toFixed(1)} + ${p.rsTrj2425.toFixed(1)} + ${p.rsCrv2425.toFixed(1)}`,
-    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2425.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2425.toFixed(1)}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCoverageMult2425.toFixed(2)}`,
-    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYouthRaw2425.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2425.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2425.toFixed(1)}`,
-    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${ppts2425blend(p)} × ${p.rsCoverageMult2425.toFixed(2)}) − ${(p.rsCrvBase2425??0).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2425.toFixed(1)}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCoverageMult2425.toFixed(2)}`,
-    prospectTip: p.rsProspect2425 > 0
-      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2425blend(p)} × ${p.rsCoverageMult2425.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2425.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCoverageMult2425.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
+    prodTip: `PPTS × coverage × position\n${ppts2425blend(p)} × ${p.rsCovM2425.toFixed(2)} × ${p.rsPosM2425.toFixed(2)} = ${p.rsProd2425.toFixed(1)}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCovM2425.toFixed(2)}`,
+    contractTip: `CON = PpM + Trj + Crv\n${p.rsCon2425.toFixed(1)} = ${p.rsPpm2425.toFixed(1)} + ${p.rsTrj2425.toFixed(1)} + ${p.rsCrv2425.toFixed(1)}`,
+    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCovM2425.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2425.toFixed(1)}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCovM2425.toFixed(2)}`,
+    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYRaw2425.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2425.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYRaw2425.toFixed(1)}`,
+    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${ppts2425blend(p)} × ${p.rsCovM2425.toFixed(2)}) − ${(ppts2425blend(p)*p.rsCovM2425-p.rsDRaw2425).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2425.toFixed(1)}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCovM2425.toFixed(2)}`,
+    prospectTip: p.rsPros2425 > 0
+      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2425blend(p)} × ${p.rsCovM2425.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsPros2425.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2425} src = ${p.rsCovM2425.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
       : 'No prospect bonus',
   };
 }
@@ -3554,7 +3622,7 @@ function _scoreCols2324(p){
         : 'No prospect bonus',
     };
   }
-  if(p.rankScore2324==null || p.rsCoverageMult2324==null || p.rsDeltaRaw2324==null || p.rsPpm2324==null) return null;
+  if(p.rankScore2324==null || p.rsCovM2324==null || p.rsDRaw2324==null || p.rsPpm2324==null) return null;
   const posLetterRS = posGroup(p.pos);
   const age = calcAge2324(p) ?? 99;
   const prospectMaxAgeRS = PROSPECT_MAX_AGE[posLetterRS] ?? 22;
@@ -3562,15 +3630,15 @@ function _scoreCols2324(p){
   const prospectNormPtsRS = _elcExp(posLetterRS, draftWeights);
   const rawPpPerMRS = getCap2324(p)>0 ? ppts2324blend(p)/getCap2324(p) : 0;
   return {
-    prod: p.rsProd2324, contract: p.rsContract2324, prospect: p.rsProspect2324, total: p.rankScore2324,
+    prod: p.rsProd2324, contract: p.rsCon2324, prospect: p.rsPros2324, total: p.rankScore2324,
     conPpm: p.rsPpm2324, conTrj: p.rsTrj2324, conCrv: p.rsCrv2324,
-    prodTip: `PPTS × coverage × position\n${ppts2324blend(p)} × ${p.rsCoverageMult2324.toFixed(2)} × ${p.rsPosMult2324.toFixed(2)} = ${p.rsProd2324.toFixed(1)}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCoverageMult2324.toFixed(2)}`,
-    contractTip: `CON = PpM + Trj + Crv\n${p.rsContract2324.toFixed(1)} = ${p.rsPpm2324.toFixed(1)} + ${p.rsTrj2324.toFixed(1)} + ${p.rsCrv2324.toFixed(1)}`,
-    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCoverageMult2324.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2324.toFixed(1)}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCoverageMult2324.toFixed(2)}`,
-    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYouthRaw2324.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2324.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYouthRaw2324.toFixed(1)}`,
-    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${ppts2324blend(p)} × ${p.rsCoverageMult2324.toFixed(2)}) − ${(p.rsCrvBase2324??0).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2324.toFixed(1)}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCoverageMult2324.toFixed(2)}`,
-    prospectTip: p.rsProspect2324 > 0
-      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2324blend(p)} × ${p.rsCoverageMult2324.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsProspect2324.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCoverageMult2324.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
+    prodTip: `PPTS × coverage × position\n${ppts2324blend(p)} × ${p.rsCovM2324.toFixed(2)} × ${p.rsPosM2324.toFixed(2)} = ${p.rsProd2324.toFixed(1)}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCovM2324.toFixed(2)}`,
+    contractTip: `CON = PpM + Trj + Crv\n${p.rsCon2324.toFixed(1)} = ${p.rsPpm2324.toFixed(1)} + ${p.rsTrj2324.toFixed(1)} + ${p.rsCrv2324.toFixed(1)}`,
+    conPpmTip: `PPTS/$M × coverage × wtPPTSM\n${rawPpPerMRS.toFixed(1)} × ${p.rsCovM2324.toFixed(2)} × ${draftWeights.wtPPTSM} = ${p.rsPpm2324.toFixed(1)}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCovM2324.toFixed(2)}`,
+    conTrjTip: `Peak Trajectory × wtAge\n${p.rsYRaw2324.toFixed(1)} × ${draftWeights.wtAge} = ${p.rsTrj2324.toFixed(1)}\nPeak Trajectory @ age ${age} = ${p.rsYRaw2324.toFixed(1)}`,
+    conCrvTip: `((PPTS × coverage) − curve baseline) × wtDeltaCurve\n((${ppts2324blend(p)} × ${p.rsCovM2324.toFixed(2)}) − ${(ppts2324blend(p)*p.rsCovM2324-p.rsDRaw2324).toFixed(1)}) × ${draftWeights.wtDeltaCurve} = ${p.rsCrv2324.toFixed(1)}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCovM2324.toFixed(2)}`,
+    prospectTip: p.rsPros2324 > 0
+      ? `Years × (PPTS × coverage / ELC expected pts) × wtProspect\n${prospectAgeScoreRS} × (${ppts2324blend(p)} × ${p.rsCovM2324.toFixed(2)} / ${prospectNormPtsRS}) × ${draftWeights.wtProspect} = ${p.rsPros2324.toFixed(1)}\nProspect Age @ ${posLetterRS} <= ${prospectMaxAgeRS}\nYears as prospect = ${prospectMaxAgeRS}+1-${age}=${prospectAgeScoreRS}\ncoverage @ ${p.rsSrcN2324} src = ${p.rsCovM2324.toFixed(2)}\nELC expected pts @ ${posLetterRS} = ${prospectNormPtsRS}`
       : 'No prospect bonus',
   };
 }
@@ -5029,7 +5097,7 @@ function setSigningsSort(col){
 }
 
 function renderSignings(){
-  const raw = lsGet(LS_SIGNINGS_RAW);
+  const raw = getSigningsRaw();
   const tbody = document.getElementById('signingsTbody');
   if(!tbody) return;
   if(!raw){
@@ -6056,8 +6124,8 @@ function rankPlayers2425(){
   const curveFns2425RS = _buildCurveFns(players.filter(p => p.start2425 && getCap2425(p) > 0), getCap2425, ppts2425blend);
 
   for(const p of players){
-    delete p.rank2425; delete p.rsProd2425; delete p.rsContract2425; delete p.rsProspect2425; delete p.rankScore2425;
-    delete p.rsCoverageMult2425; delete p.rsSrcN2425; delete p.rsPosMult2425; delete p.rsYouthRaw2425; delete p.rsDeltaRaw2425;
+    delete p.rank2425; delete p.rsProd2425; delete p.rsCon2425; delete p.rsPros2425; delete p.rankScore2425;
+    delete p.rsCovM2425; delete p.rsSrcN2425; delete p.rsPosM2425; delete p.rsYRaw2425; delete p.rsDRaw2425;
     delete p.rsPpm2425; delete p.rsTrj2425; delete p.rsCrv2425; delete p.rsCrvBase2425;
   }
   const eligible = players.filter(p=>getCap2425(p)>0 && ppts2425blend(p)>0);
@@ -6075,9 +6143,9 @@ function rankPlayers2425(){
     .sort((a, b) => b.r.score - a.r.score)
     .forEach(({ p, r }, i) => {
       p.rank2425 = i + 1;
-      p.rsProd2425 = r.prod; p.rsContract2425 = r.contract; p.rsProspect2425 = r.prospect; p.rankScore2425 = r.score;
-      p.rsCoverageMult2425 = r.coverageMult; p.rsSrcN2425 = r.srcN; p.rsPosMult2425 = r.posMult; p.rsYouthRaw2425 = r.youthRaw; p.rsDeltaRaw2425 = r.deltaRaw;
-      p.rsPpm2425 = r.ppm; p.rsTrj2425 = r.trj; p.rsCrv2425 = r.crv; p.rsCrvBase2425 = r.curveBase;
+      p.rsProd2425 = r.prod; p.rsCon2425 = r.contract; p.rsPros2425 = r.prospect; p.rankScore2425 = r.score;
+      p.rsCovM2425 = r.coverageMult; p.rsSrcN2425 = r.srcN; p.rsPosM2425 = r.posMult; p.rsYRaw2425 = r.youthRaw; p.rsDRaw2425 = r.deltaRaw;
+      p.rsPpm2425 = r.ppm; p.rsTrj2425 = r.trj; p.rsCrv2425 = r.crv;
     });
 
   lsSet(LS_PLAYERS,players);
@@ -6240,8 +6308,8 @@ function rankPlayers2324(){
   const curveFns2324RS = _buildCurveFns(players.filter(p => p.start2324 && getCap2324(p) > 0), getCap2324, ppts2324blend);
 
   for(const p of players){
-    delete p.rank2324; delete p.rsProd2324; delete p.rsContract2324; delete p.rsProspect2324; delete p.rankScore2324;
-    delete p.rsCoverageMult2324; delete p.rsSrcN2324; delete p.rsPosMult2324; delete p.rsYouthRaw2324; delete p.rsDeltaRaw2324;
+    delete p.rank2324; delete p.rsProd2324; delete p.rsCon2324; delete p.rsPros2324; delete p.rankScore2324;
+    delete p.rsCovM2324; delete p.rsSrcN2324; delete p.rsPosM2324; delete p.rsYRaw2324; delete p.rsDRaw2324;
     delete p.rsPpm2324; delete p.rsTrj2324; delete p.rsCrv2324; delete p.rsCrvBase2324;
   }
   const eligible = players.filter(p=>getCap2324(p)>0 && ppts2324blend(p)>0);
@@ -6259,9 +6327,9 @@ function rankPlayers2324(){
     .sort((a, b) => b.r.score - a.r.score)
     .forEach(({ p, r }, i) => {
       p.rank2324 = i + 1;
-      p.rsProd2324 = r.prod; p.rsContract2324 = r.contract; p.rsProspect2324 = r.prospect; p.rankScore2324 = r.score;
-      p.rsCoverageMult2324 = r.coverageMult; p.rsSrcN2324 = r.srcN; p.rsPosMult2324 = r.posMult; p.rsYouthRaw2324 = r.youthRaw; p.rsDeltaRaw2324 = r.deltaRaw;
-      p.rsPpm2324 = r.ppm; p.rsTrj2324 = r.trj; p.rsCrv2324 = r.crv; p.rsCrvBase2324 = r.curveBase;
+      p.rsProd2324 = r.prod; p.rsCon2324 = r.contract; p.rsPros2324 = r.prospect; p.rankScore2324 = r.score;
+      p.rsCovM2324 = r.coverageMult; p.rsSrcN2324 = r.srcN; p.rsPosM2324 = r.posMult; p.rsYRaw2324 = r.youthRaw; p.rsDRaw2324 = r.deltaRaw;
+      p.rsPpm2324 = r.ppm; p.rsTrj2324 = r.trj; p.rsCrv2324 = r.crv;
     });
 
   lsSet(LS_PLAYERS,players);
@@ -8973,8 +9041,8 @@ function rankPlayers2526(){
   const curveFns2526RS = _buildCurveFns(players.filter(p => p.start2526 && getCap2526(p) > 0), getCap2526, ppts2526blend);
 
   for(const p of players){
-    delete p.rank2526; delete p.rsProd2526; delete p.rsContract2526; delete p.rsProspect2526; delete p.rankScore2526;
-    delete p.rsCoverageMult2526; delete p.rsSrcN2526; delete p.rsPosMult2526; delete p.rsYouthRaw2526; delete p.rsDeltaRaw2526;
+    delete p.rank2526; delete p.rsProd2526; delete p.rsCon2526; delete p.rsPros2526; delete p.rankScore2526;
+    delete p.rsCovM2526; delete p.rsSrcN2526; delete p.rsPosM2526; delete p.rsYRaw2526; delete p.rsDRaw2526;
     delete p.rsPpm2526; delete p.rsTrj2526; delete p.rsCrv2526; delete p.rsCrvBase2526;
   }
   const eligible = players.filter(p=>getCap2526(p)>0 && ppts2526blend(p)>0);
@@ -8992,9 +9060,9 @@ function rankPlayers2526(){
     .sort((a, b) => b.r.score - a.r.score)
     .forEach(({ p, r }, i) => {
       p.rank2526 = i + 1;
-      p.rsProd2526 = r.prod; p.rsContract2526 = r.contract; p.rsProspect2526 = r.prospect; p.rankScore2526 = r.score;
-      p.rsCoverageMult2526 = r.coverageMult; p.rsSrcN2526 = r.srcN; p.rsPosMult2526 = r.posMult; p.rsYouthRaw2526 = r.youthRaw; p.rsDeltaRaw2526 = r.deltaRaw;
-      p.rsPpm2526 = r.ppm; p.rsTrj2526 = r.trj; p.rsCrv2526 = r.crv; p.rsCrvBase2526 = r.curveBase;
+      p.rsProd2526 = r.prod; p.rsCon2526 = r.contract; p.rsPros2526 = r.prospect; p.rankScore2526 = r.score;
+      p.rsCovM2526 = r.coverageMult; p.rsSrcN2526 = r.srcN; p.rsPosM2526 = r.posMult; p.rsYRaw2526 = r.youthRaw; p.rsDRaw2526 = r.deltaRaw;
+      p.rsPpm2526 = r.ppm; p.rsTrj2526 = r.trj; p.rsCrv2526 = r.crv;
     });
 
   lsSet(LS_PLAYERS, players);
