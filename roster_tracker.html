@@ -992,7 +992,7 @@ tr:hover td{background:#fafaf8}
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;color:#9ca3af">Points target (drop until achievable)</span>
-            <input type="number" id="s-ptsTarget" value="1150" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
+            <input type="number" id="s-ptsTarget" value="1200" min="800" max="2000" step="50" onchange="updateSetting('ptsTarget',+this.value)" style="width:80px;height:32px;border:1px solid #ddd;border-radius:8px;padding:0 8px;font-size:13px;text-align:center">
           </div>
         </div>
       </div>
@@ -1519,7 +1519,7 @@ function _effectiveDraftWeights(team, draftWeightsBase){
     ? { ...draftWeightsBase, elcExpF: 35, elcExpD: 25, wtCapUse: 0, wtFanBias: draftWeightsBase.wtFanBias || 5 }
     : { ...draftWeightsBase, wtCapUse: draftWeightsBase.wtCapUse || 0.15, wtFanBias: 0 };
 }
-let ptsTarget = 1150;
+let ptsTarget = 1200; // historically the real points needed to win the championship, apart from last year
 let minDropF = 1, minDropD = 1; // every team must drop at least this many F and D (G excluded)
 // Players at or above this pts threshold are last-resort drops. Was a hardcoded const=50 (an
 // eyeballed guess from 2026-05-27) until this was promoted to a real setting and backtested via
