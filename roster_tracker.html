@@ -849,7 +849,7 @@ tr:hover td{background:#fafaf8}
 <div style="max-width:1100px;display:flex;flex-direction:column;gap:1.75rem">
 
   <div>
-    <div class="section-label">NHL <span class="section-line"></span><span class="section-desc">League salary cap rules. Cap ceilings are used in drop cap-constraint checks. ELC max = league minimum + $175,000 (read-only). Editable caps are used by the drop algorithm.</span></div>
+    <div class="section-label">NHL <span class="section-line"></span><span class="section-desc">League salary cap rules and important dates. Cap ceilings are used in drop cap-constraint checks. ELC max = league minimum + $175,000 (read-only). Editable caps are used by the drop algorithm. Trade deadline drives the ELC mandatory-drop rule (Drops > Pass 1).</span></div>
     <div style="display:grid;grid-template-columns:72px repeat(6,1fr);gap:6px;align-items:center;font-size:12px">
       <div></div>
       <div style="text-align:center;color:#9ca3af;font-size:10px;font-weight:600">22–23</div>
@@ -882,6 +882,14 @@ tr:hover td{background:#fafaf8}
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">10/7/2025</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">9/29/2026</div>
       <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">TBD</div>
+
+      <div style="font-size:11px;color:#9ca3af;white-space:nowrap" title="Real trade deadline — the cutoff behind the ELC mandatory-drop rule (Settings > Drops > Pass 1): a player signed to an ELC-level contract after a season's own trade deadline can still be added to a fantasy roster as a mid-season stash, but must be dropped at the NEXT season's preseason draft. Each column shows that season's OWN deadline — e.g. the 25-26 column's date is what feeds Pass 1 for the live 26-27 draft (TRADE_DEADLINE_2526).">Trade deadline</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">3/3/2023</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">3/8/2024</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">3/7/2025</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">3/6/2026</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;padding:0 4px;font-size:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;background:#fafafa">3/1/2027</div>
+      <div style="height:32px;border:1px solid #e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#e5e7eb;background:#fafafa">—</div>
 
     </div>
   </div>
@@ -960,7 +968,7 @@ tr:hover td{background:#fafaf8}
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 1 — MANDATORY <span style="font-weight:400;color:#9ca3af">Must be dropped at the preseason draft if the player was (1) picked up after the previous season's All-Star break AND (2) their ELC was signed after that same All-Star break. Always drops first, unconditionally. Not tunable here — driven by a hardcoded per-season list.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 1 — MANDATORY <span style="font-weight:400;color:#9ca3af">Must be dropped at the preseason draft if the player was (1) added to a fantasy roster after the PRIOR season's trade deadline (see NHL section above) AND (2) their ELC-level contract was also signed after that same deadline — a mid-season stash still has to go, regardless of production or cap efficiency. Always drops first, unconditionally. Not tunable here. 25-26/26-27's lists are auto-detected from PP Signings + that season's Xactions (see <span style="font-family:monospace;color:#b0b0ac">_computeElcMandatoryDrops</span>) — verified live to exactly reproduce 25-26's known Ivan Demidov case; 23-24/24-25 still use their own hand-curated historical list (no Xactions data synced for those seasons).</span></div>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
@@ -1060,12 +1068,8 @@ tr:hover td{background:#fafaf8}
                 <input type="number" id="s-wtCoverageDiscount" value="0.25" min="0" max="1" step="0.05" onchange="updateDraftWeight('wtCoverageDiscount',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
               <div style="display:flex;flex-direction:column;gap:3px">
-                <span style="font-size:11px;color:#9ca3af" title="Hard floor: a free agent needs coverage from at least this fraction of that season's available projection sources to be draft-eligible at all (not just discounted). Backtested 2026-07-28 against all 3 real drafts: real GMs never drafted below ~1/3 coverage in any season (23-24 w/ 3 sources, 24-25 w/ 4, 25-26 w/ 6), while the algo's own 25-26 misses were 100% single-source (all CBS). 0-source players are already unscoreable (ppts=0) so this only bites the 'has SOME points, but from a lone uncorroborated source' case.">Min source coverage (<span style="font-family:monospace;color:#b0b0ac">minSrcCoverage</span>)</span>
-                <input type="number" id="s-minSrcCoverage" value="0.33" min="0" max="1" step="0.01" onchange="updateDraftWeight('minSrcCoverage',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
-              </div>
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span style="font-size:11px;color:#9ca3af" title="26-27-only override of the min source coverage floor above — as of 2026-08 only Dobbers has published real 26-27 numbers, so the normal 1/3-of-7-sources floor would filter out nearly every free agent. Doesn't touch the shared floor other seasons use. Raise back toward 0.33 once ATH/DFO/DTZ/ESPN/CBS/NHL publish (expected mid-September).">Min source coverage — 26-27 override (<span style="font-family:monospace;color:#b0b0ac">MIN_SRC_COVERAGE_2627</span>)</span>
-                <input type="number" id="s-minSrcCoverage2627" value="0" min="0" max="1" step="0.01" onchange="updateSetting('minSrcCoverage2627',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
+                <span style="font-size:11px;color:#9ca3af" title="Hard floor: a free agent needs coverage from at least this fraction of that season's available projection sources to be draft-eligible at all (not just discounted). Backtested 2026-07-28 against all 3 real drafts: real GMs never drafted below ~1/3 coverage in any season (23-24 w/ 3 sources, 24-25 w/ 4, 25-26 w/ 6), while the algo's own 25-26 misses were 100% single-source (all CBS). 0-source players are already unscoreable (ppts=0) so this only bites the 'has SOME points, but from a lone uncorroborated source' case. Shared across all 4 seasons — 26-27 no longer has its own separate override; raise toward 0.33 as more 26-27 sources publish (expected mid-September), all the way up before the real draft.">Min source coverage (<span style="font-family:monospace;color:#b0b0ac">minSrcCoverage</span>)</span>
+                <input type="number" id="s-minSrcCoverage" value="0.28" min="0" max="1" step="0.01" onchange="updateDraftWeight('minSrcCoverage',+this.value)" style="width:70px;height:30px;border:1px solid #ddd;border-radius:6px;padding:0 6px;font-size:12px;text-align:center">
               </div>
             </div>
 
@@ -1340,7 +1344,7 @@ let sortColSignings = 'sign_date', sortDirSignings = -1;
 // side (7/21 otherwise-unexplained "GM kept a below-curve player forever" cases matched the
 // GM's fan team, ~10x the ~3% chance baseline) and explicitly flagged then to revisit for draft
 // accuracy too. See GM_FAN_TEAM / project_gm_nhl_affiliation memory.
-let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.33, wtCapUse: 0, wtFanBias: 0 };
+let draftWeights = { multF: 1.0, multD: 1.26, multG: 1.0, wtPPTSM: 0.75, wtAge: 1, wtProspect: 12, wtCoverageDiscount: 0.25, wtPressure: 0.3, wtDeltaCurve: 8, elcExpF: 41, elcExpD: 26, elcExpG: 35, wtPosAlloc: 1.0, minSrcCoverage: 0.28, wtCapUse: 0, wtFanBias: 0 };
 // Knapsack-optimal cap fractions: F=58%, D=35%, G=7% (derived from 26-27 player pool, $104M cap)
 const OPT_POS_FRACS = {F: 0.58, D: 0.35, G: 0.07};
 
@@ -1551,6 +1555,16 @@ const draftDatePreseason2526    = '2025-09-27';
 const draftDateSupplemental2526 = '2026-01-10';
 const draftDatePreseason2627    = '2026-10-02';
 const draftDateSupplemental2627 = '2027-01-10';
+// NHL trade deadline per season — the real cutoff behind the ELC mandatory-drop rule (see Pass 1
+// in Settings > Drops): a player signed to an ELC-level contract after that season's trade
+// deadline can still be added to a fantasy roster (a mid-season stash), but must be dropped at
+// the NEXT season's preseason draft. Drives _computeElcMandatoryDrops's live 26-27 detection
+// below (paired with the PRIOR season's deadline — e.g. the 26-27 draft uses the 25-26 deadline).
+const TRADE_DEADLINE_2223 = '2023-03-03';
+const TRADE_DEADLINE_2324 = '2024-03-08';
+const TRADE_DEADLINE_2425 = '2025-03-07';
+const TRADE_DEADLINE_2526 = '2026-03-06';
+const TRADE_DEADLINE_2627 = '2027-03-01';
 // Real NHL regular-season opening night per season — used to judge whether a real GM could have
 // known a prospect's Opening Night roster/AHL-assignment status by that season's actual draft day
 // (e.g. Dylan Guenther was sent to AHL Tucson on 2023-10-08, before the 23-24 season even opened
@@ -2016,13 +2030,6 @@ function srcNFn2324(p){
   return (p.proj2324.ath>0?1:0)+(p.proj2324.dtz>0?1:0)+(p.proj2324.nhl>0?1:0)+(p.proj2324.dob>0?1:0);
 }
 const MAX_SRC_2324 = 4;
-// 26-27's minSrcCoverage floor relaxed to 0 (vs the shared draftWeights.minSrcCoverage=0.33
-// used by 23-24/24-25/25-26) — as of 2026-08, only Dobbers has published real 26-27 numbers;
-// ATH/DFO/DTZ/ESPN/CBS/NHL aren't expected until mid-September, so the 1/3-of-7 floor would
-// filter out nearly the entire free-agent pool for no real signal-quality reason. Scoped to
-// 26-27 only (not the shared draftWeights object) so historical seasons' calibrated floor is
-// untouched. Raise back toward 0.33 once the other sources publish. Tunable in Settings.
-let MIN_SRC_COVERAGE_2627 = 0;
 
 // How much weight the 26-27 in-season actual pace gets vs. the preseason-projection
 // rate, once real 26-27 games exist, when nowcasting the games remaining (see
@@ -2204,7 +2211,7 @@ function algoDrops(){
     ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
     elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
+    elcMandatorySet: _computeElcMandatoryDrops(TRADE_DEADLINE_2526, ELC_MAX_2526, xactions2526), injurySet: INJURY_DROPS_2627,
     computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, contractYearAnchor: NHL_SEASON_YEAR,
@@ -3414,7 +3421,7 @@ function computeDrops(allPlayers){
     ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
     elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627,
+    elcMandatorySet: _computeElcMandatoryDrops(TRADE_DEADLINE_2526, ELC_MAX_2526, xactions2526), injurySet: INJURY_DROPS_2627,
     computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true, emptyMarker: '',
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627, contractYearAnchor: NHL_SEASON_YEAR,
@@ -3748,7 +3755,7 @@ function render(){
       .filter(p=>!p.start2627&&!drafted.has(normName(p.name).toLowerCase())&&(p.proj2627.blend||0)>0)
       .map(p=>{
         const pg=posGroup(p.pos), pp=p.proj2627.blend||0, cap0=p.cap2627||0;
-        const scoreArgs = { pg, pp, cap0, pressure, draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627 };
+        const scoreArgs = { pg, pp, cap0, pressure, draftWeights, calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627 };
         const _ds = _scoreDraftCandidate(p, {...scoreArgs, mode:'prospect', round: genericRound2627}).score;
         const _dsNormal = _scoreDraftCandidate(p, {...scoreArgs, mode:'bestAvail', round: genericRound2627}).score;
         return {id:p.id,name:p.name,pos:p.pos,pts:pp,cap:cap0,_ds,_dsNormal};
@@ -3768,7 +3775,7 @@ function render(){
       .map(p=>{
         const pg=posGroup(p.pos), pp=p.proj2627.blend||0, cap0=p.cap2627||0;
         const scoreArgs = {
-          pg, pp, cap0, pressure, round: focusRound2627, draftWeights: _effectiveDraftWeights(viewTeam, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
+          pg, pp, cap0, pressure, round: focusRound2627, draftWeights: _effectiveDraftWeights(viewTeam, draftWeights),
           calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, nextContractYrs: p.nextTerm2627||0, curveFns: curveFns2627, elcMax: ELC_MAX_2627, srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
           team: viewTeam, teamCap: teamCap2627, teamCapByPos: teamCapByPos2627,
         };
@@ -3955,12 +3962,50 @@ const ELC_MANDATORY_DROPS_2324 = new Set([]);
 const INJURY_DROPS_2526 = new Set(['matthew tkachuk', 'rutger mcgroarty', 'joseph woll', 'zach hyman',
   'filip hallander', 'alec regula']);
 
-// Players who must be dropped per league rules: ELC signed after the trade deadline (Mar 7, 2025).
-// These are mandatory pre-drops — counted as correct in compareDrops2526.
-const ELC_MANDATORY_DROPS_2526 = new Set(['ivan demidov']);
+// 25-26's mandatory drops are now auto-detected too (2026-08-20), same as 26-27 — see
+// _computeElcMandatoryDrops's own comment. Verified live to exactly reproduce the one real
+// historical case (Ivan Demidov, ELC signed after the Mar 7 2025 deadline + added via a real
+// Yahoo transaction after that date) before switching algoDrops2526()/compareDrops2526() over
+// from this hand-curated Set, which is no longer referenced anywhere.
 
-// Players who must be dropped for 26-27: ELC signed after the 25-26 trade deadline (Mar 6, 2026).
-const ELC_MANDATORY_DROPS_2627 = new Set([]);
+// Auto-detected mandatory drops for 26-27 (2026-08-20) — replaces the old hand-curated per-season
+// Set (still used as-is for 23-24/24-25/25-26, whose real outcomes are already known/backtested).
+// Requires BOTH real halves of the league rule: (1) an ELC-level contract signed after the PRIOR
+// season's trade deadline (TRADE_DEADLINE_2X2Y, see its declaration above) AND (2) a real Yahoo
+// "add" transaction for that same player after that same deadline (that season's own xactions
+// log) — i.e. an actual stash pickup, not just "any prospect anywhere who happened to sign an
+// ELC-level deal sometime after a March date." The contract-only version of this check (first
+// cut, 2026-08-20) had no way to bound "after the deadline" on the far end, so it swept up
+// hundreds of unrelated depth/AHL signings across the following year and a half instead of the
+// handful of real HGHL stash cases — found live via a 587-player result for what should've been
+// exactly 1 (Ivan Demidov). Cross-referencing real roster adds is both the correct fix (it's
+// what the rule is actually about) and a much tighter net than any date-window guess would be.
+// Both the transaction-side and contract-side names resolve through alias-aware findPlayerByName
+// (not literal string matching) before comparing, since Yahoo's and PuckPedia's spelling
+// conventions for the same player don't always agree (nickname vs formal, etc).
+function _computeElcMandatoryDrops(deadlineDate, elcMax, xactions){
+  const addedAfterDeadline = new Set();
+  for(const tx of (xactions||[])){
+    if(tx.type !== 'add' || !(tx.date > deadlineDate)) continue;
+    const p = findPlayerByName(tx.player);
+    if(p) addedAfterDeadline.add(normName(p.name).toLowerCase());
+  }
+  if(!addedAfterDeadline.size) return new Set();
+  const raw = getSigningsRaw() || {};
+  const result = new Set();
+  for(const contracts of Object.values(raw)){
+    for(const c of (contracts||[])){
+      if(!c.sign_date || !(c.cap > 0)) continue;
+      if(c.sign_date <= deadlineDate) continue;
+      if(c.cap > elcMax) continue;
+      const p = findPlayerByName(c.name);
+      if(!p) continue;
+      const key = normName(p.name).toLowerCase();
+      if(addedAfterDeadline.has(key)) result.add(key);
+    }
+  }
+  return result;
+}
 
 // Players dropped for injury reasons in 26-27 — algorithm can't know about these, populate once known.
 // Marcus Johansson: signed with Farjestad BK (SHL), won't play in the NHL in 26-27 — confirmed
@@ -4412,7 +4457,7 @@ function simulateBestPick(){
   const { top, locked } = _getTeamDraftBoard(team, round, mode, {
     players, getAssignedTeam: p => p.start2627 || null, startField: 'start2627',
     ppts: p => p.proj2627.blend || 0, getCap: p => p.cap2627 || 0,
-    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
+    capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, draftWeights: _effectiveDraftWeights(team, draftWeights),
     calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
     srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
     allTeams: teams, need, teamCap, teamCapByPos, teamSpotsLeft, injurySet: INJURY_DROPS_2627,
@@ -4704,8 +4749,7 @@ function syncSettings(){
   set('s-wtProspect', W.wtProspect);
   set('s-elcExpF', W.elcExpF); set('s-elcExpD', W.elcExpD); set('s-elcExpG', W.elcExpG);
   set('s-wtCoverageDiscount', W.wtCoverageDiscount);
-  set('s-minSrcCoverage', W.minSrcCoverage??0.33);
-  set('s-minSrcCoverage2627', MIN_SRC_COVERAGE_2627);
+  set('s-minSrcCoverage', W.minSrcCoverage??0.28);
   set('s-wtPressure', W.wtPressure);
   set('s-wtDeltaCurve', W.wtDeltaCurve);
   set('s-wtPosAlloc', W.wtPosAlloc??1.0);
@@ -4728,7 +4772,7 @@ function syncSettings(){
 function updateDraftWeight(key, val){
   if(draftWeights.wtProspect === undefined) draftWeights.wtProspect = 12;
   if(draftWeights.wtCoverageDiscount === undefined) draftWeights.wtCoverageDiscount = 0.25;
-  if(draftWeights.minSrcCoverage === undefined) draftWeights.minSrcCoverage = 0.33;
+  if(draftWeights.minSrcCoverage === undefined) draftWeights.minSrcCoverage = 0.28;
   if(draftWeights.wtPressure === undefined) draftWeights.wtPressure = 0.3;
   if(draftWeights.wtDeltaCurve === undefined) draftWeights.wtDeltaCurve = 8;
   if(draftWeights.elcExpF === undefined) draftWeights.elcExpF = 35;
@@ -4782,7 +4826,6 @@ function updateSetting(key, val){
   else if(key === 'abpWiggle')    abpWiggle = val;
   else if(key === 'dropValueFloor') dropValueFloor = val;
   else if(key === 'earlyPaceWeight')           { EARLY_PACE_WEIGHT = val; applyBlendedPts(); render(); }
-  else if(key === 'minSrcCoverage2627') MIN_SRC_COVERAGE_2627 = val;
 }
 
 function addDays(dateStr, n){
@@ -5605,7 +5648,7 @@ function algoDrops2526(){
     ppts: ppts2526blend, getCap: getCap2526,
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526,
     elcMax: ELC_MAX_2526, calcAgeForSim: calcAge2526,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526,
+    elcMandatorySet: _computeElcMandatoryDrops(TRADE_DEADLINE_2425, ELC_MAX_2425, xactions2425), injurySet: INJURY_DROPS_2526,
     computeABPFn: computeABP2526, teamField: 'team2526',
     useRebalBonus: true, useMinEnforcement: false, emptyMarker: null,
     srcNFn: p=>(p.proj2526.ath>0?1:0)+(p.proj2526.dfo>0?1:0)+(p.proj2526.dtz>0?1:0)+(p.proj2526.espn>0?1:0)+(p.proj2526.nhl>0?1:0)+(p.proj2526.cbs>0?1:0),
@@ -5787,7 +5830,7 @@ function compareDrops2526(){
     stubExtraFields: { cap2526: null, pts2526: 0 },
     startField: 'start2526', ppts: ppts2526blend, getCap: getCap2526,
     capLimit: CAP_LIMIT_2526, draftReserve: DRAFT_RESERVE_2526, elcMax: ELC_MAX_2526, calcAgeForSim: calcAge2526,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2526, injurySet: INJURY_DROPS_2526, computeABPFn: computeABP2526,
+    elcMandatorySet: _computeElcMandatoryDrops(TRADE_DEADLINE_2425, ELC_MAX_2425, xactions2425), injurySet: INJURY_DROPS_2526, computeABPFn: computeABP2526,
     useRebalBonus: true, useMinEnforcement: false, teamField: 'team2526',
     midseasonDrops: MIDSEASON_DROPS_2526, midseasonReadds: MIDSEASON_READDS_2526,
     resultsKey: 'lastCompareResults2526',
@@ -5807,7 +5850,7 @@ function compareDrops2627(){
     stubExtraFields: { cap2627: null, proj2627: {blend: 0} },
     startField: 'start2627', ppts: p => p.proj2627.blend||0, getCap: p => p.cap2627||0,
     capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627, elcMax: ELC_MAX_2627, calcAgeForSim: calcAge,
-    elcMandatorySet: ELC_MANDATORY_DROPS_2627, injurySet: INJURY_DROPS_2627, computeABPFn: computeABP,
+    elcMandatorySet: _computeElcMandatoryDrops(TRADE_DEADLINE_2526, ELC_MAX_2526, xactions2526), injurySet: INJURY_DROPS_2627, computeABPFn: computeABP,
     useRebalBonus: true, useMinEnforcement: true,
     midseasonDrops: MIDSEASON_DROPS_2627, midseasonReadds: MIDSEASON_READDS_2627,
     resultsKey: 'lastCompareResults2627',
@@ -7221,7 +7264,7 @@ function algoDraft2627(){
     getCap:       p => p.cap2627 || 0,
     capLimit:     CAP_LIMIT,
     draftReserve: DRAFT_RESERVE_2627,
-    draftWeights: {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627},
+    draftWeights,
     applyChanges: true,
     renderFn:     render,
     boardDraftState: draftState2627,
@@ -10079,7 +10122,7 @@ function updateStats(){
       players, getAssignedTeam: p=>p.start2627||null, startField:'start2627',
       ppts: p=>p.proj2627.blend||0, getCap: p=>p.cap2627||0,
       capLimit: CAP_LIMIT, draftReserve: DRAFT_RESERVE_2627,
-      draftWeights: _effectiveDraftWeights(team, {...draftWeights, minSrcCoverage: MIN_SRC_COVERAGE_2627}),
+      draftWeights: _effectiveDraftWeights(team, draftWeights),
       calcAgeForSim: calcAge, contractYearAnchor: NHL_SEASON_YEAR, elcMax: ELC_MAX_2627,
       srcNFn: srcNFn2627, maxSrc: MAX_SRC_2627,
       allTeams: teams, need: needAll2627, teamCap: teamCapAll2627, teamCapByPos: teamCapByPosAll2627,
