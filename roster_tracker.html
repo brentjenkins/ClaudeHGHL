@@ -994,7 +994,7 @@ tr:hover td{background:#fafaf8}
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 6 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine. All three values below work together to decide who's an easy cut vs. protected from one.</span></div>
+        <div style="font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.02em">PASS 6 — BELOW CURVE VALUE <span style="font-weight:400;color:#9ca3af">The normal optional cut once the floor's met and cap's fine. A player is protected as a last-resort drop if EITHER their raw pts clears the Drop value floor below OR their ABP is 0 (no better free agent available at their position/cap) — unless their curve-delta falls below the Last-resort delta floor, which overrides both. All three values below work together to decide who's an easy cut vs. protected from one.</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 16px;margin-top:6px">
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;color:#9ca3af" title="Players at/above this pts threshold are last-resort drops, protected until quotas/cap force a cut">Drop value floor (pts)</span>
@@ -2066,17 +2066,16 @@ function _weightedBlend(pairs){ // pairs: [[value, weight], ...] — only pairs 
 function reblendPts(p){
   if(p.ptsMan) return;
   const W = PROJ_SOURCE_WEIGHTS;
-  const blended = _weightedBlend([
+  // Dobbers (ptsDOB) folded into the normal weighted blend at W.dob=0.9 (2026-08-19) — backtested
+  // against real 23-24 actuals and found roughly as reliable as NHL.com's projection (also 0.9),
+  // the same trust bar DTZ cleared before being blended in (see project_weighted_proj_blend
+  // memory). Previously counted as 100% of PPTS on its own whenever present, silently discarding
+  // every other loaded source for that player — found live via a user report that "PPTS blend
+  // doesn't appear to be blending" once ESPN/DOB/a 3rd source were all loaded together.
+  const preseasonProj = _weightedBlend([
     [p.proj2627.ath, W.athletic], [p.proj2627.dfo, W.dfo], [p.proj2627.dtz, W.dtz], [p.proj2627.espn, W.espn],
-    [p.proj2627.cbs, W.cbs], [p.proj2627.nhl, W.nhl],
+    [p.proj2627.cbs, W.cbs], [p.proj2627.nhl, W.nhl], [p.proj2627.dob, W.dob],
   ]);
-  // Dobbers (ptsDOB) is 100% of the 26-27 preseason projection for now — not blended with the
-  // other sources — per an explicit 2026-08-04 call while backtest data (prior-year Dobbers
-  // projections vs real outcomes) is still being gathered. Will fold into the normal weighted
-  // blend above once vetted, the same process DTZ went through before being trusted (see
-  // project_weighted_proj_blend memory). Falls back to the existing multi-source blend for
-  // anyone Dobbers doesn't cover.
-  const preseasonProj = (p.proj2627.dob > 0) ? p.proj2627.dob : blended;
 
   if(p.gp2627 > 0){
     const banked = p.pts2627 || 0;
